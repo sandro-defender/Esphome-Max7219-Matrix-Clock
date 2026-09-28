@@ -15,3 +15,7 @@ validation-tmp/
 
 # Compiled host test binary (make -C tests)
 tests/test_renderer
+
+# Web configurator
+**/node_modules/
+**/dist/

@@ -34,6 +34,33 @@ holds your credentials, a few substitutions and the package list.
 * **Secure by default** - native API encryption, encrypted native OTA that
   reuses the API key, no plaintext web-server upload endpoint.
 
+## Web configurator and one-file installer
+
+The [`web-configurator/`](web-configurator/) project is now part of this
+repository. It previews the display and generates one ready-to-download device
+YAML with:
+
+* local `!secret` references (credentials never enter the browser);
+* hardware and display substitutions;
+* the complete, version-pinned remote package list;
+* first-boot Home Assistant preferences.
+
+This provides both requested forms without maintaining two divergent firmware
+implementations: developers work with the modules in `packages/`, while users
+install a single generated YAML and ESPHome downloads those modules and the
+font assets automatically.
+
+Run it locally with:
+
+```text
+cd web-configurator
+npm install
+npm run dev
+```
+
+The root GitHub Pages workflow tests, type-checks and builds the configurator
+before deployment.
+
 ## Hardware
 
 | Part | Default |
@@ -269,6 +296,7 @@ while building these packages and the checks that need hardware.
 packages/       firmware modules (base, network, display, fonts, renderer, ...)
 fonts/          bundled fonts + licenses and their measurements
 examples/       release (pinned tag) and development (@main) user YAMLs
+web-configurator/ live preview and one-file installer generator
 tests/          offline contract tests and the C++ renderer tests
 scripts/        validate.ps1
 dev.yaml        local development entry point
