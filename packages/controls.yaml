@@ -1,0 +1,402 @@
+# Home Assistant controls module.
+#
+# Only real runtime capabilities are exposed here. Board type, pins, chip
+# count, row count and wiring stay compile-time substitutions (see base.yaml).
+# Names and ids that existed in the single-file firmware are kept so existing
+# Home Assistant dashboards and automations keep working.
+
+select:
+  # Existing entity from v2.0: also selects the wiring/pixel test patterns.
+  - platform: template
+    name: "Screen"
+    id: screen_mode
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Clock"
+    options:
+      - "Clock"
+      - "Date"
+      - "Message"
+      - "Module grid test"
+      - "Pixel checkerboard"
+    set_action:
+      - lambda: |-
+          // Selecting Message by hand shows the current message until it is
+          // cleared; every other option is a normal screen.
+          const std::string option = id(screen_mode).current_option();
+          if (option == "Message") {
+            if (max7219_clock::state.message_text[0] == '\0') {
+              max7219_clock::state.set_message("MAX7219 CLOCK", 0, millis());
+            } else {
+              max7219_clock::state.message_active = true;
+            }
+          } else {
+            max7219_clock::state.clear_message();
+            max7219_clock::state.clear_alert();
+          }
+      - component.update: matrix
+
+  - platform: template
+    name: "Clock alignment"
+    id: clock_alignment
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Center"
+    options:
+      - "Left"
+      - "Center"
+      - "Right"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Time format"
+    id: time_format
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "24 hour"
+    options:
+      - "24 hour"
+      - "12 hour"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Seconds display"
+    id: seconds_display
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Digits"
+    options:
+      - "Off"
+      - "Digits"
+      - "Bar"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Date format"
+    id: date_format
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "DD.MM"
+    options:
+      - "DD.MM"
+      - "MM/DD"
+      - "DD/MM"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Clock font"
+    id: clock_font
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Tiny5"
+    options:
+      - "Tiny5"
+      - "Press Start 2P"
+      - "Compact 5x7"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Message scroll"
+    id: message_scroll_behavior
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Scroll"
+    options:
+      - "Scroll"
+      - "Static"
+    set_action:
+      - component.update: matrix
+
+number:
+  - platform: template
+    name: "Matrix brightness"
+    id: matrix_brightness
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${matrix_intensity}
+    min_value: 0
+    max_value: 15
+    step: 1
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Night brightness"
+    id: night_brightness
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${matrix_night_intensity}
+    min_value: 0
+    max_value: 15
+    step: 1
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Animation duration"
+    id: animation_duration
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${animation_ms}
+    min_value: 0
+    max_value: 2000
+    step: 10
+    unit_of_measurement: ms
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Message scroll speed"
+    id: message_scroll_speed
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${message_ms_per_px}
+    min_value: 20
+    max_value: 200
+    step: 5
+    unit_of_measurement: ms/px
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Default message duration"
+    id: default_message_duration
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${default_message_duration}
+    min_value: 0
+    max_value: 3600
+    step: 5
+    unit_of_measurement: s
+
+  - platform: template
+    name: "Countdown duration"
+    id: countdown_duration
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: 300
+    min_value: 10
+    max_value: 3599
+    step: 10
+    unit_of_measurement: s
+
+  - platform: template
+    name: "Screen cycle interval"
+    id: screen_cycle_interval
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${screen_cycle_interval}
+    min_value: 5
+    max_value: 300
+    step: 5
+    unit_of_measurement: s
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Night start hour"
+    id: night_start_hour
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: 22
+    min_value: 0
+    max_value: 23
+    step: 1
+    unit_of_measurement: h
+
+  - platform: template
+    name: "Night end hour"
+    id: night_end_hour
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: 7
+    min_value: 0
+    max_value: 23
+    step: 1
+    unit_of_measurement: h
+
+switch:
+  - platform: template
+    name: "Matrix display"
+    id: matrix_display_power
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: |-
+          id(matrix).turn_on_off(true);
+    turn_off_action:
+      - lambda: |-
+          id(matrix).turn_on_off(false);
+
+  - platform: template
+    name: "Blinking colon"
+    id: clock_blink
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Digit animation"
+    id: clock_animate
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Automatic screen cycling"
+    id: auto_cycle
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Night mode"
+    id: night_mode
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Night schedule"
+    id: night_schedule_enabled
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Display inversion"
+    id: display_inversion
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - lambda: |-
+          id(matrix).invert_on_off(true);
+    turn_off_action:
+      - lambda: |-
+          id(matrix).invert_on_off(false);
+
+button:
+  - platform: restart
+    name: "Restart device"
+    entity_category: config
+
+  - platform: template
+    name: "Return to clock"
+    id: button_return_to_clock
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Clock"
+      - lambda: |-
+          max7219_clock::state.clear_message();
+          max7219_clock::state.clear_alert();
+          max7219_clock::state.cancel_countdown();
+      - component.update: matrix
+
+  - platform: template
+    name: "Clear message"
+    id: button_clear_message
+    entity_category: config
+    on_press:
+      - script.execute: clear_message_action
+
+  - platform: template
+    name: "Start countdown"
+    id: button_start_countdown
+    entity_category: config
+    on_press:
+      - script.execute: start_countdown_action
+
+  - platform: template
+    name: "Cancel countdown"
+    id: button_cancel_countdown
+    entity_category: config
+    on_press:
+      - lambda: |-
+          max7219_clock::state.cancel_countdown();
+      - component.update: matrix
+
+  - platform: template
+    name: "Run module grid test"
+    id: button_grid_test
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Module grid test"
+
+  - platform: template
+    name: "Run pixel test"
+    id: button_pixel_test
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Pixel checkerboard"
+
+  - platform: template
+    name: "Restore display defaults"
+    id: button_restore_defaults
+    entity_category: config
+    on_press:
+      - script.execute: restore_display_defaults

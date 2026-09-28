@@ -1,0 +1,40 @@
+# Font module (release build): downloads the bundled fonts from this repository.
+#
+# Release examples pin ${project_ref} to the same tag as the package files, so a
+# build never mixes main-branch font assets with a tagged package release. The
+# development entry point uses fonts_local.yaml instead.
+#
+# Measured with ESPHome's own pt_to_px() metrics (see fonts/README.md):
+#   Tiny5          size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink -> fits 48x8
+#   Press Start 2P size  6 -> "HH:MM:SS" is 48 px wide, 6 px tall ink -> fits 48x8
+# Both are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
+# as much flash as possible. Messages are converted to upper case by the
+# firmware, which is why the glyph set is upper case only.
+
+substitutions:
+  # Keep in sync with the tag used by the remote `packages` ref.
+  project_ref: "0.1.0"
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  # Overridable for offline builds/validation (see VALIDATION.md).
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
+
+font:
+  - id: font_tiny5_source
+    file:
+      type: web
+      url: ${fonts_base_url}/tiny5/Tiny5-Regular.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  - id: font_ps2p_source
+    file:
+      type: web
+      url: ${fonts_base_url}/press-start-2p/PressStart2P-Regular.ttf
+    size: 6
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

@@ -1,0 +1,54 @@
+# Release example: downloads the pinned package files and font assets from the
+# GitHub release. Copy this file into your ESPHome configuration directory
+# next to your own secrets.yaml, then:
+#
+#   esphome config max7219-clock.yaml
+#   esphome run max7219-clock.yaml
+#
+# Nothing else from this repository has to be copied locally.
+#
+# Pinning rules:
+#   * `ref:` pins the package files to a release tag.
+#   * `project_ref` pins the font download URLs to the same tag, so a build
+#     never mixes main-branch fonts with a tagged package.
+#   * tests/test_config.py enforces that both values stay identical and that
+#     this example never uses @main.
+
+substitutions:
+  # Resolve the credentials locally; remote packages cannot read !secret.
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  api_encryption_key: !secret api_encryption_key
+  fallback_ap_password: !secret fallback_ap_password
+  web_server_username: !secret web_server_username
+  web_server_password: !secret web_server_password
+
+  # Must match `ref:` below.
+  project_ref: "0.1.0"
+
+  # --- Adapt to your hardware ---------------------------------------------
+  # board: nodemcuv2
+  # matrix_chips: "6"
+  # matrix_rows: "1"
+  # matrix_clk_pin: D8
+  # matrix_mosi_pin: D6
+  # matrix_cs_pin: D7
+  # timezone: Europe/Berlin
+
+packages:
+  clock:
+    url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
+    ref: "0.1.0"
+    # Refresh the cached package files at most once a day.
+    refresh: 1d
+    files:
+      - packages/base.yaml
+      - packages/network.yaml
+      - packages/renderer.yaml
+      - packages/display.yaml
+      - packages/fonts_web.yaml
+      - packages/controls.yaml
+      - packages/actions.yaml
+      - packages/diagnostics.yaml
+      - packages/ota_ui.yaml
+      - packages/web_server.yaml

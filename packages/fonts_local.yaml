@@ -1,0 +1,30 @@
+# Font module (local development): uses the fonts that ship in this repository.
+#
+# This is the same font configuration as fonts_web.yaml, but read from the
+# checkout instead of a raw GitHub URL, so `esphome config` and `esphome
+# compile` work without network access. tests/test_config.py keeps both files
+# in sync (ids, sizes, bpp, glyphs).
+#
+# Relative paths inside a package resolve against that package's directory, so
+# these point at the repository root's fonts/ folder.
+
+font:
+  - id: font_tiny5_source
+    file:
+      type: local
+      path: ../fonts/tiny5/Tiny5-Regular.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  - id: font_ps2p_source
+    file:
+      type: local
+      path: ../fonts/press-start-2p/PressStart2P-Regular.ttf
+    size: 6
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
