@@ -540,8 +540,19 @@ class ConfigContractTests(unittest.TestCase):
             self.assertIn(pattern, gitignore)
         tracked = {path.name for path in tracked_files()}
         self.assertNotIn("secrets.yaml", tracked)
-        if (REPO / ".git").exists():
-            self.assertFalse((REPO / "secrets.yaml").exists(), "no real secrets.yaml in the repo")
+        if (REPO / ".git").exists() and (REPO / "secrets.yaml").exists():
+            # A local secrets.yaml is expected (README installation step 2);
+            # what matters is that git really ignores it, so it can never be
+            # committed by accident.
+            check = subprocess.run(
+                ["git", "-C", str(REPO), "check-ignore", "-q", "secrets.yaml"],
+                capture_output=True,
+            )
+            self.assertEqual(
+                check.returncode,
+                0,
+                "secrets.yaml exists but is not covered by .gitignore",
+            )
 
     def test_encryption_key_format_is_documented(self):
         self.assertIn(

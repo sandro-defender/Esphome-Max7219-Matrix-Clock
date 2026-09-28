@@ -287,6 +287,18 @@ while building these packages and the checks that need hardware.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
+* **`couldn't find remote ref 0.1.0`** - the `ref:` in your YAML pins a release
+  tag that does not exist yet (in this repository, or in your fork). Publish it
+  first: `git tag 0.1.0 && git push origin 0.1.0` (or create a GitHub release
+  for that tag). If ESPHome already cached the failed attempt, run once with
+  `refresh: 0s` on the package so it picks the tag up immediately.
+* **`Couldn't find ID 'display_mode'`** (or `countdown_remaining`,
+  `ota_state`, `ota_percent`, `free_heap`, `uptime_sensor`) - the `files:` list
+  in your YAML is missing required modules. Keep the complete list from
+  `examples/release.yaml`; `packages/diagnostics.yaml` is referenced by the
+  display lambda and the `get_status` action, and `packages/ota_ui.yaml` is
+  what provides over-the-air updates. Only `packages/web_server.yaml` may be
+  removed.
 * **Out of flash** - drop `packages/web_server.yaml` from the package list (and
   delete it from `files:` in the release example) and rebuild.
 

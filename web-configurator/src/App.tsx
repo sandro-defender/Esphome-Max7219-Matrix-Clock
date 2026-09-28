@@ -767,6 +767,8 @@ git push -u origin main`}</pre>
                   </li>
                   <li>
                     Under <strong>Build and deployment</strong> → <strong>Source</strong>, select <strong>GitHub Actions</strong>.
+                    Keep it there: switching back to <strong>Deploy from a branch</strong> makes GitHub serve the repository
+                    root (README.md) instead of the configurator.
                   </li>
                   <li>
                     The workflow runs immediately and your site will be live at{" "}
@@ -782,9 +784,12 @@ git push -u origin main`}</pre>
                   directly into a <strong>single standalone `index.html` file</strong>.
                 </p>
                 <p>
-                  You can upload <code>dist/index.html</code> directly into any GitHub repository or <code>gh-pages</code> branch. In
-                  GitHub Pages settings, select <strong>Deploy from a branch</strong>, choose <code>main</code> (/root), and hit
-                  Save. No build steps needed on GitHub!
+                  <strong>Only for repositories that do not use the workflow above:</strong> you can upload{" "}
+                  <code>dist/index.html</code> directly into any GitHub repository or <code>gh-pages</code> branch. In GitHub
+                  Pages settings, select <strong>Deploy from a branch</strong>, choose <code>main</code> (/root), and hit
+                  Save. No build steps needed on GitHub! On a repository that already deploys through the workflow, leave the
+                  source on <strong>GitHub Actions</strong> instead - otherwise the live configurator is replaced by the
+                  repository file listing (README.md).
                 </p>
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button

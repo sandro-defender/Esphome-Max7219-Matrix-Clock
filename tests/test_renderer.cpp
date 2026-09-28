@@ -752,6 +752,51 @@ static void test_manual_night_switch() {
   CHECK(fabsf(r.brightness - 0.5f) < 0.001f);
 }
 
+static void test_brightness_entity_change_applies_without_flip() {
+  // Moving the Matrix/Night brightness entities from Home Assistant must
+  // reach the panel even while the night window state never changes.
+  Frame f = base_frame();
+  reset_state();
+  f.night_schedule = false;
+  f.night_manual = false;
+  f.brightness_day = 3;
+  f.brightness_night = 1;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+
+  f.now_ms = 0;
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);  // first frame applies the day level
+  CHECK_EQ((int) r.brightness, 3);
+  CHECK(!state.night_active);
+
+  f.now_ms = 2000;
+  f.brightness_day = 9;  // HA slider moved, still daytime
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 9);
+  CHECK(!state.night_active);
+
+  f.now_ms = 4000;
+  render(canvas, font, compact, f, r);
+  CHECK(!r.brightness_changed);  // reported exactly once
+
+  // Same while night mode is active: the night slider applies too.
+  f.now_ms = 6000;
+  f.night_manual = true;
+  f.brightness_night = 2;
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 2);
+
+  f.now_ms = 8000;
+  f.brightness_night = 5;
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 5);
+}
+
 static void test_auto_cycle_clock_date() {
   Frame f = base_frame();
   reset_state();
@@ -954,6 +999,7 @@ int main() {
   test_message_and_alert_expire();
   test_night_brightness_schedule();
   test_manual_night_switch();
+  test_brightness_entity_change_applies_without_flip();
   test_auto_cycle_clock_date();
   test_bitmap_test_screens();
   test_report_publishes_only_on_change();
