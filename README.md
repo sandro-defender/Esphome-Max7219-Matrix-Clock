@@ -1,178 +1,301 @@
 # ESPHome MAX7219 Matrix Clock
 
-An ESPHome configuration for an ESP8266/Wemos D1 Mini driving a daisy-chain of
-MAX7219 8×8 LED matrix modules. The project integrates with Home Assistant and
-is being upgraded toward a feature-rich ESPHome 2026.9.0 clock.
+A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
+ESP8266, with a full Home Assistant control surface, two bundled fonts, a
+built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
-## Current capabilities
+The firmware is distributed as small package modules. Your YAML stays tiny: it
+holds your credentials, a few substitutions and the package list.
 
-- Clock and date screens
-- 12-hour and 24-hour time formats
-- Configurable matrix brightness and display power
-- Optional blinking separator
-- Seconds display and progress-bar modes
-- Scrolling messages sent from Home Assistant
-- Module-grid and pixel-checkerboard test screens
-- Configurable chip count, rows, wiring style, rotation, and horizontal flip
-- Native API encryption, OTA support, fallback access point, and web controls
+## Features
 
-See [ROADMAP.md](ROADMAP.md) for the ordered implementation plan covering
-full-size seconds, slide-up digit animation, expanded Home Assistant controls,
-countdowns, diagnostics, encrypted OTA, and firmware-upload progress on the
-matrix.
+* **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
+  12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
+  progress bar, off), left/centre/right alignment.
+* **Two bundled fonts plus a built-in fallback** - Tiny5 (default, 46 px wide
+  `HH:MM:SS`), Press Start 2P (48 px), and a compact 5×7 bitmap font that always
+  fits and needs no download. Fonts are selected from Home Assistant and
+  compiled into the firmware; nothing is downloaded at runtime.
+* **Per-digit slide-up animation** - only digits whose value changed animate,
+  non-blocking and safe across `millis()` rollover.
+* **Messages and alerts** - scrolling or static text from Home Assistant with a
+  bounded length and duration, plus short static status notes.
+* **Countdown** - clamped 1 s to 59:59, with a completion message.
+* **Day/night brightness** - manual night mode or a configurable start/end hour
+  schedule.
+* **Automatic clock/date cycling** - optional, with a configurable interval.
+* **OTA feedback on the panel** - `OTA`, percentage and a progress bar during
+  the upload, `100%` on success, `ERROR` plus the error code on failure,
+  restored afterwards.
+* **Test patterns** - module-grid and pixel-checkerboard patterns for wiring and
+  orientation checks.
+* **Diagnostics** - display mode, OTA state, countdown remaining, Wi-Fi signal,
+  IP address, SSID, uptime, heap statistics, reset reason and connection status.
+* **Secure by default** - native API encryption, encrypted native OTA that
+  reuses the API key, no plaintext web-server upload endpoint.
 
-## Planned package layout
-
-The finished project will not require users to copy one large YAML file. A
-small device configuration will define local secrets and substitutions, then
-download modular package files directly from this repository with ESPHome's
-remote `packages` support. Package modules will separate the device base,
-network and OTA, display hardware, fonts, rendering/state, Home Assistant
-controls, actions, diagnostics, and OTA display.
-
-Release examples will pin both package files and font URLs to the same version
-tag. An `@main` example may be provided for development, but should not be the
-recommended stable installation path. Remote packages cannot look up a user's
-local secrets, so the small local configuration will pass secret-backed values
-through substitutions.
-
-The exact ready-to-copy example will be added when the modular package has
-passed configuration validation and a full firmware compile. Until then, use
-the checked-in configuration described below rather than an unfinished remote
-package example.
-
-## Bundled fonts
-
-The repository includes two pixel-style font families in [`fonts/`](fonts/):
-
-| Font | File | License | Intended use |
-|---|---|---|---|
-| Tiny5 | `fonts/tiny5/Tiny5-Regular.ttf` | SIL Open Font License 1.1 | Compact clock and status text |
-| Press Start 2P | `fonts/press-start-2p/PressStart2P-Regular.ttf` | SIL Open Font License 1.1 | Alternate clock/message style |
-
-Each font directory contains its license. ESPHome can fetch these files as web
-fonts from this repository during compilation. The planned Home Assistant font
-selector will switch between fonts already compiled into the firmware; the
-device will not download fonts at runtime. Glyph subsets and one-bit rendering
-will be used to protect ESP8266 flash and RAM headroom.
-
-## Default hardware
+## Hardware
 
 | Part | Default |
 |---|---|
-| Controller | Wemos D1 Mini / ESP8266 |
-| Display | Six MAX7219 8×8 modules in one row |
+| Controller | Wemos D1 Mini (ESP8266) |
+| Display | six MAX7219 8×8 modules in one row |
 | Resolution | 48×8 pixels |
 | Clock pin | D8 |
 | Data/MOSI pin | D6 |
 | Chip-select pin | D7 |
+| Panel supply | 5 V, common ground with the ESP8266 |
 
-The pin names and matrix layout are substitutions near the top of
-`esphome_Max7219-Matrix-Clock/max7219-clock.yaml`. Confirm them against your
-actual wiring before flashing.
-
-## Configuration
-
-Copy the example secrets file to `secrets.yaml` in the configuration directory
-and replace every placeholder:
+Change the board, pins, module count, rows, wiring style, rotation and flip
+through substitutions in your own YAML - no need to edit the packages:
 
 ```yaml
-wifi_ssid: "YOUR_WIFI_NETWORK"
-wifi_password: "YOUR_WIFI_PASSWORD"
-api_encryption_key: "YOUR_BASE64_32_BYTE_KEY"
-fallback_ap_password: "YOUR_STRONG_FALLBACK_PASSWORD"
+substitutions:
+  board: nodemcuv2            # any ESP8266 board id
+  matrix_chips: "12"          # 12 modules = 96 pixels wide
+  matrix_rows: "1"
+  matrix_wiring: snake        # or zigzag
+  matrix_rotate_chip: "0"     # 0, 90, 180, 270
+  matrix_flip_x: "false"
+  matrix_clk_pin: D8
+  matrix_mosi_pin: D6
+  matrix_cs_pin: D7
+  timezone: Europe/Berlin
 ```
-
-Never commit `secrets.yaml`. If the device is already paired with Home
-Assistant, preserve its existing API encryption key instead of generating a new
-one.
 
 ## Installation
 
-1. Install ESPHome 2026.9.0.
-2. Create the local `secrets.yaml` file.
-3. Confirm the board, pins, chip count, rows, wiring style, rotation, and flip
-   substitutions.
-4. Validate the YAML.
-5. Compile the complete firmware.
-6. Perform the first installation over USB when necessary.
-7. Add the device to Home Assistant through the ESPHome integration.
+1. Install ESPHome 2026.9.0 (`pip install -r requirements-validation.txt`).
+2. Copy `secrets.yaml.example` to `secrets.yaml` and fill in your values.
+   Keep the existing API key if the device is already paired with Home
+   Assistant.
+3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.1.0`) must be
+   a tag that exists in this repository - see `VALIDATION.md` for how the
+   release path is verified.
+4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
+5. `esphome run max7219-clock.yaml` - first flash over USB, later updates over
+   the air.
 
-For an already-installed device that uses an OTA password, follow ESPHome's
-official two-step migration before requiring OTA encryption. Removing an old
-OTA password too early can prevent the transitional upload.
+The example downloads the pinned package files and the font files directly from
+this repository; nothing else has to be copied locally.
+
+### Secrets
+
+```yaml
+wifi_ssid: "YourWiFiSSID"
+wifi_password: "YourWiFiPassword"
+api_encryption_key: "YOUR_BASE64_32_BYTE_KEY"        # esphome generate-encryption-key
+fallback_ap_password: "FallbackHotspotPassword"
+web_server_username: "admin"                        # optional web server
+web_server_password: "ChangeThisWebPassword"
+```
+
+`secrets.yaml` is git-ignored and must never be committed or copied into a
+package. Remote packages cannot resolve `!secret`, so your YAML resolves the
+values and passes them down as substitutions.
+
+### Local development
+
+```bash
+git clone https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
+cd Esphome-Max7219-Matrix-Clock
+cp secrets.yaml.example secrets.yaml     # then edit
+esphome config dev.yaml
+esphome compile dev.yaml
+```
+
+`dev.yaml` loads the same modules with `!include`, so no GitHub round trip is
+needed while working on the firmware.
 
 ## Home Assistant
 
-The configuration exposes display settings and API actions through the ESPHome
-integration. Available entities depend on the currently completed roadmap
-phase. Planned controls include display mode, brightness, time format, seconds,
-animation, countdown, day/night behavior, diagnostics, and test patterns.
+All entities appear automatically through the ESPHome integration.
 
-Parameterized operations such as scrolling a message or starting a countdown
-belong in native API actions. Ordinary persistent settings should use native
-Home Assistant entities instead.
+### Selects (configuration)
 
-## Agent development
+| Entity | Options |
+|---|---|
+| Screen | Clock, Date, Message, Module grid test, Pixel checkerboard |
+| Clock alignment | Left, Center, Right |
+| Time format | 24 hour, 12 hour |
+| Seconds display | Off, Digits, Bar |
+| Date format | DD.MM, MM/DD, DD/MM |
+| Clock font | Tiny5, Press Start 2P, Compact 5x7 |
+| Message scroll | Scroll, Static |
 
-AI agents must begin with [AGENTS.md](AGENTS.md) and follow the checkbox order
-in [ROADMAP.md](ROADMAP.md). Important rules include:
+### Numbers
 
-- Target ESPHome 2026.9.0 exactly.
-- Use official ESPHome documentation for framework behavior.
-- Keep the firmware modular and configurable through substitutions.
-- Make the stable install download version-pinned packages and fonts directly
-  from this repository.
-- Preserve existing user changes.
-- Never request or commit credentials.
-- Add regression coverage before behavioral changes.
-- Do not push firmware changes until tests, YAML validation, and a complete
-  firmware compile succeed.
+| Entity | Range | Meaning |
+|---|---|---|
+| Matrix brightness | 0-15 | day brightness |
+| Night brightness | 0-15 | used by night mode / schedule |
+| Animation duration | 0-2000 ms | 0 disables the slide |
+| Message scroll speed | 20-200 ms/px | scrolling speed |
+| Default message duration | 0-3600 s | used when an action passes 0 |
+| Countdown duration | 10-3599 s | used by the "Start countdown" button |
+| Screen cycle interval | 5-300 s | automatic clock/date cycling |
+| Night start hour | 0-23 | schedule start |
+| Night end hour | 0-23 | schedule end |
 
-## Validation expectations
+### Switches
 
-The completed project should provide a reproducible PowerShell validator that:
+| Entity | Effect |
+|---|---|
+| Matrix display | panel power |
+| Blinking colon | colon off on odd seconds |
+| Digit animation | enables the slide-up animation |
+| Automatic screen cycling | clocks/date alternate |
+| Night mode | force night brightness now |
+| Night schedule | use the start/end hours |
+| Display inversion | inverted panel (MAX7219 runtime API) |
 
-- Installs the pinned ESPHome version in an isolated environment
-- Runs repository regression tests
-- Validates a temporary copy of the YAML with test-only secrets
-- Optionally compiles the complete ESP8266 firmware
-- Never reads or changes production secrets
+### Buttons
 
-Consult `VALIDATION.md` when that validation tooling is present in the checked
-out revision.
+`Restart device`, `Return to clock`, `Clear message`, `Start countdown`,
+`Cancel countdown`, `Run module grid test`, `Run pixel test`,
+`Restore display defaults`.
+
+### Diagnostics (entity category: diagnostic)
+
+`Display mode`, `OTA state`, `Countdown remaining`, `OTA percent` (disabled by
+default), `Wi-Fi signal`, `Uptime`, `Free heap`, `Largest free block`,
+`Heap fragmentation`, `ESPHome version`, `IP address`, `Connected SSID`,
+`Reset reason`, `Device info`, `Status`.
+
+## API actions
+
+Developer tools → Actions (or automations) call:
+
+```yaml
+action: esphome.max7219_clock_show_message
+data:
+  message: "Dinner is ready"     # converted to upper case, max 47 characters
+  duration: 30                   # seconds, 0 = use "Default message duration"
+
+action: esphome.max7219_clock_clear_message
+action: esphome.max7219_clock_start_countdown
+data:
+  seconds: 600                   # clamped to 1..3599
+action: esphome.max7219_clock_cancel_countdown
+action: esphome.max7219_clock_show_status
+data:
+  note: "WASHING DONE"           # static, max 23 characters
+  duration: 20
+action: esphome.max7219_clock_get_status      # response with mode/OTA/countdown/heap/uptime
+```
+
+The v2.0 action names `show_message` and `clear_message` are unchanged; only
+their ESPHome service calls become `actions` in your automations.
+
+## Display behaviour
+
+The renderer decides what to show, in this priority order:
+
+1. **OTA** (highest) - `OTA`, percentage and progress bar while uploading,
+   `100%` on success, `ERROR <code>` on failure.
+2. **Alerts and messages** - short static notes, then scrolling/static messages.
+3. **Countdown** - `MM:SS` until it finishes, then a five second `DONE` note.
+4. **Selected screen** - clock, date or a test pattern.
+
+Clock layout degrades gracefully instead of clipping: full `HH:MM:SS` → `HH:MM`
+plus the seconds bar → built-in 5×7 font (always fits). If Home Assistant time
+is unavailable the SNTP fallback is used, and if no time is known at all the
+panel shows `--:--`.
+
+## OTA
+
+Native OTA is encrypted and reuses the API encryption key, so an already-paired
+device keeps working: copy the existing key into `secrets.yaml` instead of
+generating a new one. A password is deliberately **not** configured (ESPHome
+rejects password + encryption together). Version 2.0 had no OTA password, so no
+two-step migration is required; the same migration ESPHome documents for
+password-protected devices still applies if you are coming from an older
+configuration.
+
+Web-server OTA stays disabled (`ota: false` in `packages/web_server.yaml`), so
+there is no plaintext firmware upload endpoint next to the encrypted native OTA.
+
+## Validation
+
+```bash
+python tests/test_config.py      # offline contract tests + font measurements
+make -C tests test               # pure C++ renderer tests
+esphome config dev.yaml          # ESPHome 2026.9.0 validation
+esphome compile dev.yaml         # full ESP8266 firmware compile
+```
+
+* `./scripts/validate.ps1` (Windows) runs the same steps in a temporary
+  directory with fake secrets - your real `secrets.yaml` is never read.
+* `scripts/validate-release-offline.sh` validates the released example without
+  network access by emulating GitHub with a tagged local clone and the font host
+  with a local HTTP server.
+
+See [VALIDATION.md](VALIDATION.md) for the commands, the evidence collected
+while building these packages and the checks that need hardware.
 
 ## Security
 
-- Keep the device on a trusted, segmented local network.
-- Never expose the ESPHome web server directly to the internet.
-- Use native API encryption.
-- Prefer encrypted native OTA in ESPHome 2026.9.0.
-- Disable regular web-server OTA when it would expose a plaintext upload path.
-- Add web-server authentication if web controls are retained on an untrusted
-  network.
+* Credentials only behind `!secret`, never inside a package; `secrets.yaml` is
+  git-ignored and `tests/test_config.py` fails on literal secrets.
+* Native API encryption and encrypted native OTA.
+* The web server (optional module) requires authentication and disables its
+  firmware upload endpoint.
+* Keep the device on a trusted, segmented network; never expose it directly to
+  the internet.
+* Diagnostics publish on change or once a minute at most, to keep API traffic
+  (and ESP8266 CPU) low.
 
 ## Troubleshooting
 
-- **Blank display:** verify power, ground, chip select, clock, data, display
-  power, and brightness.
-- **Modules appear reversed:** adjust the wiring style, rotation, or horizontal
-  flip substitutions and run the module-grid test.
-- **Wrong time:** confirm Home Assistant is connected and providing time.
-- **Clock does not fit:** the full `HH:MM:SS` design targets at least 48×8
-  pixels; narrower displays require a fallback layout.
-- **OTA fails after changing authentication:** restore the previous OTA
-  password/key configuration and follow the official migration sequence.
-- **Unexpected reboots:** inspect ESP8266 RAM/flash usage and reduce low-value
-  entities or web features if headroom is too small.
+* **Blank display** - check 5 V supply, ground, CS/CLK/DIN wiring, the display
+  power switch and brightness. Try "Run pixel test".
+* **Modules mirrored or swapped** - change `matrix_wiring`,
+  `matrix_rotate_chip` or `matrix_flip_x`, then run the module-grid test.
+* **Wrong time** - the clock follows Home Assistant and falls back to SNTP;
+  check the `timezone` substitution.
+* **Font unreadable** - Press Start 2P needs the whole 48 px for `HH:MM:SS`;
+  the renderer drops the seconds to the bar or falls back to the built-in font
+  when a font does not fit. Choose Tiny5 or "Compact 5x7" for a safer layout.
+* **OTA progress not visible** - the panel is updated directly from the OTA
+  callbacks; if the custom display lambda is bypassed by a hardware quirk the
+  upload still completes. Report it with your board details.
+* **Out of flash** - drop `packages/web_server.yaml` from the package list (and
+  delete it from `files:` in the release example) and rebuild.
+
+## Project layout
+
+```
+packages/       firmware modules (base, network, display, fonts, renderer, ...)
+fonts/          bundled fonts + licenses and their measurements
+examples/       release (pinned tag) and development (@main) user YAMLs
+tests/          offline contract tests and the C++ renderer tests
+scripts/        validate.ps1
+dev.yaml        local development entry point
+VALIDATION.md   how to validate, evidence, open hardware checks
+ROADMAP.md      implementation contract and remaining work
+```
+
+## Remaining hardware-only verification
+
+The package configuration validates and generates C++ for ESPHome 2026.9.0 and
+the renderer is covered by host tests, but the following still needs a real
+device (see `VALIDATION.md` and `ROADMAP.md` for details):
+
+* full firmware compile with a reachable PlatformIO toolchain (not possible in
+  the sandbox used to prepare this release) and the resulting flash/RAM review;
+* on-panel readability of both fonts;
+* OTA progress visibility during a real transfer;
+* wiring/orientation checks with the built-in test patterns.
 
 ## References
 
-- [ESPHome 2026.9.0 release notes](https://esphome.io/changelog/2026.9.0/)
-- [MAX7219 Digit Display](https://esphome.io/components/display/max7219digit/)
-- [Native API](https://esphome.io/components/api/)
-- [OTA automations](https://esphome.io/components/ota/#ota-automations)
-- [ESPHome OTA encryption](https://esphome.io/components/ota/esphome/)
-- [ESPHome packages](https://esphome.io/components/packages/)
-- [ESPHome substitutions](https://esphome.io/components/substitutions/)
-- [ESPHome font renderer](https://esphome.io/components/font/)
+* [ESPHome 2026.9.0 release notes](https://esphome.io/changelog/2026.9.0/)
+* [MAX7219 Digit Display](https://esphome.io/components/display/max7219digit/)
+* [Native API](https://esphome.io/components/api/)
+* [OTA automations](https://esphome.io/components/ota/#ota-automations)
+* [ESPHome OTA encryption](https://esphome.io/components/ota/esphome/)
+* [Web Server](https://esphome.io/components/web_server/)
+* [Packages](https://esphome.io/components/packages/)
+* [Substitutions](https://esphome.io/components/substitutions/)
+* [Font Renderer](https://esphome.io/components/font/)

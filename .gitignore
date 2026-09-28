@@ -5,3 +5,13 @@ secrets.yaml
 **/.esphome/
 build/
 **/build/
+
+# Validation tooling
+__pycache__/
+*.pyc
+.venv/
+venv/
+validation-tmp/
+
+# Compiled host test binary (make -C tests)
+tests/test_renderer
