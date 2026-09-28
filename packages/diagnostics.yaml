@@ -1,0 +1,86 @@
+# Diagnostics module.
+#
+# Everything here is entity_category: diagnostic and publishes slowly, so the
+# clock does not flood Home Assistant with API traffic on an ESP8266.
+
+debug:
+  update_interval: 60s
+
+text_sensor:
+  # Official components -----------------------------------------------------
+  - platform: version
+    name: "ESPHome version"
+    hide_timestamp: true
+    entity_category: diagnostic
+
+  - platform: debug
+    device:
+      name: "Device info"
+    reset_reason:
+      name: "Reset reason"
+
+  - platform: wifi_info
+    ip_address:
+      name: "IP address"
+    ssid:
+      name: "Connected SSID"
+
+  # Renderer state (published by the display lambda, no polling) -----------
+  - platform: template
+    name: "Display mode"
+    id: display_mode
+    entity_category: diagnostic
+    update_interval: never
+
+  - platform: template
+    name: "OTA state"
+    id: ota_state
+    entity_category: diagnostic
+    update_interval: never
+
+sensor:
+  # Official components -----------------------------------------------------
+  - platform: wifi_signal
+    name: "Wi-Fi signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: "Uptime"
+    id: uptime_sensor
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: debug
+    free:
+      name: "Free heap"
+      id: free_heap
+    block:
+      name: "Largest free block"
+    fragmentation:
+      name: "Heap fragmentation"
+
+  # Renderer state (published by the display lambda, no polling) -----------
+  - platform: template
+    name: "Countdown remaining"
+    id: countdown_remaining
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    icon: mdi:timer-outline
+    entity_category: diagnostic
+    update_interval: never
+
+  - platform: template
+    name: "OTA percent"
+    id: ota_percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: mdi:upload
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: never
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+    entity_category: diagnostic

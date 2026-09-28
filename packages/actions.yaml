@@ -1,0 +1,114 @@
+# API actions module (modern `api.actions`, ESPHome 2026.9 syntax).
+#
+# Every action validates and clamps its input before it reaches the renderer.
+# Descriptions stay short on purpose: ESP8266 allows at most 384 bytes of
+# name/variable/description/example text per action.
+#
+# Actions keep the v2.0 names (show_message, clear_message) so Home Assistant
+# automations only need to change `services` to `actions` in their YAML.
+
+script:
+  # Shared by the action and the "Clear message" button.
+  - id: clear_message_action
+    mode: restart
+    then:
+      - lambda: |-
+          max7219_clock::state.clear_message();
+          max7219_clock::state.clear_alert();
+      - select.set:
+          id: screen_mode
+          option: "Clock"
+      - component.update: matrix
+
+  # Shared by the action and the "Start countdown" button.
+  - id: start_countdown_action
+    mode: restart
+    then:
+      - lambda: |-
+          const uint32_t seconds =
+              max7219_clock::clamp_u32((int) id(countdown_duration).state, 1, 3599);
+          max7219_clock::state.start_countdown(seconds, millis());
+      - component.update: matrix
+
+api:
+  actions:
+    - action: show_message
+      description: "Scroll a text message"
+      variables:
+        message: string
+        duration: int
+      then:
+        - lambda: |-
+            // Fixed buffer: no std::string, no <cctype>, no heap churn.
+            char text[48];
+            const size_t length = message.size() > 47 ? 47 : message.size();
+            for (size_t i = 0; i < length; i++) text[i] = message[i];
+            text[length] = '\0';
+            max7219_clock::upper_ascii(text);
+            int duration_s = duration;
+            if (duration_s <= 0) duration_s = (int) id(default_message_duration).state;
+            if (duration_s < 0) duration_s = 0;
+            if (duration_s > 3600) duration_s = 3600;
+            max7219_clock::state.set_message(text, (uint32_t) duration_s * 1000UL, millis());
+            max7219_clock::state.clear_alert();
+        - select.set:
+            id: screen_mode
+            option: "Message"
+        - component.update: matrix
+
+    - action: clear_message
+      description: "Stop the message screen"
+      then:
+        - script.execute: clear_message_action
+
+    - action: start_countdown
+      description: "Start a countdown"
+      variables:
+        seconds: int
+      then:
+        - lambda: |-
+            const uint32_t clamped = max7219_clock::clamp_u32(seconds, 1, 3599);
+            max7219_clock::state.start_countdown(clamped, millis());
+        - component.update: matrix
+
+    - action: cancel_countdown
+      description: "Cancel the countdown"
+      then:
+        - lambda: |-
+            max7219_clock::state.cancel_countdown();
+        - component.update: matrix
+
+    - action: show_status
+      description: "Show a short static note"
+      variables:
+        note: string
+        duration: int
+      then:
+        - lambda: |-
+            char text[24];
+            const size_t length = note.size() > 23 ? 23 : note.size();
+            for (size_t i = 0; i < length; i++) text[i] = note[i];
+            text[length] = '\0';
+            max7219_clock::upper_ascii(text);
+            int duration_s = duration;
+            if (duration_s <= 0) duration_s = (int) id(default_message_duration).state;
+            if (duration_s < 0) duration_s = 0;
+            if (duration_s > 3600) duration_s = 3600;
+            max7219_clock::state.set_alert(text, (uint32_t) duration_s * 1000UL, millis());
+        - component.update: matrix
+
+    - action: get_status
+      description: "Report current state"
+      then:
+        - api.respond:
+            data: !lambda |-
+              root["mode"] = id(display_mode).state;
+              root["screen"] = id(screen_mode).current_option();
+              root["ota_state"] = id(ota_state).state;
+              if (max7219_clock::is_nan(id(countdown_remaining).state)) {
+                root["countdown_remaining"] = -1;
+              } else {
+                root["countdown_remaining"] = (int) id(countdown_remaining).state;
+              }
+              root["free_heap"] = id(free_heap).state;
+              root["uptime"] = id(uptime_sensor).state;

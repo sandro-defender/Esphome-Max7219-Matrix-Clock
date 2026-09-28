@@ -1,0 +1,56 @@
+# Native OTA module: encrypted transfer plus the on-screen upload status.
+#
+# The transfer itself uses the existing API encryption key, so the key must not
+# be regenerated for an installed device (copy the current key into the new
+# secrets.yaml before flashing). A password is deliberately NOT configured:
+# ESPHome rejects password + encryption together.
+
+ota:
+  - platform: esphome
+    id: ota_component
+    port: ${ota_port}
+    encryption:
+      key: ${api_encryption_key}
+    # Phase 10: OTA feedback must not depend on the normal update loop, because
+    # the upload blocks the application loop. Each callback stores a few bytes
+    # of state and asks the MAX7219 to redraw immediately.
+    on_begin:
+      - lambda: |-
+          max7219_clock::state.display_power_before_ota = id(matrix_display_power).state;
+          max7219_clock::state.ota_state = max7219_clock::OTA_STARTING;
+          max7219_clock::state.ota_percent = 0;
+          max7219_clock::state.ota_error = 0;
+          // Make sure progress is visible even when the panel was switched off.
+          if (!id(matrix_display_power).state) {
+            id(matrix_display_power).turn_on();
+          }
+      - component.update: matrix
+    on_progress:
+      - lambda: |-
+          const uint8_t percent = max7219_clock::clamp_u8(x * 100.0f, 0, 100);
+          if (percent != max7219_clock::state.ota_percent) {
+            max7219_clock::state.ota_percent = percent;
+            max7219_clock::state.ota_state = max7219_clock::OTA_UPLOADING;
+            // Redraw only when the displayed integer percentage changes.
+            id(matrix).update();
+          }
+    on_end:
+      - lambda: |-
+          max7219_clock::state.ota_state = max7219_clock::OTA_SUCCESS;
+          max7219_clock::state.ota_percent = 100;
+      - component.update: matrix
+      - script.execute: ota_success_hold
+    on_error:
+      - lambda: |-
+          max7219_clock::state.ota_state = max7219_clock::OTA_ERROR;
+          max7219_clock::state.ota_error = x;
+      - component.update: matrix
+      - script.stop: ota_success_hold
+      - script.execute: ota_error_timeout
+    on_abort:
+      - lambda: |-
+          max7219_clock::state.ota_state = max7219_clock::OTA_ERROR;
+          max7219_clock::state.ota_error = 0;
+      - component.update: matrix
+      - script.stop: ota_success_hold
+      - script.execute: ota_error_timeout

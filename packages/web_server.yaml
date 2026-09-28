@@ -1,0 +1,25 @@
+# Optional web server module.
+#
+# Included by the release and development examples because a browser page is
+# the fastest way to check the clock without Home Assistant. Regular web-server
+# OTA is disabled (`ota: false`) so no plaintext firmware upload endpoint
+# exists next to the encrypted native OTA. Authentication is mandatory and the
+# credentials come from the user's secrets.yaml via substitutions.
+#
+# Remove this file from the `files:` list (or the local `packages:` list) if you
+# need the flash back; the clock works without it.
+
+web_server:
+  port: 80
+  # version 2 is the lighter built-in UI; version 3 serves the newer frontend.
+  version: 2
+  # Plaintext firmware upload over the web server is intentionally disabled.
+  ota: false
+  auth:
+    username: ${web_server_username}
+    password: ${web_server_password}
+    # Set explicitly: the default changes from basic to digest in 2027.1.0 and
+    # relying on the default logs a deprecation warning.
+    type: basic
+  include_internal: false
+  log: false

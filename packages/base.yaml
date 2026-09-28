@@ -1,0 +1,70 @@
+# Base device module: identity, target version, hardware and defaults.
+#
+# All values here are substitutions so the small user YAML can override them
+# without editing this file. Credentials are never stored here; they are passed
+# in from the user's YAML as substitutions backed by local !secret values.
+
+substitutions:
+  # ----- Identity ---------------------------------------------------------
+  device_name: max7219-clock
+  friendly_name: MAX7219 Matrix Clock
+  device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
+  # Version reported as the ESPHome project version. Keep this in sync with the
+  # tag that the release example pins.
+  project_version: "0.1.0"
+
+  # ----- Hardware ---------------------------------------------------------
+  board: d1_mini                # ESP8266 board (Wemos D1 mini by default)
+  log_level: INFO
+  # Local time zone used by both time sources. Change this to your zone.
+  timezone: Europe/Berlin
+  # Native OTA port (8266 is the ESP8266 default).
+  ota_port: "8266"
+
+  # ----- Matrix wiring (defaults: Wemos D1 mini, 6 modules in one row) ----
+  matrix_clk_pin: D8
+  matrix_mosi_pin: D6
+  matrix_cs_pin: D7
+  matrix_chips: "6"             # 6 modules x 8 pixels = 48 pixels wide
+  matrix_rows: "1"              # one row of modules = 8 pixels high
+  matrix_wiring: snake          # chip_lines_style: snake or zigzag
+  matrix_rotate_chip: "0"       # 0, 90, 180 or 270
+  matrix_flip_x: "false"
+  matrix_intensity: "3"         # boot brightness, 0..15
+  matrix_night_intensity: "1"   # night brightness, 0..15
+
+  # ----- Renderer timing --------------------------------------------------
+  display_update_interval: 150ms   # fast enough for smooth message scrolling
+  animation_ms: "250"              # slide-up duration, 0 disables the slide
+  message_ms_per_px: "60"          # scrolling speed in ms per pixel
+  screen_cycle_interval: "10"      # seconds between clock and date
+  default_message_duration: "15"   # seconds used when an action passes <= 0
+
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: ${device_comment}
+  min_version: "2026.9.0"
+  project:
+    name: sandro-defender.max7219-matrix-clock
+    version: ${project_version}
+  name_add_mac_suffix: false
+  on_boot:
+    # -100: after the preferences (restored entities) have been loaded.
+    priority: -100
+    then:
+      - lambda: |-
+          // Apply the restored runtime settings to the hardware once at boot.
+          const uint8_t brightness = max7219_clock::clamp_u8(id(matrix_brightness).state, 0, 15);
+          id(matrix).intensity(brightness);
+          id(matrix).turn_on_off(id(matrix_display_power).state);
+      - component.update: matrix
+
+esp8266:
+  board: ${board}
+  # Required so template numbers/selects/switches can restore their values.
+  restore_from_flash: true
+
+logger:
+  level: ${log_level}

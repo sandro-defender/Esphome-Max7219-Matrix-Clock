@@ -1,0 +1,112 @@
+# Display hardware module: SPI bus, MAX7219 panel and the renderer bridge.
+#
+# The lambda stays deliberately small and allocation free: it copies entity
+# states into a Frame, hands it to the pure renderer and publishes the small
+# set of values the renderer reports as changed.
+
+spi:
+  clk_pin: ${matrix_clk_pin}
+  mosi_pin: ${matrix_mosi_pin}
+
+display:
+  - platform: max7219digit
+    id: matrix
+    cs_pin: ${matrix_cs_pin}
+    num_chips: ${matrix_chips}
+    num_chip_lines: ${matrix_rows}
+    chip_lines_style: ${matrix_wiring}
+    rotate_chip: ${matrix_rotate_chip}
+    flip_x: ${matrix_flip_x}
+    intensity: ${matrix_intensity}
+    # The renderer owns scrolling and animation; the component's own scrolling
+    # must stay off so pixels are never moved behind the state machine's back.
+    scroll_enable: false
+    update_interval: ${display_update_interval}
+    lambda: |-
+      const uint32_t now_ms = millis();
+
+      // ----- Frame: time source (Home Assistant, then SNTP) ---------------
+      max7219_clock::Frame frame;
+      frame.now_ms = now_ms;
+      ESPTime time_now = id(home_time).now();
+      if (!time_now.is_valid()) {
+        time_now = id(sntp_time).now();
+      }
+      frame.time_valid = time_now.is_valid();
+      if (frame.time_valid) {
+        frame.hour = time_now.hour;
+        frame.minute = time_now.minute;
+        frame.second = time_now.second;
+        frame.day = time_now.day_of_month;
+        frame.month = time_now.month;
+      }
+
+      // ----- Frame: durable preferences (restored entities) ---------------
+      frame.screen = max7219_clock::screen_from_option(id(screen_mode).current_option());
+      frame.alignment = max7219_clock::alignment_from_option(id(clock_alignment).current_option());
+      frame.seconds_mode = max7219_clock::seconds_from_option(id(seconds_display).current_option());
+      frame.date_format = max7219_clock::date_format_from_option(id(date_format).current_option());
+      frame.use_12h = id(time_format).current_option() == "12 hour";
+      frame.blink_colon = id(clock_blink).state;
+      frame.animate = id(clock_animate).state;
+      frame.animation_ms = max7219_clock::clamp_u32((int) id(animation_duration).state, 0, 2000);
+      frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
+      frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
+      frame.night_manual = id(night_mode).state;
+      frame.night_schedule = id(night_schedule_enabled).state;
+      frame.night_start_hour = (int) id(night_start_hour).state;
+      frame.night_end_hour = (int) id(night_end_hour).state;
+      frame.brightness_day = id(matrix_brightness).state;
+      frame.brightness_night = id(night_brightness).state;
+      frame.auto_cycle = id(auto_cycle).state;
+      frame.cycle_interval_s = (uint32_t) id(screen_cycle_interval).state;
+
+      // ----- Draw ----------------------------------------------------------
+      max7219_clock::DisplayCanvas canvas(it);
+      max7219_clock::SourceFont tiny5_font(font_tiny5_source, &it);
+      max7219_clock::SourceFont ps2p_font(font_ps2p_source, &it);
+      max7219_clock::BuiltinFont builtin_font;
+      // StringRef: a view on the codegen literals, so no per-frame allocation.
+      const StringRef font_option = id(clock_font).current_option();
+      max7219_clock::GlyphFont &selected =
+          font_option == "Press Start 2P" ? static_cast<max7219_clock::GlyphFont &>(ps2p_font)
+          : font_option == "Tiny5"        ? static_cast<max7219_clock::GlyphFont &>(tiny5_font)
+                                          : static_cast<max7219_clock::GlyphFont &>(builtin_font);
+      max7219_clock::render(canvas, selected, builtin_font, frame, max7219_clock::report);
+
+      // ----- Publish only what changed (keeps API traffic low) ------------
+      if (max7219_clock::report.mode_changed) {
+        id(display_mode).publish_state(max7219_clock::report.mode_name);
+        switch (max7219_clock::report.mode) {
+          case max7219_clock::MODE_CLOCK:
+          case max7219_clock::MODE_DATE:
+          case max7219_clock::MODE_GRID_TEST:
+          case max7219_clock::MODE_PIXEL_TEST:
+            id(screen_mode).publish_state(
+                max7219_clock::option_for_screen(max7219_clock::screen_from_mode(max7219_clock::report.mode)));
+            break;
+          default:
+            break;
+        }
+      }
+      if (max7219_clock::report.ota_state_changed) {
+        id(ota_state).publish_state(max7219_clock::report.ota_state_name);
+      }
+      if (max7219_clock::report.percent_changed) {
+        id(ota_percent).publish_state(max7219_clock::report.percent);
+      }
+      if (max7219_clock::report.remaining_changed) {
+        if (max7219_clock::report.remaining_s < 0) {
+          id(countdown_remaining).publish_state(NAN);
+        } else {
+          id(countdown_remaining).publish_state(max7219_clock::report.remaining_s);
+        }
+      }
+      if (max7219_clock::report.brightness_changed) {
+        id(matrix).intensity(max7219_clock::clamp_u8(max7219_clock::report.brightness, 0, 15));
+      }
+      if (max7219_clock::report.screen_changed) {
+        id(screen_mode).publish_state(
+            max7219_clock::screen_from_mode(max7219_clock::report.screen) == max7219_clock::SCREEN_DATE ? "Date"
+                                                                                                        : "Clock");
+      }

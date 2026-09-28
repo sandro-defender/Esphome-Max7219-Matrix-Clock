@@ -1,0 +1,39 @@
+# Network, API and time module.
+#
+# Credentials arrive as substitutions from the user's YAML; an ESPHome remote
+# package cannot resolve !secret itself. Never put a real credential in here.
+
+substitutions:
+  # SSID of the clock's own fallback hotspot (not a credential).
+  fallback_ap_ssid: MAX7219 Clock Fallback
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  # A fallback access point keeps the clock reachable if the network is gone.
+  ap:
+    ssid: ${fallback_ap_ssid}
+    password: ${fallback_ap_password}
+    ap_timeout: 15min
+  reboot_timeout: 15min
+  power_save_mode: none
+
+api:
+  encryption:
+    key: ${api_encryption_key}
+  reboot_timeout: 15min
+
+# Two time sources: Home Assistant is authoritative while it is connected, SNTP
+# keeps the clock running when Home Assistant is not. The renderer falls back
+# to the SNTP time (and then to a "--:--" placeholder) transparently.
+time:
+  - platform: homeassistant
+    id: home_time
+    timezone: ${timezone}
+  - platform: sntp
+    id: sntp_time
+    timezone: ${timezone}
+    servers:
+      - 0.pool.ntp.org
+      - 1.pool.ntp.org
+    update_interval: 1h

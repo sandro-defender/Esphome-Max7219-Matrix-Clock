@@ -1,0 +1,36 @@
+# DEVELOPMENT EXAMPLE - follows the @main branch, do not use for releases.
+#
+# This file exists so contributors can test the published package layout
+# against the current main branch. It downloads the same package files as
+# examples/release.yaml, but without pinning, so it can change (or break) at
+# any time.
+#
+# For a stable device use examples/release.yaml with a version tag instead.
+
+substitutions:
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  api_encryption_key: !secret api_encryption_key
+  fallback_ap_password: !secret fallback_ap_password
+  web_server_username: !secret web_server_username
+  web_server_password: !secret web_server_password
+
+  # Informational only: the @main branch is not a tag.
+  project_ref: "main"
+
+packages:
+  clock:
+    url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
+    ref: main
+    refresh: 0s        # always refresh while developing the packages
+    files:
+      - packages/base.yaml
+      - packages/network.yaml
+      - packages/renderer.yaml
+      - packages/display.yaml
+      - packages/fonts_web.yaml
+      - packages/controls.yaml
+      - packages/actions.yaml
+      - packages/diagnostics.yaml
+      - packages/ota_ui.yaml
+      - packages/web_server.yaml
