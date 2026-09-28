@@ -437,7 +437,7 @@ class ConfigContractTests(unittest.TestCase):
         expected = {
             Path(f"packages/{name}") for name in local_names
         } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts_web.yaml")}
-        self.assertEqual(sorted(str(p) for p in expected), sorted(files))
+        self.assertEqual(sorted(p.as_posix() for p in expected), sorted(files))
 
     def test_font_packages_are_equivalent(self):
         web = load_yaml(PACKAGES / "fonts_web.yaml")["font"]
