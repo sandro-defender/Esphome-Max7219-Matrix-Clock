@@ -145,6 +145,11 @@ describe("font catalog", () => {
     expect(options).not.toContain("Eight Bit Dragon");
   });
 
+  it("uses the bold clock face by default", () => {
+    expect(DEFAULT_CONFIG.clockFont).toBe("silkscreen-bold");
+    expect(buildYaml(DEFAULT_CONFIG)).toContain('initial_option: "Silkscreen Bold"');
+  });
+
   it("offers exactly the options the firmware compiles", () => {
     expect([...FONT_CATALOG].map((spec) => spec.option).sort()).toEqual([...firmwareFontOptions()].sort());
   });

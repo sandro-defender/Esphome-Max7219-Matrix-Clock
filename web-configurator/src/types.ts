@@ -94,7 +94,7 @@ export const DEFAULT_CONFIG: Config = {
   blinkColon: true,
   digitAnimation: true,
   animationMs: 250,
-  clockFont: "tiny5",
+  clockFont: "silkscreen-bold",
   layoutPreview: "firmware",
 
   message: "",

@@ -104,7 +104,7 @@ select:
     optimistic: true
     restore_value: true
     update_interval: never
-    initial_option: "Tiny5"
+    initial_option: "Silkscreen Bold"
     # Every option must be a font compiled by packages/fonts_*.yaml; the web
     # configurator and the display lambda use the same names.
     options:

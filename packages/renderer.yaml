@@ -35,7 +35,7 @@ script:
           option: "DD.MM"
       - select.set:
           id: clock_font
-          option: "Tiny5"
+          option: "Silkscreen Bold"
       - select.set:
           id: message_scroll_behavior
           option: "Scroll"
