@@ -124,12 +124,11 @@ Removed: `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` and its
 
 ## 8. Commit and push status
 
-The Silkscreen replacement is committed locally on `main`. The tests, ESPHome
-2026.9.0 configuration validation, full ESP8266 compile and emulated `0.1.2`
-release path all pass. Publication of `main` and tag `0.1.2` is the remaining
-release step; `examples/release.yaml`, `packages/base.yaml`,
-`packages/fonts_web.yaml` and the configurator already pin that version and the
-contract tests enforce their agreement.
+The Silkscreen replacement is published on `main` and released as tag `0.1.2`.
+The tests, ESPHome 2026.9.0 configuration validation, full ESP8266 compile and
+emulated `0.1.2` release path all passed before publication.
+`examples/release.yaml`, `packages/base.yaml`, `packages/fonts_web.yaml` and the
+configurator pin the same version, enforced by the contract tests.
 
 No force-push was used at any point.
 
@@ -145,8 +144,8 @@ No force-push was used at any point.
 
 ## 10. Deviations and open items
 
-* Four roadmap checkboxes remain unchecked: optional per-font size deltas, the
-  real-device OTA upload test, the push gate and `HEAD == origin/main`.
+* Two roadmap checkboxes remain unchecked: optional per-font size deltas and
+  the real-device OTA upload test.
 * The release example uses the explicit remote-package form (`url` + `ref` +
   `files`) instead of the `github://` shorthand, because only the explicit form
   can pin a tag and load several files (including the two C++ headers) as one

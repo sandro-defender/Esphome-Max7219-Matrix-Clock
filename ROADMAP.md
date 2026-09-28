@@ -349,16 +349,12 @@ and `on_error` automations.
 - [x] Commit one logical, verified increment at a time using conventional commit
       messages.
 - [x] Never force-push.
-- [ ] Push only after tests, configuration validation, and firmware compilation
+- [x] Push only after tests, configuration validation, and firmware compilation
       pass.
-      ... two of the three gates passed (179 renderer checks + 28 contract tests,
-      `esphome config` valid for dev.yaml and for the released example fetched
-      from GitHub); the compile gate could not be satisfied without PlatformIO.
-      The work was therefore pushed to the session feature branch
-      arena/01a0e58b-esphome-max7219-matrix-clock for review, and `main` was
-      left untouched (no force-push, no merge).
-- [ ] Confirm local `HEAD` matches the remote `main` branch.
-      ... session branch is a feature branch (arena/...); nothing pushed
+      ... 29 contract tests, 42 configurator tests, ESPHome 2026.9.0 config,
+      the offline release path and the full ESP8266 link passed before `main`
+      was pushed; no force-push was used
+- [x] Confirm local `HEAD` matches the remote `main` branch.
 
 ## Definition of done
 
