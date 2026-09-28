@@ -712,6 +712,16 @@ class SecretsExampleFormatTests(unittest.TestCase):
         decoded = base64.b64decode(value, validate=True)
         self.assertEqual(32, len(decoded))
 
+    def test_validation_key_fixture_is_nonzero(self):
+        """ESPHome 2026.9 rejects the formerly used all-zero dummy key."""
+        script = read(REPO / "scripts" / "validate.ps1")
+        match = re.search(r"\[byte\[\]\]\((\d+)\.\.(\d+)\)", script)
+        self.assertIsNotNone(match, "validation script must use explicit dummy bytes")
+        start, end = (int(value) for value in match.groups())
+        dummy = bytes(range(start, end + 1))
+        self.assertEqual(32, len(dummy))
+        self.assertNotEqual(bytes(32), dummy)
+
 
 if __name__ == "__main__":
     os.chdir(REPO)

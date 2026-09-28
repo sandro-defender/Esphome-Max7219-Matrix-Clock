@@ -16,7 +16,7 @@
 #          examples/release.yaml, so the script fails when the pin is stale)
 #   --keep keep the temporary directory for inspection
 #
-# Exit code 0 means: packages fetched at the pinned tag, both web fonts
+# Exit code 0 means: packages fetched at the pinned tag, all three web fonts
 # downloaded, config valid, C++ generated with the C++ headers included.
 
 set -euo pipefail
@@ -46,9 +46,9 @@ echo "working dir: $WORK"
 # 1. Snapshot of the working tree as a tagged git repository.
 mkdir -p "$WORK/repo" "$WORK/config"
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --exclude '.git' --exclude '.esphome' --exclude '__pycache__' "$REPO_ROOT/" "$WORK/repo/"
+  rsync -a --exclude '.git' --exclude '.esphome' --exclude '.tmp' --exclude '__pycache__' "$REPO_ROOT/" "$WORK/repo/"
 else
-  tar --exclude='.git' --exclude='.esphome' --exclude='__pycache__' -C "$REPO_ROOT" -cf - . | tar -C "$WORK/repo" -xf -
+  tar --exclude='.git' --exclude='.esphome' --exclude='.tmp' --exclude='__pycache__' -C "$REPO_ROOT" -cf - . | tar -C "$WORK/repo" -xf -
 fi
 git -C "$WORK/repo" init -q .
 git -C "$WORK/repo" add -A
@@ -112,7 +112,7 @@ grep -q '#include "max7219_clock_esphome.h"' "$MAIN_CPP" || { echo "FAILED: rend
   || { echo "FAILED: package headers not copied into the build"; exit 1; }
 
 FONTS=$(find "$WORK/config/.esphome/font" -name font.ttf 2>/dev/null | wc -l | tr -d ' ')
-[[ "$FONTS" -ge 2 ]] || { echo "FAILED: web fonts not downloaded"; exit 1; }
+[[ "$FONTS" -ge 3 ]] || { echo "FAILED: all three web fonts were not downloaded"; exit 1; }
 
 echo
 echo "RESULT: release path OK (tag $REF)"

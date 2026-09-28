@@ -77,8 +77,9 @@ function Invoke-ValidationStep {
 
 function New-FakeSecrets {
     param([string]$Path)
-    # 32 zero bytes, base64 encoded: a valid *shape*, never a real key.
-    $key = [Convert]::ToBase64String((New-Object byte[] 32))
+    # Deterministic non-zero dummy bytes: accepted by ESPHome 2026.9.0, but
+    # obviously not a real deployment secret.
+    $key = [Convert]::ToBase64String([byte[]](1..32))
     @(
         'wifi_ssid: "ValidationSSID"'
         'wifi_password: "ValidationPassword123"'
@@ -94,7 +95,7 @@ Write-Host "Working dir: $workDir"
 
 try {
     New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-    foreach ($item in @("packages", "fonts", "tests", "examples", "dev.yaml", "secrets.yaml.example", "requirements-validation.txt", ".gitignore", "README.md", "VALIDATION.md")) {
+    foreach ($item in @("packages", "fonts", "tests", "scripts", "examples", "dev.yaml", "secrets.yaml.example", "requirements-validation.txt", ".gitignore", "README.md", "VALIDATION.md")) {
         Copy-Item -LiteralPath (Join-Path $repoRoot $item) -Destination $workDir -Recurse -Force
     }
     New-FakeSecrets -Path (Join-Path $workDir "secrets.yaml")
