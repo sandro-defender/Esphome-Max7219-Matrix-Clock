@@ -1,15 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MatrixCanvas } from "./MatrixCanvas";
 import { LEDS } from "./leds";
 import { normalizeMessage } from "./fonts";
+import { FONT_CATALOG, fitForPanel, fontSpec } from "./fontCatalog";
 import { renderScene } from "./render";
-import type { Config } from "./types";
+import { SCREENS, type Config } from "./types";
 import { cn } from "./utils/cn";
 
-const SAMPLES = ["00:00:00", "BLOOD", "WARNING", "DOOR OPEN", "TEA READY", "GOOD NIGHT"];
+const SAMPLES = ["DOOR OPEN", "TEA READY", "GOOD NIGHT", "BLOOD", "WARNING"];
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
+}
+
+/** "HH:MM[:SS]" freezes the preview; an empty value follows the real clock. */
+function previewDate(value: string, fallback: Date): Date {
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value.trim());
+  if (!match) return fallback;
+  const date = new Date(fallback);
+  const hours = Math.min(23, Math.max(0, Number(match[1])));
+  const minutes = Math.min(59, Math.max(0, Number(match[2])));
+  const seconds = Math.min(59, Math.max(0, Number(match[3] ?? 0)));
+  date.setHours(hours, minutes, seconds, 0);
+  return date;
 }
 
 export function LiveMark() {
@@ -27,49 +40,53 @@ export function LiveMark() {
   );
 }
 
-export function LiveStage({ cfg, onMessage }: { cfg: Config; onMessage: (value: string) => void }) {
-  const [now, setNow] = useState(() => new Date());
+interface LiveStageProps {
+  cfg: Config;
+  onMessage: (value: string) => void;
+  onPreviewTime: (value: string) => void;
+}
+
+export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
+  const [tick, setTick] = useState(() => new Date());
   const messageAt = useRef(Date.now());
   const prevMessage = useRef(cfg.message);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 50);
+    if (cfg.previewTime) return;
+    const id = window.setInterval(() => setTick(new Date()), 50);
     return () => window.clearInterval(id);
-  }, []);
+  }, [cfg.previewTime]);
 
   if (prevMessage.current !== cfg.message) {
     prevMessage.current = cfg.message;
     messageAt.current = Date.now();
   }
 
+  const now = useMemo(() => previewDate(cfg.previewTime, tick), [cfg.previewTime, tick]);
   const scene = renderScene(cfg, now, messageAt.current);
   const shown = normalizeMessage(cfg.message);
-  const second = now.getSeconds();
+  const spec = fontSpec(cfg.clockFont);
+  const fit = fitForPanel(scene.font, scene.geometry.width, Math.min(8, scene.geometry.height));
+  const led = LEDS[cfg.led];
+  const seconds = now.getSeconds();
   let hour = now.getHours();
   const suffix = cfg.hourFormat === "12-hour" ? (hour >= 12 ? "PM" : "AM") : "";
   if (cfg.hourFormat === "12-hour") {
     hour = hour % 12;
     if (hour === 0) hour = 12;
   }
-  const hourText = cfg.leadingZero || hour >= 10 ? pad(hour) : String(hour);
-  const alertFlash = cfg.includeAlert && cfg.previewAlert && Math.floor(now.getTime() / 250) % 2 === 0;
-  const inverted = cfg.displayPower && cfg.invert !== alertFlash;
-  const led = LEDS[cfg.led];
-  const holdLeft =
-    cfg.messageHold <= 0
-      ? "until cleared"
-      : `${Math.max(0, Math.ceil((cfg.messageHold * 1000 - (now.getTime() - messageAt.current)) / 1000))}s`;
+  const hourText = pad(hour);
 
   return (
     <section className="stage">
       <div className="kicker">
         <div>
           <h1>
-            Full-size hours, minutes, and seconds. <em>One digit per 8×8 module.</em>
+            Your matrix clock, <em>pixel by pixel</em>.
           </h1>
           <p>
-            Preview the 48×8 clock layout, bundled font choices, separators, seconds modes, messages, and matrix wiring before
-            downloading the one-file ESPHome installer.
+            The panel below is painted with the same glyph bitmaps, centring and fallback rules the firmware uses. Tune the
+            clock, pick a font, then download one small ESPHome installer.
           </p>
         </div>
       </div>
@@ -96,8 +113,8 @@ export function LiveStage({ cfg, onMessage }: { cfg: Config; onMessage: (value: 
           brightness={scene.effectiveBrightness}
           led={led}
           powered={cfg.displayPower}
-          inverted={inverted}
-          label={`${scene.summary} ${hourText}:${pad(now.getMinutes())}:${pad(second)}`}
+          inverted={cfg.invert}
+          label={`${scene.summary} ${hourText}:${pad(now.getMinutes())}:${pad(seconds)}`}
         />
         <div className="chassis-bottom">
           <span>Chain order under each module</span>
@@ -110,48 +127,71 @@ export function LiveStage({ cfg, onMessage }: { cfg: Config; onMessage: (value: 
       <div className="readout">
         <div className="big-time" aria-hidden="true">
           {hourText}
-          <span className={cn("colon", cfg.blinkColon && second % 2 === 1 && "dim")}>:</span>
+          <span className={cn("colon", cfg.blinkColon && seconds % 2 === 1 && "dim")}>:</span>
           {pad(now.getMinutes())}
-          <span className="secs">:{pad(second)}</span>
+          {cfg.secondsMode === "Digits" ? <span className="secs">:{pad(seconds)}</span> : null}
           {suffix ? <span className="secs"> {suffix}</span> : null}
         </div>
         <div className="summary">
           <h2>{scene.summary}</h2>
           <p>{scene.detail}</p>
-          {cfg.clockLayout === "segment" && cfg.chips >= 6 ? (
-            <div className="segment-badge-row" title="6 segments: exactly 1 number in each 8x8 module">
-              <span className="seg-tag">
-                Mod 0: <b>{hourText[0] ?? "0"}</b>
-              </span>
-              <span className="seg-tag">
-                Mod 1: <b>{hourText[1] ?? "0"}</b> <small style={{ color: "#ff2244" }}>:</small>
-              </span>
-              <span className="seg-tag">
-                Mod 2: <b>{pad(now.getMinutes())[0]}</b>
-              </span>
-              <span className="seg-tag">
-                Mod 3: <b>{pad(now.getMinutes())[1]}</b> <small style={{ color: "#ff2244" }}>:</small>
-              </span>
-              <span className="seg-tag">
-                Mod 4: <b>{pad(second)[0]}</b>
-              </span>
-              <span className="seg-tag">
-                Mod 5: <b>{pad(second)[1]}</b>
-              </span>
-            </div>
-          ) : null}
+          <div className="chip-row">
+            <span className="seg-tag">{spec.label}</span>
+            <span className="seg-tag">
+              HH:MM:SS <b>{fit.width}px</b>
+            </span>
+            <span className="seg-tag">
+              digits <b>{fit.digitHeight}px</b>
+            </span>
+            {scene.usedFallback ? <span className="seg-tag warn-tag">built-in fallback</span> : null}
+            {scene.nightNow ? <span className="seg-tag">night {cfg.nightBrightness}/15</span> : null}
+          </div>
         </div>
       </div>
 
-      <div className="ruler" aria-hidden="true">
-        {Array.from({ length: 60 }, (_, s) => (
-          <span key={s} className={cn(s <= second && "lit", s % 10 === 0 && "mark")} />
-        ))}
-      </div>
-      <div className="ruler-caption">
-        <span>Second counter · 0</span>
-        <span>{pad(second)} · gap every 10s</span>
-        <span>60</span>
+      {scene.notices.length > 0 ? (
+        <ul className="notices">
+          {scene.notices.map((notice) => (
+            <li key={notice.text} className={notice.level === "warn" ? "warn" : "info"}>
+              {notice.text}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className="preview-clock">
+        <label htmlFor="preview-time">
+          Preview time
+          <input
+            id="preview-time"
+            type="text"
+            inputMode="numeric"
+            placeholder="live"
+            value={cfg.previewTime}
+            spellCheck={false}
+            onChange={(event) => onPreviewTime(event.target.value)}
+          />
+        </label>
+        <div className="chips">
+          <button
+            type="button"
+            className={cn("chip", cfg.previewTime === "" && "on")}
+            onClick={() => onPreviewTime("")}
+          >
+            Live
+          </button>
+          {["00:00:00", "9:05:07", "23:59:59", "12:34:56"].map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={cn("chip", cfg.previewTime === value && "on")}
+              onClick={() => onPreviewTime(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+        <p className="hint">A frozen clock helps to check 12-hour mode, the leading digit and midnight in 12-hour format.</p>
       </div>
 
       <div className="composer">
@@ -179,16 +219,31 @@ export function LiveStage({ cfg, onMessage }: { cfg: Config; onMessage: (value: 
         </div>
         <p className="matrix-reads">
           Matrix reads: {shown || "—"} · {cfg.message.length}/120
-          {scene.messageActive ? ` · ${holdLeft}` : ""}
+          {scene.messageActive ? ` · ${scene.messageHoldLeft}s left` : ""}
         </p>
-        {!scene.geometry.valid ? (
-          <p className="warn">Module count must divide evenly into rows. The preview is holding a single row until it does.</p>
-        ) : null}
+      </div>
+
+      <div className="facts">
+        <span>
+          <b>{cfg.chips}</b> modules · {cfg.chips * 8}×{cfg.rows * 8} px
+        </span>
+        <span>
+          Screen <b>{cfg.autoCycle ? `Auto ${cfg.cycleInterval}s` : cfg.screen}</b>
+        </span>
+        <span>
+          Brightness <b>{scene.effectiveBrightness}/15</b>
+        </span>
+        <span>
+          Fonts compiled <b>{FONT_CATALOG.length}</b>
+        </span>
+        <span>
+          Screens <b>{SCREENS.length}</b> · {cfg.scrollMode.toLowerCase()} messages
+        </span>
       </div>
 
       <figure className="polaroid">
         <img src="./images/module-macro.jpg" alt="Macro of an 8 by 8 LED matrix with dots lit" />
-        <figcaption>8×8 MAX7219 modules. Six modules provide the default 48×8 full-clock layout.</figcaption>
+        <figcaption>Six 8×8 modules give the 48×8 panel the full-size HH:MM:SS layout.</figcaption>
       </figure>
     </section>
   );

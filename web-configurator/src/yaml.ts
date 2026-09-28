@@ -1,9 +1,11 @@
-import { deviceSlug, nodeId } from "./render";
-import type { Config } from "./types";
+import { fontSpec } from "./fontCatalog";
+import { deviceSlug, nodeId } from "./device";
+import { clampNumber, type Config } from "./types";
 
 const PROJECT_REPOSITORY = "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock";
 const PROJECT_REF = "0.1.0";
 
+/** Must stay identical to examples/release.yaml (checked by yaml.test.ts). */
 const PACKAGE_FILES = [
   "packages/base.yaml",
   "packages/network.yaml",
@@ -18,27 +20,11 @@ const PACKAGE_FILES = [
 ] as const;
 
 function boundedInteger(value: number, minimum: number, maximum: number): number {
-  return Math.max(minimum, Math.min(maximum, Math.round(value)));
+  return clampNumber(value, minimum, maximum);
 }
 
 function restoreMode(enabled: boolean): string {
   return enabled ? "RESTORE_DEFAULT_ON" : "RESTORE_DEFAULT_OFF";
-}
-
-function supportedScreen(screen: Config["screen"]): string {
-  if (["Date", "Message", "Module grid test", "Pixel checkerboard"].includes(screen)) return screen;
-  return "Clock";
-}
-
-function selectedFont(font: Config["clockFont"]): string {
-  if (font === "blood-bold") return "Press Start 2P";
-  if (font === "classic") return "Compact 5x7";
-  return "Tiny5";
-}
-
-function secondsDisplay(cfg: Config): string {
-  if (!cfg.showSeconds) return "Off";
-  return cfg.secondBar ? "Bar" : "Digits";
 }
 
 export function sanitizeFriendly(name: string): string {
@@ -56,6 +42,11 @@ export function sanitizeEntity(id: string): string {
   return id.trim().toLowerCase();
 }
 
+/** Home Assistant "Clock font" option for the selected preview font. */
+export function selectedFontOption(font: Config["clockFont"]): string {
+  return fontSpec(font).option;
+}
+
 export function entityMap(cfg: Config) {
   const node = nodeId(cfg.deviceName);
   return {
@@ -65,8 +56,11 @@ export function entityMap(cfg: Config) {
     alignment: `select.${node}_clock_alignment`,
     font: `select.${node}_clock_font`,
     seconds: `select.${node}_seconds_display`,
+    dateFormat: `select.${node}_date_format`,
+    scroll: `select.${node}_message_scroll`,
     brightness: `number.${node}_matrix_brightness`,
     duration: `number.${node}_default_message_duration`,
+    scrollSpeed: `number.${node}_message_scroll_speed`,
     mode: `text_sensor.${node}_display_mode`,
     ota: `text_sensor.${node}_ota_state`,
     showAction: `esphome.${node}_show_message`,
@@ -81,12 +75,16 @@ export function sampleAction(cfg: Config, message: string, hold = cfg.messageHol
   return `action: ${ids.showAction}\ndata:\n  message: "${safe}"\n  duration: ${boundedInteger(hold, 0, 3600)}`;
 }
 
+export function installCommand(cfg: Config): string {
+  return `esphome run ${deviceSlug(cfg.deviceName)}.yaml`;
+}
+
 export function buildYaml(cfg: Config): string {
   const deviceName = deviceSlug(cfg.deviceName);
   const friendlyName = sanitizeFriendly(cfg.friendlyName);
   const timezone = sanitizeTimezone(cfg.timezone);
-  const chips = boundedInteger(cfg.chips, 1, 64);
-  const rows = boundedInteger(cfg.rows, 1, 8);
+  const chips = boundedInteger(cfg.chips, 1, 16);
+  const rows = boundedInteger(cfg.rows, 1, 4);
   const packageFiles = PACKAGE_FILES.map((file) => `      - ${file}`).join("\n");
 
   return `# MAX7219 Matrix Clock — one-file installer
@@ -123,9 +121,9 @@ substitutions:
   # Boot defaults. Home Assistant can change these after installation.
   matrix_intensity: "${boundedInteger(cfg.brightness, 0, 15)}"
   matrix_night_intensity: "${boundedInteger(cfg.nightBrightness, 0, 15)}"
-  animation_ms: "250"
+  animation_ms: "${boundedInteger(cfg.animationMs, 0, 2000)}"
   message_ms_per_px: "${boundedInteger(cfg.scrollSpeed, 20, 200)}"
-  screen_cycle_interval: "${boundedInteger(cfg.pageDwell, 5, 300)}"
+  screen_cycle_interval: "${boundedInteger(cfg.cycleInterval, 5, 300)}"
   default_message_duration: "${boundedInteger(cfg.messageHold, 0, 3600)}"
 
 packages:
@@ -140,21 +138,33 @@ ${packageFiles}
 # take priority after the first boot.
 select:
   - id: !extend screen_mode
-    initial_option: "${supportedScreen(cfg.screen)}"
+    initial_option: "${cfg.screen}"
   - id: !extend clock_alignment
     initial_option: "${cfg.alignment}"
   - id: !extend time_format
     initial_option: "${cfg.hourFormat === "12-hour" ? "12 hour" : "24 hour"}"
   - id: !extend seconds_display
-    initial_option: "${secondsDisplay(cfg)}"
+    initial_option: "${cfg.secondsMode}"
+  - id: !extend date_format
+    initial_option: "${cfg.dateFormat}"
   - id: !extend clock_font
-    initial_option: "${selectedFont(cfg.clockFont)}"
+    initial_option: "${selectedFontOption(cfg.clockFont)}"
+  - id: !extend message_scroll_behavior
+    initial_option: "${cfg.scrollMode}"
 
 number:
   - id: !extend night_start_hour
     initial_value: ${boundedInteger(cfg.nightStart, 0, 23)}
   - id: !extend night_end_hour
     initial_value: ${boundedInteger(cfg.nightEnd, 0, 23)}
+  - id: !extend animation_duration
+    initial_value: ${boundedInteger(cfg.animationMs, 0, 2000)}
+  - id: !extend message_scroll_speed
+    initial_value: ${boundedInteger(cfg.scrollSpeed, 20, 200)}
+  - id: !extend screen_cycle_interval
+    initial_value: ${boundedInteger(cfg.cycleInterval, 5, 300)}
+  - id: !extend default_message_duration
+    initial_value: ${boundedInteger(cfg.messageHold, 0, 3600)}
 
 switch:
   - id: !extend matrix_display_power
@@ -162,9 +172,9 @@ switch:
   - id: !extend clock_blink
     restore_mode: ${restoreMode(cfg.blinkColon)}
   - id: !extend clock_animate
-    restore_mode: ${restoreMode(cfg.bloodDrips)}
+    restore_mode: ${restoreMode(cfg.digitAnimation)}
   - id: !extend auto_cycle
-    restore_mode: ${restoreMode(cfg.screen === "Auto")}
+    restore_mode: ${restoreMode(cfg.autoCycle)}
   - id: !extend night_schedule_enabled
     restore_mode: ${restoreMode(cfg.nightDim)}
   - id: !extend display_inversion

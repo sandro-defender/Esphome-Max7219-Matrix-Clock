@@ -12,6 +12,7 @@ YAML:
   * ESP8266 action-string budget (384 bytes per action)
   * credentials only behind !secret, secrets.yaml untracked
   * release example pinning (tag, not @main) and font pinning consistency
+  * every font is selectable in Home Assistant and wired into the display
   * every font still fits "HH:MM:SS" on the default 48x8 matrix
   * the pure C++ renderer unit tests, when a compiler is available
 
@@ -121,6 +122,24 @@ REQUIRED_ACTIONS = {
     "show_status": {"note": "string", "duration": "int"},
     "get_status": {},
 }
+
+# Clock font select option for every compiled font. Adding a font without
+# teaching the select, the display lambda and the web configurator about it is
+# the most likely way to ship a font nobody can choose.
+FONT_OPTION_BY_ID = {
+    "font_tiny5_source": "Tiny5",
+    "font_ps2p_source": "Press Start 2P",
+    "font_matrix_bold_source": "Matrix Bold",
+    "font_8bitdragon_source": "Eight Bit Dragon",
+}
+
+# Everything the renderer can print on the clock, date, countdown, message and
+# OTA screens. A font that is missing one of these draws ESPHome's placeholder
+# box at runtime.
+FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+# Height of one 8x8 module row; digits must never be taller than the panel.
+MATRIX_ROW_HEIGHT = 8
 
 # Values that are allowed to appear as literal credentials in tracked files.
 PLACEHOLDER_PATTERNS = [
@@ -481,6 +500,86 @@ class ConfigContractTests(unittest.TestCase):
                     DEFAULT_MATRIX_WIDTH,
                     f"{entry['id']} renders '{clock_text}' {width}px wide",
                 )
+
+    def test_font_glyphs_cover_every_compiled_character(self):
+        """The compiled glyph set must contain every character we can print."""
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]:
+            declared = "".join(entry["glyphs"])
+            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+            for char in FONT_REQUIRED_GLYPHS:
+                self.assertIn(
+                    char,
+                    declared,
+                    f"{entry['id']} does not compile '{char}'",
+                )
+                self.assertNotEqual(
+                    face.get_char_index(ord(char)),
+                    0,
+                    f"{entry['id']} has no '{char}' glyph in its source file",
+                )
+
+    def test_font_ink_is_not_taller_than_the_matrix(self):
+        """Digits taller than the panel would be clipped on the real display.
+
+        FreeType hinting can move an edge by a pixel, so this is a coarse
+        guard: a font that needs a 9th row is rejected, a borderline 8 px face
+        is still allowed.
+        """
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]:
+            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+            face.set_pixel_sizes(entry["size"], 0)
+            for char in "0123456789:-":
+                face.load_char(ord(char), freetype.FT_LOAD_RENDER)
+                self.assertLessEqual(
+                    face.glyph.bitmap.rows,
+                    MATRIX_ROW_HEIGHT,
+                    f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
+                )
+
+    def test_every_compiled_font_is_selectable_and_wired(self):
+        fonts = load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+        controls = load_yaml(PACKAGES / "controls.yaml")
+        clock_font = next(
+            entry for entry in controls["select"] if entry["name"] == "Clock font"
+        )
+        options = clock_font["options"]
+        display = read(PACKAGES / "display.yaml")
+
+        for entry in fonts:
+            self.assertIn(
+                entry["id"],
+                FONT_OPTION_BY_ID,
+                f"{entry['id']} has no Clock font select option; add it to FONT_OPTION_BY_ID",
+            )
+            option = FONT_OPTION_BY_ID[entry["id"]]
+            self.assertIn(option, options, f"'{option}' is missing from the Clock font select")
+            self.assertIn(
+                entry["id"],
+                display,
+                f"{entry['id']} is never instantiated in display.yaml",
+            )
+            self.assertIn(
+                f'font_option == "{option}"',
+                display,
+                f"display.yaml does not select the '{option}' font",
+            )
+
+        self.assertEqual(
+            sorted([*FONT_OPTION_BY_ID.values(), "Compact 5x7"]),
+            sorted(options),
+        )
+        # "Compact 5x7" is the built-in fallback and stays the last option.
+        self.assertEqual(options[-1], "Compact 5x7")
 
     # ------------------------------------------------------------------ #
     # Credentials
