@@ -106,6 +106,9 @@ font source instead of requiring users to copy fonts beside their YAML.
 
 - [x] Add Tiny5 and Press Start 2P source files under `fonts/` with their SIL
       Open Font License files.
+- [x] Add Matrix Bold and Eight Bit Dragon to the same pipeline (license kept,
+      measured size 10 / 7, selectable, wired into the display lambda, covered
+      by the font contract tests and the configurator preview).
 - [x] Reference fonts with explicit `type: web` URLs under
       `https://raw.githubusercontent.com/sandro-defender/Esphome-Max7219-Matrix-Clock/<tag>/fonts/...`.
 - [x] Pin production font URLs to the same release tag as the package; do not
@@ -123,14 +126,29 @@ font source instead of requiring users to copy fonts beside their YAML.
       spaces, and required status letters.
 - [x] Use `bpp: 1` unless measurements justify a larger value.
 - [x] Verify every font fits full-size `HH:MM:SS`, remains readable at 8 pixels
-      ... width measured with ESPHome's own pt_to_px() metrics (Tiny5 46 px, Press Start 2P 48 px) and rasterised glyphs inspected; on-panel confirmation is a hardware item
+      ... widths measured with ESPHome's own pt_to_px() metrics (Tiny5 46 px, Press Start 2P 48 px, Matrix Bold 40 px, Eight Bit Dragon 36 px) and rasterised glyphs inspected; on-panel confirmation is a hardware item
       high, and works with per-digit slide-up animation.
 - [x] Test missing glyphs, metrics, clipping, alignment, and fallback behavior.
+      ... `test_font_glyphs_cover_every_compiled_character`, `test_font_ink_is_not_taller_than_the_matrix` and `test_every_compiled_font_is_selectable_and_wired` in tests/test_config.py
 - [ ] Record firmware size for each enabled font and remove low-value choices
       ... blocked: needs a full compile (PlatformIO registry unreachable in the build environment)
       if ESP8266 headroom becomes unsafe.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and
       the steps for adding another font.
+
+### Phase 4a — Web configurator preview parity
+
+- [x] Rasterise the repository fonts for the browser instead of faking faces
+      with bitmap stand-ins (`web-configurator/scripts/generate_glyphs.py` →
+      `src/glyphs.generated.ts`, driven by `packages/fonts_local.yaml`).
+- [x] Mirror the renderer in the preview: same text formats, same
+      centring (`box_top`), same fallback chain, same marquee, same seconds bar.
+- [x] Remove preview-only fiction (status/temperature screens, split rows, the
+      leading-zero and interrupt switches) that the firmware does not have.
+- [x] Map every remaining control to a substitution or a restored entity.
+- [x] Persist settings in the browser and support shareable, validated links.
+- [x] Test the configurator: 40 Vitest checks, including a cross-check that the
+      font picker offers exactly the options `packages/controls.yaml` compiles.
 
 ## Phase 5 — Make display state explicit
 
@@ -327,7 +345,7 @@ and `on_error` automations.
 - [x] Never force-push.
 - [ ] Push only after tests, configuration validation, and firmware compilation
       pass.
-      ... two of the three gates passed (168 renderer checks + 25 contract tests,
+      ... two of the three gates passed (179 renderer checks + 28 contract tests,
       `esphome config` valid for dev.yaml and for the released example fetched
       from GitHub); the compile gate could not be satisfied without PlatformIO.
       The work was therefore pushed to the session feature branch

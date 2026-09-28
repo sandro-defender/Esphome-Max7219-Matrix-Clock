@@ -1,7 +1,25 @@
-import { BLOOD_BOLD_5X7, BLOOD_DRIP_5X7, DIGITS_5X7, FONT_3X5, glyphIndex, normalizeMessage, textWidth3 } from "./fonts";
+import { fitForPanel, fontSpec, previewFont, type FontFit } from "./fontCatalog";
+import {
+  alignStart,
+  BUILTIN_FONT,
+  drawTextLine,
+  normalizeMessage,
+  setPixel,
+  type PreviewFont,
+} from "./fonts";
 import type { Config } from "./types";
 
-export type Page = "clock" | "date" | "message" | "status" | "temp" | "grid" | "checker" | "off";
+export { deviceSlug, nodeId } from "./device";
+
+/**
+ * Live preview of what packages/max7219_clock_renderer.h draws.
+ *
+ * The rules below follow the firmware one by one: the same text formats, the
+ * same font fallback chain, the same centring, the same marquee and the same
+ * seconds bar. That is what makes the preview trustworthy.
+ */
+
+export type Page = "clock" | "date" | "message" | "grid" | "checkerboard" | "blank";
 
 export interface Geometry {
   modulesX: number;
@@ -17,32 +35,31 @@ export interface Frame {
   pixels: Uint8Array;
 }
 
-export type ClockStyleLabel =
-  | "1 num/seg (Tiny5 preview)"
-  | "1 num/seg (Press Start 2P preview)"
-  | "1 num/seg (Compact 5x7)"
-  | "5×7"
-  | "3×5"
-  | "3×5 tight";
+export interface Notice {
+  level: "info" | "warn";
+  text: string;
+}
 
 export interface Scene {
   frame: Frame;
   geometry: Geometry;
   page: Page;
-  bottom: Page;
-  split: boolean;
+  font: PreviewFont;
+  /** The built-in 5x7 fallback took over because the font does not fit. */
+  usedFallback: boolean;
+  /** Full "HH:MM:SS" is shown. */
   withSeconds: boolean;
-  clockStyle: ClockStyleLabel;
+  /** Seconds were dropped because the panel is too narrow for this font. */
+  droppedSeconds: boolean;
+  fit: FontFit;
   summary: string;
   detail: string;
   messageActive: boolean;
+  messageHoldLeft: number | null;
   effectiveBrightness: number;
   nightNow: boolean;
-  fontNote: string;
+  notices: Notice[];
 }
-
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
 export function geometry(chips: number, rows: number): Geometry {
   const safeChips = Math.max(1, Math.min(16, Math.round(chips)));
@@ -65,349 +82,81 @@ export function isNight(hour: number, start: number, end: number): boolean {
   return hour >= start || hour < end;
 }
 
-export function deviceSlug(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 31);
-  return slug || "max7219-clock";
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
 }
 
-export function nodeId(name: string): string {
-  return deviceSlug(name).replace(/-/g, "_");
-}
-
-export function clockMetrics(width: number, bandH: number, withSeconds: boolean) {
-  if (withSeconds) {
-    if (width >= 39 && bandH >= 7) return { style: 0 as const, clockW: 39, adv: 6 };
-    if (width >= 27) return { style: 1 as const, clockW: 27, adv: 4 };
-    return { style: 2 as const, clockW: 22, adv: 3 };
-  }
-  if (width >= 25 && bandH >= 7) return { style: 0 as const, clockW: 25, adv: 6 };
-  if (width >= 17) return { style: 1 as const, clockW: 17, adv: 4 };
-  return { style: 2 as const, clockW: 14, adv: 3 };
-}
-
-function styleName(style: 0 | 1 | 2, cfg: Config, isSegment: boolean): ClockStyleLabel {
-  if (isSegment) {
-    if (cfg.clockFont === "blood-drip") return "1 num/seg (Tiny5 preview)";
-    if (cfg.clockFont === "blood-bold") return "1 num/seg (Press Start 2P preview)";
-    return "1 num/seg (Compact 5x7)";
-  }
-  if (style === 0) return "5×7";
-  if (style === 1) return "3×5";
-  return "3×5 tight";
-}
-
-function setPixel(frame: Frame, x: number, y: number, value = 1) {
-  if (x < 0 || y < 0 || x >= frame.width || y >= frame.height) return;
-  frame.pixels[y * frame.width + x] = value;
-}
-
-function drawDigitStyled(frame: Frame, digit: number, x: number, y: number, font: Config["clockFont"]) {
-  const rows =
-    font === "blood-drip"
-      ? BLOOD_DRIP_5X7[digit]
-      : font === "blood-bold"
-        ? BLOOD_BOLD_5X7[digit]
-        : DIGITS_5X7[digit];
-  if (!rows) return;
-  for (let row = 0; row < 7; row++) {
-    const bits = rows[row];
-    for (let col = 0; col < 5; col++) {
-      if (bits & (1 << (4 - col))) setPixel(frame, x + col, y + row);
-    }
-  }
-}
-
-function drawGlyph3(frame: Frame, ch: string, x: number, y: number) {
-  const rows = FONT_3X5[ch.toUpperCase()];
-  if (!rows) return;
-  for (let row = 0; row < 5; row++) {
-    const bits = rows[row];
-    for (let col = 0; col < 3; col++) {
-      if (bits & (1 << (2 - col))) setPixel(frame, x + col, y + row);
-    }
-  }
-}
-
-function drawText3(frame: Frame, text: string, x: number, y: number, advance = 4) {
-  let cursor = x;
-  for (const ch of text) {
-    if (glyphIndex(ch) < 0) continue;
-    drawGlyph3(frame, ch, cursor, y);
-    cursor += advance;
-  }
-}
-
-function drawDash(frame: Frame, x: number, y: number, style: 0 | 1 | 2) {
-  const len = style === 0 ? 4 : 3;
-  const yy = y + (style === 0 ? 3 : 2);
-  for (let col = 0; col < len; col++) setPixel(frame, x + col, yy);
-}
-
-function paintClock(
-  frame: Frame,
-  cfg: Config,
-  now: Date,
-  bandY: number,
-  bandH: number,
-  withSeconds: boolean,
-  timeOk: boolean,
-) {
+/** The firmware's build_content() for the clock screen. */
+export function clockContent(now: Date, cfg: Config, withSeconds: boolean): string {
   const hour24 = now.getHours();
-  const minute = now.getMinutes();
-  const second = now.getSeconds();
   let hour = hour24;
+  let blankLeading = false;
   if (cfg.hourFormat === "12-hour") {
     hour = hour24 % 12;
     if (hour === 0) hour = 12;
+    blankLeading = hour < 10;
   }
-  const blinkOff = cfg.blinkColon && second % 2 === 1;
-  const invalidBlink = !timeOk && Math.floor(now.getTime() / 400) % 2 === 1;
-
-  const isSegmentMode =
-    cfg.clockLayout === "segment" &&
-    ((withSeconds && frame.width >= 48) || (!withSeconds && frame.width >= 32));
-
-  // --- 1 NUMBER PER SEGMENT MODE (6 numbers on 6 segments: 00:00:00) ---
-  if (isSegmentMode) {
-    const digitH = 7;
-    const bar = cfg.secondBar && bandH >= 8;
-    const originY = bar ? bandY : bandY + Math.max(0, Math.floor((bandH - digitH) / 2));
-
-    const dH1 = Math.floor(hour / 10);
-    const dH2 = hour % 10;
-    const dM1 = Math.floor(minute / 10);
-    const dM2 = minute % 10;
-    const dS1 = Math.floor(second / 10);
-    const dS2 = second % 10;
-    const blankTens = timeOk && !cfg.leadingZero && hour < 10;
-
-    const drawSegDigit = (segIdx: number, value: number, blank: boolean) => {
-      const x = segIdx * 8 + 1;
-      if (blank) return;
-      if (!timeOk) {
-        drawDash(frame, x, originY, 0);
-        return;
-      }
-      drawDigitStyled(frame, value, x, originY, cfg.clockFont);
-    };
-
-    // Segment 0: Hours tens
-    drawSegDigit(0, dH1, blankTens);
-    // Segment 1: Hours units
-    drawSegDigit(1, dH2, false);
-
-    // Separator colon 1 at the right edge of Segment 1 (x = 15)
-    if (!blinkOff && !invalidBlink) {
-      setPixel(frame, 15, originY + 2);
-      setPixel(frame, 15, originY + 5);
-      if (cfg.bloodDrips && cfg.clockFont === "blood-drip") {
-        setPixel(frame, 15, originY + 6, 2);
-      }
-    }
-
-    // Segment 2: Minutes tens
-    drawSegDigit(2, dM1, false);
-    // Segment 3: Minutes units
-    drawSegDigit(3, dM2, false);
-
-    if (withSeconds && frame.width >= 48) {
-      // Separator colon 2 at the right edge of Segment 3 (x = 31)
-      if (!blinkOff && !invalidBlink) {
-        setPixel(frame, 31, originY + 2);
-        setPixel(frame, 31, originY + 5);
-        if (cfg.bloodDrips && cfg.clockFont === "blood-drip") {
-          setPixel(frame, 31, originY + 6, 2);
-        }
-      }
-
-      // Segment 4: Seconds tens
-      drawSegDigit(4, dS1, false);
-      // Segment 5: Seconds units
-      drawSegDigit(5, dS2, false);
-
-      // Blood drip droplets animation on the seconds unit segment
-      if (cfg.bloodDrips && cfg.clockFont === "blood-drip" && timeOk) {
-        if (second % 2 === 0) {
-          setPixel(frame, 45, originY + 6, 2);
-        }
-      }
-    }
-
-    if (timeOk && cfg.hourFormat === "12-hour" && hour24 >= 12) {
-      const pmX = withSeconds && frame.width >= 48 ? 47 : 31;
-      setPixel(frame, pmX, originY, 1);
-    }
-
-    if (bar && timeOk) {
-      const barY = bandY + 7;
-      if (barY < bandY + bandH) {
-        const lit = Math.max(1, Math.floor(((second + 1) * frame.width) / 60));
-        let head = 0;
-        for (let x = 0; x < lit && x < frame.width; x++) {
-          // Leave gap at every 8-pixel segment boundary for clear segment separation
-          if (x > 0 && x % 8 === 7 && x < frame.width - 1) continue;
-          setPixel(frame, x, barY, 1);
-          head = x;
-        }
-        setPixel(frame, head, barY, 2);
-      }
-    }
-
-    return {
-      style: 0 as const,
-      clockW: withSeconds && frame.width >= 48 ? 48 : 32,
-      adv: 8,
-      isSegment: true,
-    };
-  }
-
-  // --- COMPACT PROPORTIONAL CLOCK MODE ---
-  const metrics = clockMetrics(frame.width, bandH, withSeconds);
-  const { style, clockW, adv } = metrics;
-  const digitH = style === 0 ? 7 : 5;
-  const bar = cfg.secondBar && bandH >= 8 && digitH < bandH;
-  let originY = bandY + Math.max(0, Math.floor((bandH - digitH) / 2));
-  if (bar) originY = style === 0 ? bandY : bandY + 1;
-
-  let startX = Math.floor((frame.width - clockW) / 2);
-  if (cfg.alignment === "Left") startX = 0;
-  if (cfg.alignment === "Right") startX = frame.width - clockW;
-  startX = Math.max(0, startX);
-
-  const drawDigit = (x: number, value: number, blank: boolean) => {
-    if (blank) return;
-    if (!timeOk) {
-      drawDash(frame, x, originY, style);
-      return;
-    }
-    if (style === 0) drawDigitStyled(frame, value, x, originY, cfg.clockFont);
-    else drawGlyph3(frame, String(value), x, originY);
-  };
-  const colon = (x: number) => {
-    if (blinkOff || invalidBlink) return;
-    if (style === 0) {
-      setPixel(frame, x, originY + 2);
-      setPixel(frame, x, originY + 5);
-      if (cfg.bloodDrips && cfg.clockFont === "blood-drip") {
-        setPixel(frame, x, originY + 6, 2);
-      }
-    } else {
-      setPixel(frame, x, originY + 1);
-      setPixel(frame, x, originY + 3);
-    }
-  };
-
-  let cursor = startX;
-  const blankTens = timeOk && !cfg.leadingZero && hour < 10;
-  drawDigit(cursor, Math.floor(hour / 10), blankTens);
-  cursor += adv;
-  drawDigit(cursor, hour % 10, false);
-  cursor += adv;
-  colon(cursor);
-  cursor += 2;
-  drawDigit(cursor, Math.floor(minute / 10), false);
-  cursor += adv;
-  drawDigit(cursor, minute % 10, false);
-  if (withSeconds) {
-    cursor += adv;
-    colon(cursor);
-    cursor += 2;
-    drawDigit(cursor, Math.floor(second / 10), false);
-    cursor += adv;
-    drawDigit(cursor, second % 10, false);
-  }
-
-  if (timeOk && cfg.hourFormat === "12-hour" && hour24 >= 12) {
-    let pmX = startX + clockW + 1;
-    if (pmX >= frame.width) pmX = startX - 2;
-    if (pmX >= 0 && pmX < frame.width) setPixel(frame, pmX, originY);
-  }
-
-  if (bar && timeOk) {
-    const barY = bandY + 7;
-    if (barY < bandY + bandH) {
-      const lit = Math.max(1, Math.floor(((second + 1) * frame.width) / 60));
-      let head = 0;
-      for (let x = 0; x < lit && x < frame.width; x++) {
-        const bucket = Math.floor((x * 60) / frame.width);
-        const prev = x === 0 ? -1 : Math.floor(((x - 1) * 60) / frame.width);
-        if (x > 0 && bucket !== prev && bucket % 10 === 0) continue;
-        setPixel(frame, x, barY, 1);
-        head = x;
-      }
-      setPixel(frame, head, barY, 2);
-    }
-  }
-  return { ...metrics, isSegment: false };
+  const head = blankLeading ? ` ${hour}` : pad(hour);
+  const tail = withSeconds ? `:${pad(now.getMinutes())}:${pad(now.getSeconds())}` : `:${pad(now.getMinutes())}`;
+  return `${head}${tail}`;
 }
 
-function paintMessage(frame: Frame, text: string, bandY: number, bandH: number, scrollPx: number, tick: boolean, second: number) {
-  const shown = text.length > 0 ? text : "NO MESSAGE";
-  const tw = textWidth3(shown, 4);
-  const y = bandY + Math.max(0, Math.floor((Math.min(bandH, 8) - 5) / 2));
-  if (tw <= frame.width) {
-    drawText3(frame, shown, Math.floor((frame.width - tw) / 2), y);
-  } else {
-    const cycle = tw + frame.width + 4;
-    const pos = ((scrollPx % cycle) + cycle) % cycle;
-    drawText3(frame, shown, frame.width - pos, y);
+/** The firmware's build_content() for the date screen. */
+export function dateContent(now: Date, cfg: Config): string {
+  const day = pad(now.getDate());
+  const month = pad(now.getMonth() + 1);
+  if (cfg.dateFormat === "MM/DD") return `${month}/${day}`;
+  if (cfg.dateFormat === "DD/MM") return `${day}/${month}`;
+  return `${day}.${month}`;
+}
+
+/** The firmware blanks the separators on odd seconds while blinking is on. */
+function blinkSeconds(cfg: Config, now: Date, content: string): string {
+  if (!cfg.blinkColon || now.getSeconds() % 2 === 0) return content;
+  return content.replace(/:/g, " ");
+}
+
+/** Mirrors draw_line(): alignment, centring and out-of-bounds clipping. */
+function drawLine(frame: Frame, font: PreviewFont, text: string, x: number, boxTop: number): void {
+  drawTextLine(frame, font, text, x, boxTop);
+}
+
+function drawSecondsBar(frame: Frame, second: number): void {
+  const lit = Math.floor((frame.width * second) / 60);
+  if (lit <= 0) return;
+  for (let x = 0; x < Math.min(lit, frame.width); x++) setPixel(frame, x, frame.height - 1);
+}
+
+/** Mirrors draw_free_text(): centred, clipped, or marquee. */
+function drawFreeText(
+  frame: Frame,
+  font: PreviewFont,
+  text: string,
+  cfg: Config,
+  elapsedMs: number,
+): void {
+  const textWidth = font.measure(text) ?? frame.width;
+  const boxTop = font.boxTop(frame.height);
+  if (textWidth <= frame.width) {
+    drawLine(frame, font, text, alignStart("Center", textWidth, frame.width), boxTop);
+    return;
   }
-  if (tick && bandH >= 8) {
-    const pos = Math.floor((second * frame.width) / 60);
-    setPixel(frame, Math.min(frame.width - 1, pos), bandY + Math.min(bandH, 8) - 1, 2);
+  if (cfg.scrollMode === "Static") {
+    drawLine(frame, font, text, 0, boxTop);
+    return;
   }
+  const perPixel = Math.max(1, cfg.scrollSpeed);
+  const loopWidth = textWidth + frame.width;
+  const offset = Math.floor(elapsedMs / perPixel) % loopWidth;
+  const originX = offset < textWidth ? -offset : frame.width - (offset - textWidth);
+  drawLine(frame, font, text, originX, boxTop);
 }
 
-function paintDate(frame: Frame, now: Date, bandY: number, bandH: number, timeOk: boolean) {
-  let text = "NO TIME";
-  if (timeOk) {
-    const day = DAYS[now.getDay()];
-    const date = String(now.getDate()).padStart(2, "0");
-    text = frame.width >= 44 ? `${day} ${date} ${MONTHS[now.getMonth()]}` : `${day} ${date}`;
-  }
-  const tw = textWidth3(text);
-  const y = bandY + Math.max(0, Math.floor((Math.min(bandH, 8) - 5) / 2));
-  drawText3(frame, text, Math.max(0, Math.floor((frame.width - tw) / 2)), y);
-}
-
-function rssiBars(rssi: number): number {
-  if (Number.isNaN(rssi)) return 0;
-  if (rssi > -55) return 4;
-  if (rssi > -67) return 3;
-  if (rssi > -75) return 2;
-  if (rssi > -85) return 1;
-  return 0;
-}
-
-function paintStatus(frame: Frame, bandY: number, bandH: number, rssi: number, timeOk: boolean) {
-  const bars = rssiBars(rssi);
-  const base = bandY + Math.min(bandH, 8) - 2;
-  for (let b = 0; b < 4; b++) {
-    const bh = b + 2;
-    for (let yy = 0; yy < bh; yy++) {
-      if (b < bars) setPixel(frame, b * 2, base - yy);
-    }
-  }
-  const text = Number.isNaN(rssi) ? "WIFI" : String(Math.round(rssi));
-  const y = bandY + Math.max(0, Math.floor((Math.min(bandH, 8) - 5) / 2));
-  drawText3(frame, text, 10, y);
-  if (timeOk) setPixel(frame, frame.width - 2, bandY + 1);
-}
-
-function paintTemp(frame: Frame, bandY: number, bandH: number, temp: number | null) {
-  const text = temp === null || Number.isNaN(temp) ? "NO TEMP" : `${Math.round(temp)}C`;
-  const tw = textWidth3(text);
-  const y = bandY + Math.max(0, Math.floor((Math.min(bandH, 8) - 5) / 2));
-  drawText3(frame, text, Math.max(0, Math.floor((frame.width - tw) / 2)), y);
-}
-
-function paintGrid(frame: Frame) {
-  for (let y = 0; y < frame.height; y += 8) {
-    for (let x = 0; x < frame.width; x += 8) {
+function paintGrid(frame: Frame, geo: Geometry): void {
+  for (let my = 0; my < geo.modulesY; my++) {
+    for (let mx = 0; mx < geo.modulesX; mx++) {
+      const x = mx * 8;
+      const y = my * 8;
       for (let i = 0; i < 8; i++) {
         setPixel(frame, x + i, y);
         setPixel(frame, x + i, y + 7);
@@ -419,7 +168,7 @@ function paintGrid(frame: Frame) {
   }
 }
 
-function paintChecker(frame: Frame) {
+function paintChecker(frame: Frame): void {
   for (let y = 0; y < frame.height; y++) {
     for (let x = 0; x < frame.width; x++) {
       if ((x + y) % 2 === 0) setPixel(frame, x, y);
@@ -427,7 +176,205 @@ function paintChecker(frame: Frame) {
   }
 }
 
-function mirror(frame: Frame) {
+/**
+ * Illustration only: one digit per 8x8 module, the layout people picture when
+ * they buy a six module strip. The firmware draws the clock proportionally.
+ */
+function paintModuleClock(frame: Frame, cfg: Config, font: PreviewFont, now: Date): void {
+  const digits = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`.slice(0, 6);
+  const bar = cfg.secondsMode === "Bar";
+  for (let i = 0; i < 6 && i * 8 + 8 <= frame.width; i++) {
+    const glyph = font.glyph(digits[i]);
+    if (!glyph) continue;
+    const offsetX = i * 8 + Math.max(0, Math.floor((8 - glyph.w) / 2));
+    const offsetY = Math.max(0, Math.floor((8 - glyph.h) / 2));
+    for (let row = 0; row < glyph.rows.length; row++) {
+      for (let col = 0; col < glyph.w; col++) {
+        if (glyph.rows[row] & (1 << (glyph.w - 1 - col))) setPixel(frame, offsetX + col, offsetY + row);
+      }
+    }
+  }
+  // Separators sit on the module boundary, like a real wiring diagram.
+  if (!(cfg.blinkColon && now.getSeconds() % 2 === 1)) {
+    const y = Math.max(1, Math.floor((8 - 4) / 2));
+    for (const x of [15, 31, 47]) {
+      if (x >= frame.width) continue;
+      setPixel(frame, x, y);
+      setPixel(frame, x, y + 3);
+    }
+  }
+  if (bar) drawSecondsBar(frame, now.getSeconds());
+}
+
+function choosePage(cfg: Config, now: Date, messageActive: boolean): Page {
+  if (messageActive) return "message";
+  if (cfg.autoCycle) {
+    const slot = Math.floor(now.getTime() / 1000 / Math.max(5, cfg.cycleInterval));
+    return slot % 2 === 0 ? "clock" : "date";
+  }
+  switch (cfg.screen) {
+    case "Date":
+      return "date";
+    case "Message":
+      return "message";
+    case "Module grid test":
+      return "grid";
+    case "Pixel checkerboard":
+      return "checkerboard";
+    default:
+      return "clock";
+  }
+}
+
+function pageLabel(page: Page): string {
+  switch (page) {
+    case "clock":
+      return "the clock";
+    case "date":
+      return "the date";
+    case "message":
+      return "the message";
+    case "grid":
+      return "the module grid test";
+    case "checkerboard":
+      return "the pixel checkerboard";
+    default:
+      return "a blank screen";
+  }
+}
+
+export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
+  const geo = geometry(cfg.chips, cfg.rows);
+  const frame: Frame = { width: geo.width, height: geo.height, pixels: new Uint8Array(geo.width * geo.height) };
+  const notices: Notice[] = [];
+  const text = normalizeMessage(cfg.message);
+  const age = now.getTime() - messageAt;
+  const messageActive = text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000);
+  const messageHoldLeft = cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
+
+  const selected = previewFont(cfg.clockFont);
+  const spec = fontSpec(cfg.clockFont);
+  const fit = fitForPanel(selected, frame.width, Math.min(8, frame.height));
+  const page = choosePage(cfg, now, messageActive);
+
+  if (!geo.valid) {
+    notices.push({
+      level: "warn",
+      text: `Module count ${cfg.chips} does not divide into ${cfg.rows} row(s). The preview falls back to a single row.`,
+    });
+  }
+  if (fit.dropsSeconds) {
+    notices.push({
+      level: "warn",
+      text: `${spec.label} needs ${fit.width} px for HH:MM:SS but the panel is ${frame.width} px. The firmware drops the seconds, exactly like this preview.`,
+    });
+  }
+  if (fit.tooNarrow) {
+    notices.push({
+      level: "warn",
+      text: `Only ${frame.width} px wide: not even the built-in 5×7 font can show HH:MM. Add modules or pick a narrower font.`,
+    });
+  }
+  if (fit.usesBottomRow && cfg.secondsMode === "Bar") {
+    notices.push({
+      level: "info",
+      text: `${spec.label} fills all 8 rows, so the seconds bar is drawn under the digits. Choose the Digits seconds mode for a cleaner look.`,
+    });
+  }
+  if (page === "message" && text.length === 0 && cfg.screen === "Message") {
+    notices.push({ level: "info", text: "The Message screen shows whatever the last show_message action sent. Nothing is queued here." });
+  }
+
+  let usedFallback = false;
+  let withSeconds = cfg.secondsMode === "Digits" && page === "clock";
+  let droppedSeconds = false;
+
+  if (cfg.displayPower) {
+    let font = selected;
+    if (page === "grid") paintGrid(frame, geo);
+    else if (page === "checkerboard") paintChecker(frame);
+    else if (page === "message") {
+      const shown = text.length > 0 ? text : "";
+      if (shown) {
+        if (font.measure(shown) === null) {
+          font = BUILTIN_FONT;
+          usedFallback = true;
+        }
+        drawFreeText(frame, font, shown, cfg, Math.max(0, now.getTime() - messageAt));
+      }
+    } else {
+      // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
+      const build = (): string => (page === "date" ? dateContent(now, cfg) : clockContent(now, cfg, withSeconds));
+      let content = build();
+      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width && withSeconds) {
+        withSeconds = false;
+        droppedSeconds = true;
+        content = build();
+      }
+      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width) {
+        font = BUILTIN_FONT;
+        usedFallback = true;
+      }
+      if (cfg.layoutPreview === "modules" && page === "clock") {
+        paintModuleClock(frame, cfg, font, now);
+      } else {
+        const shown = page === "clock" ? blinkSeconds(cfg, now, content) : content;
+        const startX = alignStart(cfg.alignment, font.measure(shown) ?? 0, frame.width);
+        drawLine(frame, font, shown, startX, font.boxTop(frame.height));
+        if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
+      }
+    }
+    if (cfg.flipX) mirror(frame);
+  }
+
+  const nightNow = cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd);
+  const effectiveBrightness = nightNow ? cfg.nightBrightness : cfg.brightness;
+
+  let summary = "Display power is off.";
+  let detail = "The MAX7219 is held in shutdown, so no pixels are driven.";
+  if (cfg.displayPower) {
+    if (page === "grid" || page === "checkerboard") {
+      summary = `Test pattern: ${pageLabel(page)}.`;
+      detail = "Both patterns come straight from the firmware, so they prove wiring, rotation, and row order.";
+    } else if (page === "message") {
+      summary = text ? `Message: “${text}”.` : "Message screen, nothing queued.";
+      detail = messageActive
+        ? `Active for ${messageHoldLeft}s, then the previous screen returns.`
+        : "The last message expired. Send one again, or set the hold to 0 to keep it until it is cleared.";
+    } else if (page === "clock") {
+      const seconds = droppedSeconds ? "seconds dropped, the panel is too narrow for this font" : withSeconds ? "full-size HH:MM:SS" : "HH:MM";
+      summary = usedFallback
+        ? `Clock with the built-in 5×7 fallback (${seconds}).`
+        : `Clock in ${spec.label} (${seconds}).`;
+      detail = `${cfg.hourFormat} format, ${cfg.alignment.toLowerCase()} aligned, ${
+        cfg.secondsMode === "Bar" ? "seconds as a bottom-row bar" : withSeconds ? "seconds as digits" : "seconds off"
+      }.`;
+    } else {
+      summary = `Showing ${pageLabel(page)} in ${spec.label}.`;
+      detail = `${cfg.dateFormat} date format, ${cfg.alignment.toLowerCase()} aligned.`;
+    }
+  }
+
+  return {
+    frame,
+    geometry: geo,
+    page,
+    font: selected,
+    usedFallback,
+    withSeconds,
+    droppedSeconds,
+    fit,
+    summary,
+    detail,
+    messageActive,
+    messageHoldLeft,
+    effectiveBrightness,
+    nightNow,
+    notices,
+  };
+}
+
+function mirror(frame: Frame): void {
   for (let y = 0; y < frame.height; y++) {
     const row = y * frame.width;
     for (let x = 0; x < frame.width / 2; x++) {
@@ -438,225 +385,4 @@ function mirror(frame: Frame) {
       frame.pixels[b] = tmp;
     }
   }
-}
-
-interface Decision {
-  page: Page;
-  bottom: Page;
-  split: boolean;
-  withSeconds: boolean;
-  messageActive: boolean;
-}
-
-function rowPage(row: Config["secondRow"]): Page {
-  if (row === "Date") return "date";
-  if (row === "Message") return "message";
-  if (row === "Status") return "status";
-  if (row === "Temperature") return "temp";
-  return "off";
-}
-
-function decide(cfg: Config, now: Date, messageAt: number, geo: Geometry): Decision {
-  const text = normalizeMessage(cfg.message);
-  const age = now.getTime() - messageAt;
-  const messageActive =
-    cfg.messagesEnabled && text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000);
-  const tall = geo.height >= 16;
-  const dwell = Math.max(2, cfg.pageDwell);
-  const cycle: Page[] = ["clock", "date", "status"];
-  if (cfg.includeTemperature) cycle.push("temp");
-  const slot = Math.floor(now.getTime() / 1000 / dwell) % cycle.length;
-  const autoPage = cycle[slot];
-  const screen = cfg.screen;
-
-  const explicit: Page | null =
-    screen === "Date"
-      ? "date"
-      : screen === "Message"
-        ? "message"
-        : screen === "Status"
-          ? "status"
-          : screen === "Temperature"
-            ? "temp"
-            : screen === "Module grid test"
-              ? "grid"
-              : screen === "Pixel checkerboard"
-                ? "checker"
-                : null;
-
-  if (explicit) {
-    return { page: explicit, bottom: "off", split: false, withSeconds: cfg.showSeconds, messageActive };
-  }
-
-  const withSeconds = screen === "Clock with seconds" || cfg.showSeconds;
-  const clockLike = screen === "Auto" || screen === "Clock" || screen === "Clock with seconds";
-  const interrupt = messageActive && cfg.interruptOnMessage && clockLike;
-
-  if (!tall) {
-    let page: Page = "clock";
-    if (screen === "Auto") page = interrupt ? "message" : autoPage;
-    else if (interrupt) page = "message";
-    return { page, bottom: "off", split: false, withSeconds, messageActive };
-  }
-
-  let bottom = rowPage(cfg.secondRow);
-  if (screen === "Auto") {
-    const bottomSlots = cycle.filter((page) => page !== "clock");
-    if (messageActive && !interrupt) bottomSlots.push("message");
-    bottom = bottomSlots[slot % bottomSlots.length] ?? "date";
-  }
-  if (interrupt) bottom = "message";
-
-  return { page: "clock", bottom, split: true, withSeconds, messageActive };
-}
-
-function pageLabel(page: Page): string {
-  switch (page) {
-    case "clock":
-      return "clock";
-    case "date":
-      return "date";
-    case "message":
-      return "message";
-    case "status":
-      return "Wi-Fi status";
-    case "temp":
-      return "temperature";
-    case "grid":
-      return "module grid test";
-    case "checker":
-      return "checkerboard";
-    default:
-      return "blank";
-  }
-}
-
-export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
-  const geo = geometry(cfg.chips, cfg.rows);
-  const frame: Frame = {
-    width: geo.width,
-    height: geo.height,
-    pixels: new Uint8Array(geo.width * geo.height),
-  };
-  const decision = decide(cfg, now, messageAt, geo);
-  const timeOk = true;
-  const text = normalizeMessage(cfg.message);
-  const scrollPx = Math.floor((now.getTime() - messageAt) / Math.max(20, cfg.scrollSpeed));
-  const second = now.getSeconds();
-  const temp = cfg.includeTemperature ? cfg.previewTemp : null;
-
-  const isSegDefault =
-    cfg.clockLayout === "segment" &&
-    ((decision.withSeconds && geo.width >= 48) || (!decision.withSeconds && geo.width >= 32));
-  let metrics = {
-    ...clockMetrics(geo.width, Math.min(8, geo.height), decision.withSeconds),
-    isSegment: isSegDefault,
-  };
-
-  if (cfg.displayPower) {
-    if (!decision.split) {
-      if (decision.page === "grid") paintGrid(frame);
-      else if (decision.page === "checker") paintChecker(frame);
-      else if (decision.page === "date") paintDate(frame, now, 0, geo.height, timeOk);
-      else if (decision.page === "message") paintMessage(frame, text, 0, geo.height, scrollPx, cfg.secondBar, second);
-      else if (decision.page === "status") paintStatus(frame, 0, geo.height, cfg.previewRssi, timeOk);
-      else if (decision.page === "temp") paintTemp(frame, 0, geo.height, temp);
-      else metrics = paintClock(frame, cfg, now, 0, Math.min(8, geo.height), decision.withSeconds, timeOk);
-    } else {
-      metrics = paintClock(frame, cfg, now, 0, 8, decision.withSeconds, timeOk);
-      const bandY = 8;
-      const bandH = geo.height - 8;
-      if (decision.bottom === "date") paintDate(frame, now, bandY, bandH, timeOk);
-      else if (decision.bottom === "message") paintMessage(frame, text, bandY, bandH, scrollPx, false, second);
-      else if (decision.bottom === "status") paintStatus(frame, bandY, bandH, cfg.previewRssi, timeOk);
-      else if (decision.bottom === "temp") paintTemp(frame, bandY, bandH, temp);
-    }
-    if (cfg.flipX) mirror(frame);
-  }
-
-  const nightNow = cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd);
-  const effectiveBrightness = nightNow ? cfg.nightBrightness : cfg.brightness;
-  const fontNote =
-    metrics.isSegment
-      ? `1 number per 8×8 segment · 6 segments · 00:00:00 with ${
-          cfg.clockFont === "blood-drip"
-            ? "Tiny5 preview pattern"
-            : cfg.clockFont === "blood-bold"
-              ? "Press Start 2P preview pattern"
-              : "Compact 5×7 pattern"
-        }`
-      : metrics.style === 0
-        ? `5×7 digits (${
-            cfg.clockFont === "blood-drip"
-              ? "Tiny5"
-              : cfg.clockFont === "blood-bold"
-                ? "Press Start 2P"
-                : "Compact 5×7"
-          })`
-        : metrics.style === 1
-          ? "3×5 digits — this chain is too narrow for 5×7 seconds"
-          : "Tight 3×5 — squeezed so seconds still fit";
-
-  const holdLeft =
-    cfg.messageHold <= 0
-      ? "until you clear it"
-      : `${Math.max(0, Math.ceil((cfg.messageHold * 1000 - (now.getTime() - messageAt)) / 1000))}s left`;
-
-  let summary = "Display power is off.";
-  let detail = "The MAX7219 is held in shutdown. Pixels are not driven.";
-  if (cfg.displayPower) {
-    if (!geo.valid) {
-      summary = "Chip count does not divide into rows.";
-      detail = "Set rows so it divides the module count. The preview is showing a single row until that is fixed.";
-    } else if (decision.page === "grid" || decision.page === "checker") {
-      summary = `Test pattern: ${pageLabel(decision.page)}.`;
-      detail = "Same patterns as your original file, so you can still prove wiring, rotation, and row order.";
-    } else if (decision.split) {
-      summary = `Top row clock. Bottom row ${pageLabel(decision.bottom)}.`;
-      detail = decision.messageActive
-        ? `Message is active (${holdLeft}). On a two-row chain the clock stays up and the banner uses the lower row.`
-        : `Seconds ${decision.withSeconds ? "on" : "off"}, counter bar ${cfg.secondBar ? "on" : "off"}. ${fontNote}.`;
-    } else if (decision.page === "message") {
-      summary = text ? `Scrolling “${text}”.` : "Message screen, nothing queued.";
-      detail = decision.messageActive
-        ? `Home Assistant interrupt is on. Hold ${holdLeft}, then the clock returns.`
-        : "Open this screen, or turn on interrupt, to take the row away from the clock.";
-    } else if (decision.page === "clock") {
-      summary = metrics.isSegment
-        ? "1 number per segment · 6 segments · full-size 00:00:00"
-        : decision.withSeconds
-          ? "Clock with a seconds counter."
-          : "Clock, hours and minutes.";
-      detail = `${cfg.hourFormat}, ${cfg.alignment.toLowerCase()}, ${fontNote}. ${
-        cfg.secondBar ? "The bottom pixel row fills across the minute and leaves a gap every 8/10 seconds." : "Second counter bar is off."
-      }`;
-      if (text && cfg.messagesEnabled && !cfg.interruptOnMessage && !decision.split) {
-        detail += " Interrupt is off, so this screen keeps the clock. Open Message, or turn interrupt on.";
-      } else if (text && cfg.messagesEnabled && !decision.messageActive) {
-        detail += " The hold has ended. The text is still stored — send it again, or set hold to 0.";
-      }
-    } else {
-      summary = `Showing ${pageLabel(decision.page)}.`;
-      detail =
-        cfg.screen === "Auto"
-          ? `Auto rotates every ${Math.max(2, cfg.pageDwell)}s. A new message can still take over if interrupt is on.`
-          : "Pick Clock or Auto when you want the time back.";
-    }
-  }
-
-  return {
-    frame,
-    geometry: geo,
-    page: decision.page,
-    bottom: decision.bottom,
-    split: decision.split,
-    withSeconds: decision.withSeconds,
-    clockStyle: styleName(metrics.style, cfg, metrics.isSegment),
-    summary,
-    detail,
-    messageActive: decision.messageActive,
-    effectiveBrightness,
-    nightNow,
-    fontNote,
-  };
 }

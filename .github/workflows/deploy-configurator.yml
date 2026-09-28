@@ -27,6 +27,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install rasteriser dependencies
+        run: pip install pyyaml pillow
+
+      - name: Check the generated font preview bitmaps
+        run: python3 scripts/generate_glyphs.py --check
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:

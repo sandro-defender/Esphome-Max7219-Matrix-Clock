@@ -9,7 +9,7 @@ substitutions and the package list; everything else lives here.
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant + SNTP time sources |
 | `renderer.yaml` | C++ include list for the renderer, restore-defaults script, OTA error/success timeouts |
 | `display.yaml` | SPI bus, MAX7219 panel, the small lambda that feeds the renderer and publishes changes |
-| `fonts_web.yaml` | both fonts downloaded from this repository (`type: web`, pinned to `${project_ref}`) |
+| `fonts_web.yaml` | the four bundled fonts downloaded from this repository (`type: web`, pinned to `${project_ref}`) |
 | `fonts_local.yaml` | the same fonts read from `fonts/` in the checkout (development/offline) |
 | `controls.yaml` | selects, numbers, switches and buttons exposed to Home Assistant |
 | `actions.yaml` | `api.actions` (`show_message`, `clear_message`, `start_countdown`, `cancel_countdown`, `show_status`, `get_status`) and the scripts shared with the buttons |

@@ -1,7 +1,7 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
-ESP8266, with a full Home Assistant control surface, two bundled fonts, a
+ESP8266, with a full Home Assistant control surface, four bundled fonts, a
 built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -12,10 +12,12 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **Two bundled fonts plus a built-in fallback** - Tiny5 (default, 46 px wide
-  `HH:MM:SS`), Press Start 2P (48 px), and a compact 5×7 bitmap font that always
-  fits and needs no download. Fonts are selected from Home Assistant and
-  compiled into the firmware; nothing is downloaded at runtime.
+* **Four bundled fonts plus a built-in fallback** - Tiny5 (default, 46 px wide
+  `HH:MM:SS`), Press Start 2P (48 px), Matrix Bold (40 px), Eight Bit Dragon
+  (36 px), and a compact 5×7 bitmap font that always fits and needs no download.
+  Fonts are selected from Home Assistant and compiled into the firmware;
+  nothing is downloaded at runtime. The web configurator paints every face with
+  the very glyphs the firmware compiles.
 * **Per-digit slide-up animation** - only digits whose value changed animate,
   non-blocking and safe across `millis()` rollover.
 * **Messages and alerts** - scrolling or static text from Home Assistant with a
@@ -44,6 +46,11 @@ YAML with:
 * hardware and display substitutions;
 * the complete, version-pinned remote package list;
 * first-boot Home Assistant preferences.
+
+The preview is drawn with the same glyph bitmaps, centring, text formats and
+font-fallback rules as `packages/max7219_clock_renderer.h`, so what you tune is
+what the panel shows. Settings are stored in the browser and can be shared as a
+link; nothing but display preferences is ever persisted.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users
@@ -148,7 +155,7 @@ All entities appear automatically through the ESPHome integration.
 | Time format | 24 hour, 12 hour |
 | Seconds display | Off, Digits, Bar |
 | Date format | DD.MM, MM/DD, DD/MM |
-| Clock font | Tiny5, Press Start 2P, Compact 5x7 |
+| Clock font | Tiny5, Press Start 2P, Matrix Bold, Eight Bit Dragon, Compact 5x7 |
 | Message scroll | Scroll, Static |
 
 ### Numbers
@@ -283,7 +290,8 @@ while building these packages and the checks that need hardware.
   check the `timezone` substitution.
 * **Font unreadable** - Press Start 2P needs the whole 48 px for `HH:MM:SS`;
   the renderer drops the seconds to the bar or falls back to the built-in font
-  when a font does not fit. Choose Tiny5 or "Compact 5x7" for a safer layout.
+  when a font does not fit. Choose Tiny5, Eight Bit Dragon or "Compact 5x7" for
+  a safer layout.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
@@ -309,6 +317,7 @@ packages/       firmware modules (base, network, display, fonts, renderer, ...)
 fonts/          bundled fonts + licenses and their measurements
 examples/       release (pinned tag) and development (@main) user YAMLs
 web-configurator/ live preview and one-file installer generator
+               (src/glyphs.generated.ts is produced by its scripts/)
 tests/          offline contract tests and the C++ renderer tests
 scripts/        validate.ps1
 dev.yaml        local development entry point
@@ -324,7 +333,7 @@ device (see `VALIDATION.md` and `ROADMAP.md` for details):
 
 * full firmware compile with a reachable PlatformIO toolchain (not possible in
   the sandbox used to prepare this release) and the resulting flash/RAM review;
-* on-panel readability of both fonts;
+* on-panel readability of all four bundled fonts;
 * OTA progress visibility during a real transfer;
 * wiring/orientation checks with the built-in test patterns.
 

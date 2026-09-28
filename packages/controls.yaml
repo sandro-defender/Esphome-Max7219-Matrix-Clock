@@ -105,9 +105,13 @@ select:
     restore_value: true
     update_interval: never
     initial_option: "Tiny5"
+    # Every option must be a font compiled by packages/fonts_*.yaml; the web
+    # configurator and the display lambda use the same names.
     options:
       - "Tiny5"
       - "Press Start 2P"
+      - "Matrix Bold"
+      - "Eight Bit Dragon"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

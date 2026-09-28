@@ -4,12 +4,21 @@
 # build never mixes main-branch font assets with a tagged package release. The
 # development entry point uses fonts_local.yaml instead.
 #
-# Measured with ESPHome's own pt_to_px() metrics (see fonts/README.md):
-#   Tiny5          size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink -> fits 48x8
-#   Press Start 2P size  6 -> "HH:MM:SS" is 48 px wide, 6 px tall ink -> fits 48x8
-# Both are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
-# as much flash as possible. Messages are converted to upper case by the
-# firmware, which is why the glyph set is upper case only.
+# Measured with ESPHome's own pt_to_px() metrics and FreeType rasterisation
+# (see fonts/README.md for the method and the full table):
+#   Tiny5             size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink
+#   Press Start 2P    size  6 -> "HH:MM:SS" is 48 px wide, 7 px tall ink
+#   Matrix Bold       size 10 -> "HH:MM:SS" is 40 px wide, 8 px tall ink
+#   Eight Bit Dragon  size  7 -> "HH:MM:SS" is 36 px wide, 6 px tall ink
+# All are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
+# as much flash as possible. Only the rasterised glyphs land in the firmware
+# (a few hundred bytes each), never the TTF/OTF source files. Messages are
+# converted to upper case by the firmware, which is why the glyph set is upper
+# case only.
+#
+# Matrix Bold fills all 8 rows of a 48x8 panel, so it looks best with the
+# "Digits" seconds mode; Eight Bit Dragon leaves the bottom row free and stays
+# compatible with the "Bar" seconds mode.
 
 substitutions:
   # Keep in sync with the tag used by the remote `packages` ref.
@@ -34,6 +43,26 @@ font:
       type: web
       url: ${fonts_base_url}/press-start-2p/PressStart2P-Regular.ttf
     size: 6
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  - id: font_matrix_bold_source
+    file:
+      type: web
+      url: ${fonts_base_url}/Matrix-Bold/Matrix_Bold.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  - id: font_8bitdragon_source
+    file:
+      type: web
+      url: ${fonts_base_url}/eight-bit-dragon/eight-bit-dragon.otf
+    size: 7
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "

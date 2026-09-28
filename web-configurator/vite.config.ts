@@ -14,6 +14,17 @@ export default defineConfig({
   // serves it from a project subpath (/Esphome-Max7219-Matrix-Clock/)
   // instead of a custom domain root.
   base: "./",
+  // The dev server is only used while editing locally (and by the Arena
+  // preview), so any Host header is accepted there. The production build in
+  // dist/ is static files and has no server at all.
+  server: {
+    host: true,
+    allowedHosts: true,
+  },
+  preview: {
+    host: true,
+    allowedHosts: true,
+  },
   plugins: [react(), tailwindcss(), viteSingleFile()],
   resolve: {
     alias: {

@@ -15,11 +15,13 @@ or to a command that was actually executed.
   pixel-checkerboard test. Priority: OTA > alert/message > countdown > selected
   screen.
 * **Full `HH:MM:SS` in the default 48×8 layout**: built-in 5×7 font 42 px,
-  Tiny5 (size 10) 46 px, Press Start 2P (size 6) 48 px.
-* **Fonts**: two bundled fonts (`fonts/`, OFL licensed) downloaded at build time
+  Tiny5 (size 10) 46 px, Press Start 2P (size 6) 48 px, Matrix Bold (size 10)
+  40 px, Eight Bit Dragon (size 7) 36 px.
+* **Fonts**: four bundled fonts (`fonts/`, OFL licensed) downloaded at build time
   from a tag-pinned raw GitHub URL, restricted glyph sets, `bpp: 1`, plus a
   built-in fallback font that needs nothing and always fits. Runtime font
-  selection switches between compiled font IDs only.
+  selection switches between compiled font IDs only. The web configurator
+  rasterises the same files, so its preview shows the real glyphs.
 * **Per-digit slide-up animation**: only changed digits move, old digit slides
   up while the new one enters from below, non-blocking, `millis()`-rollover
   safe, disabled during OTA, switchable from Home Assistant.
@@ -84,14 +86,15 @@ apply; the documented ESPHome migration still applies to older setups.
 
 | Check | Command | Result |
 |---|---|---|
-| Contract tests | `python tests/test_config.py` | 25 tests, **OK** (needs PyYAML; ESPHome installs it) |
-| Renderer unit tests | `make -C tests test` | **163 checks, 0 failures** |
+| Contract tests | `python tests/test_config.py` | 28 tests, **OK** (needs PyYAML; ESPHome installs it) |
+| Renderer unit tests | `make -C tests test` | **179 checks, 0 failures** |
 | ESPHome config validation | `esphome config dev.yaml` (2026.9.0) | **`INFO Configuration is valid!`** |
-| C++ code generation | `esphome compile dev.yaml` (codegen phase) | `main.cpp` generated (2948 lines): headers included, both fonts instantiated, display writer wired, all actions and OTA callbacks emitted |
+| C++ code generation | `esphome compile dev.yaml` (codegen phase) | `main.cpp` generated (2948 lines): headers included, both fonts instantiated, display writer wired, all actions and OTA callbacks emitted (re-run required after adding Matrix Bold and Eight Bit Dragon) |
 | Released example fetched from **real GitHub** (`ref:` = pushed branch) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines), headers copied into the build `src/` |
 | OTA screens in the generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error`, `matrix->update()` inside `on_progress` (only when the percentage changes) |
-| Release path (offline) | `scripts/validate-release-offline.sh 0.1.0` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, both web fonts downloaded, `main.cpp` generated (2955 lines), package headers copied into the build `src/` |
-| Font width measurements | freetype with ESPHome's `pt_to_px()` | Tiny5 46 px, Press Start 2P 48 px, built-in 42 px - all ≤ 48 px |
+| Release path (offline) | `scripts/validate-release-offline.sh 0.1.0` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, every web font downloaded, `main.cpp` generated (2955 lines), package headers copied into the build `src/` |
+| Font width measurements | freetype with ESPHome's `pt_to_px()` | Tiny5 46 px, Press Start 2P 48 px, Matrix Bold 40 px, Eight Bit Dragon 36 px, built-in 42 px - all ≤ 48 px |
+| Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 40 tests, type-check clean, single-file `dist/index.html` (307 kB) |
 | **Full firmware compile** | `esphome compile dev.yaml` | **not executed** - PlatformIO registry unreachable in the build environment |
 
 ## 6. Build size
@@ -148,7 +151,8 @@ No force-push was used at any point.
    flash/RAM usage and ESP8266 headroom (Phase 4/12 boxes stay unchecked).
    `scripts/validate-release-offline.sh` covers everything up to that point and
    can be re-run with a working toolchain to produce the missing numbers.
-2. On-panel readability of Tiny5 (size 10) and Press Start 2P (size 6).
+2. On-panel readability of Tiny5 (size 10), Press Start 2P (size 6), Matrix Bold
+   (size 10) and Eight Bit Dragon (size 7).
 3. OTA upload with a real device: confirm the progress screen redraws from the
    OTA callbacks (`id(matrix).update()`).
 4. Wiring/orientation confirmation with the module-grid and pixel tests.

@@ -32,7 +32,7 @@ users actually get: it tags a snapshot of this checkout in a throw-away git
 repository, serves `fonts/` over plain HTTP and runs the **released example**
 with only those two endpoints redirected (the git repo replaces github.com, the
 HTTP server replaces raw.githubusercontent.com). It asserts that the pinned tag
-is cloneable, that both web fonts download, that the configuration is valid and
+is cloneable, that every web font downloads, that the configuration is valid and
 that C++ is generated with the package headers included and copied into the
 build directory. It fails if `examples/release.yaml`, `packages/base.yaml` and
 `packages/fonts_web.yaml` drift to different versions.
@@ -50,7 +50,8 @@ length), runs the steps and deletes only that directory again. Your real
 | Renderer tests | `make -C tests test` | display state machine, OTA priority, layout, slide-up animation, scrolling, countdown, night brightness, `millis()` rollover |
 | Config validation | `esphome config dev.yaml` | full ESPHome 2026.9.0 schema validation, package merge, local fonts, lambdas, actions |
 | Firmware compile | `esphome compile dev.yaml` | generated C++ compiles and links for ESP8266 (PlatformIO toolchain) |
-| Release path (offline) | `scripts/validate-release-offline.sh` | the released example fetches its packages from a tagged git repository and both fonts over HTTP, config valid, C++ generated with the package headers |
+| Release path (offline) | `scripts/validate-release-offline.sh` | the released example fetches its packages from a tagged git repository and all fonts over HTTP, config valid, C++ generated with the package headers |
+| Configurator preview build | `python web-configurator/scripts/generate_glyphs.py --check` | the committed preview bitmaps still match the fonts and sizes the firmware compiles |
 | Remote example | `./scripts/validate.ps1 -Remote` | the published example fetches its packages and fonts from GitHub (needs network) |
 
 All steps return a non-zero exit code on failure, so they can be used in CI.
@@ -116,9 +117,12 @@ The following was executed while building the packages (ESPHome 2026.9.0):
 | **Release path** (`scripts/validate-release-offline.sh 0.1.0`) | packages cloned at tag `0.1.0`, both web fonts downloaded, `INFO Configuration is valid!`, `main.cpp` generated (2955 lines) |
 | Package-relative C++ includes inside a remote package | `esphome: includes:` resolves to `<package cache>/packages/max7219_clock_renderer.h`, and both headers are copied into the build `src/` directory and `#include`d |
 | OTA screen wiring in generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error` and `matrix->update()` inside `on_progress`, guarded by the percentage change |
-| Renderer unit tests (`g++ -std=c++17`) | 168 checks, 0 failures |
-| Contract tests (`python tests/test_config.py`) | 25 tests, OK |
-| Font metrics (freetype, ESPHome's own `pt_to_px()` math) | Tiny5 size 10: `HH:MM:SS` = 46 px; Press Start 2P size 6: 48 px; built-in 5×7 font: 42 px |
+| Renderer unit tests (`make -C tests test`, `g++ -std=c++17`) | 179 checks, 0 failures |
+| Contract tests (`python tests/test_config.py`) | 28 tests, OK |
+| Font metrics (freetype, ESPHome's own `pt_to_px()` math) | Tiny5 size 10: `HH:MM:SS` = 46 px; Press Start 2P size 6: 48 px; Matrix Bold size 10: 40 px; Eight Bit Dragon size 7: 36 px; built-in 5×7 font: 42 px |
+| Font wiring (`tests/test_config.py`) | every font in `fonts_local.yaml` has a `Clock font` select option, is instantiated and selected in `packages/display.yaml`, and compiles every character the renderer can print |
+| Configurator preview (`cd web-configurator && npm test`) | 40 tests: YAML generator, storage/share links, font catalogue versus `packages/controls.yaml`, renderer behaviour, and a static render of the whole app |
+| Configurator build (`npm run build`) | single-file `dist/index.html`, 307 kB (96 kB gzip) |
 | **Full firmware compile** | **not executed**: the PlatformIO registry (`dl.registry.platformio.org`) is unreachable from the build sandbox, so the ESP8266 toolchain cannot be installed |
 
 ## Hardware-only checks that remain
@@ -128,7 +132,7 @@ open items in `ROADMAP.md`:
 
 1. Full compile + flash/RAM measurement with `esphome compile` (a working
    PlatformIO network is required) and the firmware size headroom review.
-2. On-panel readability of both fonts at 8 pixels high.
+2. On-panel readability of all four bundled fonts at 8 pixels high.
 3. OTA upload with the progress screen: does the MAX7219 redraw during the
    upload (the callbacks call `id(matrix).update()` directly)?
 4. Wiring, orientation and both test patterns on the real matrix.
