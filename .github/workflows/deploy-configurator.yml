@@ -33,7 +33,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install rasteriser dependencies
-        run: pip install pyyaml pillow
+        run: pip install pyyaml pillow freetype-py
 
       - name: Generate font preview bitmaps
         # Pillow/FreeType rasterisation can vary between operating systems.

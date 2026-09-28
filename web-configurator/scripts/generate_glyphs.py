@@ -15,18 +15,18 @@ allows: FreeType outlines, an 8 bit coverage bitmap and a hard 50 % threshold,
 which is what ESPHome stores for ``bpp: 1``. Advances are rounded up per glyph,
 matching the ``pt_to_px()`` measurement used by tests/test_config.py.
 
-Requires: pip install pyyaml pillow
+Requires: pip install pyyaml pillow freetype-py
 """
 
 from __future__ import annotations
 
 import argparse
-import math
 import re
 import sys
 from pathlib import Path
 
 import yaml
+import freetype
 from PIL import ImageFont
 
 HERE = Path(__file__).resolve().parent
@@ -45,7 +45,11 @@ class ConfigError(SystemExit):
         super().__init__(f"generate_glyphs: {message}")
 
 
-def glyph_records(font: ImageFont.FreeTypeFont, characters: str) -> dict[str, dict]:
+def glyph_records(
+    font: ImageFont.FreeTypeFont,
+    face: freetype.Face,
+    characters: str,
+) -> dict[str, dict]:
     """Rasterise every character exactly like ESPHome stores it for bpp: 1."""
     records: dict[str, dict] = {}
     for char in characters:
@@ -62,11 +66,15 @@ def glyph_records(font: ImageFont.FreeTypeFont, characters: str) -> dict[str, di
         # getbbox() is relative to the ascender line, which is what ESPHome
         # stores as glyph.offset_y: the distance from the text box top to ink.
         top = font.getbbox(char)[1] if width and height else 0
+        face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
         records[char] = {
             "w": width,
             "h": height,
             "top": top,
-            "advance": math.ceil(font.getlength(char)),
+            # ESPHome derives the glyph advance from FreeType's 26.6 fixed-
+            # point horiAdvance. Pillow's getlength() varies between its
+            # Windows and Linux wheels, which made generated previews fail CI.
+            "advance": (face.glyph.metrics.horiAdvance + 63) // 64,
             "rows": rows,
         }
     return records
@@ -91,10 +99,12 @@ def build() -> str:
         characters = "".join(entry["glyphs"])
         try:
             font = ImageFont.truetype(str(source), size)
+            face = freetype.Face(str(source))
+            face.set_pixel_sizes(size, 0)
         except OSError as error:  # pragma: no cover - broken font file
             raise ConfigError(f"{font_id}: cannot open {source} ({error})") from error
 
-        glyphs = glyph_records(font, characters)
+        glyphs = glyph_records(font, face, characters)
         missing = [char for char in characters if char != " " and not glyphs[char]["h"]]
         if missing:
             raise ConfigError(f"{font_id}: no ink for {''.join(missing)!r}")
