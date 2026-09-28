@@ -106,9 +106,10 @@ font source instead of requiring users to copy fonts beside their YAML.
 
 - [x] Add Tiny5 and Press Start 2P source files under `fonts/` with their SIL
       Open Font License files.
-- [x] Add Matrix Bold and Eight Bit Dragon to the same pipeline (license kept,
-      measured size 10 / 7, selectable, wired into the display lambda, covered
-      by the font contract tests and the configurator preview).
+- [x] Add Silkscreen Bold to the same pipeline (OFL license kept, measured at
+      size 7, selectable, wired into the display lambda, covered by the font
+      contract tests and the configurator preview). Matrix Bold and Eight Bit
+      Dragon were removed after visual review rejected their clock digits.
 - [x] Reference fonts with explicit `type: web` URLs under
       `https://raw.githubusercontent.com/sandro-defender/Esphome-Max7219-Matrix-Clock/<tag>/fonts/...`.
 - [x] Pin production font URLs to the same release tag as the package; do not
@@ -126,12 +127,15 @@ font source instead of requiring users to copy fonts beside their YAML.
       spaces, and required status letters.
 - [x] Use `bpp: 1` unless measurements justify a larger value.
 - [x] Verify every font fits full-size `HH:MM:SS`, remains readable at 8 pixels
-      ... widths measured with ESPHome's own pt_to_px() metrics (Tiny5 46 px, Press Start 2P 48 px, Matrix Bold 40 px, Eight Bit Dragon 36 px) and rasterised glyphs inspected; on-panel confirmation is a hardware item
+      ... widths measured with ESPHome's own pt_to_px() metrics (Silkscreen Bold 46 px, Tiny5 46 px, Press Start 2P 48 px) and rasterised glyphs inspected; on-panel confirmation is a hardware item
       high, and works with per-digit slide-up animation.
 - [x] Test missing glyphs, metrics, clipping, alignment, and fallback behavior.
       ... `test_font_glyphs_cover_every_compiled_character`, `test_font_ink_is_not_taller_than_the_matrix` and `test_every_compiled_font_is_selectable_and_wired` in tests/test_config.py
-- [ ] Record firmware size for each enabled font and remove low-value choices
-      ... blocked: needs a full compile (PlatformIO registry unreachable in the build environment)
+- [ ] Record firmware-size deltas for each enabled font and remove low-value
+      choices if ESP8266 headroom becomes unsafe.
+      ... aggregate build with all three fonts is safe (507745 bytes flash,
+      44028 bytes RAM); per-face differential measurements remain optional
+      follow-up evidence
       if ESP8266 headroom becomes unsafe.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and
       the steps for adding another font.
@@ -147,7 +151,7 @@ font source instead of requiring users to copy fonts beside their YAML.
       leading-zero and interrupt switches) that the firmware does not have.
 - [x] Map every remaining control to a substitution or a restored entity.
 - [x] Persist settings in the browser and support shareable, validated links.
-- [x] Test the configurator: 40 Vitest checks, including a cross-check that the
+- [x] Test the configurator: 42 Vitest checks, including a cross-check that the
       font picker offers exactly the options `packages/controls.yaml` compiles.
 
 ## Phase 5 — Make display state explicit
@@ -304,8 +308,9 @@ and `on_error` automations.
 - [x] Use encrypted native API and encrypted native OTA.
 - [x] Document web-server authentication and network-isolation expectations.
 - [x] Avoid exposing unauthenticated firmware upload paths.
-- [ ] Review generated firmware RAM and flash usage.
-      ... blocked: needs a full compile/toolchain
+- [x] Review generated firmware RAM and flash usage.
+      ... ESPHome 2026.9.0 full build: 507745/1044464 bytes flash (48.6%) and
+      44028/81920 bytes RAM (53.7%)
 - [x] Remove or simplify low-value functionality if ESP8266 headroom becomes
       unsafe.
 - [x] Avoid rapid diagnostic publishing and excessive API traffic.
@@ -324,8 +329,9 @@ and `on_error` automations.
       firmware compilation.
 - [x] Run the regression suite.
 - [x] Run ESPHome 2026.9.0 `config` validation.
-- [ ] Run a complete ESP8266 firmware compile.
-      ... blocked: PlatformIO registry and toolchain downloads are unreachable from the build environment; codegen for the complete configuration succeeded
+- [x] Run a complete ESP8266 firmware compile.
+      ... ESPHome 2026.9.0 linked firmware.bin successfully; flash 48.6%, RAM
+      53.7%
 - [x] Validate that a clean temporary configuration can fetch all remote package
       YAML and web-font assets without relying on untracked local files.
 - [ ] Perform a real OTA upload test when hardware is available and record
@@ -358,15 +364,14 @@ and `on_error` automations.
 
 - [x] All regression tests pass.
 - [x] ESPHome 2026.9.0 reports the configuration as valid.
-- [ ] The full ESP8266 firmware compiles successfully.
-      ... blocked in the build environment (see Phase 13)
+- [x] The full ESP8266 firmware compiles successfully.
 - [x] Full-size `HH:MM:SS` fits the default 48×8 matrix.
 - [x] Slide-up animation is non-blocking and affects only changed digits.
 - [x] OTA start, progress, success, and error screens are implemented.
 - [x] Useful runtime settings are exposed cleanly to Home Assistant.
 - [x] No credential or generated build artifact is committed.
-- [ ] Firmware size leaves safe ESP8266 headroom.
-      ... unmeasured: needs a full compile
+- [x] Firmware size leaves safe ESP8266 headroom.
+      ... 51.4% flash and 46.3% RAM remain free in the validated default build
 - [x] Documentation describes the final implementation accurately.
 - [x] A minimal example downloads pinned package files and font assets directly
       from the GitHub release without copying the repository locally.

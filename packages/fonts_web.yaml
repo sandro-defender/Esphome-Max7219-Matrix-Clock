@@ -8,7 +8,7 @@
 # (see fonts/README.md for the method and the full table):
 #   Tiny5             size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink
 #   Press Start 2P    size  6 -> "HH:MM:SS" is 48 px wide, 7 px tall ink
-#   Silkscreen Bold   size  7 -> "HH:MM:SS" is 44 px wide, 5 px tall ink
+#   Silkscreen Bold   size  7 -> "HH:MM:SS" is 46 px wide, 5 px tall ink
 # All are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
 # as much flash as possible. Only the rasterised glyphs land in the firmware
 # (a few hundred bytes each), never the TTF/OTF source files. Messages are
@@ -20,7 +20,7 @@
 
 substitutions:
   # Keep in sync with the tag used by the remote `packages` ref.
-  project_ref: "0.1.0"
+  project_ref: "0.1.2"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   # Overridable for offline builds/validation (see VALIDATION.md).
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts

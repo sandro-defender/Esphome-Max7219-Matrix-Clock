@@ -36,7 +36,7 @@ the UI: the firmware draws the clock proportionally.
 The downloaded device file is the only YAML an end user needs to maintain. It
 contains local `!secret` references, substitutions, first-boot preferences and
 the complete remote `packages` declaration. During validation and compilation,
-ESPHome downloads the modular firmware and the four bundled fonts from the
+ESPHome downloads the modular firmware and the three bundled fonts from the
 matching repository release.
 
 The configurator does not copy the complete renderer into every generated file.
@@ -106,7 +106,7 @@ includes the same module list as `../examples/release.yaml`:
 
 * base device and network/API configuration;
 * renderer and MAX7219 display bridge;
-* repository-hosted Tiny5, Press Start 2P, Matrix Bold and Eight Bit Dragon fonts;
+* repository-hosted Silkscreen Bold, Tiny5 and Press Start 2P fonts;
 * Home Assistant controls and API actions;
 * diagnostics and on-matrix OTA progress;
 * authenticated web server with browser-based OTA disabled.

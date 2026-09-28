@@ -1,6 +1,6 @@
 # Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
-Release: **0.1.0** (pinned consistently in `examples/release.yaml`,
+Release: **0.1.2** (pinned consistently in `examples/release.yaml`,
 `packages/base.yaml` and `packages/fonts_web.yaml`).
 
 Scope: replace the single-file `max7219-clock.yaml` with the modular package
@@ -15,9 +15,9 @@ or to a command that was actually executed.
   pixel-checkerboard test. Priority: OTA > alert/message > countdown > selected
   screen.
 * **Full `HH:MM:SS` in the default 48×8 layout**: built-in 5×7 font 42 px,
-  Tiny5 (size 10) 46 px, Press Start 2P (size 6) 48 px, Matrix Bold (size 10)
-  40 px, Eight Bit Dragon (size 7) 36 px.
-* **Fonts**: four bundled fonts (`fonts/`, OFL licensed) downloaded at build time
+  Silkscreen Bold (size 7) 46 px, Tiny5 (size 10) 46 px and Press Start 2P
+  (size 6) 48 px.
+* **Fonts**: three bundled fonts (`fonts/`, OFL licensed) downloaded at build time
   from a tag-pinned raw GitHub URL, restricted glyph sets, `bpp: 1`, plus a
   built-in fallback font that needs nothing and always fits. Runtime font
   selection switches between compiled font IDs only. The web configurator
@@ -86,25 +86,24 @@ apply; the documented ESPHome migration still applies to older setups.
 
 | Check | Command | Result |
 |---|---|---|
-| Contract tests | `python tests/test_config.py` | 28 tests, **OK** (needs PyYAML; ESPHome installs it) |
+| Contract tests | `python tests/test_config.py` | 29 tests, **OK** (host-only C++ case skipped because no host compiler is installed) |
 | Renderer unit tests | `make -C tests test` | **179 checks, 0 failures** |
 | ESPHome config validation | `esphome config dev.yaml` (2026.9.0) | **`INFO Configuration is valid!`** |
-| C++ code generation | `esphome compile dev.yaml` (codegen phase) | `main.cpp` generated (2948 lines): headers included, both fonts instantiated, display writer wired, all actions and OTA callbacks emitted (re-run required after adding Matrix Bold and Eight Bit Dragon) |
+| C++ code generation | `esphome compile dev.yaml` | headers included, all three fonts instantiated, display writer wired, all actions and OTA callbacks emitted |
 | Released example fetched from **real GitHub** (`ref:` = pushed branch) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines), headers copied into the build `src/` |
 | OTA screens in the generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error`, `matrix->update()` inside `on_progress` (only when the percentage changes) |
-| Release path (offline) | `scripts/validate-release-offline.sh 0.1.0` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, every web font downloaded, `main.cpp` generated (2955 lines), package headers copied into the build `src/` |
-| Font width measurements | freetype with ESPHome's `pt_to_px()` | Tiny5 46 px, Press Start 2P 48 px, Matrix Bold 40 px, Eight Bit Dragon 36 px, built-in 42 px - all ≤ 48 px |
-| Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 40 tests, type-check clean, single-file `dist/index.html` (307 kB) |
-| **Full firmware compile** | `esphome compile dev.yaml` | **not executed** - PlatformIO registry unreachable in the build environment |
+| Release path (offline) | `scripts/validate-release-offline.sh 0.1.2` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, all three web fonts downloaded, `main.cpp` generated (2990 lines), package headers copied into the build `src/` |
+| Font width measurements | freetype with ESPHome's `pt_to_px()` | Silkscreen Bold 46 px, Tiny5 46 px, Press Start 2P 48 px, built-in 42 px - all ≤ 48 px |
+| Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 42 tests, type-check clean, single-file `dist/index.html` (304.58 kB; 95.65 kB gzip) |
+| **Full firmware compile** | `scripts/validate.ps1` with ESPHome 2026.9.0 | **PASS** - firmware linked successfully |
 
 ## 6. Build size
 
-Not available. A firmware size and RAM headroom review requires a complete
-PlatformIO build, which needs `dl.registry.platformio.org`; that host is not
-reachable from the environment used to prepare this release. The measurement
-step is left unchecked in `ROADMAP.md` (Phase 4 and Phase 12) and listed in
-`VALIDATION.md` as a hardware/network-dependent check. Nothing here claims a
-safe headroom figure.
+The validated ESPHome 2026.9.0 default build uses **507745 of 1044464 bytes of
+flash (48.6%)** and **44028 of 81920 bytes of RAM (53.7%)**. That leaves 51.4%
+flash and 46.3% RAM headroom with all three repository fonts compiled. The
+roadmap still leaves per-font differential measurement as optional follow-up;
+the aggregate production configuration is measured and safe.
 
 ## 7. Files changed
 
@@ -117,7 +116,7 @@ Added: `packages/` (11 modules + 2 C++ headers + README),
 
 Updated: `README.md` (complete rewrite for the package layout),
 `fonts/README.md` (measurements, glyph sets, add-a-font steps), `ROADMAP.md`
-(checkboxes with evidence, 8 left unchecked on purpose), `.gitignore`
+(checkboxes with evidence), `.gitignore`
 (`__pycache__/`, `.venv/`, `validation-tmp/`).
 
 Removed: `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` and its
@@ -125,49 +124,32 @@ Removed: `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` and its
 
 ## 8. Commit and push status
 
-All work is committed on the session branch
-`arena/01a0e58b-esphome-max7219-matrix-clock`.
-
-The full ESP8266 firmware compile could not run in the preparation environment
-(no PlatformIO registry access), and the roadmap makes a passing compile part of
-the push gate, so the work was pushed as a **feature branch only** and reviewed
-through pull request
-[#1](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/1)
-(base `main`, 32 files, +5066/-782). `main` itself was never pushed to and no
-tag was created.
-
-Before merging, run `scripts/validate.ps1` (or `esphome compile dev.yaml`) on a
-machine with PlatformIO access - that is the missing gate and it also produces
-the build-size numbers for Phase 4/12. After merging, tag the reviewed commit
-`0.1.0`: `examples/release.yaml`, `packages/base.yaml` and
-`packages/fonts_web.yaml` already pin that version (enforced by the contract
-tests), so the release example becomes resolvable as soon as the tag exists.
+The Silkscreen replacement is committed locally on `main`. The tests, ESPHome
+2026.9.0 configuration validation, full ESP8266 compile and emulated `0.1.2`
+release path all pass. Publication of `main` and tag `0.1.2` is the remaining
+release step; `examples/release.yaml`, `packages/base.yaml`,
+`packages/fonts_web.yaml` and the configurator already pin that version and the
+contract tests enforce their agreement.
 
 No force-push was used at any point.
 
 ## 9. Remaining hardware-only verification
 
-1. Full `esphome compile` with a reachable PlatformIO toolchain, then review
-   flash/RAM usage and ESP8266 headroom (Phase 4/12 boxes stay unchecked).
-   `scripts/validate-release-offline.sh` covers everything up to that point and
-   can be re-run with a working toolchain to produce the missing numbers.
-2. On-panel readability of Tiny5 (size 10), Press Start 2P (size 6), Matrix Bold
-   (size 10) and Eight Bit Dragon (size 7).
-3. OTA upload with a real device: confirm the progress screen redraws from the
+1. On-panel readability of Silkscreen Bold (size 7), Tiny5 (size 10) and Press
+   Start 2P (size 6).
+2. OTA upload with a real device: confirm the progress screen redraws from the
    OTA callbacks (`id(matrix).update()`).
-4. Wiring/orientation confirmation with the module-grid and pixel tests.
-5. Behaviour of the physical controls (display power, inversion, night
+3. Wiring/orientation confirmation with the module-grid and pixel tests.
+4. Behaviour of the physical controls (display power, inversion, night
    brightness, 12/24-hour and date formats).
 
 ## 10. Deviations and open items
 
-* Eight roadmap checkboxes remain unchecked, each annotated in `ROADMAP.md`:
-  firmware size recording/review, OTA-callback verification "by compilation",
-  the full ESP8266 compile, the real OTA upload test, the push gate and the
-  `HEAD == origin/main` confirmation.
+* Four roadmap checkboxes remain unchecked: optional per-font size deltas, the
+  real-device OTA upload test, the push gate and `HEAD == origin/main`.
 * The release example uses the explicit remote-package form (`url` + `ref` +
   `files`) instead of the `github://` shorthand, because only the explicit form
   can pin a tag and load several files (including the two C++ headers) as one
   package. `github://` remains documented in `packages/README.md`.
-* A separate message-font selector was deliberately not added: without a
-  firmware size review there is no evidence of safe headroom.
+* A separate message-font selector was deliberately not added because it would
+  duplicate the clock-font setting without adding useful capability.

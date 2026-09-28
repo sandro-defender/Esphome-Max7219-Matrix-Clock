@@ -28,8 +28,8 @@ describe("buildYaml", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
     expect(yaml).toContain("url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock");
-    expect(yaml).toContain('ref: "0.1.0"');
-    expect(yaml).toContain('project_ref: "0.1.0"');
+    expect(yaml).toContain('ref: "0.1.2"');
+    expect(yaml).toContain('project_ref: "0.1.2"');
     expect(yaml).toContain("- packages/base.yaml");
     expect(yaml).toContain("- packages/fonts_web.yaml");
     expect(yaml).toContain("- packages/ota_ui.yaml");

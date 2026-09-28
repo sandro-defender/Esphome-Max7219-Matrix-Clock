@@ -7,16 +7,14 @@ preview shows the real glyphs instead of a web-font approximation.
 
 | Family | Source file | License |
 |---|---|---|
+| Silkscreen Bold | [`silkscreen/Silkscreen-Bold.ttf`](silkscreen/Silkscreen-Bold.ttf) | [`silkscreen/OFL.txt`](silkscreen/OFL.txt) |
 | Tiny5 | [`tiny5/Tiny5-Regular.ttf`](tiny5/Tiny5-Regular.ttf) | [`tiny5/OFL.txt`](tiny5/OFL.txt) |
 | Press Start 2P | [`press-start-2p/PressStart2P-Regular.ttf`](press-start-2p/PressStart2P-Regular.ttf) | [`press-start-2p/OFL.txt`](press-start-2p/OFL.txt) |
-| Matrix Bold | [`Matrix-Bold/Matrix_Bold.ttf`](Matrix-Bold/Matrix_Bold.ttf) | [`Matrix-Bold/OFL.txt`](Matrix-Bold/OFL.txt) |
-| Eight Bit Dragon | [`eight_bit_dragon/eight-bit-dragon.otf`](eight_bit_dragon/eight-bit-dragon.otf) | [`eight_bit_dragon/OFL.txt`](eight_bit_dragon/OFL.txt) |
 
 The files are redistributed under the SIL Open Font License 1.1 included beside
-each font. Their upstream sources are the
-[Google Fonts repository](https://github.com/google/fonts) (Tiny5, Press Start 2P),
-[FontStruct](https://fontstruct.com) (Eight Bit Dragon) and the Press Start 2P
-project (Matrix Bold).
+each font. Silkscreen Bold, Tiny5 and Press Start 2P come from the official
+[Google Fonts repository](https://github.com/google/fonts). Silkscreen Bold is
+the default because its two-pixel strokes stay strong on a small LED matrix.
 
 ## How the firmware uses them
 
@@ -25,11 +23,11 @@ project (Matrix Bold).
 
 ```yaml
 font:
-  - id: font_matrix_bold_source
+  - id: font_silkscreen_bold_source
     file:
       type: web
-      url: ${fonts_base_url}/Matrix-Bold/Matrix_Bold.ttf   # github raw URL + ${project_ref}
-    size: 10
+      url: ${fonts_base_url}/silkscreen/Silkscreen-Bold.ttf   # github raw URL + ${project_ref}
+    size: 7
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
@@ -58,15 +56,14 @@ Measured two ways, both in the repository:
 
 | Font | `size` | `HH:MM:SS` width | Tallest digit | Fits 48×8 | Notes |
 |---|---|---|---|---|---|
-| Tiny5 | 10 | 46 px | 6 px | yes, 1 px margin on each side | default; leaves row 8 free for the seconds bar |
+| Silkscreen Bold | 7 | 46 px | 5 px | yes, 1 px margin on each side | default; thick two-pixel strokes and room for the seconds bar |
+| Tiny5 | 10 | 46 px | 6 px | yes, 1 px margin on each side | narrow tall alternative; leaves row 8 free for the seconds bar |
 | Press Start 2P | 6 | 48 px | 7 px | yes, exact fit | fills the width, row 8 stays free |
-| Matrix Bold | 10 | 40 px | 7 px | yes, 4 px margin on each side | heavy strokes, best read through glass |
-| Eight Bit Dragon | 7 | 36 px | 6 px | yes, 6 px margin on each side | dense retro digits, row 8 free for the bar |
 | built-in 5×7 fallback | - | 42 px | 7 px | yes, always available | needs no download |
 
-Sizes 11 and 12 of Matrix Bold are deliberately **not** used: their `9` reaches
-past the eighth row. Eight Bit Dragon is compiled at 7 instead of 8 so the
-bottom row stays free for the seconds bar.
+Silkscreen Bold size 8 is deliberately **not** used: `HH:MM:SS` reaches 50 px
+and would not fit the default panel. Size 7 keeps the bold pixel structure while
+leaving two pixels of total horizontal headroom.
 
 The renderer checks the width at runtime and degrades in a fixed order:
 full `HH:MM:SS` → `HH:MM` plus the bottom-row seconds bar → built-in fallback
@@ -101,3 +98,6 @@ font IDs that are already compiled into the firmware.
 8. Run `cd web-configurator && npm test` - it fails if the configurator and the
    firmware disagree about the available fonts.
 9. Measure the ESP8266 flash usage after a full compile and document it here.
+
+Silkscreen Bold source SHA-256:
+`768476aa712d4f5c3e18d3bce80f980a8bd3f72b7094d22ec5e768df3acfed61`.

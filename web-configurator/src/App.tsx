@@ -726,7 +726,7 @@ export default function App() {
                 </div>
                 <p>
                   This is the complete one-file installer. Keep it beside your existing <code>secrets.yaml</code>. ESPHome
-                  downloads the version-pinned modular firmware and the four bundled fonts from this repository during
+                  downloads the version-pinned modular firmware and the three bundled fonts from this repository during
                   validation and compilation.
                 </p>
                 <ol>
