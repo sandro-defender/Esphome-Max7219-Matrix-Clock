@@ -138,6 +138,13 @@ describe("buildYaml", () => {
 });
 
 describe("font catalog", () => {
+  it("offers the bold Silkscreen clock face and retires the rejected faces", () => {
+    const options = FONT_CATALOG.map((spec) => spec.option);
+    expect(options).toContain("Silkscreen Bold");
+    expect(options).not.toContain("Matrix Bold");
+    expect(options).not.toContain("Eight Bit Dragon");
+  });
+
   it("offers exactly the options the firmware compiles", () => {
     expect([...FONT_CATALOG].map((spec) => spec.option).sort()).toEqual([...firmwareFontOptions()].sort());
   });
@@ -181,7 +188,7 @@ describe("font catalog", () => {
 
 describe("settings storage", () => {
   it("round-trips a configuration through a share link", () => {
-    const config: Config = { ...DEFAULT_CONFIG, chips: 8, rows: 2, clockFont: "matrix-bold", led: "Ice" };
+    const config: Config = { ...DEFAULT_CONFIG, chips: 8, rows: 2, clockFont: "silkscreen-bold", led: "Ice" };
     const url = shareUrl(config, "https://example.com/configurator");
     const encoded = url.split("#cfg=")[1];
 

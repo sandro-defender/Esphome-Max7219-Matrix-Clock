@@ -129,8 +129,7 @@ REQUIRED_ACTIONS = {
 FONT_OPTION_BY_ID = {
     "font_tiny5_source": "Tiny5",
     "font_ps2p_source": "Press Start 2P",
-    "font_matrix_bold_source": "Matrix Bold",
-    "font_8bitdragon_source": "Eight Bit Dragon",
+    "font_silkscreen_bold_source": "Silkscreen Bold",
 }
 
 # Everything the renderer can print on the clock, date, countdown, message and

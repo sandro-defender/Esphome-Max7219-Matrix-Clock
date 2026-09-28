@@ -56,7 +56,7 @@ describe("renderScene", () => {
   });
 
   it("keeps every font inside the digit rows of the panel", () => {
-    for (const clockFont of ["tiny5", "press-start-2p", "matrix-bold", "eight-bit-dragon", "compact"] as const) {
+    for (const clockFont of ["tiny5", "press-start-2p", "silkscreen-bold", "compact"] as const) {
       const scene = sceneWith({ clockFont, secondsMode: "Off" });
       const font = previewFont(clockFont);
       const boxTop = font.boxTop(8);

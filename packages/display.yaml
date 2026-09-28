@@ -65,8 +65,7 @@ display:
       max7219_clock::DisplayCanvas canvas(it);
       max7219_clock::SourceFont tiny5_font(font_tiny5_source, &it);
       max7219_clock::SourceFont ps2p_font(font_ps2p_source, &it);
-      max7219_clock::SourceFont matrix_bold_font(font_matrix_bold_source, &it);
-      max7219_clock::SourceFont dragon_font(font_8bitdragon_source, &it);
+      max7219_clock::SourceFont silkscreen_bold_font(font_silkscreen_bold_source, &it);
       max7219_clock::BuiltinFont builtin_font;
       // StringRef: a view on the codegen literals, so no per-frame allocation.
       const StringRef font_option = id(clock_font).current_option();
@@ -75,10 +74,8 @@ display:
         selected = &tiny5_font;
       } else if (font_option == "Press Start 2P") {
         selected = &ps2p_font;
-      } else if (font_option == "Matrix Bold") {
-        selected = &matrix_bold_font;
-      } else if (font_option == "Eight Bit Dragon") {
-        selected = &dragon_font;
+      } else if (font_option == "Silkscreen Bold") {
+        selected = &silkscreen_bold_font;
       }
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 

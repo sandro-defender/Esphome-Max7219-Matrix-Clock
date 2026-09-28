@@ -110,8 +110,7 @@ select:
     options:
       - "Tiny5"
       - "Press Start 2P"
-      - "Matrix Bold"
-      - "Eight Bit Dragon"
+      - "Silkscreen Bold"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

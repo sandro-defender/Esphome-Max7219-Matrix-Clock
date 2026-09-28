@@ -6,7 +6,7 @@ export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 
 /** Home Assistant "Clock font" select options that the firmware compiles. */
-export type ClockFont = "tiny5" | "press-start-2p" | "matrix-bold" | "eight-bit-dragon" | "compact";
+export type ClockFont = "tiny5" | "press-start-2p" | "silkscreen-bold" | "compact";
 
 /**
  * "firmware" mirrors what packages/max7219_clock_renderer.h draws.
@@ -139,7 +139,6 @@ export const SCREENS: ScreenMode[] = ["Clock", "Date", "Message", "Module grid t
 export const CLOCK_FONTS: ClockFont[] = [
   "tiny5",
   "press-start-2p",
-  "matrix-bold",
-  "eight-bit-dragon",
+  "silkscreen-bold",
   "compact",
 ];

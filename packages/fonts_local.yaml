@@ -29,20 +29,10 @@ font:
       - "0123456789:.-/%!?+ "
       - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-  - id: font_matrix_bold_source
+  - id: font_silkscreen_bold_source
     file:
       type: local
-      path: ../fonts/Matrix-Bold/Matrix_Bold.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-  - id: font_8bitdragon_source
-    file:
-      type: local
-      path: ../fonts/eight_bit_dragon/eight-bit-dragon.otf
+      path: ../fonts/silkscreen/Silkscreen-Bold.ttf
     size: 7
     bpp: 1
     glyphs:

@@ -8,17 +8,15 @@
 # (see fonts/README.md for the method and the full table):
 #   Tiny5             size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink
 #   Press Start 2P    size  6 -> "HH:MM:SS" is 48 px wide, 7 px tall ink
-#   Matrix Bold       size 10 -> "HH:MM:SS" is 40 px wide, 8 px tall ink
-#   Eight Bit Dragon  size  7 -> "HH:MM:SS" is 36 px wide, 6 px tall ink
+#   Silkscreen Bold   size  7 -> "HH:MM:SS" is 44 px wide, 5 px tall ink
 # All are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
 # as much flash as possible. Only the rasterised glyphs land in the firmware
 # (a few hundred bytes each), never the TTF/OTF source files. Messages are
 # converted to upper case by the firmware, which is why the glyph set is upper
 # case only.
 #
-# Matrix Bold fills all 8 rows of a 48x8 panel, so it looks best with the
-# "Digits" seconds mode; Eight Bit Dragon leaves the bottom row free and stays
-# compatible with the "Bar" seconds mode.
+# Silkscreen Bold uses two-pixel strokes at this size and leaves room for the
+# bottom-row seconds bar.
 
 substitutions:
   # Keep in sync with the tag used by the remote `packages` ref.
@@ -48,20 +46,10 @@ font:
       - "0123456789:.-/%!?+ "
       - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-  - id: font_matrix_bold_source
+  - id: font_silkscreen_bold_source
     file:
       type: web
-      url: ${fonts_base_url}/Matrix-Bold/Matrix_Bold.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-  - id: font_8bitdragon_source
-    file:
-      type: web
-      url: ${fonts_base_url}/eight-bit-dragon/eight-bit-dragon.otf
+      url: ${fonts_base_url}/silkscreen/Silkscreen-Bold.ttf
     size: 7
     bpp: 1
     glyphs:
