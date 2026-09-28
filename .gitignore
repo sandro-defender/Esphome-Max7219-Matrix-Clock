@@ -1,0 +1,7 @@
+# ESPHome credentials and generated firmware/build artifacts
+secrets.yaml
+**/secrets.yaml
+.esphome/
+**/.esphome/
+build/
+**/build/
