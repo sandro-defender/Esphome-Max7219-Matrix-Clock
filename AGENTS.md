@@ -1,0 +1,33 @@
+# Agent instructions
+
+This repository contains an ESPHome MAX7219 matrix-clock configuration for an
+ESP8266/Wemos D1 Mini.
+
+Before changing any project file:
+
+- [ ] Read [README.md](README.md).
+- [ ] Read the complete [ROADMAP.md](ROADMAP.md).
+- [ ] Inspect `git status` and preserve all existing user changes.
+- [ ] Treat `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` as the primary
+      configuration until the modular package migration is validated.
+- [ ] Do not keep the finished implementation in one YAML file. Build focused
+      modules under `packages/` and keep the user-facing YAML small.
+- [ ] Use substitutions for device-specific names, hardware settings, feature
+      flags, and locally supplied secret values.
+- [ ] Make the public installation download version-pinned package YAML and
+      font assets directly from this repository.
+- [ ] Preserve every font's license, restrict compiled glyphs, and measure
+      ESP8266 firmware size before adding another font.
+- [ ] Target ESPHome **2026.9.0 exactly** unless the user explicitly changes
+      the target.
+- [ ] Verify ESPHome-specific decisions against official documentation.
+- [ ] Never ask for or expose Wi-Fi credentials, API keys, SSH keys, OTA keys,
+      or web passwords. Use `!secret` and keep `secrets.yaml` untracked.
+- [ ] Do not claim completion or push firmware changes until regression tests,
+      `esphome config`, and a complete firmware compile pass.
+- [ ] Do not force-push, discard unrelated changes, or commit generated build
+      output.
+
+The checkbox roadmap is the implementation contract. Work through it in order,
+update its checkboxes only when evidence exists, and record any hardware-only
+verification that remains.
