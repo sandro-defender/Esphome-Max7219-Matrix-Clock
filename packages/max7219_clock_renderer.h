@@ -328,6 +328,10 @@ struct Runtime {
   // Housekeeping bookkeeping
   uint32_t last_tick_ms = 0;
   bool night_active = false;
+  // Last brightness level handed to the hardware (-1 = never applied), so a
+  // Home Assistant brightness change reaches the panel even without a
+  // night/day flip.
+  float applied_brightness = -1.0f;
   uint32_t cycle_last_ms = 0;
 
   // Last values published to Home Assistant (publish on change only)
@@ -765,10 +769,16 @@ inline void housekeeping(const Frame &f, Report &report) {
     }
   }
   const bool night = f.night_manual || in_window;
-  if (night != state.night_active) {
+  const float target_brightness = night ? f.brightness_night : f.brightness_day;
+  // Report when the effective level changes: a night/day flip OR a Home
+  // Assistant edit of the Matrix/Night brightness entities. Without the
+  // second condition the sliders would never reach the panel until the next
+  // night-window transition or reboot.
+  if (night != state.night_active || target_brightness != state.applied_brightness) {
     state.night_active = night;
+    state.applied_brightness = target_brightness;
     report.brightness_changed = true;
-    report.brightness = night ? f.brightness_night : f.brightness_day;
+    report.brightness = target_brightness;
   }
 
   // Automatic clock/date cycling only while a normal screen is selected and no
