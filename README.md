@@ -38,6 +38,8 @@ holds your credentials, a few substitutions and the package list.
 
 ## Web configurator and one-file installer
 
+**[Open the live MAX7219 Clock Web Configurator](https://sandro-defender.github.io/Esphome-Max7219-Matrix-Clock/)**
+
 The [`web-configurator/`](web-configurator/) project is now part of this
 repository. It previews the display and generates one ready-to-download device
 YAML with:
