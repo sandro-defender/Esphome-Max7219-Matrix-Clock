@@ -127,11 +127,18 @@ All work is committed on the session branch
 
 The full ESP8266 firmware compile could not run in the preparation environment
 (no PlatformIO registry access), and the roadmap makes a passing compile part of
-the push gate. The changes are therefore left on that branch for review; the
-maintainer should tag the reviewed commit (`0.1.0`) and push it, which also makes
-the release example resolvable. `examples/release.yaml`, `packages/base.yaml`
-and `packages/fonts_web.yaml` already pin `0.1.0`, so nothing else needs editing
-when the tag is published.
+the push gate, so the work was pushed as a **feature branch only** and reviewed
+through pull request
+[#1](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/1)
+(base `main`, 32 files, +5066/-782). `main` itself was never pushed to and no
+tag was created.
+
+Before merging, run `scripts/validate.ps1` (or `esphome compile dev.yaml`) on a
+machine with PlatformIO access - that is the missing gate and it also produces
+the build-size numbers for Phase 4/12. After merging, tag the reviewed commit
+`0.1.0`: `examples/release.yaml`, `packages/base.yaml` and
+`packages/fonts_web.yaml` already pin that version (enforced by the contract
+tests), so the release example becomes resolvable as soon as the tag exists.
 
 No force-push was used at any point.
 
