@@ -110,10 +110,12 @@ The following was executed while building the packages (ESPHome 2026.9.0):
 
 | Check | Result |
 |---|---|
+| **Released example fetched from GitHub** (`ref:` = the pushed session branch, fonts over local HTTP) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines) with both package headers copied into the build `src/` |
 | `esphome config dev.yaml` (all modules, local fonts) | `INFO Configuration is valid!` |
 | Code generation for the full config | `main.cpp` generated (2948 lines), headers included, fonts instantiated, display writer wired, action strings generated |
 | **Release path** (`scripts/validate-release-offline.sh 0.1.0`) | packages cloned at tag `0.1.0`, both web fonts downloaded, `INFO Configuration is valid!`, `main.cpp` generated (2955 lines) |
 | Package-relative C++ includes inside a remote package | `esphome: includes:` resolves to `<package cache>/packages/max7219_clock_renderer.h`, and both headers are copied into the build `src/` directory and `#include`d |
+| OTA screen wiring in generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error` and `matrix->update()` inside `on_progress`, guarded by the percentage change |
 | Renderer unit tests (`g++ -std=c++17`) | 168 checks, 0 failures |
 | Contract tests (`python tests/test_config.py`) | 25 tests, OK |
 | Font metrics (freetype, ESPHome's own `pt_to_px()` math) | Tiny5 size 10: `HH:MM:SS` = 46 px; Press Start 2P size 6: 48 px; built-in 5×7 font: 42 px |

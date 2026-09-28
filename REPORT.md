@@ -88,6 +88,8 @@ apply; the documented ESPHome migration still applies to older setups.
 | Renderer unit tests | `make -C tests test` | **163 checks, 0 failures** |
 | ESPHome config validation | `esphome config dev.yaml` (2026.9.0) | **`INFO Configuration is valid!`** |
 | C++ code generation | `esphome compile dev.yaml` (codegen phase) | `main.cpp` generated (2948 lines): headers included, both fonts instantiated, display writer wired, all actions and OTA callbacks emitted |
+| Released example fetched from **real GitHub** (`ref:` = pushed branch) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines), headers copied into the build `src/` |
+| OTA screens in the generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error`, `matrix->update()` inside `on_progress` (only when the percentage changes) |
 | Release path (offline) | `scripts/validate-release-offline.sh 0.1.0` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, both web fonts downloaded, `main.cpp` generated (2955 lines), package headers copied into the build `src/` |
 | Font width measurements | freetype with ESPHome's `pt_to_px()` | Tiny5 46 px, Press Start 2P 48 px, built-in 42 px - all ≤ 48 px |
 | **Full firmware compile** | `esphome compile dev.yaml` | **not executed** - PlatformIO registry unreachable in the build environment |

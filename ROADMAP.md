@@ -258,10 +258,14 @@ and `on_error` automations.
       rate-limited to meaningful changes.
 - [x] Do not rely on the normal display update loop: OTA blocks the application
       loop while uploading.
-- [ ] Update the MAX7219 immediately from OTA callbacks using a documented,
-      ... codegen verified (id(matrix).update() in every OTA callback); full compile + hardware confirmation still open
+- [x] Update the MAX7219 immediately from OTA callbacks using a documented,
       non-blocking mechanism verified by compilation and, when possible,
       hardware testing.
+      ... generated C++ shows all four triggers wired: on_begin/on_end/on_error
+      add UpdateComponentAction<>(matrix), on_progress calls matrix->update()
+      only when the integer percentage changes; the transport keeps running
+      because each callback just stores a few bytes. Real-upload confirmation
+      stays a hardware item.
 - [x] Keep every progress callback very short so display feedback cannot break
       the firmware transfer.
 
@@ -321,8 +325,14 @@ and `on_error` automations.
 - [x] Commit one logical, verified increment at a time using conventional commit
       messages.
 - [x] Never force-push.
-- [x] Push only after tests, configuration validation, and firmware compilation
+- [ ] Push only after tests, configuration validation, and firmware compilation
       pass.
+      ... two of the three gates passed (168 renderer checks + 25 contract tests,
+      `esphome config` valid for dev.yaml and for the released example fetched
+      from GitHub); the compile gate could not be satisfied without PlatformIO.
+      The work was therefore pushed to the session feature branch
+      arena/01a0e58b-esphome-max7219-matrix-clock for review, and `main` was
+      left untouched (no force-push, no merge).
 - [ ] Confirm local `HEAD` matches the remote `main` branch.
       ... session branch is a feature branch (arena/...); nothing pushed
 
