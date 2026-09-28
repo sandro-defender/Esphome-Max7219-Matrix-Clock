@@ -4,23 +4,15 @@
 # build never mixes main-branch font assets with a tagged package release. The
 # development entry point uses fonts_local.yaml instead.
 #
-# Measured with ESPHome's own pt_to_px() metrics and FreeType rasterisation
-# (see fonts/README.md for the method and the full table):
-#   Tiny5             size 10 -> "HH:MM:SS" is 46 px wide, 6 px tall ink
-#   Press Start 2P    size  6 -> "HH:MM:SS" is 48 px wide, 7 px tall ink
-#   Silkscreen Bold   size  7 -> "HH:MM:SS" is 46 px wide, 5 px tall ink
-# All are compiled with bpp: 1 and a restricted glyph set so the ESP8266 keeps
-# as much flash as possible. Only the rasterised glyphs land in the firmware
-# (a few hundred bytes each), never the TTF/OTF source files. Messages are
-# converted to upper case by the firmware, which is why the glyph set is upper
-# case only.
-#
-# Silkscreen Bold uses two-pixel strokes at this size and leaves room for the
-# bottom-row seconds bar.
+# Every face is measured against the 48x8 panel (see fonts/README.md). All use
+# bpp: 1 and compile only clock/status glyphs. Latin messages fall back to the
+# built-in compact font; the two Georgian faces additionally compile Mkhedruli
+# and Mtavruli. Keeping Latin letters out of every external face is necessary
+# for the complete catalogue to fit the ESP8266 RAM budget.
 
 substitutions:
   # Keep in sync with the tag used by the remote `packages` ref.
-  project_ref: "0.1.2"
+  project_ref: "0.2.0"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   # Overridable for offline builds/validation (see VALIDATION.md).
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
@@ -34,7 +26,6 @@ font:
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
   - id: font_ps2p_source
     file:
@@ -44,7 +35,6 @@ font:
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
   - id: font_silkscreen_bold_source
     file:
@@ -54,4 +44,277 @@ font:
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  - id: font_audiowide_source
+    file:
+      type: web
+      url: ${fonts_base_url}/audiowide/Audiowide-Regular.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bitcount_grid_double_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bitcount-grid-double/BitcountGridDouble-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bitcount_grid_single_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bitcount-grid-single/BitcountGridSingle-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bitcount_prop_double_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bitcount-prop-double/BitcountPropDouble-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bitcount_prop_single_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bitcount-prop-single/BitcountPropSingle-Variable.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bitcount_single_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bitcount-single/BitcountSingle-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_bytesized_source
+    file:
+      type: web
+      url: ${fonts_base_url}/bytesized/Bytesized-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_dotgothic16_source
+    file:
+      type: web
+      url: ${fonts_base_url}/dotgothic16/DotGothic16-Regular.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_doto_source
+    file:
+      type: web
+      url: ${fonts_base_url}/doto/Doto-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_electrolize_source
+    file:
+      type: web
+      url: ${fonts_base_url}/electrolize/Electrolize-Regular.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_handjet_source
+    file:
+      type: web
+      url: ${fonts_base_url}/handjet/Handjet-Variable.ttf
+    size: 11
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_iceland_source
+    file:
+      type: web
+      url: ${fonts_base_url}/iceland/Iceland-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_jersey_10_source
+    file:
+      type: web
+      url: ${fonts_base_url}/jersey-10/Jersey10-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_jersey_15_source
+    file:
+      type: web
+      url: ${fonts_base_url}/jersey-15/Jersey15-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_jersey_20_source
+    file:
+      type: web
+      url: ${fonts_base_url}/jersey-20/Jersey20-Regular.ttf
+    size: 11
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_jersey_25_source
+    file:
+      type: web
+      url: ${fonts_base_url}/jersey-25/Jersey25-Regular.ttf
+    size: 11
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_major_mono_display_source
+    file:
+      type: web
+      url: ${fonts_base_url}/major-mono-display/MajorMonoDisplay-Regular.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_micro_5_source
+    file:
+      type: web
+      url: ${fonts_base_url}/micro-5/Micro5-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_nova_mono_source
+    file:
+      type: web
+      url: ${fonts_base_url}/nova-mono/NovaMono.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_orbitron_source
+    file:
+      type: web
+      url: ${fonts_base_url}/orbitron/Orbitron-Variable.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_oxanium_source
+    file:
+      type: web
+      url: ${fonts_base_url}/oxanium/Oxanium-Variable.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_pixelify_sans_source
+    file:
+      type: web
+      url: ${fonts_base_url}/pixelify-sans/PixelifySans-Variable.ttf
+    size: 11
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_quantico_bold_source
+    file:
+      type: web
+      url: ${fonts_base_url}/quantico/Quantico-Bold.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_rubik_pixels_source
+    file:
+      type: web
+      url: ${fonts_base_url}/rubik-pixels/RubikPixels-Regular.ttf
+    size: 9
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_share_tech_mono_source
+    file:
+      type: web
+      url: ${fonts_base_url}/share-tech-mono/ShareTechMono-Regular.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_sixtyfour_source
+    file:
+      type: web
+      url: ${fonts_base_url}/sixtyfour/Sixtyfour-Variable.ttf
+    size: 6
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_vt323_source
+    file:
+      type: web
+      url: ${fonts_base_url}/vt323/VT323-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_wallpoet_source
+    file:
+      type: web
+      url: ${fonts_base_url}/wallpoet/Wallpoet-Regular.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_noto_sans_georgian_source
+    file:
+      type: web
+      url: ${fonts_base_url}/noto-sans-georgian/NotoSansGeorgian-Variable.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+      - "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
+
+  - id: font_noto_serif_georgian_source
+    file:
+      type: web
+      url: ${fonts_base_url}/noto-serif-georgian/NotoSerifGeorgian-Variable.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+      - "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+      - "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"

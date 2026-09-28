@@ -16,7 +16,7 @@
 #          examples/release.yaml, so the script fails when the pin is stale)
 #   --keep keep the temporary directory for inspection
 #
-# Exit code 0 means: packages fetched at the pinned tag, all three web fonts
+# Exit code 0 means: packages fetched at the pinned tag, all 33 web fonts
 # downloaded, config valid, C++ generated with the C++ headers included.
 
 set -euo pipefail
@@ -96,7 +96,11 @@ set +e
 CONFIG_STATUS=$?
 set -e
 grep -E "Cloning|Downloading|Configuration is valid" "$WORK/config.log" || true
-[[ $CONFIG_STATUS -eq 0 ]] || { echo "FAILED: config exit code $CONFIG_STATUS"; exit 1; }
+[[ $CONFIG_STATUS -eq 0 ]] || {
+  echo "FAILED: config exit code $CONFIG_STATUS"
+  tail -n 80 "$WORK/config.log"
+  exit 1
+}
 grep -q "Configuration is valid" "$WORK/config.log" || { echo "FAILED: config invalid"; exit 1; }
 
 set +e
@@ -112,7 +116,7 @@ grep -q '#include "max7219_clock_esphome.h"' "$MAIN_CPP" || { echo "FAILED: rend
   || { echo "FAILED: package headers not copied into the build"; exit 1; }
 
 FONTS=$(find "$WORK/config/.esphome/font" -name font.ttf 2>/dev/null | wc -l | tr -d ' ')
-[[ "$FONTS" -ge 3 ]] || { echo "FAILED: all three web fonts were not downloaded"; exit 1; }
+[[ "$FONTS" -ge 33 ]] || { echo "FAILED: all 33 web fonts were not downloaded"; exit 1; }
 
 echo
 echo "RESULT: release path OK (tag $REF)"

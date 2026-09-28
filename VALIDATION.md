@@ -62,7 +62,7 @@ Fonts are downloaded at build time. `scripts/validate-release-offline.sh` does
 this automatically; by hand it is:
 
 1. tag a copy of the repository (`cp -r` the checkout, `git init`, `git add -A`,
-   `git commit`, `git tag 0.1.2`),
+   `git commit`, `git tag 0.2.0`),
 2. serve the fonts (`cd fonts && python3 -m http.server 8799`),
 3. take `examples/release.yaml`, point `url:` at the copy
    (`file:///path/to/copy`), keep `ref:`/`project_ref` at the tag, and override
@@ -85,7 +85,7 @@ touching GitHub.
   stay identical: `tests/test_config.py` fails when they drift apart, and the
   release example must never use `@main`.
 * The tag must exist in the repository before the example can be used:
-  `git tag 0.1.2 && git push origin 0.1.2` (see `VALIDATION.md` evidence for the
+  `git tag 0.2.0 && git push origin 0.2.0` (see `VALIDATION.md` evidence for the
   tested tag).
 * `refresh:` controls how often the cache is re-checked (`refresh: 1d` in the
   release example, `refresh: 0s` while developing the packages).
@@ -113,24 +113,24 @@ The following was executed while building the packages (ESPHome 2026.9.0):
 |---|---|
 | **Released example fetched from GitHub** (`ref:` = the pushed session branch, fonts over local HTTP) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines) with both package headers copied into the build `src/` |
 | `esphome config dev.yaml` (all modules, local fonts) | `INFO Configuration is valid!` |
-| Code generation for the full config | headers included, all three fonts instantiated, display writer wired, action strings generated |
-| **Release path** (`scripts/validate-release-offline.sh 0.1.2`) | packages cloned at tag `0.1.2`, all three web fonts downloaded, `INFO Configuration is valid!`, `main.cpp` generated (2990 lines) |
+| Code generation for the full config | headers included, all 33 fonts instantiated, display writer wired, action strings generated |
+| **Release path** (`scripts/validate-release-offline.sh 0.2.0`) | **PASS**: packages cloned at tag `0.2.0`, all 33 web fonts downloaded, config valid, `main.cpp` generated (3860 lines) |
 | Package-relative C++ includes inside a remote package | `esphome: includes:` resolves to `<package cache>/packages/max7219_clock_renderer.h`, and both headers are copied into the build `src/` directory and `#include`d |
 | OTA screen wiring in generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error` and `matrix->update()` inside `on_progress`, guarded by the percentage change |
 | Renderer unit tests (`make -C tests test`, `g++ -std=c++17`) | 179 checks, 0 failures |
-| Contract tests (`python tests/test_config.py`) | 29 tests, OK (native renderer case skipped only because no host C++ compiler is installed; the ESP8266 compiler passed below) |
-| Font metrics (freetype, ESPHome's own `pt_to_px()` math) | Silkscreen Bold size 7: `HH:MM:SS` = 46 px; Tiny5 size 10: 46 px; Press Start 2P size 6: 48 px; built-in 5×7 font: 42 px |
-| Font wiring (`tests/test_config.py`) | every font in `fonts_local.yaml` has a `Clock font` select option, is instantiated and selected in `packages/display.yaml`, and compiles every character the renderer can print |
-| Configurator preview (`cd web-configurator && npm test`) | 42 tests: YAML generator, storage/share links, font catalogue versus `packages/controls.yaml`, renderer behaviour, and a static render of the whole app |
-| Configurator build (`npm run build`) | single-file `dist/index.html`, 304.58 kB (95.65 kB gzip) |
-| **Full firmware compile** (`scripts/validate.ps1`) | **PASS** with ESPHome 2026.9.0: 507745/1044464 bytes flash (48.6%), 44028/81920 bytes RAM (53.7%) |
+| Contract tests (`python tests/test_config.py`) | 30 tests, OK (native renderer case skipped only because no host C++ compiler is installed; the ESP8266 compiler passed below) |
+| Font metrics (freetype, ESPHome's own advance math) | all 33 external faces fit worst-case `88:88:88` in 48×8; Georgian faces compile all Mkhedruli and Mtavruli letters |
+| Font wiring (`tests/test_config.py`) | every font in `fonts_local.yaml` has a `Clock font` option, is instantiated and selected, and compiles the RAM-safe glyph set |
+| Configurator preview (`cd web-configurator && npm test`) | 43 tests: YAML generator, storage/share links, exact 34-option font catalogue, renderer behaviour, and static app rendering |
+| Configurator build (`npm run build`) | single-file `dist/index.html`, 347.79 kB (102.93 kB gzip) |
+| **Full firmware compile** (`scripts/validate.ps1`) | **PASS** with ESPHome 2026.9.0: 529709/1044464 bytes flash (50.7%), 63200/81920 bytes RAM (77.1%) |
 
 ## Hardware-only checks that remain
 
 These cannot be verified without a real clock and are intentionally listed as
 open items in `ROADMAP.md`:
 
-1. On-panel readability of all three bundled fonts at 8 pixels high.
+1. On-panel readability of all 33 bundled fonts, including both Georgian faces.
 2. OTA upload with the progress screen: does the MAX7219 redraw during the
    upload (the callbacks call `id(matrix).update()` directly)?
 3. Wiring, orientation and both test patterns on the real matrix.

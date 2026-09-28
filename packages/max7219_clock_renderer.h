@@ -479,9 +479,26 @@ inline bool temporary_screen_active(bool active, uint32_t now_ms, uint32_t deadl
   return active && (deadline_ms == 0 || !deadline_reached(now_ms, deadline_ms));
 }
 
-// Upper-case ASCII in place. The compiled glyph sets only carry upper-case
-// letters, so messages are normalised once when they are set instead of
-// depending on <cctype> inside a YAML lambda.
+// Copy a bounded UTF-8 string without leaving a partial multibyte character at
+// the end. This matters for Georgian API messages: the runtime buffers are
+// byte-sized, while every Georgian letter occupies three UTF-8 bytes.
+inline size_t copy_utf8_truncated(char *dest, size_t capacity, const char *source, size_t source_size) {
+  if (dest == nullptr || capacity == 0) return 0;
+  if (source == nullptr) {
+    dest[0] = '\0';
+    return 0;
+  }
+  size_t length = std::min(source_size, capacity - 1);
+  if (source_size > length) {
+    while (length > 0 && (((uint8_t) source[length] & 0xC0U) == 0x80U)) length--;
+  }
+  memcpy(dest, source, length);
+  dest[length] = '\0';
+  return length;
+}
+
+// Upper-case ASCII in place. Non-ASCII UTF-8 bytes are left untouched, so
+// Georgian messages remain valid; Latin text uses the built-in uppercase font.
 inline void upper_ascii(char *text) {
   if (text == nullptr) return;
   for (char *p = text; *p != '\0'; p++) {

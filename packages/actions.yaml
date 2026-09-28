@@ -39,11 +39,9 @@ api:
         duration: int
       then:
         - lambda: |-
-            // Fixed buffer: no std::string, no <cctype>, no heap churn.
+            // Fixed buffer; UTF-8 truncation never splits a Georgian letter.
             char text[48];
-            const size_t length = message.size() > 47 ? 47 : message.size();
-            for (size_t i = 0; i < length; i++) text[i] = message[i];
-            text[length] = '\0';
+            max7219_clock::copy_utf8_truncated(text, sizeof(text), message.c_str(), message.size());
             max7219_clock::upper_ascii(text);
             int duration_s = duration;
             if (duration_s <= 0) duration_s = (int) id(default_message_duration).state;
@@ -86,9 +84,7 @@ api:
       then:
         - lambda: |-
             char text[24];
-            const size_t length = note.size() > 23 ? 23 : note.size();
-            for (size_t i = 0; i < length; i++) text[i] = note[i];
-            text[length] = '\0';
+            max7219_clock::copy_utf8_truncated(text, sizeof(text), note.c_str(), note.size());
             max7219_clock::upper_ascii(text);
             int duration_s = duration;
             if (duration_s <= 0) duration_s = (int) id(default_message_duration).state;

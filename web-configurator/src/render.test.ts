@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { previewFont } from "./fontCatalog";
+import { FONT_CATALOG, previewFont } from "./fontCatalog";
 import { clockContent, dateContent, geometry, renderScene, type Frame } from "./render";
 import { DEFAULT_CONFIG, type Config } from "./types";
 
@@ -55,8 +55,8 @@ describe("renderScene", () => {
     expect(scene.notices.filter((notice) => notice.level === "warn")).toHaveLength(0);
   });
 
-  it("keeps every font inside the digit rows of the panel", () => {
-    for (const clockFont of ["tiny5", "press-start-2p", "silkscreen-bold", "compact"] as const) {
+  it("keeps every font inside the 48x8 panel without fallback", () => {
+    for (const { id: clockFont } of FONT_CATALOG) {
       const scene = sceneWith({ clockFont, secondsMode: "Off" });
       const font = previewFont(clockFont);
       const boxTop = font.boxTop(8);
@@ -67,13 +67,13 @@ describe("renderScene", () => {
         }, [])
         .filter((row, index, all) => all.indexOf(row) === index);
       expect(rows.length, clockFont).toBeGreaterThan(0);
-      // The firmware places ink at box_top + glyph.offset_y, so the digits of
-      // a face can never reach further than that box. One pixel of slack for
-      // FreeType hinting.
+      // The firmware places ink at box_top + glyph.offset_y. Punctuation can
+      // legitimately sit below the digit-only metrics (Doto's colon reaches
+      // row 7), but no selected face may paint outside the eight matrix rows.
       const first = boxTop + font.inkTop;
-      const last = first + font.maxDigitHeight - 1;
       expect(Math.min(...rows), `${clockFont} first lit row`).toBeGreaterThanOrEqual(first - 1);
-      expect(Math.max(...rows), `${clockFont} last lit row`).toBeLessThanOrEqual(last);
+      expect(Math.min(...rows), `${clockFont} first lit row`).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...rows), `${clockFont} last lit row`).toBeLessThan(8);
       expect(scene.usedFallback).toBe(false);
     }
   });

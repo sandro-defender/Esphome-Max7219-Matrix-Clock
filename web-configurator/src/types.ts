@@ -5,8 +5,44 @@ export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM";
 export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 
-/** Home Assistant "Clock font" select options that the firmware compiles. */
-export type ClockFont = "tiny5" | "press-start-2p" | "silkscreen-bold" | "compact";
+/** Home Assistant "Clock font" options compiled by the firmware. */
+export const CLOCK_FONTS = [
+  "silkscreen-bold",
+  "tiny5",
+  "press-start-2p",
+  "audiowide",
+  "bitcount-grid-double",
+  "bitcount-grid-single",
+  "bitcount-prop-double",
+  "bitcount-prop-single",
+  "bitcount-single",
+  "bytesized",
+  "dotgothic16",
+  "doto",
+  "electrolize",
+  "handjet",
+  "iceland",
+  "jersey-10",
+  "jersey-15",
+  "jersey-20",
+  "jersey-25",
+  "major-mono-display",
+  "micro-5",
+  "nova-mono",
+  "orbitron",
+  "oxanium",
+  "pixelify-sans",
+  "quantico-bold",
+  "rubik-pixels",
+  "share-tech-mono",
+  "sixtyfour",
+  "vt323",
+  "wallpoet",
+  "noto-sans-georgian",
+  "noto-serif-georgian",
+  "compact",
+] as const;
+export type ClockFont = (typeof CLOCK_FONTS)[number];
 
 /**
  * "firmware" mirrors what packages/max7219_clock_renderer.h draws.
@@ -135,10 +171,3 @@ export function isConfigKey(key: string): key is keyof Config {
 }
 
 export const SCREENS: ScreenMode[] = ["Clock", "Date", "Message", "Module grid test", "Pixel checkerboard"];
-
-export const CLOCK_FONTS: ClockFont[] = [
-  "tiny5",
-  "press-start-2p",
-  "silkscreen-bold",
-  "compact",
-];

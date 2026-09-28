@@ -1,6 +1,6 @@
 # Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
-Release: **0.1.2** (pinned consistently in `examples/release.yaml`,
+Release: **0.2.0** (pinned consistently in `examples/release.yaml`,
 `packages/base.yaml` and `packages/fonts_web.yaml`).
 
 Scope: replace the single-file `max7219-clock.yaml` with the modular package
@@ -14,10 +14,10 @@ or to a command that was actually executed.
 * **Screens and modes**: clock, date, message, countdown, OTA, module-grid test,
   pixel-checkerboard test. Priority: OTA > alert/message > countdown > selected
   screen.
-* **Full `HH:MM:SS` in the default 48×8 layout**: built-in 5×7 font 42 px,
-  Silkscreen Bold (size 7) 46 px, Tiny5 (size 10) 46 px and Press Start 2P
-  (size 6) 48 px.
-* **Fonts**: three bundled fonts (`fonts/`, OFL licensed) downloaded at build time
+* **Full numeric clock in the default 48×8 layout**: every external face is
+  measured with worst-case `88:88:88`; all 33 fit within 48 pixels.
+* **Fonts**: 33 bundled fonts (`fonts/`, OFL licensed) downloaded at build time,
+  including Noto Sans Georgian and Noto Serif Georgian with Mkhedruli and Mtavruli,
   from a tag-pinned raw GitHub URL, restricted glyph sets, `bpp: 1`, plus a
   built-in fallback font that needs nothing and always fits. Runtime font
   selection switches between compiled font IDs only. The web configurator
@@ -89,19 +89,19 @@ apply; the documented ESPHome migration still applies to older setups.
 | Contract tests | `python tests/test_config.py` | 29 tests, **OK** (host-only C++ case skipped because no host compiler is installed) |
 | Renderer unit tests | `make -C tests test` | **179 checks, 0 failures** |
 | ESPHome config validation | `esphome config dev.yaml` (2026.9.0) | **`INFO Configuration is valid!`** |
-| C++ code generation | `esphome compile dev.yaml` | headers included, all three fonts instantiated, display writer wired, all actions and OTA callbacks emitted |
+| C++ code generation | `esphome compile dev.yaml` | headers included, all 33 fonts instantiated, display writer wired, all actions and OTA callbacks emitted |
 | Released example fetched from **real GitHub** (`ref:` = pushed branch) | `INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@...`, **`INFO Configuration is valid!`**, `main.cpp` generated (2955 lines), headers copied into the build `src/` |
 | OTA screens in the generated C++ | `UpdateComponentAction<>(matrix)` on `on_begin`/`on_end`/`on_error`, `matrix->update()` inside `on_progress` (only when the percentage changes) |
-| Release path (offline) | `scripts/validate-release-offline.sh 0.1.2` | packages cloned from a tagged git repository, **`INFO Configuration is valid!`**, all three web fonts downloaded, `main.cpp` generated (2990 lines), package headers copied into the build `src/` |
-| Font width measurements | freetype with ESPHome's `pt_to_px()` | Silkscreen Bold 46 px, Tiny5 46 px, Press Start 2P 48 px, built-in 42 px - all ≤ 48 px |
-| Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 42 tests, type-check clean, single-file `dist/index.html` (304.58 kB; 95.65 kB gzip) |
+| Release path (offline) | `scripts/validate-release-offline.sh 0.2.0` | packages cloned from a tagged git repository and all 33 web fonts downloaded |
+| Font width measurements | freetype with ESPHome's advance math | all 33 external faces fit worst-case `88:88:88` at ≤48 px |
+| Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 43 tests, type-check clean, single-file build 347.79 kB (102.93 kB gzip) |
 | **Full firmware compile** | `scripts/validate.ps1` with ESPHome 2026.9.0 | **PASS** - firmware linked successfully |
 
 ## 6. Build size
 
-The validated ESPHome 2026.9.0 default build uses **507745 of 1044464 bytes of
-flash (48.6%)** and **44028 of 81920 bytes of RAM (53.7%)**. That leaves 51.4%
-flash and 46.3% RAM headroom with all three repository fonts compiled. The
+The validated ESPHome 2026.9.0 default build uses **529709 of 1044464 bytes of
+flash (50.7%)** and **63200 of 81920 bytes of RAM (77.1%)**. That leaves 49.3%
+flash and 22.9% RAM headroom with all 33 repository fonts compiled. The
 roadmap still leaves per-font differential measurement as optional follow-up;
 the aggregate production configuration is measured and safe.
 
@@ -124,9 +124,9 @@ Removed: `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` and its
 
 ## 8. Commit and push status
 
-The Silkscreen replacement is published on `main` and released as tag `0.1.2`.
+The expanded font catalogue is prepared for `main` and release tag `0.2.0`.
 The tests, ESPHome 2026.9.0 configuration validation, full ESP8266 compile and
-emulated `0.1.2` release path all passed before publication.
+emulated `0.2.0` release path must pass before publication.
 `examples/release.yaml`, `packages/base.yaml`, `packages/fonts_web.yaml` and the
 configurator pin the same version, enforced by the contract tests.
 

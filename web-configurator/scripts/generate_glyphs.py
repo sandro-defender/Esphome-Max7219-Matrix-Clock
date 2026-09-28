@@ -35,7 +35,7 @@ REPO = APP.parent
 FONT_PACKAGE = REPO / "packages" / "fonts_local.yaml"
 OUTPUT = APP / "src" / "glyphs.generated.ts"
 
-CLOCK_TEXT = "HH:MM:SS"
+CLOCK_TEXT = "88:88:88"
 DIGITS = "0123456789"
 PANEL_HEIGHT = 8
 
@@ -160,7 +160,7 @@ def build() -> str:
             "  inkHeight: number;",
             "  /** Offset of the digit 0 ink from the text box top. */",
             "  inkTop: number;",
-            "  /** Width of \"HH:MM:SS\" in pixels, the 48 px panel budget. */",
+            "  /** Width of worst-case \"88:88:88\" in pixels, the 48 px panel budget. */",
             "  clockWidth: number;",
             "  /** Tallest digit, in pixels. */",
             "  maxDigitHeight: number;",

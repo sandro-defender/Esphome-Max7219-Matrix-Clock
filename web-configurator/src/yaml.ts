@@ -3,7 +3,7 @@ import { deviceSlug, nodeId } from "./device";
 import { clampNumber, type Config } from "./types";
 
 const PROJECT_REPOSITORY = "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock";
-const PROJECT_REF = "0.1.2";
+const PROJECT_REF = "0.2.0";
 
 /** Must stay identical to examples/release.yaml (checked by yaml.test.ts). */
 const PACKAGE_FILES = [

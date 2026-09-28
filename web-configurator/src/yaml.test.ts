@@ -28,8 +28,8 @@ describe("buildYaml", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
     expect(yaml).toContain("url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock");
-    expect(yaml).toContain('ref: "0.1.2"');
-    expect(yaml).toContain('project_ref: "0.1.2"');
+    expect(yaml).toContain('ref: "0.2.0"');
+    expect(yaml).toContain('project_ref: "0.2.0"');
     expect(yaml).toContain("- packages/base.yaml");
     expect(yaml).toContain("- packages/fonts_web.yaml");
     expect(yaml).toContain("- packages/ota_ui.yaml");
@@ -138,6 +138,45 @@ describe("buildYaml", () => {
 });
 
 describe("font catalog", () => {
+  it("offers every validated 48x8 clock font for user comparison", () => {
+    expect(FONT_CATALOG.map((spec) => spec.option)).toEqual([
+      "Silkscreen Bold",
+      "Tiny5",
+      "Press Start 2P",
+      "Audiowide",
+      "Bitcount Grid Double",
+      "Bitcount Grid Single",
+      "Bitcount Prop Double",
+      "Bitcount Prop Single",
+      "Bitcount Single",
+      "Bytesized",
+      "DotGothic16",
+      "Doto",
+      "Electrolize",
+      "Handjet",
+      "Iceland",
+      "Jersey 10",
+      "Jersey 15",
+      "Jersey 20",
+      "Jersey 25",
+      "Major Mono Display",
+      "Micro 5",
+      "Nova Mono",
+      "Orbitron",
+      "Oxanium",
+      "Pixelify Sans",
+      "Quantico Bold",
+      "Rubik Pixels",
+      "Share Tech Mono",
+      "Sixtyfour",
+      "VT323",
+      "Wallpoet",
+      "Noto Sans Georgian",
+      "Noto Serif Georgian",
+      "Compact 5x7",
+    ]);
+  });
+
   it("offers the bold Silkscreen clock face and retires the rejected faces", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
     expect(options).toContain("Silkscreen Bold");
@@ -174,8 +213,8 @@ describe("font catalog", () => {
     }
   });
 
-  it("rasterised glyphs cover the characters the firmware can print", () => {
-    const required = "0123456789:.-/%!?+ ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  it("rasterised glyphs cover every face's shared clock/status characters", () => {
+    const required = "0123456789:.-/%!?+ ";
     for (const [id, font] of Object.entries(GENERATED_FONTS)) {
       for (const char of required) {
         const key = char === " " ? "space" : char;

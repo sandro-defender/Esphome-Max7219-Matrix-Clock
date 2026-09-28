@@ -24,7 +24,7 @@ substitutions:
   web_server_password: !secret web_server_password
 
   # Must match `ref:` below.
-  project_ref: "0.1.2"
+  project_ref: "0.2.0"
 
   # --- Adapt to your hardware ---------------------------------------------
   # board: nodemcuv2
@@ -38,7 +38,7 @@ substitutions:
 packages:
   clock:
     url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
-    ref: "0.1.2"
+    ref: "0.2.0"
     # Refresh the cached package files at most once a day.
     refresh: 1d
     files:

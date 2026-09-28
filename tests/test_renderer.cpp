@@ -289,6 +289,14 @@ static void test_message_text_helpers() {
   CHECK(strcmp(already, "ABC 123") == 0);
   upper_ascii(nullptr);  // must not crash on an empty action payload
 
+  char georgian[8];
+  const char *three_letters = "აბგ";  // 9 UTF-8 bytes; only two fit plus NUL.
+  CHECK_EQ(copy_utf8_truncated(georgian, sizeof(georgian), three_letters, strlen(three_letters)), 6U);
+  CHECK(strcmp(georgian, "აბ") == 0);
+  char ascii[5];
+  CHECK_EQ(copy_utf8_truncated(ascii, sizeof(ascii), "HELLO", 5), 4U);
+  CHECK(strcmp(ascii, "HELL") == 0);
+
   CHECK(!is_nan(0.0f));
   CHECK(!is_nan(-1.0f));
   CHECK(is_nan(0.0f / 0.0f));

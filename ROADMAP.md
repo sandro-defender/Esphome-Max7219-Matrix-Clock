@@ -110,6 +110,10 @@ font source instead of requiring users to copy fonts beside their YAML.
       size 7, selectable, wired into the display lambda, covered by the font
       contract tests and the configurator preview). Matrix Bold and Eight Bit
       Dragon were removed after visual review rejected their clock digits.
+- [x] Add 28 additional clock faces and two OFL Georgian faces, each with its
+      source license, real-glyph configurator preview and 48×8 measurements.
+      Noto Sans Georgian and Noto Serif Georgian compile all 33 modern
+      Mkhedruli and all 33 Mtavruli letters at an 8 px size.
 - [x] Reference fonts with explicit `type: web` URLs under
       `https://raw.githubusercontent.com/sandro-defender/Esphome-Max7219-Matrix-Clock/<tag>/fonts/...`.
 - [x] Pin production font URLs to the same release tag as the package; do not
@@ -122,19 +126,22 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Add a separate message-font selector only if flash/RAM measurements show
       ... not added: no safe headroom evidence, so the safer default is one clock-font selector
       safe ESP8266 headroom.
-- [x] Limit each font's `glyphs` to the characters actually used by clock,
-      countdown, message, and OTA screens, including digits, separators, `%`,
-      spaces, and required status letters.
+- [x] Limit every external face to clock/status glyphs. Latin message text uses
+      the compact built-in fallback; Georgian faces additionally compile both
+      modern Georgian alphabets. This keeps the full catalogue within ESP8266
+      RAM.
 - [x] Use `bpp: 1` unless measurements justify a larger value.
 - [x] Verify every font fits full-size `HH:MM:SS`, remains readable at 8 pixels
-      ... widths measured with ESPHome's own pt_to_px() metrics (Silkscreen Bold 46 px, Tiny5 46 px, Press Start 2P 48 px) and rasterised glyphs inspected; on-panel confirmation is a hardware item
+      ... all 33 external faces were measured with ESPHome's own advance math;
+      each is at most 48 px wide and 8 px high; on-panel confirmation remains
+      a hardware item
       high, and works with per-digit slide-up animation.
 - [x] Test missing glyphs, metrics, clipping, alignment, and fallback behavior.
       ... `test_font_glyphs_cover_every_compiled_character`, `test_font_ink_is_not_taller_than_the_matrix` and `test_every_compiled_font_is_selectable_and_wired` in tests/test_config.py
 - [ ] Record firmware-size deltas for each enabled font and remove low-value
       choices if ESP8266 headroom becomes unsafe.
-      ... aggregate build with all three fonts is safe (507745 bytes flash,
-      44028 bytes RAM); per-face differential measurements remain optional
+      ... aggregate build with all 33 fonts is safe (529709 bytes flash,
+      63200 bytes RAM); per-face differential measurements remain optional
       follow-up evidence
       if ESP8266 headroom becomes unsafe.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and
@@ -309,8 +316,8 @@ and `on_error` automations.
 - [x] Document web-server authentication and network-isolation expectations.
 - [x] Avoid exposing unauthenticated firmware upload paths.
 - [x] Review generated firmware RAM and flash usage.
-      ... ESPHome 2026.9.0 full build: 507745/1044464 bytes flash (48.6%) and
-      44028/81920 bytes RAM (53.7%)
+      ... ESPHome 2026.9.0 full 33-font build: 529709/1044464 bytes flash
+      (50.7%) and 63200/81920 bytes RAM (77.1%)
 - [x] Remove or simplify low-value functionality if ESP8266 headroom becomes
       unsafe.
 - [x] Avoid rapid diagnostic publishing and excessive API traffic.

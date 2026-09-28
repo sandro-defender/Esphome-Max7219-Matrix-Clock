@@ -13,7 +13,7 @@ YAML:
   * credentials only behind !secret, secrets.yaml untracked
   * release example pinning (tag, not @main) and font pinning consistency
   * every font is selectable in Home Assistant and wired into the display
-  * every font still fits "HH:MM:SS" on the default 48x8 matrix
+  * every font still fits worst-case "88:88:88" on the default 48x8 matrix
   * the pure C++ renderer unit tests, when a compiler is available
 
 Run it directly:
@@ -130,12 +130,50 @@ FONT_OPTION_BY_ID = {
     "font_tiny5_source": "Tiny5",
     "font_ps2p_source": "Press Start 2P",
     "font_silkscreen_bold_source": "Silkscreen Bold",
+    "font_audiowide_source": "Audiowide",
+    "font_bitcount_grid_double_source": "Bitcount Grid Double",
+    "font_bitcount_grid_single_source": "Bitcount Grid Single",
+    "font_bitcount_prop_double_source": "Bitcount Prop Double",
+    "font_bitcount_prop_single_source": "Bitcount Prop Single",
+    "font_bitcount_single_source": "Bitcount Single",
+    "font_bytesized_source": "Bytesized",
+    "font_dotgothic16_source": "DotGothic16",
+    "font_doto_source": "Doto",
+    "font_electrolize_source": "Electrolize",
+    "font_handjet_source": "Handjet",
+    "font_iceland_source": "Iceland",
+    "font_jersey_10_source": "Jersey 10",
+    "font_jersey_15_source": "Jersey 15",
+    "font_jersey_20_source": "Jersey 20",
+    "font_jersey_25_source": "Jersey 25",
+    "font_major_mono_display_source": "Major Mono Display",
+    "font_micro_5_source": "Micro 5",
+    "font_nova_mono_source": "Nova Mono",
+    "font_orbitron_source": "Orbitron",
+    "font_oxanium_source": "Oxanium",
+    "font_pixelify_sans_source": "Pixelify Sans",
+    "font_quantico_bold_source": "Quantico Bold",
+    "font_rubik_pixels_source": "Rubik Pixels",
+    "font_share_tech_mono_source": "Share Tech Mono",
+    "font_sixtyfour_source": "Sixtyfour",
+    "font_vt323_source": "VT323",
+    "font_wallpoet_source": "Wallpoet",
+    "font_noto_sans_georgian_source": "Noto Sans Georgian",
+    "font_noto_serif_georgian_source": "Noto Serif Georgian",
 }
 
-# Everything the renderer can print on the clock, date, countdown, message and
-# OTA screens. A font that is missing one of these draws ESPHome's placeholder
-# box at runtime.
-FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+# The selectable faces are clock-first: compile numbers and status punctuation
+# in every face, while the renderer's compact built-in font remains the Latin
+# message fallback. This avoids exhausting ESP8266 RAM when the full catalogue
+# is present. Georgian faces additionally compile both modern alphabets below.
+FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
+
+GEORGIAN_FONT_IDS = {
+    "font_noto_sans_georgian_source",
+    "font_noto_serif_georgian_source",
+}
+GEORGIAN_MKHEDRULI = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+GEORGIAN_MTAVRULI = "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
 
 # Height of one 8x8 module row; digits must never be taller than the panel.
 MATRIX_ROW_HEIGHT = 8
@@ -485,7 +523,7 @@ class ConfigContractTests(unittest.TestCase):
         except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
             self.skipTest("freetype-py not installed")
 
-        clock_text = "HH:MM:SS"
+        clock_text = "88:88:88"
         for module in ("fonts_local.yaml",):
             for entry in load_yaml(PACKAGES / module)["font"]:
                 face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
@@ -520,6 +558,30 @@ class ConfigContractTests(unittest.TestCase):
                     face.get_char_index(ord(char)),
                     0,
                     f"{entry['id']} has no '{char}' glyph in its source file",
+                )
+
+    def test_georgian_fonts_compile_both_modern_alphabets(self):
+        """Georgian choices must render Mkhedruli and Mtavruli messages."""
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        entries = {
+            entry["id"]: entry
+            for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+        }
+        self.assertTrue(GEORGIAN_FONT_IDS.issubset(entries))
+        for font_id in GEORGIAN_FONT_IDS:
+            entry = entries[font_id]
+            declared = "".join(entry["glyphs"])
+            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+            for char in GEORGIAN_MKHEDRULI + GEORGIAN_MTAVRULI:
+                self.assertIn(char, declared, f"{font_id} does not compile '{char}'")
+                self.assertNotEqual(
+                    face.get_char_index(ord(char)),
+                    0,
+                    f"{font_id} has no '{char}' glyph in its source file",
                 )
 
     def test_font_ink_is_not_taller_than_the_matrix(self):
