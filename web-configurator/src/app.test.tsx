@@ -34,4 +34,9 @@ describe("App", () => {
     expect(markup).toContain("Preview layout");
     expect(markup).toContain("the same fallback rules");
   });
+
+  it("offers the optional module boundary guides", () => {
+    expect(markup).toContain("Module boundary guides");
+    expect(markup).toContain("Dashed guides on the seam between two 8×8 boards");
+  });
 });

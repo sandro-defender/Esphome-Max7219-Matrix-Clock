@@ -33,6 +33,182 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+/**
+ * The pixel layout of a joined panel: where every 8x8 module sits, how the LED
+ * dots are pitched inside it and how big the canvas has to be. Pure arithmetic
+ * so the seam behaviour can be asserted without a canvas.
+ */
+export interface ModuleGeometry {
+  /** Diameter of one LED dot in CSS px. */
+  dot: number;
+  /** Dark space between two LED dots inside a module face, in CSS px. */
+  gapDot: number;
+  /** Centre-to-centre LED distance inside a module face, in CSS px. */
+  pitch: number;
+  /** Lit width of one 8x8 face (eight pitches minus the trailing dot gap). */
+  face: number;
+  /** Bezel between a module's board edge and its face. Part of the module. */
+  inset: number;
+  /** Board width and height of one module, bezel included, in CSS px. */
+  mod: number;
+  /** Space between two boards. Always 0: adjacent modules join seamlessly. */
+  gap: number;
+  /** Height of the chain-order label strip below the panel; 0 when dots shrink. */
+  labelH: number;
+  /** Canvas width in CSS px. */
+  cssW: number;
+  /** Canvas height in CSS px, label strip included. */
+  cssH: number;
+}
+
+/**
+ * Chooses the largest dot size that still fits the available width.
+ *
+ * Modules are joined edge to edge (`gap === 0`), so two bezels meet at every
+ * seam and the canvas width is exactly `modulesX * mod`. Guide lines are an
+ * overlay and never change these numbers.
+ */
+export function moduleGeometry(box: number, modulesX: number, modulesY: number): ModuleGeometry {
+  const cols = Math.max(1, Math.floor(modulesX));
+  const rows = Math.max(1, Math.floor(modulesY));
+
+  let dot = cols >= 12 ? 6 : cols >= 8 ? 8 : cols <= 4 ? 13 : 11;
+  let gapDot = 2;
+  let pitch = dot + gapDot;
+  let face = 8 * pitch - gapDot;
+  let inset = 8;
+  let mod = face + inset * 2;
+  // Adjacent boards touch. The bezel is part of a module, so two bezels meet
+  // at a seam instead of an extra gap between the boards.
+  const gap = 0;
+  const target = Math.max(220, box - 8);
+  while (dot > 3) {
+    gapDot = Math.max(1, Math.round(dot * 0.18));
+    pitch = dot + gapDot;
+    face = 8 * pitch - gapDot;
+    inset = Math.max(4, Math.round(dot * 0.62));
+    mod = face + inset * 2;
+    const total = cols * mod + (cols - 1) * gap;
+    if (total <= target) break;
+    dot -= 1;
+  }
+
+  const labelH = dot < 5 ? 0 : Math.max(14, Math.round(dot * 1.5));
+  return {
+    dot,
+    gapDot,
+    pitch,
+    face,
+    inset,
+    mod,
+    gap,
+    labelH,
+    cssW: cols * mod + (cols - 1) * gap,
+    cssH: rows * mod + (rows - 1) * gap + labelH,
+  };
+}
+
+/** Top-left corner of one module in canvas CSS px. */
+export function moduleOrigin(geometry: ModuleGeometry, mx: number, my: number): { x: number; y: number } {
+  const step = geometry.mod + geometry.gap;
+  return { x: mx * step, y: my * step };
+}
+
+/** Centre of one LED dot in canvas CSS px. */
+export function ledCenter(
+  geometry: ModuleGeometry,
+  mx: number,
+  my: number,
+  col: number,
+  row: number,
+): { x: number; y: number } {
+  const origin = moduleOrigin(geometry, mx, my);
+  return {
+    x: origin.x + geometry.inset + col * geometry.pitch + geometry.dot / 2,
+    y: origin.y + geometry.inset + row * geometry.pitch + geometry.dot / 2,
+  };
+}
+
+/** One dashed guide line in canvas CSS px. */
+export interface ModuleBoundary {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/** Colour, dash length and hairline width of the module guidance overlay. */
+export const MODULE_BOUNDARY_COLOR = "rgba(255, 214, 160, 0.35)";
+export const MODULE_BOUNDARY_DASH = 4;
+
+/**
+ * Dashed guide lines marking where two boards meet. A vertical guide sits in
+ * the shared bezel of `mx - 1` and `mx`, a horizontal one in the shared bezel
+ * of `my - 1` and `my`, so no guide ever crosses an LED dot.
+ */
+export function moduleBoundaries(geometry: ModuleGeometry, modulesX: number, modulesY: number): ModuleBoundary[] {
+  const cols = Math.max(1, Math.floor(modulesX));
+  const rows = Math.max(1, Math.floor(modulesY));
+  const step = geometry.mod + geometry.gap;
+  const panelW = cols * step - geometry.gap;
+  const panelH = rows * step - geometry.gap;
+  const bounds: ModuleBoundary[] = [];
+  for (let mx = 1; mx < cols; mx++) {
+    bounds.push({ x1: mx * step, y1: 0, x2: mx * step, y2: panelH });
+  }
+  for (let my = 1; my < rows; my++) {
+    bounds.push({ x1: 0, y1: my * step, x2: panelW, y2: my * step });
+  }
+  return bounds;
+}
+
+/** Canvas subset the overlay needs, so it can be exercised without a canvas. */
+export interface ModuleBoundaryCtx {
+  lineWidth: number;
+  strokeStyle: string | CanvasGradient | CanvasPattern;
+  setLineDash(segments: number[]): void;
+  beginPath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  stroke(): void;
+}
+
+/**
+ * Draws the optional module-boundary guidance on top of the panel.
+ *
+ * `show` mirrors the `showModuleBoundaries` prop. Single-module panels and
+ * `show === false` are a complete no-op, so the canvas state is untouched and
+ * the overlay can never move a pixel. The dash pattern is reset before
+ * returning, keeping any later drawing solid.
+ *
+ * @returns the number of guide lines drawn.
+ */
+export function drawModuleBoundaries(
+  ctx: ModuleBoundaryCtx,
+  geometry: ModuleGeometry,
+  modulesX: number,
+  modulesY: number,
+  dpr = 1,
+  show = true,
+): number {
+  if (!show) return 0;
+  const bounds = moduleBoundaries(geometry, modulesX, modulesY);
+  if (bounds.length === 0) return 0;
+
+  const ratio = dpr > 0 ? dpr : 1;
+  ctx.strokeStyle = MODULE_BOUNDARY_COLOR;
+  ctx.lineWidth = 1 / ratio; // one device pixel wide, whatever the zoom
+  ctx.setLineDash([MODULE_BOUNDARY_DASH / ratio, MODULE_BOUNDARY_DASH / ratio]);
+  for (const line of bounds) {
+    ctx.beginPath();
+    ctx.moveTo(line.x1, line.y1);
+    ctx.lineTo(line.x2, line.y2);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  return bounds.length;
+}
+
 /** Maps firmware pixels to the physical LED state, including inversion. */
 export function isLedVisuallyOn(value: number, powered: boolean, inverted: boolean): boolean {
   if (!powered) return false;
@@ -79,31 +255,8 @@ export function MatrixCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let dot = modulesX >= 12 ? 6 : modulesX >= 8 ? 8 : modulesX <= 4 ? 13 : 11;
-    let gapDot = 2;
-    let pitch = dot + gapDot;
-    let face = 8 * pitch - gapDot;
-    let inset = 8;
-    let mod = face + inset * 2;
-    // REMOVED: visual gap between modules (was 8px). Modules now join seamlessly.
-    // Module boundary guidance is drawn as overlay without shifting pixel positions.
-    let gap = 0;
-    const target = Math.max(220, box - 8);
-    while (dot > 3) {
-      gapDot = Math.max(1, Math.round(dot * 0.18));
-      pitch = dot + gapDot;
-      face = 8 * pitch - gapDot;
-      inset = Math.max(4, Math.round(dot * 0.62));
-      mod = face + inset * 2;
-      // gap stays 0 for seamless joining
-      const total = modulesX * mod + (modulesX - 1) * gap;
-      if (total <= target) break;
-      dot -= 1;
-    }
-
-    const labelH = dot < 5 ? 0 : Math.max(14, Math.round(dot * 1.5));
-    const cssW = modulesX * mod + (modulesX - 1) * gap;
-    const cssH = modulesY * mod + (modulesY - 1) * gap + labelH;
+    const geometry = moduleGeometry(box, modulesX, modulesY);
+    const { dot, pitch, face, inset, mod, labelH, cssW, cssH } = geometry;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.style.width = `${cssW}px`;
     canvas.style.height = `${cssH}px`;
@@ -116,8 +269,7 @@ export function MatrixCanvas({
 
     for (let my = 0; my < modulesY; my++) {
       for (let mx = 0; mx < modulesX; mx++) {
-        const x = mx * (mod + gap);
-        const y = my * (mod + gap);
+        const { x, y } = moduleOrigin(geometry, mx, my);
         const shell = ctx.createLinearGradient(x, y, x, y + mod);
         shell.addColorStop(0, "#322b23");
         shell.addColorStop(0.18, "#1b1713");
@@ -140,8 +292,7 @@ export function MatrixCanvas({
             const px = mx * 8 + col;
             const py = my * 8 + row;
             const value = px < width && py < height ? pixels[py * width + px] : 0;
-            const cx = fx + col * pitch + dot / 2;
-            const cy = fy + row * pitch + dot / 2;
+            const { x: cx, y: cy } = ledCenter(geometry, mx, my, col, row);
             const on = isLedVisuallyOn(value, powered, inverted);
             const head = value === 2;
 
@@ -190,31 +341,7 @@ export function MatrixCanvas({
     }
 
     // Optional module boundary overlay - drawn on top without shifting pixels
-    if (showModuleBoundaries && (modulesX > 1 || modulesY > 1)) {
-      ctx.strokeStyle = "rgba(255, 214, 160, 0.35)";
-      ctx.lineWidth = 1 / dpr;
-      ctx.setLineDash([4 / dpr, 4 / dpr]);
-      
-      // Vertical boundaries between modules
-      for (let mx = 1; mx < modulesX; mx++) {
-        const bx = mx * mod + mx * gap; // gap is 0, so just mx * mod
-        ctx.beginPath();
-        ctx.moveTo(bx, 0);
-        ctx.lineTo(bx, modulesY * mod + (modulesY - 1) * gap);
-        ctx.stroke();
-      }
-      
-      // Horizontal boundaries between modules
-      for (let my = 1; my < modulesY; my++) {
-        const by = my * mod + my * gap; // gap is 0, so just my * mod
-        ctx.beginPath();
-        ctx.moveTo(0, by);
-        ctx.lineTo(modulesX * mod + (modulesX - 1) * gap, by);
-        ctx.stroke();
-      }
-      
-      ctx.setLineDash([]);
-    }
+    drawModuleBoundaries(ctx, geometry, modulesX, modulesY, dpr, showModuleBoundaries);
   }, [box, brightness, height, inverted, led, modulesX, modulesY, pixels, powered, width, wiring, showModuleBoundaries]);
 
   return (

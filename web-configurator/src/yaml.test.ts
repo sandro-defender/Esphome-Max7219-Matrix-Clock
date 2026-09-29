@@ -50,6 +50,16 @@ describe("buildYaml", () => {
     expect(generated.match(/^\s+ref: "([^"]+)"$/m)?.[1]).toBe(release.match(/^\s+ref: "([^"]+)"$/m)?.[1]);
   });
 
+  it("keeps preview-only settings out of the installer YAML", () => {
+    const yaml = buildYaml({ ...DEFAULT_CONFIG, previewTime: "23:59:59", showModuleBoundaries: true });
+
+    // The guides and the frozen clock are browser aids: the panel has no
+    // matching substitution, so they must never reach the generated file.
+    for (const key of ["previewTime", "showModuleBoundaries", "layoutPreview"]) {
+      expect(yaml, key).not.toMatch(new RegExp(`\\b${key}\\b`));
+    }
+  });
+
   it("keeps credentials local and never emits built-in secret values", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
@@ -211,7 +221,14 @@ describe("font catalog", () => {
 
 describe("settings storage", () => {
   it("round-trips a configuration through a share link", () => {
-    const config: Config = { ...DEFAULT_CONFIG, chips: 8, rows: 2, clockFont: "jersey-15", led: "Ice" };
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      chips: 8,
+      rows: 2,
+      clockFont: "jersey-15",
+      led: "Ice",
+      showModuleBoundaries: true,
+    };
     const url = shareUrl(config, "https://example.com/configurator");
     const encoded = url.split("#cfg=")[1];
 
@@ -234,6 +251,7 @@ describe("settings storage", () => {
       screen: "Self destruct",
       clockFont: "../../etc/passwd",
       layoutPreview: "modules",
+      showModuleBoundaries: "on",
       extraKey: "dropped",
     });
 
@@ -244,6 +262,7 @@ describe("settings storage", () => {
     expect(cleaned.screen).toBe(DEFAULT_CONFIG.screen);
     expect(cleaned.clockFont).toBe(DEFAULT_CONFIG.clockFont);
     expect(cleaned.layoutPreview).toBe("modules");
+    expect(cleaned.showModuleBoundaries).toBe(false);
     expect("extraKey" in cleaned).toBe(false);
   });
 

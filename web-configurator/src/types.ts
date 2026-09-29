@@ -79,6 +79,8 @@ export interface Config {
   // Preview only
   /** "HH:MM[:SS]" to freeze the preview clock; empty means live. */
   previewTime: string;
+  /** Dashed guides where the 8x8 boards meet. Preview only; never drawn on the panel. */
+  showModuleBoundaries: boolean;
 }
 
 export const PINS = ["D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"] as const;
@@ -125,6 +127,7 @@ export const DEFAULT_CONFIG: Config = {
   led: "Blood",
 
   previewTime: "",
+  showModuleBoundaries: false,
 };
 
 /** Bounded ranges, shared by the UI, the YAML generator and the tests. */

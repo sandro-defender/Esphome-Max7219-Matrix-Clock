@@ -115,6 +115,7 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
           powered={cfg.displayPower}
           inverted={cfg.invert}
           label={`${scene.summary} ${hourText}:${pad(now.getMinutes())}:${pad(seconds)}`}
+          showModuleBoundaries={cfg.showModuleBoundaries}
         />
         <div className="chassis-bottom">
           <span>Chain order under each module</span>

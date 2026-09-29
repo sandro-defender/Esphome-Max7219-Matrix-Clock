@@ -31,6 +31,13 @@ python3 scripts/generate_glyphs.py --check   # fail if it is stale (used in CI)
 The one-digit-per-8×8-module drawing is explicitly labelled *illustration* in
 the UI: the firmware draws the clock proportionally.
 
+`src/MatrixCanvas.tsx` joins the modules edge to edge (`gap === 0`), so a
+six-module panel is painted as one contiguous 48×8 board instead of six islands.
+The optional **Module boundary guides** switch draws dashed lines into the
+shared bezel between two boards. The guides are an overlay: they are drawn after
+the LEDs and never change the dot pitch, the module origins or the canvas size,
+which the boundary tests assert directly.
+
 ## What “one YAML” means
 
 The downloaded device file is the only YAML an end user needs to maintain. It
@@ -46,7 +53,10 @@ firmware instead of creating a second implementation that can drift.
 Every control in the Tune tab maps to a substitution or to a restored Home
 Assistant entity in `../packages/controls.yaml`; the tests compare the generated
 YAML against `../examples/release.yaml` and the font picker against
-`../packages/controls.yaml`, so the two cannot drift silently.
+`../packages/controls.yaml`, so the two cannot drift silently. The preview-only
+aids (LED colour, preview layout, module boundary guides, frozen preview time)
+have no firmware counterpart: the UI labels them *preview only* and a test
+asserts they never reach the generated YAML.
 
 ## Settings storage
 
@@ -85,6 +95,7 @@ The Vite single-file plugin emits `dist/index.html`. Build output and
 |---|---|
 | `src/yaml.test.ts` | generated installer YAML, release-example sync, clamping, font options, storage/share links |
 | `src/render.test.ts` | clock/date text, font fallback, seconds modes, test patterns, night dimming, auto cycling |
+| `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, optional boundary guides, LED optics |
 | `src/app.test.tsx` | the whole app renders (static markup smoke test) |
 
 `src/yaml.test.ts` also reads the firmware sources next door, so adding a font

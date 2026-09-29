@@ -391,8 +391,11 @@ defines “latest” as the newest immutable published release tag.
 
 - [ ] Fix the per-digit slide-up animation with frame-by-frame renderer tests
       and real-matrix verification.
-- [ ] Remove visual gaps between matrices in the web configurator preview
+- [x] Remove visual gaps between matrices in the web configurator preview
       without changing pixel coordinates or module mapping.
+      ... `MatrixCanvas` joins the boards edge to edge (`gap = 0`); the optional
+      dashed seam guides are drawn as a read-only overlay, and 15 boundary
+      tests assert the seam geometry of 1×1 … 16×4 panels
 - [ ] Compact the configurator into accessible sections that make future
       settings easier to select.
 - [ ] Show the project firmware version briefly at device boot.
