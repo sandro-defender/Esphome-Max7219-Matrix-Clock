@@ -69,6 +69,10 @@ display:
       max7219_clock::SourceFont kdam_thmor_pro_font(font_kdam_thmor_pro_source, &it);
       max7219_clock::SourceFont rationale_font(font_rationale_source, &it);
       max7219_clock::SourceFont matrix_2px_font(font_matrix_2px_source, &it);
+      max7219_clock::SourceFont dot_matrix_font(font_dot_matrix_source, &it);
+      max7219_clock::SourceFont handjet_font(font_handjet_source, &it);
+      max7219_clock::SourceFont oxanium_font(font_oxanium_source, &it);
+      max7219_clock::SourceFont share_tech_mono_font(font_share_tech_mono_source, &it);
       max7219_clock::BuiltinFont builtin_font;
       // StringRef: a view on the codegen literals, so no per-frame allocation.
       const StringRef font_option = id(clock_font).current_option();
@@ -85,6 +89,14 @@ display:
         selected = &rationale_font;
       } else if (font_option == "Matrix 2px") {
         selected = &matrix_2px_font;
+      } else if (font_option == "Dot Matrix") {
+        selected = &dot_matrix_font;
+      } else if (font_option == "Handjet") {
+        selected = &handjet_font;
+      } else if (font_option == "Oxanium") {
+        selected = &oxanium_font;
+      } else if (font_option == "Share Tech Mono") {
+        selected = &share_tech_mono_font;
       }
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 

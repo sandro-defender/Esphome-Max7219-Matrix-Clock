@@ -58,3 +58,40 @@ font:
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
+
+  # Original single-LED dot clock: 6x8 digits, with HH:MM fitting 32 columns.
+  - id: font_dot_matrix_source
+    file:
+      type: local
+      path: ../fonts/dot-matrix/DotMatrix.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_handjet_source
+    file:
+      type: local
+      path: ../fonts/handjet/Handjet-Variable.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_oxanium_source
+    file:
+      type: local
+      path: ../fonts/oxanium/Oxanium-Variable.ttf
+    size: 11
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_share_tech_mono_source
+    file:
+      type: local
+      path: ../fonts/share-tech-mono/ShareTechMono-Regular.ttf
+    size: 12
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "

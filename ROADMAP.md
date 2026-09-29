@@ -382,3 +382,25 @@ and `on_error` automations.
 - [x] The final report lists features, entities, API actions, compatibility
       migrations, test results, build size, files changed, commit, push status,
       and remaining hardware-only verification.
+
+## Phase 16 — Reliability, configurator, and release improvements
+
+Work through [tasks/todo.md](tasks/todo.md) in order. The plan deliberately
+keeps Home Assistant time primary, treats remote update data as untrusted, and
+defines “latest” as the newest immutable published release tag.
+
+- [ ] Fix the per-digit slide-up animation with frame-by-frame renderer tests
+      and real-matrix verification.
+- [ ] Remove visual gaps between matrices in the web configurator preview
+      without changing pixel coordinates or module mapping.
+- [ ] Compact the configurator into accessible sections that make future
+      settings easier to select.
+- [ ] Show the project firmware version briefly at device boot.
+- [ ] Add configurable remote SNTP fallback servers, including a Google NTP
+      endpoint, used only when Home Assistant time is invalid.
+- [ ] Define and test a bounded GitHub release-manifest update check that never
+      uploads secrets or performs automatic firmware installation.
+- [ ] Make generated public configurations default to the newest published,
+      immutable release tag rather than an unpinned branch.
+- [ ] Update README documentation, contract tests, ESPHome validation, full
+      ESP8266 compile, firmware-size evidence, and hardware verification.

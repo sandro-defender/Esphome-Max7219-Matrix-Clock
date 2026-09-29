@@ -104,7 +104,7 @@ select:
     optimistic: true
     restore_value: true
     update_interval: never
-    initial_option: "Jersey 15"
+    initial_option: "Dot Matrix"
     # Every option must be a font compiled by packages/fonts_*.yaml; the web
     # configurator and the display lambda use the same names.
     options:
@@ -114,6 +114,10 @@ select:
       - "Kdam Thmor Pro"
       - "Rationale"
       - "Matrix 2px"
+      - "Dot Matrix"
+      - "Handjet"
+      - "Oxanium"
+      - "Share Tech Mono"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

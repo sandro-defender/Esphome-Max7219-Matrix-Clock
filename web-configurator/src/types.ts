@@ -13,6 +13,10 @@ export const CLOCK_FONTS = [
   "kdam-thmor-pro",
   "rationale",
   "matrix-2px",
+  "dot-matrix",
+  "handjet",
+  "oxanium",
+  "share-tech-mono",
   "compact",
 ] as const;
 export type ClockFont = (typeof CLOCK_FONTS)[number];
@@ -103,7 +107,7 @@ export const DEFAULT_CONFIG: Config = {
   blinkColon: true,
   digitAnimation: true,
   animationMs: 250,
-  clockFont: "jersey-15",
+  clockFont: "dot-matrix",
   layoutPreview: "firmware",
 
   message: "",

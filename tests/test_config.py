@@ -133,11 +133,15 @@ FONT_OPTION_BY_ID = {
     "font_kdam_thmor_pro_source": "Kdam Thmor Pro",
     "font_rationale_source": "Rationale",
     "font_matrix_2px_source": "Matrix 2px",
+    "font_dot_matrix_source": "Dot Matrix",
+    "font_handjet_source": "Handjet",
+    "font_oxanium_source": "Oxanium",
+    "font_share_tech_mono_source": "Share Tech Mono",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
 # in every face, while the renderer's compact built-in font remains the Latin
-# message fallback. Limiting the default build to five faces restores generous
+# message fallback. Limiting the default build to seven faces preserves
 # ESP8266 RAM headroom while the other licensed source files stay in fonts/.
 FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
 
@@ -657,6 +661,43 @@ class ConfigContractTests(unittest.TestCase):
                 canvas,
                 f"Matrix 2px '{char}' does not rasterise to its pixel design",
             )
+
+    def test_dot_matrix_font_uses_6x8_cells_and_fits_a_32x8_clock(self):
+        """The single-LED-dot clock face fits HH:MM on a four-module panel."""
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        sys.path.insert(0, str(REPO / "scripts"))
+        try:
+            import generate_dot_matrix_font as design_source
+        finally:
+            sys.path.pop(0)
+
+        design_source.validate_design()
+        entry = next(
+            e for e in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+            if e["id"] == "font_dot_matrix_source"
+        )
+        face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+        face.set_pixel_sizes(entry["size"], 0)
+
+        self.assertLessEqual(
+            sum(design_source.advance_for(char) for char in "88:88"),
+            32,
+            "Dot Matrix HH:MM must fit a 32x8 display",
+        )
+        for char, rows in design_source.GLYPHS.items():
+            face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            glyph = face.glyph
+            self.assertEqual(
+                design_source.advance_for(char),
+                (glyph.metrics.horiAdvance + 63) // 64,
+                f"Dot Matrix '{char}' has the wrong advance",
+            )
+            if char.isdigit():
+                self.assertEqual(MATRIX_ROW_HEIGHT, glyph.bitmap.rows)
 
     def test_every_compiled_font_is_selectable_and_wired(self):
         fonts = load_yaml(PACKAGES / "fonts_local.yaml")["font"]

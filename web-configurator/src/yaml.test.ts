@@ -146,22 +146,26 @@ describe("font catalog", () => {
       "Kdam Thmor Pro",
       "Rationale",
       "Matrix 2px",
+      "Dot Matrix",
+      "Handjet",
+      "Oxanium",
+      "Share Tech Mono",
       "Compact 5x7",
     ]);
   });
 
-  it("ships six exact-eight-row external faces by default", () => {
+  it("ships ten exact-eight-row external faces by default", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
-    expect(options.slice(0, -1)).toHaveLength(6);
+    expect(options.slice(0, -1)).toHaveLength(10);
     for (const spec of FONT_CATALOG.slice(0, -1)) {
       const font = GENERATED_FONTS[spec.firmwareId ?? ""];
       expect(font.maxDigitHeight, spec.option).toBe(8);
     }
   });
 
-  it("uses the densest large-number face by default", () => {
-    expect(DEFAULT_CONFIG.clockFont).toBe("jersey-15");
-    expect(buildYaml(DEFAULT_CONFIG)).toContain('initial_option: "Jersey 15"');
+  it("uses Dot Matrix by default", () => {
+    expect(DEFAULT_CONFIG.clockFont).toBe("dot-matrix");
+    expect(buildYaml(DEFAULT_CONFIG)).toContain('initial_option: "Dot Matrix"');
   });
 
   it("offers exactly the options the firmware compiles", () => {
