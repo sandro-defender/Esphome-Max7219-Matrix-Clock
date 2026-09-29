@@ -110,10 +110,10 @@ font source instead of requiring users to copy fonts beside their YAML.
       size 7, selectable, wired into the display lambda, covered by the font
       contract tests and the configurator preview). Matrix Bold and Eight Bit
       Dragon were removed after visual review rejected their clock digits.
-- [x] Add 28 additional clock faces and two OFL Georgian faces, each with its
-      source license, real-glyph configurator preview and 48×8 measurements.
-      Noto Sans Georgian and Noto Serif Georgian compile all 33 modern
-      Mkhedruli and all 33 Mtavruli letters at an 8 px size.
+- [x] Add 28 additional clock faces and two OFL Georgian faces with their
+      source licenses. Noto Sans Georgian and Noto Serif Georgian retain all 33
+      modern Mkhedruli and all 33 Mtavruli letters as optional repository
+      assets; they are not compiled in the five-font default firmware.
 - [x] Reference fonts with explicit `type: web` URLs under
       `https://raw.githubusercontent.com/sandro-defender/Esphome-Max7219-Matrix-Clock/<tag>/fonts/...`.
 - [x] Pin production font URLs to the same release tag as the package; do not
@@ -132,17 +132,18 @@ font source instead of requiring users to copy fonts beside their YAML.
       RAM.
 - [x] Use `bpp: 1` unless measurements justify a larger value.
 - [x] Verify every font fits full-size `HH:MM:SS`, remains readable at 8 pixels
-      ... all 33 external faces were measured with ESPHome's own advance math;
-      each is at most 48 px wide and 8 px high; on-panel confirmation remains
+      ... the five default external faces were measured with ESPHome's own
+      monochrome advance math; each is at most 48 px wide and every tallest
+      digit is exactly 8 px high; on-panel confirmation remains
       a hardware item
       high, and works with per-digit slide-up animation.
 - [x] Test missing glyphs, metrics, clipping, alignment, and fallback behavior.
       ... `test_font_glyphs_cover_every_compiled_character`, `test_font_ink_is_not_taller_than_the_matrix` and `test_every_compiled_font_is_selectable_and_wired` in tests/test_config.py
 - [ ] Record firmware-size deltas for each enabled font and remove low-value
       choices if ESP8266 headroom becomes unsafe.
-      ... aggregate build with all 33 fonts is safe (529709 bytes flash,
-      63200 bytes RAM); per-face differential measurements remain optional
-      follow-up evidence
+      ... the earlier 33-face build measured 529709 bytes flash and 63200 bytes
+      RAM; the default has since been reduced to five exact-8-row choices and
+      awaits refreshed aggregate/per-face compile measurements
       if ESP8266 headroom becomes unsafe.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and
       the steps for adding another font.

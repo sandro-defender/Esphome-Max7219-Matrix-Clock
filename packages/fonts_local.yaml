@@ -1,313 +1,49 @@
-# Font module (local development): uses the fonts that ship in this repository.
-#
-# This is the same font configuration as fonts_web.yaml, but read from the
-# checkout instead of a raw GitHub URL, so `esphome config` and `esphome
-# compile` work without network access. tests/test_config.py keeps both files
-# in sync (ids, sizes, bpp, glyphs) and re-measures every font. External faces
-# compile clock/status glyphs only so the complete catalogue fits ESP8266 RAM;
-# Latin messages use the renderer's compact built-in fallback.
-#
-# Relative paths inside a package resolve against that package's directory, so
-# these point at the repository root's fonts/ folder.
+# Default local-development font set. These five faces were measured with
+# FreeType using ESPHome's pixel metrics: every digit is exactly eight rows
+# high and worst-case 88:88:88 fits the default 48x8 panel.
 
 font:
-  - id: font_tiny5_source
-    file:
-      type: local
-      path: ../fonts/tiny5/Tiny5-Regular.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_ps2p_source
-    file:
-      type: local
-      path: ../fonts/press-start-2p/PressStart2P-Regular.ttf
-    size: 6
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_silkscreen_bold_source
-    file:
-      type: local
-      path: ../fonts/silkscreen/Silkscreen-Bold.ttf
-    size: 7
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_audiowide_source
-    file:
-      type: local
-      path: ../fonts/audiowide/Audiowide-Regular.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bitcount_grid_double_source
-    file:
-      type: local
-      path: ../fonts/bitcount-grid-double/BitcountGridDouble-Variable.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bitcount_grid_single_source
-    file:
-      type: local
-      path: ../fonts/bitcount-grid-single/BitcountGridSingle-Variable.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bitcount_prop_double_source
-    file:
-      type: local
-      path: ../fonts/bitcount-prop-double/BitcountPropDouble-Variable.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bitcount_prop_single_source
-    file:
-      type: local
-      path: ../fonts/bitcount-prop-single/BitcountPropSingle-Variable.ttf
-    size: 9
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bitcount_single_source
-    file:
-      type: local
-      path: ../fonts/bitcount-single/BitcountSingle-Variable.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_bytesized_source
-    file:
-      type: local
-      path: ../fonts/bytesized/Bytesized-Regular.ttf
-    size: 12
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_dotgothic16_source
-    file:
-      type: local
-      path: ../fonts/dotgothic16/DotGothic16-Regular.ttf
-    size: 9
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_doto_source
-    file:
-      type: local
-      path: ../fonts/doto/Doto-Variable.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_electrolize_source
-    file:
-      type: local
-      path: ../fonts/electrolize/Electrolize-Regular.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_handjet_source
-    file:
-      type: local
-      path: ../fonts/handjet/Handjet-Variable.ttf
-    size: 11
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_iceland_source
-    file:
-      type: local
-      path: ../fonts/iceland/Iceland-Regular.ttf
-    size: 12
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_jersey_10_source
-    file:
-      type: local
-      path: ../fonts/jersey-10/Jersey10-Regular.ttf
-    size: 12
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
   - id: font_jersey_15_source
     file:
       type: local
       path: ../fonts/jersey-15/Jersey15-Regular.ttf
+    size: 15
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
+  - id: font_teko_source
+    file:
+      type: local
+      path: ../fonts/teko/Teko[wght].ttf
     size: 12
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
 
-  - id: font_jersey_20_source
+  - id: font_rajdhani_bold_source
     file:
       type: local
-      path: ../fonts/jersey-20/Jersey20-Regular.ttf
-    size: 11
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_jersey_25_source
-    file:
-      type: local
-      path: ../fonts/jersey-25/Jersey25-Regular.ttf
-    size: 11
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_major_mono_display_source
-    file:
-      type: local
-      path: ../fonts/major-mono-display/MajorMonoDisplay-Regular.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_micro_5_source
-    file:
-      type: local
-      path: ../fonts/micro-5/Micro5-Regular.ttf
+      path: ../fonts/rajdhani/Rajdhani-Bold.ttf
     size: 12
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
 
-  - id: font_nova_mono_source
+  - id: font_kdam_thmor_pro_source
     file:
       type: local
-      path: ../fonts/nova-mono/NovaMono.ttf
+      path: ../fonts/kdam-thmor-pro/KdamThmorPro-Regular.ttf
     size: 9
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
 
-  - id: font_orbitron_source
+  - id: font_rationale_source
     file:
       type: local
-      path: ../fonts/orbitron/Orbitron-Variable.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_oxanium_source
-    file:
-      type: local
-      path: ../fonts/oxanium/Oxanium-Variable.ttf
-    size: 9
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_pixelify_sans_source
-    file:
-      type: local
-      path: ../fonts/pixelify-sans/PixelifySans-Variable.ttf
-    size: 11
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_quantico_bold_source
-    file:
-      type: local
-      path: ../fonts/quantico/Quantico-Bold.ttf
-    size: 9
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_rubik_pixels_source
-    file:
-      type: local
-      path: ../fonts/rubik-pixels/RubikPixels-Regular.ttf
-    size: 9
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_share_tech_mono_source
-    file:
-      type: local
-      path: ../fonts/share-tech-mono/ShareTechMono-Regular.ttf
-    size: 10
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_sixtyfour_source
-    file:
-      type: local
-      path: ../fonts/sixtyfour/Sixtyfour-Variable.ttf
-    size: 6
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_vt323_source
-    file:
-      type: local
-      path: ../fonts/vt323/VT323-Regular.ttf
+      path: ../fonts/rationale/Rationale-Regular.ttf
     size: 12
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
-
-  - id: font_wallpoet_source
-    file:
-      type: local
-      path: ../fonts/wallpoet/Wallpoet-Regular.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-
-  - id: font_noto_sans_georgian_source
-    file:
-      type: local
-      path: ../fonts/noto-sans-georgian/NotoSansGeorgian-Variable.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-      - "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
-      - "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
-
-  - id: font_noto_serif_georgian_source
-    file:
-      type: local
-      path: ../fonts/noto-serif-georgian/NotoSerifGeorgian-Variable.ttf
-    size: 8
-    bpp: 1
-    glyphs:
-      - "0123456789:.-/%!?+ "
-      - "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
-      - "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"

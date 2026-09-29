@@ -1,7 +1,7 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
-ESP8266, with a full Home Assistant control surface, 33 bundled fonts, a
+ESP8266, with a full Home Assistant control surface, five large 8-row fonts, a
 built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -12,10 +12,11 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **33 bundled fonts plus a built-in fallback** - a broad set of pixel,
-  monospace and display faces, including Noto Sans Georgian and Noto Serif
-  Georgian with Mkhedruli and Mtavruli support. Silkscreen Bold remains the
-  default, and the compact 5×7 bitmap font always fits and needs no download.
+* **Five large 8-row fonts plus a built-in fallback** - Jersey 15, Teko,
+  Rajdhani Bold, Kdam Thmor Pro and Rationale are compiled by default. Jersey
+  15 fills the 48-pixel clock width, and the compact 5×7 bitmap font always
+  fits and needs no download. More licensed source faces, including two
+  Georgian families, remain in `fonts/` for future testing.
   Fonts are selected from Home Assistant and compiled into the firmware;
   nothing is downloaded at runtime. The web configurator paints every face with
   the very glyphs the firmware compiles.
@@ -107,7 +108,7 @@ substitutions:
    Keep the existing API key if the device is already paired with Home
    Assistant.
 3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
-   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.2.0`) must be
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.3.0`) must be
    a tag that exists in this repository - see `VALIDATION.md` for how the
    release path is verified.
 4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
@@ -158,7 +159,7 @@ All entities appear automatically through the ESPHome integration.
 | Time format | 24 hour, 12 hour |
 | Seconds display | Off, Digits, Bar |
 | Date format | DD.MM, MM/DD, DD/MM |
-| Clock font | 33 repository fonts plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
+| Clock font | five 8-row repository fonts plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
 | Message scroll | Scroll, Static |
 
 ### Numbers
@@ -293,14 +294,14 @@ while building these packages and the checks that need hardware.
   check the `timezone` substitution.
 * **Font unreadable** - some faces need the whole 48 px for `HH:MM:SS`;
   the renderer drops the seconds to the bar or falls back to the built-in font
-  when a font does not fit. Choose Silkscreen Bold, Tiny5 or "Compact 5x7" for
+  when a font does not fit. Choose Rationale, Teko or "Compact 5x7" for
   a safer layout.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
-* **`couldn't find remote ref 0.2.0`** - the `ref:` in your YAML pins a release
+* **`couldn't find remote ref 0.3.0`** - the `ref:` in your YAML pins a release
   tag that does not exist yet (in this repository, or in your fork). Publish it
-  first: `git tag 0.2.0 && git push origin 0.2.0` (or create a GitHub release
+  first: `git tag 0.3.0 && git push origin 0.3.0` (or create a GitHub release
   for that tag). If ESPHome already cached the failed attempt, run once with
   `refresh: 0s` on the package so it picks the tag up immediately.
 * **`Couldn't find ID 'display_mode'`** (or `countdown_remaining`,
@@ -334,8 +335,7 @@ The package configuration validates and generates C++ for ESPHome 2026.9.0 and
 the renderer is covered by host tests, but the following still needs a real
 device (see `VALIDATION.md` and `ROADMAP.md` for details):
 
-* on-panel readability of the 33 bundled fonts, especially the two Georgian
-  faces and the few faces that use all eight pixel rows;
+* on-panel readability of the five default 8-row fonts;
 * OTA progress visibility during a real transfer;
 * wiring/orientation checks with the built-in test patterns.
 

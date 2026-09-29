@@ -127,51 +127,19 @@ REQUIRED_ACTIONS = {
 # teaching the select, the display lambda and the web configurator about it is
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
-    "font_tiny5_source": "Tiny5",
-    "font_ps2p_source": "Press Start 2P",
-    "font_silkscreen_bold_source": "Silkscreen Bold",
-    "font_audiowide_source": "Audiowide",
-    "font_bitcount_grid_double_source": "Bitcount Grid Double",
-    "font_bitcount_grid_single_source": "Bitcount Grid Single",
-    "font_bitcount_prop_double_source": "Bitcount Prop Double",
-    "font_bitcount_prop_single_source": "Bitcount Prop Single",
-    "font_bitcount_single_source": "Bitcount Single",
-    "font_bytesized_source": "Bytesized",
-    "font_dotgothic16_source": "DotGothic16",
-    "font_doto_source": "Doto",
-    "font_electrolize_source": "Electrolize",
-    "font_handjet_source": "Handjet",
-    "font_iceland_source": "Iceland",
-    "font_jersey_10_source": "Jersey 10",
     "font_jersey_15_source": "Jersey 15",
-    "font_jersey_20_source": "Jersey 20",
-    "font_jersey_25_source": "Jersey 25",
-    "font_major_mono_display_source": "Major Mono Display",
-    "font_micro_5_source": "Micro 5",
-    "font_nova_mono_source": "Nova Mono",
-    "font_orbitron_source": "Orbitron",
-    "font_oxanium_source": "Oxanium",
-    "font_pixelify_sans_source": "Pixelify Sans",
-    "font_quantico_bold_source": "Quantico Bold",
-    "font_rubik_pixels_source": "Rubik Pixels",
-    "font_share_tech_mono_source": "Share Tech Mono",
-    "font_sixtyfour_source": "Sixtyfour",
-    "font_vt323_source": "VT323",
-    "font_wallpoet_source": "Wallpoet",
-    "font_noto_sans_georgian_source": "Noto Sans Georgian",
-    "font_noto_serif_georgian_source": "Noto Serif Georgian",
+    "font_teko_source": "Teko",
+    "font_rajdhani_bold_source": "Rajdhani Bold",
+    "font_kdam_thmor_pro_source": "Kdam Thmor Pro",
+    "font_rationale_source": "Rationale",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
 # in every face, while the renderer's compact built-in font remains the Latin
-# message fallback. This avoids exhausting ESP8266 RAM when the full catalogue
-# is present. Georgian faces additionally compile both modern alphabets below.
+# message fallback. Limiting the default build to five faces restores generous
+# ESP8266 RAM headroom while the other licensed source files stay in fonts/.
 FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
 
-GEORGIAN_FONT_IDS = {
-    "font_noto_sans_georgian_source",
-    "font_noto_serif_georgian_source",
-}
 GEORGIAN_MKHEDRULI = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
 GEORGIAN_MTAVRULI = "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
 
@@ -560,24 +528,20 @@ class ConfigContractTests(unittest.TestCase):
                     f"{entry['id']} has no '{char}' glyph in its source file",
                 )
 
-    def test_georgian_fonts_compile_both_modern_alphabets(self):
-        """Georgian choices must render Mkhedruli and Mtavruli messages."""
+    def test_repository_georgian_fonts_keep_both_modern_alphabets(self):
+        """Optional Georgian sources remain available for a later shortlist."""
         try:
             import freetype
         except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
             self.skipTest("freetype-py not installed")
 
-        entries = {
-            entry["id"]: entry
-            for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+        paths = {
+            "noto-sans-georgian": REPO / "fonts/noto-sans-georgian/NotoSansGeorgian-Variable.ttf",
+            "noto-serif-georgian": REPO / "fonts/noto-serif-georgian/NotoSerifGeorgian-Variable.ttf",
         }
-        self.assertTrue(GEORGIAN_FONT_IDS.issubset(entries))
-        for font_id in GEORGIAN_FONT_IDS:
-            entry = entries[font_id]
-            declared = "".join(entry["glyphs"])
-            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+        for font_id, path in paths.items():
+            face = freetype.Face(str(path))
             for char in GEORGIAN_MKHEDRULI + GEORGIAN_MTAVRULI:
-                self.assertIn(char, declared, f"{font_id} does not compile '{char}'")
                 self.assertNotEqual(
                     face.get_char_index(ord(char)),
                     0,
@@ -599,13 +563,21 @@ class ConfigContractTests(unittest.TestCase):
         for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]:
             face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
             face.set_pixel_sizes(entry["size"], 0)
+            digit_heights = []
             for char in "0123456789:-":
                 face.load_char(ord(char), freetype.FT_LOAD_RENDER)
+                if char.isdigit():
+                    digit_heights.append(face.glyph.bitmap.rows)
                 self.assertLessEqual(
                     face.glyph.bitmap.rows,
                     MATRIX_ROW_HEIGHT,
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
+            self.assertEqual(
+                MATRIX_ROW_HEIGHT,
+                max(digit_heights),
+                f"{entry['id']} does not use all eight rows for its largest digit",
+            )
 
     def test_every_compiled_font_is_selectable_and_wired(self):
         fonts = load_yaml(PACKAGES / "fonts_local.yaml")["font"]

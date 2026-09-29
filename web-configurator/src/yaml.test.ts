@@ -28,8 +28,8 @@ describe("buildYaml", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
     expect(yaml).toContain("url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock");
-    expect(yaml).toContain('ref: "0.2.0"');
-    expect(yaml).toContain('project_ref: "0.2.0"');
+    expect(yaml).toContain('ref: "0.3.0"');
+    expect(yaml).toContain('project_ref: "0.3.0"');
     expect(yaml).toContain("- packages/base.yaml");
     expect(yaml).toContain("- packages/fonts_web.yaml");
     expect(yaml).toContain("- packages/ota_ui.yaml");
@@ -140,53 +140,27 @@ describe("buildYaml", () => {
 describe("font catalog", () => {
   it("offers every validated 48x8 clock font for user comparison", () => {
     expect(FONT_CATALOG.map((spec) => spec.option)).toEqual([
-      "Silkscreen Bold",
-      "Tiny5",
-      "Press Start 2P",
-      "Audiowide",
-      "Bitcount Grid Double",
-      "Bitcount Grid Single",
-      "Bitcount Prop Double",
-      "Bitcount Prop Single",
-      "Bitcount Single",
-      "Bytesized",
-      "DotGothic16",
-      "Doto",
-      "Electrolize",
-      "Handjet",
-      "Iceland",
-      "Jersey 10",
       "Jersey 15",
-      "Jersey 20",
-      "Jersey 25",
-      "Major Mono Display",
-      "Micro 5",
-      "Nova Mono",
-      "Orbitron",
-      "Oxanium",
-      "Pixelify Sans",
-      "Quantico Bold",
-      "Rubik Pixels",
-      "Share Tech Mono",
-      "Sixtyfour",
-      "VT323",
-      "Wallpoet",
-      "Noto Sans Georgian",
-      "Noto Serif Georgian",
+      "Teko",
+      "Rajdhani Bold",
+      "Kdam Thmor Pro",
+      "Rationale",
       "Compact 5x7",
     ]);
   });
 
-  it("offers the bold Silkscreen clock face and retires the rejected faces", () => {
+  it("ships five exact-eight-row external faces by default", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
-    expect(options).toContain("Silkscreen Bold");
-    expect(options).not.toContain("Matrix Bold");
-    expect(options).not.toContain("Eight Bit Dragon");
+    expect(options.slice(0, -1)).toHaveLength(5);
+    for (const spec of FONT_CATALOG.slice(0, -1)) {
+      const font = GENERATED_FONTS[spec.firmwareId ?? ""];
+      expect(font.maxDigitHeight, spec.option).toBe(8);
+    }
   });
 
-  it("uses the bold clock face by default", () => {
-    expect(DEFAULT_CONFIG.clockFont).toBe("silkscreen-bold");
-    expect(buildYaml(DEFAULT_CONFIG)).toContain('initial_option: "Silkscreen Bold"');
+  it("uses the densest large-number face by default", () => {
+    expect(DEFAULT_CONFIG.clockFont).toBe("jersey-15");
+    expect(buildYaml(DEFAULT_CONFIG)).toContain('initial_option: "Jersey 15"');
   });
 
   it("offers exactly the options the firmware compiles", () => {
@@ -232,7 +206,7 @@ describe("font catalog", () => {
 
 describe("settings storage", () => {
   it("round-trips a configuration through a share link", () => {
-    const config: Config = { ...DEFAULT_CONFIG, chips: 8, rows: 2, clockFont: "silkscreen-bold", led: "Ice" };
+    const config: Config = { ...DEFAULT_CONFIG, chips: 8, rows: 2, clockFont: "jersey-15", led: "Ice" };
     const url = shareUrl(config, "https://example.com/configurator");
     const encoded = url.split("#cfg=")[1];
 

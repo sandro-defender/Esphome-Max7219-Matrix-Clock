@@ -104,43 +104,15 @@ select:
     optimistic: true
     restore_value: true
     update_interval: never
-    initial_option: "Silkscreen Bold"
+    initial_option: "Jersey 15"
     # Every option must be a font compiled by packages/fonts_*.yaml; the web
     # configurator and the display lambda use the same names.
     options:
-      - "Silkscreen Bold"
-      - "Tiny5"
-      - "Press Start 2P"
-      - "Audiowide"
-      - "Bitcount Grid Double"
-      - "Bitcount Grid Single"
-      - "Bitcount Prop Double"
-      - "Bitcount Prop Single"
-      - "Bitcount Single"
-      - "Bytesized"
-      - "DotGothic16"
-      - "Doto"
-      - "Electrolize"
-      - "Handjet"
-      - "Iceland"
-      - "Jersey 10"
       - "Jersey 15"
-      - "Jersey 20"
-      - "Jersey 25"
-      - "Major Mono Display"
-      - "Micro 5"
-      - "Nova Mono"
-      - "Orbitron"
-      - "Oxanium"
-      - "Pixelify Sans"
-      - "Quantico Bold"
-      - "Rubik Pixels"
-      - "Share Tech Mono"
-      - "Sixtyfour"
-      - "VT323"
-      - "Wallpoet"
-      - "Noto Sans Georgian"
-      - "Noto Serif Georgian"
+      - "Teko"
+      - "Rajdhani Bold"
+      - "Kdam Thmor Pro"
+      - "Rationale"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

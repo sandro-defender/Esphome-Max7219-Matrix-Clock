@@ -105,9 +105,11 @@ touching GitHub.
   only. The credential scan in the test suite fails if a literal secret shows up
   in a tracked file.
 
-## Evidence from the sandboxed run
+## Evidence from the 0.2.0 sandboxed run
 
-The following was executed while building the packages (ESPHome 2026.9.0):
+The following was executed while building release 0.2.0 (ESPHome 2026.9.0).
+It is retained as historical evidence; the 0.3.0 five-font change still needs
+the complete validation sequence above before publication.
 
 | Check | Result |
 |---|---|
@@ -130,7 +132,7 @@ The following was executed while building the packages (ESPHome 2026.9.0):
 These cannot be verified without a real clock and are intentionally listed as
 open items in `ROADMAP.md`:
 
-1. On-panel readability of all 33 bundled fonts, including both Georgian faces.
+1. On-panel readability of the five default 8-row fonts.
 2. OTA upload with the progress screen: does the MAX7219 redraw during the
    upload (the callbacks call `id(matrix).update()` directly)?
 3. Wiring, orientation and both test patterns on the real matrix.

@@ -32,6 +32,18 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+/** Maps firmware pixels to the physical LED state, including inversion. */
+export function isLedVisuallyOn(value: number, powered: boolean, inverted: boolean): boolean {
+  if (!powered) return false;
+  const sourceOn = value > 0;
+  return inverted ? !sourceOn : sourceOn;
+}
+
+/** Keeps the halo inside one dot pitch so adjacent LEDs remain distinguishable. */
+export function ledGlowRadius(dot: number, pitch: number): number {
+  return Math.min(pitch / 2, dot * 0.58);
+}
+
 export function MatrixCanvas({
   width,
   height,
@@ -119,17 +131,6 @@ export function MatrixCanvas({
         roundRect(ctx, fx - 1, fy - 1, face + 2, face + 2, 3);
         ctx.fill();
 
-        if (powered && inverted) {
-          ctx.save();
-          ctx.shadowColor = led.glow;
-          ctx.shadowBlur = 12 + level * 16;
-          ctx.globalAlpha = 0.28 + level * 0.62;
-          ctx.fillStyle = led.mid;
-          roundRect(ctx, fx, fy, face, face, 2);
-          ctx.fill();
-          ctx.restore();
-        }
-
         for (let row = 0; row < 8; row++) {
           for (let col = 0; col < 8; col++) {
             const px = mx * 8 + col;
@@ -137,19 +138,10 @@ export function MatrixCanvas({
             const value = px < width && py < height ? pixels[py * width + px] : 0;
             const cx = fx + col * pitch + dot / 2;
             const cy = fy + row * pitch + dot / 2;
-            const on = value > 0;
+            const on = isLedVisuallyOn(value, powered, inverted);
             const head = value === 2;
 
-            if (powered && inverted) {
-              if (!on) continue;
-              ctx.beginPath();
-              ctx.arc(cx, cy, dot / 2, 0, Math.PI * 2);
-              ctx.fillStyle = "#070605";
-              ctx.fill();
-              continue;
-            }
-
-            if (!powered || !on) {
+            if (!on) {
               ctx.beginPath();
               ctx.arc(cx, cy, dot / 2, 0, Math.PI * 2);
               ctx.fillStyle = "#16110d";
@@ -161,19 +153,23 @@ export function MatrixCanvas({
               continue;
             }
 
-            const radius = dot * (head ? 1.85 : 1.28);
+            const radius = ledGlowRadius(dot, pitch);
             const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
             glow.addColorStop(0, led.core);
-            glow.addColorStop(0.42, led.mid);
+            glow.addColorStop(0.46, led.mid);
             glow.addColorStop(1, "rgba(0,0,0,0)");
-            ctx.globalAlpha = head ? Math.min(1, level + 0.25) : level;
+            ctx.globalAlpha = head ? Math.min(1, level + 0.2) : 0.55 + level * 0.35;
             ctx.fillStyle = glow;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.globalAlpha = 1;
             ctx.beginPath();
-            ctx.arc(cx, cy, dot * 0.34, 0, Math.PI * 2);
+            ctx.arc(cx, cy, dot * 0.45, 0, Math.PI * 2);
+            ctx.fillStyle = led.mid;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx - dot * 0.08, cy - dot * 0.1, dot * 0.22, 0, Math.PI * 2);
             ctx.fillStyle = head ? "#fffaf0" : led.core;
             ctx.fill();
           }

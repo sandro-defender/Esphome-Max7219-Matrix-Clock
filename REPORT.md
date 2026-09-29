@@ -1,7 +1,9 @@
 # Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
-Release: **0.2.0** (pinned consistently in `examples/release.yaml`,
-`packages/base.yaml` and `packages/fonts_web.yaml`).
+Validated release baseline: **0.2.0**. The working tree now targets **0.3.0**,
+but its full firmware/release validation was intentionally not run, so the
+evidence below remains historical 0.2.0 evidence and must not be read as a
+0.3.0 release claim.
 
 Scope: replace the single-file `max7219-clock.yaml` with the modular package
 layout from `ROADMAP.md`, add the renderer/state machine with fonts, animation,

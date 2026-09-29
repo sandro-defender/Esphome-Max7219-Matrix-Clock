@@ -37,11 +37,16 @@ preview shows the real glyphs instead of a web-font approximation.
 | Wallpoet | `wallpoet/` | `wallpoet/OFL.txt` |
 | Noto Sans Georgian | `noto-sans-georgian/` | `noto-sans-georgian/OFL.txt` |
 | Noto Serif Georgian | `noto-serif-georgian/` | `noto-serif-georgian/OFL.txt` |
+| Teko | `teko/` | `teko/OFL.txt` |
+| Rajdhani | `rajdhani/` | `rajdhani/OFL.txt` |
+| Kdam Thmor Pro | `kdam-thmor-pro/` | `kdam-thmor-pro/OFL.txt` |
+| Rationale | `rationale/` | `rationale/OFL.txt` |
 
 The files are redistributed under the SIL Open Font License 1.1 included beside
-each font. All 33 faces come from the official
-[Google Fonts repository](https://github.com/google/fonts). Silkscreen Bold is
-the default because its two-pixel strokes stay strong on a small LED matrix.
+each font. All 37 source faces come from the official
+[Google Fonts repository](https://github.com/google/fonts). Only the five
+validated 8-row choices below are compiled by default, keeping the other files
+available for later testing without consuming ESP8266 RAM.
 
 ## How the firmware uses them
 
@@ -50,11 +55,11 @@ the default because its two-pixel strokes stay strong on a small LED matrix.
 
 ```yaml
 font:
-  - id: font_silkscreen_bold_source
+  - id: font_jersey_15_source
     file:
       type: web
-      url: ${fonts_base_url}/silkscreen/Silkscreen-Bold.ttf   # github raw URL + ${project_ref}
-    size: 7
+      url: ${fonts_base_url}/jersey-15/Jersey15-Regular.ttf   # github raw URL + ${project_ref}
+    size: 15
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
@@ -67,11 +72,10 @@ Assistant and wired into the display lambda, and that the glyph set covers
 every character the renderer can print.
 
 Only rasterised glyphs are compiled into firmware, never the TTF/OTF files.
-The 33-face ESP8266 build uses 529709 bytes flash (50.7%) and 63200 bytes RAM
-(77.1%). Compiling Latin letters into every face exceeded DRAM, so external
-faces intentionally contain only numeric/status glyphs. The built-in compact
-font renders Latin messages. The Georgian faces additionally compile all 33
-Mkhedruli and all 33 Mtavruli letters.
+External faces intentionally contain only numeric/status glyphs. The built-in
+compact font renders Latin messages. Noto Sans Georgian and Noto Serif
+Georgian remain licensed source candidates in the repository, but are not part
+of the default firmware until an ESP8266-safe message-font design is validated.
 
 The Home Assistant message action stores 47 UTF-8 bytes. That is up to 15
 Georgian letters (plus a terminator); truncation is code-point safe and never
@@ -88,21 +92,17 @@ Measured two ways, both in the repository:
 
 | Font | `size` | worst-case `88:88:88` width | Tallest digit | Fits 48×8 | Notes |
 |---|---|---|---|---|---|
-| Silkscreen Bold | 7 | 44 px | 5 px | yes | default; thick two-pixel strokes and room for the seconds bar |
-| Tiny5 | 10 | 36 px | 6 px | yes | narrow tall alternative; leaves row 8 free for the seconds bar |
-| Press Start 2P | 6 | 48 px | 7 px | yes, exact fit | fills the width, row 8 stays free |
-| Noto Sans Georgian | 8 | 34 px | 7 px | yes | Mkhedruli and Mtavruli messages |
-| Noto Serif Georgian | 8 | 28 px | 7 px | yes | Mkhedruli and Mtavruli messages |
+| Jersey 15 | 15 | 48 px | 8 px | yes, exact fit | default; large block digits use the full panel |
+| Teko | 12 | 28 px | 8 px | yes | very narrow, tall digits |
+| Rajdhani Bold | 12 | 46 px | 8 px | yes | bold squared digits with two pixels of headroom |
+| Kdam Thmor Pro | 9 | 40 px | 8 px | yes | heavy compact digits |
+| Rationale | 12 | 36 px | 8 px | yes | tall condensed digits |
 | built-in 5×7 fallback | - | 42 px | 7 px | yes, always available | needs no download |
 
-The automated measurement covers every other catalogued face as well. Their
-chosen sizes range from 6 to 12 px; every `88:88:88` result is at most 48 px
-wide and every numeric glyph uses at most eight rows. The web configurator
+The automated measurement covers all five compiled faces with ESPHome's
+monochrome FreeType hinting. Each `88:88:88` result is at most 48 pixels wide,
+and the tallest digit in every face is exactly eight rows. The web configurator
 shows the generated bitmap for each face so they can be compared visually.
-
-Silkscreen Bold size 8 is deliberately **not** used: `HH:MM:SS` reaches 50 px
-and would not fit the default panel. Size 7 keeps the bold pixel structure while
-leaving two pixels of total horizontal headroom.
 
 The renderer checks the width at runtime and degrades in a fixed order:
 full `HH:MM:SS` → `HH:MM` plus the bottom-row seconds bar → built-in fallback
@@ -111,9 +111,8 @@ clips the clock: it falls back instead. The slide-up animation works per glyph
 and is therefore font independent.
 
 Glyph sets are limited on purpose (digits, separators, `%`, `.`, `-`, `/`, `!`,
-`?`, `+` and space). Latin messages fall back to the built-in uppercase face;
-Georgian messages render through either Noto Georgian choice. Compiling fewer
-glyphs is what keeps all 33 choices inside ESP8266 DRAM.
+`?`, `+` and space). Messages fall back to the built-in uppercase face.
+Compiling fewer faces and glyphs preserves ESP8266 DRAM headroom.
 
 Fonts are downloaded and rasterised at **build time**; the ESP8266 never
 downloads anything at runtime. The Home Assistant font selector switches between

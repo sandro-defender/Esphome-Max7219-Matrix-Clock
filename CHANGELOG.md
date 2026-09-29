@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 - 2026-09-29
+
+- Make five large, exact-eight-row faces the default firmware font set: Jersey
+  15, Teko, Rajdhani Bold, Kdam Thmor Pro and Rationale.
+- Keep the broader licensed font catalogue in the repository without compiling
+  all faces into every ESP8266 build.
+- Correct the configurator's inverted LED preview and prevent glow halos from
+  merging adjacent pixels.
+- Add automated coverage for per-LED inversion, glow bounds, exact font height,
+  clock width and firmware/configurator font parity.
+
 ## 0.2.0 - 2026-09-29
 
 - Add 28 OFL clock-font choices, bringing the repository catalogue to 33 faces.
