@@ -1,0 +1,24 @@
+# Optional release face. Source license is preserved under fonts/.
+substitutions:
+  project_ref: 0.4.0
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
+font:
+- id: font_dot_matrix_source
+  file:
+    type: web
+    url: ${fonts_base_url}/dot-matrix/DotMatrix.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - '0123456789:.-/%!?+ '
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_DOT_MATRIX
+
+select:
+  - id: !extend clock_font
+    options:
+      - "Dot Matrix"
+    initial_option: "Dot Matrix"

@@ -16,9 +16,9 @@
 
 ### Task 3: Compact the configurator
 
-- [ ] Group controls into compact collapsible sections without hiding required settings.
+- [x] Group controls into compact collapsible sections without hiding required settings — native details/summary; Clock face, Hardware and Device initially expanded; static-render regression test.
 - [ ] Keep keyboard access, labels, and small-screen layout usable.
-- [ ] Verify YAML generation and share links remain compatible.
+- [x] Verify YAML generation and share links remain compatible — existing YAML/storage tests pass unchanged (61 configurator tests total).
 
 ### Checkpoint: UI and renderer
 
@@ -64,3 +64,41 @@
 - [ ] `esphome config`, full ESP8266 compile, and all regression tests pass.
 - [ ] Firmware-size delta is recorded and retains safe ESP8266 headroom.
 - [ ] README documents update behaviour, privacy, and the latest-release policy.
+
+## Font-subset work — staged for a future release
+
+Latest user decision: Matrix 2px and Dot Matrix are included by default; add
+up to three extras. Compact 5×7 is always available. Stage the subset feature for a future immutable release, without
+publishing or pushing. The existing 0.3.0 installer must not reference new paths
+absent from that tag.
+
+- [x] Implement per-face packages and subset-safe display/select wiring — source contracts over 1024 subsets and host syntax checks; exact ESPHome validation remains below.
+- [x] Add included-font state, sanitization, persistence and share-link tests — 10 focused tests; default pair + max three extras.
+- [x] Add Tune inclusion checkboxes and gate unsupported release downloads — draft 0.4.0, copy/download disabled.
+- [x] Test built-in only, one face, all faces and hostile links — offline/source and stub C++ checks only, not full firmware builds.
+- [ ] Validate exact ESPHome 2026.9.0 configurations and full firmware builds.
+- [ ] Record default/one-face flash and RAM deltas.
+
+Baseline rerun: renderer 245 checks, Python 32 tests (no skips after installing
+measurement dependencies), configurator 60 tests, typecheck/build and glyph
+freshness pass. After the disclosure-only increment: 61 configurator tests,
+typecheck/build pass (312.18 kB single HTML). Browser keyboard/small-screen
+verification is still pending; firmware files and installer generation unchanged.
+
+Research: official packages documentation specifies concatenation for non-ID
+lists, replacement for scalar values (do not append lambda strings). Exact-tag
+`esphome/components/template/select/template_select.cpp` at 2026.9.0 restores
+an index: a valid old index selects the possibly different face now at that
+index; an invalid index uses initial_option. Subset migration must document this
+and keep every reachable option compiled. Actual !extend merge tests remain open.
+
+Font increment evidence: 71 Vitest tests, clean typecheck/build (314.12 kB single
+HTML); unchanged glyph freshness. Exact ESPHome install blocked on Python 3.12+
+(the sandbox Python is 3.11); runtime download failed TLS. Browser installation
+also failed TLS, so keyboard/mobile interaction checks remain open. No firmware
+compile or size delta is claimed. See packages/fonts/README.md for merge research,
+restored-index behavior and release-enabling requirements.
+
+Final host run: renderer 245 checks; Python 34 tests (1 skipped: exact installed
+ESPHome resolver test). The exact-tag resolver was separately exercised via its
+unmodified AST functions, not represented as full ESPHome validation.

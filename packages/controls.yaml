@@ -104,20 +104,9 @@ select:
     optimistic: true
     restore_value: true
     update_interval: never
-    initial_option: "Dot Matrix"
-    # Every option must be a font compiled by packages/fonts_*.yaml; the web
-    # configurator and the display lambda use the same names.
+    initial_option: "Compact 5x7"
+    # Each included face extends this list; the fallback needs no font component.
     options:
-      - "Jersey 15"
-      - "Teko"
-      - "Rajdhani Bold"
-      - "Kdam Thmor Pro"
-      - "Rationale"
-      - "Matrix 2px"
-      - "Dot Matrix"
-      - "Handjet"
-      - "Oxanium"
-      - "Share Tech Mono"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

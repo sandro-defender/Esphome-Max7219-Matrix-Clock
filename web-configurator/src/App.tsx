@@ -5,9 +5,8 @@ import { LEDS } from "./leds";
 import { FONT_CATALOG, fitForPanel, fontSpec, previewFont } from "./fontCatalog";
 import { deviceSlug } from "./device";
 import { geometry } from "./render";
-import { clearSavedConfig, loadConfig, saveConfig, shareUrl } from "./storage";
+import { clearSavedConfig, loadConfig, saveConfig, shareUrl, sanitizeConfig } from "./storage";
 import {
-  DEFAULT_CONFIG,
   LIMITS,
   PINS,
   SCREENS,
@@ -22,7 +21,8 @@ import {
   type SecondsMode,
   type Wiring,
 } from "./types";
-import { buildYaml, entityMap, installCommand, sampleAction } from "./yaml";
+import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, toggleExtraFont } from "./fontSelection";
+import { INSTALLER_READY, INSTALLER_NOTICE, buildYaml, entityMap, installCommand, sampleAction } from "./yaml";
 import { cn } from "./utils/cn";
 
 const TABS = ["Tune", "Install YAML", "Assistant", "Wiring", "GitHub"] as const;
@@ -303,6 +303,7 @@ export default function App() {
   }, []);
 
   const download = () => {
+    if (!INSTALLER_READY) return;
     const blob = new Blob([yaml], { type: "text/yaml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -320,7 +321,7 @@ export default function App() {
 
   const reset = () => {
     clearSavedConfig();
-    setCfg({ ...DEFAULT_CONFIG });
+    setCfg(sanitizeConfig(null));
     setNotice("Settings reset to the factory preview.");
   };
 
@@ -358,7 +359,7 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
             Reset
           </button>
-          <button type="button" className="btn primary" onClick={() => copy(yaml, "yaml")}>
+          <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(yaml, "yaml")}>
             {copied === "yaml" ? "Copied" : "Copy install YAML"}
           </button>
         </div>
@@ -394,8 +395,8 @@ export default function App() {
 
           {tab === "Tune" ? (
             <div className="stack">
-              <div className="panel panel-font">
-                <h3>Clock face</h3>
+              <details className="panel panel-font tune-section" open>
+                <summary>Clock face</summary>
                 <Segmented
                   label="Preview layout"
                   value={cfg.layoutPreview}
@@ -417,9 +418,24 @@ export default function App() {
                   checked={cfg.showModuleBoundaries}
                   onChange={(value) => patch("showModuleBoundaries", value)}
                 />
-                <span className="field-label">Clock font</span>
+                <fieldset className="font-inclusion">
+                  <legend>Fonts included in firmware</legend>
+                  <p className="warn">{INSTALLER_NOTICE}</p>
+                  <p className="hint">Matrix 2px and Dot Matrix are included by default. Compact 5×7 is always available.
+                    Add up to three other fonts. Removing the active extra returns the clock to Dot Matrix.</p>
+                  <p aria-live="polite">{cfg.fonts.length - DEFAULT_FONTS.length} / {MAX_EXTRA_FONTS} extra fonts added</p>
+                  {EXTRA_FONTS.map((id) => (
+                    <label key={id} className="font-choice">
+                      <input type="checkbox" checked={cfg.fonts.includes(id)}
+                        disabled={!cfg.fonts.includes(id) && cfg.fonts.length >= DEFAULT_FONTS.length + MAX_EXTRA_FONTS}
+                        onChange={() => setCfg((current) => toggleExtraFont(current, id))} />
+                      {fontSpec(id).label}
+                    </label>
+                  ))}
+                </fieldset>
+                <span className="field-label">Clock font · preview and first boot</span>
                 <div className="font-grid">
-                  {FONT_CATALOG.map((item) => {
+                  {FONT_CATALOG.filter((item) => item.id === "compact" || cfg.fonts.includes(item.id)).map((item) => {
                     const itemFont = previewFont(item.id);
                     const itemFit = fitForPanel(itemFont, geo.width, Math.min(8, geo.height));
                     const active = cfg.clockFont === item.id;
@@ -464,10 +480,10 @@ export default function App() {
                     License <code>{spec.license}</code>
                   </li>
                 </ul>
-              </div>
+              </details>
 
-              <div className="panel">
-                <h3>Screen</h3>
+              <details className="panel tune-section">
+                <summary>Screen</summary>
                 <label className="field">
                   <span className="field-label">Screen select</span>
                   <select value={cfg.screen} onChange={(event) => patch("screen", event.target.value as ScreenMode)}>
@@ -539,10 +555,10 @@ export default function App() {
                   unit="ms"
                   onChange={(value) => patch("animationMs", value)}
                 />
-              </div>
+              </details>
 
-              <div className="panel">
-                <h3>Messages</h3>
+              <details className="panel tune-section">
+                <summary>Messages</summary>
                 <Slider
                   label="Default hold"
                   value={cfg.messageHold}
@@ -577,10 +593,10 @@ export default function App() {
                   The preview keeps the message on the matrix for as long as the firmware would, then falls back to the
                   selected screen.
                 </p>
-              </div>
+              </details>
 
-              <div className="panel">
-                <h3>Light</h3>
+              <details className="panel tune-section">
+                <summary>Light</summary>
                 <Slider
                   label="Brightness"
                   value={cfg.brightness}
@@ -624,10 +640,10 @@ export default function App() {
                   options={Object.keys(LEDS) as LedName[]}
                   onChange={(value) => patch("led", value)}
                 />
-              </div>
+              </details>
 
-              <div className="panel">
-                <h3>Hardware</h3>
+              <details className="panel tune-section" open>
+                <summary>Hardware</summary>
                 <div className="preset-row">
                   {PRESETS.map((preset) => (
                     <button
@@ -687,10 +703,10 @@ export default function App() {
                   <span className="hint">Applied by the driver, not redrawn in the preview. Use the grid test if a module looks sideways.</span>
                 </label>
                 <Toggle label="Flip X" checked={cfg.flipX} onChange={(value) => patch("flipX", value)} />
-              </div>
+              </details>
 
-              <div className="panel">
-                <h3>Device</h3>
+              <details className="panel tune-section" open>
+                <summary>Device</summary>
                 <label className="field">
                   <span className="field-label">Device name</span>
                   <input type="text" value={cfg.deviceName} spellCheck={false} onChange={(e) => patch("deviceName", e.target.value)} />
@@ -714,40 +730,41 @@ export default function App() {
                   Wi-Fi, API, OTA, fallback AP, and web-server credentials stay in your local <code>secrets.yaml</code>. The
                   configurator never asks for or stores them.
                 </p>
-              </div>
+              </details>
             </div>
           ) : null}
 
           {tab === "Install YAML" ? (
             <div className="stack">
+              <p className="warn" role="status">{INSTALLER_NOTICE}</p>
               <div className="panel">
                 <div className="yaml-bar">
                   <span>
                     {deviceSlug(cfg.deviceName)}.yaml · {lines} lines
                   </span>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" className="btn ghost" onClick={download}>
+                    <button type="button" className="btn ghost" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={download}>
                       Download
                     </button>
-                    <button type="button" className="btn primary" onClick={() => copy(yaml, "yaml")}>
+                    <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(yaml, "yaml")}>
                       {copied === "yaml" ? "Copied" : "Copy"}
                     </button>
                   </div>
                 </div>
                 <p>
-                  This is the complete one-file installer. Keep it beside your existing <code>secrets.yaml</code>. ESPHome
-                  downloads the version-pinned modular firmware and the seven default fonts from this repository during
+                  This is a draft one-file installer. After release approval, keep it beside your existing <code>secrets.yaml</code>. ESPHome
+                  downloads the version-pinned modular firmware and only the included external fonts from this repository during
                   validation and compilation.
                 </p>
                 <ol>
-                  <li>Download this YAML into your ESPHome configuration directory.</li>
+                  <li>Wait for a validated, published release before downloading this YAML.</li>
                   <li>Confirm the six required entries exist in <code>secrets.yaml</code>.</li>
                   <li>Validate it with <code>esphome config {deviceSlug(cfg.deviceName)}.yaml</code>.</li>
                   <li>Flash over USB first, then use encrypted OTA once the node is adopted.</li>
                 </ol>
                 <div className="action-bar">
                   <span className="meta">Install command</span>
-                  <button type="button" className="btn primary" onClick={() => copy(installCommand(cfg), "run")}>
+                  <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(installCommand(cfg), "run")}>
                     {copied === "run" ? "Copied" : "Copy"}
                   </button>
                 </div>

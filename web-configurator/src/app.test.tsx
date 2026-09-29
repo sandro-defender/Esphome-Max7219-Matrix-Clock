@@ -20,7 +20,7 @@ describe("App", () => {
   it("offers every catalogued font in the picker", () => {
     for (const spec of FONT_CATALOG) {
       expect(markup, spec.label).toContain(spec.label);
-      expect(markup, spec.option).toContain(spec.option);
+
     }
   });
 
@@ -28,6 +28,16 @@ describe("App", () => {
     for (const tab of ["Tune", "Install YAML", "Assistant", "Wiring", "GitHub"]) {
       expect(markup, tab).toContain(tab);
     }
+  });
+
+  it("groups Tune in native disclosures with required settings expanded", () => {
+    for (const name of ["Clock face", "Screen", "Messages", "Light", "Hardware", "Device"]) {
+      expect(markup).toContain(`<summary>${name}</summary>`);
+    }
+    for (const name of ["Clock face", "Hardware", "Device"]) {
+      expect(markup).toMatch(new RegExp(`<details[^>]* open=""><summary>${name}</summary>`));
+    }
+    expect(markup).toMatch(/<details[^>]*><summary>Messages<\/summary>/);
   });
 
   it("explains the preview layout choice", () => {

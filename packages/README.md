@@ -71,3 +71,10 @@ if (report.mode_changed) { ... }  // publish only what changed
 OTA progress) in RAM only; durable preferences stay in the restored template
 entities. The renderer is covered by `tests/test_renderer.cpp`
 (`make -C tests test`), which needs no ESPHome installation.
+
+## Staged font subsets
+
+The 0.4.0 draft lists individual `fonts/*.yaml` packages. Matrix 2px + Dot Matrix
+are defaults; the configurator permits three extras. `fonts_web.yaml` wraps only
+the default pair; `fonts_local.yaml` remains the complete developer catalogue.
+See [font package design, restore semantics and release gate](fonts/README.md).

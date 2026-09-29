@@ -465,11 +465,11 @@ class ConfigContractTests(unittest.TestCase):
         # with the released web-font module instead of the local one.
         expected = {
             Path(f"packages/{name}") for name in local_names
-        } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts_web.yaml")}
+        } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts/matrix-2px.yaml"), Path("packages/fonts/dot-matrix.yaml")}
         self.assertEqual(sorted(p.as_posix() for p in expected), sorted(files))
 
     def test_font_packages_are_equivalent(self):
-        web = load_yaml(PACKAGES / "fonts_web.yaml")["font"]
+        web = [load_yaml(PACKAGES / "fonts" / (fid[5:-7].replace("_", "-") + ".yaml"))["font"][0] for fid in FONT_OPTION_BY_ID]
         local = load_yaml(PACKAGES / "fonts_local.yaml")["font"]
 
         def shape(entries):
@@ -484,7 +484,11 @@ class ConfigContractTests(unittest.TestCase):
         for entry in web:
             self.assertEqual("web", entry["file"]["type"])
             self.assertIn("${fonts_base_url}", entry["file"]["url"])
-        for entry in local:
+        for external, entry in zip(web, local):
+            self.assertEqual(external["file"]["url"].replace("${fonts_base_url}/", ""),
+                             entry["file"]["path"].removeprefix("../fonts/"))
+            if entry["id"] not in ("font_matrix_2px_source", "font_dot_matrix_source"):
+                self.assertTrue((PACKAGES / entry["file"]["path"]).resolve().with_name("OFL.txt").is_file())
             self.assertEqual("local", entry["file"]["type"])
             path = (PACKAGES / entry["file"]["path"]).resolve()
             self.assertTrue(path.is_file(), f"missing font file {path}")
@@ -699,40 +703,112 @@ class ConfigContractTests(unittest.TestCase):
             if char.isdigit():
                 self.assertEqual(MATRIX_ROW_HEIGHT, glyph.bitmap.rows)
 
-    def test_every_compiled_font_is_selectable_and_wired(self):
-        fonts = load_yaml(PACKAGES / "fonts_local.yaml")["font"]
-        controls = load_yaml(PACKAGES / "controls.yaml")
-        clock_font = next(
-            entry for entry in controls["select"] if entry["name"] == "Clock font"
-        )
-        options = clock_font["options"]
+    def test_exact_esphome_font_option_merge(self):
+        """Exercise the real resolver when the exact target is installed."""
+        try:
+            from importlib.metadata import version
+            installed = version("esphome")
+        except Exception:
+            self.skipTest("ESPHome 2026.9.0 not installed; offline contracts still run")
+        if installed != TARGET_VERSION:
+            self.skipTest("Requires exactly ESPHome " + TARGET_VERSION)
+        from esphome.config import resolve_extend_remove
+        from esphome.config_helpers import Extend, merge_config
+        import copy
+
+        def convert(value):
+            if isinstance(value, TaggedValue):
+                return Extend(value.value) if value.tag == "!extend" else value.value
+            if isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [convert(v) for v in value]
+            return value
+
+        base = convert(load_yaml(PACKAGES / "controls.yaml"))
+        faces = [convert(load_yaml(p)) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
+        for mask in range(1024):
+            merged = copy.deepcopy(base)
+            expected = ["Compact 5x7"]
+            for i, face in enumerate(faces):
+                if mask & (1 << i):
+                    merged = merge_config(merged, copy.deepcopy(face))
+                    expected += face["select"][0]["options"]
+            resolve_extend_remove(merged)
+            select = next(e for e in merged["select"] if e["id"] == "clock_font")
+            self.assertEqual(select["options"], expected)
+            self.assertIn(select["initial_option"], expected)
+        self.assertEqual(merge_config({"lambda": "first"}, {"lambda": "second"}), {"lambda": "second"})
+
+    @unittest.skipUnless(shutil.which("g++"), "g++ unavailable")
+    def test_optional_font_cpp_syntax(self):
+        """Actual selection block parses without omitted font IDs (host stubs only)."""
         display = read(PACKAGES / "display.yaml")
+        start = display.index("      max7219_clock::BuiltinFont builtin_font;")
+        end = display.index("      max7219_clock::render(", start)
+        block = display[start:end].replace("id(clock_font)", "clock_font")
+        faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
+        # Zero, every single face, public default, default + three, full catalogue.
+        cases = [[], *[[f] for f in faces],
+                 [f for f in faces if f["font"][0]["id"] in
+                  ("font_matrix_2px_source", "font_dot_matrix_source")], faces[:5], faces]
+        with tempfile.TemporaryDirectory(prefix="clock-font-syntax-") as temp:
+            path = Path(temp) / "selection.cpp"
+            for chosen in cases:
+                declarations = "".join("int " + f["font"][0]["id"] + ";\n" for f in chosen)
+                flags = [f["esphome"]["build_flags"][0] for f in chosen]
+                source = """#include <string>
+using StringRef = std::string;
+struct Select { StringRef current_option() { return "Compact 5x7"; } } clock_font;
+namespace max7219_clock {
+struct GlyphFont {};
+struct BuiltinFont : GlyphFont {};
+#ifdef USE_FONT
+struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
+#endif
+}
+""" + declarations + "void draw(int &it) {\n" + block + "\n(void)selected; }\n"
+                path.write_text(source)
+                result = subprocess.run(["g++", "-std=c++17", "-fsyntax-only", *flags,
+                    *(["-DUSE_FONT"] if chosen else []), str(path)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
 
-        for entry in fonts:
-            self.assertIn(
-                entry["id"],
-                FONT_OPTION_BY_ID,
-                f"{entry['id']} has no Clock font select option; add it to FONT_OPTION_BY_ID",
-            )
-            option = FONT_OPTION_BY_ID[entry["id"]]
-            self.assertIn(option, options, f"'{option}' is missing from the Clock font select")
-            self.assertIn(
-                entry["id"],
-                display,
-                f"{entry['id']} is never instantiated in display.yaml",
-            )
-            self.assertIn(
-                f'font_option == "{option}"',
-                display,
-                f"display.yaml does not select the '{option}' font",
-            )
-
-        self.assertEqual(
-            sorted([*FONT_OPTION_BY_ID.values(), "Compact 5x7"]),
-            sorted(options),
-        )
-        # "Compact 5x7" is the built-in fallback and stays the last option.
-        self.assertEqual(options[-1], "Compact 5x7")
+    def test_every_compiled_font_is_selectable_and_wired(self):
+        """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
+        faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
+        self.assertEqual(len(faces), 10)
+        display = read(PACKAGES / "display.yaml")
+        blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
+        self.assertEqual(len(blocks), len(faces))
+        by_macro = dict(blocks)
+        base = next(e for e in load_yaml(PACKAGES / "controls.yaml")["select"] if e["id"] == "clock_font")
+        self.assertEqual(base["options"], ["Compact 5x7"])
+        self.assertEqual(base["initial_option"], "Compact 5x7")
+        self.assertIn('option: "Compact 5x7"', read(PACKAGES / "renderer.yaml"))
+        self.assertIn("#ifdef USE_FONT", read(PACKAGES / "max7219_clock_esphome.h"))
+        local = load_yaml(PACKAGES / "fonts_local.yaml")
+        self.assertEqual(set(local["select"][0]["options"]), set(FONT_OPTION_BY_ID.values()))
+        self.assertEqual(set(local["esphome"]["build_flags"]), {f["esphome"]["build_flags"][0] for f in faces})
+        for mask in range(1 << len(faces)):
+            chosen = [f for i, f in enumerate(faces) if mask & (1 << i)]
+            options = base["options"] + [f["select"][0]["options"][0] for f in chosen]
+            ids = [f["font"][0]["id"] for f in chosen]
+            self.assertEqual(set(options), {"Compact 5x7", *(FONT_OPTION_BY_ID[i] for i in ids)})
+            self.assertEqual(len(options), len(set(options)))
+            for face in chosen:
+                ext = face["select"][0]
+                self.assertEqual(ext["id"].tag, "!extend")
+                self.assertEqual(ext["id"].value, "clock_font")
+                self.assertEqual(len(ext["options"]), 1)
+                fid = face["font"][0]["id"]
+                macro = face["esphome"]["build_flags"][0].removeprefix("-D")
+                self.assertIn(fid, by_macro[macro])
+                self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
+                self.assertNotIn('id(' + fid, display)
+                self.assertEqual(face["substitutions"]["project_ref"], "0.4.0")
+        # A declaration anywhere outside a feature guard would break zero-font builds.
+        unguarded = re.sub(r"#ifdef MAX7219_FONT_\w+\n.*?#endif", "", display, flags=re.S)
+        self.assertNotRegex(unguarded, r"font_\w+_source")
 
     # ------------------------------------------------------------------ #
     # Credentials

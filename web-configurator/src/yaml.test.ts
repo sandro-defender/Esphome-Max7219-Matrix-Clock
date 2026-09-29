@@ -15,7 +15,9 @@ function firmwareFontOptions(): string[] {
   const start = text.indexOf('name: "Clock font"');
   const rest = text.slice(start);
   const end = rest.indexOf("\n  - platform:");
-  return [...rest.slice(0, end === -1 ? undefined : end).matchAll(/^ {6}- "(.+)"$/gm)].map((match) => match[1]);
+  const base = [...rest.slice(0, end === -1 ? undefined : end).matchAll(/^ {6}- "(.+)"$/gm)].map((match) => match[1]);
+  return [...base, ...FONT_CATALOG.filter((s) => s.firmwareId).flatMap((s) =>
+    [...repoFile(`packages/fonts/${s.id}.yaml`).matchAll(/^ {6}- "(.+)"$/gm)].map((m) => m[1]))];
 }
 
 /** Font ids declared in packages/fonts_local.yaml. */
@@ -28,10 +30,12 @@ describe("buildYaml", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
     expect(yaml).toContain("url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock");
-    expect(yaml).toContain('ref: "0.3.0"');
-    expect(yaml).toContain('project_ref: "0.3.0"');
+    expect(yaml).toContain('ref: "0.4.0"');
+    expect(yaml).toContain('project_ref: "0.4.0"');
     expect(yaml).toContain("- packages/base.yaml");
-    expect(yaml).toContain("- packages/fonts_web.yaml");
+    expect(yaml).toContain("- packages/fonts/dot-matrix.yaml");
+    expect(yaml).toContain("- packages/fonts/matrix-2px.yaml");
+    expect(yaml).not.toContain("fonts_web.yaml");
     expect(yaml).toContain("- packages/ota_ui.yaml");
     expect(yaml).toContain("- packages/web_server.yaml");
     expect(yaml.split("\n").length).toBeLessThan(200);
@@ -40,7 +44,7 @@ describe("buildYaml", () => {
   it("stays synchronized with the checked-in release installer", () => {
     const generated = buildYaml(DEFAULT_CONFIG);
     const release = repoFile("examples/release.yaml");
-    const packagePattern = /^\s+- (packages\/[a-z0-9_-]+\.yaml)$/gm;
+    const packagePattern = /^\s+- (packages\/[a-z0-9_/-]+\.yaml)$/gm;
     const filesFrom = (yaml: string) => [...yaml.matchAll(packagePattern)].map((match) => match[1]);
 
     expect(filesFrom(generated)).toEqual(filesFrom(release));
@@ -141,7 +145,7 @@ describe("buildYaml", () => {
 
   it("writes the selected font as the firmware option name", () => {
     for (const spec of FONT_CATALOG) {
-      const yaml = buildYaml({ ...DEFAULT_CONFIG, clockFont: spec.id });
+      const yaml = buildYaml({ ...DEFAULT_CONFIG, fonts: [...DEFAULT_CONFIG.fonts, spec.id], clockFont: spec.id });
       expect(yaml).toContain(`id: !extend clock_font\n    initial_option: "${spec.option}"`);
     }
   });
@@ -164,7 +168,7 @@ describe("font catalog", () => {
     ]);
   });
 
-  it("ships ten exact-eight-row external faces by default", () => {
+  it("offers ten measured exact-eight-row external faces", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
     expect(options.slice(0, -1)).toHaveLength(10);
     for (const spec of FONT_CATALOG.slice(0, -1)) {
@@ -226,6 +230,7 @@ describe("settings storage", () => {
       chips: 8,
       rows: 2,
       clockFont: "jersey-15",
+      fonts: ["matrix-2px", "dot-matrix", "jersey-15"],
       led: "Ice",
       showModuleBoundaries: true,
     };

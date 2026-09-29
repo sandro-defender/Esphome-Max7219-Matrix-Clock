@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Stage compile-time font inclusion for 0.4.0: Matrix 2px and Dot Matrix are
+  defaults; users can add up to three external faces in Tune. Compact 5×7 stays
+  available. Persist and validate inclusion arrays in saved settings/share links.
+- Split release fonts into per-face packages with matching select extensions
+  and guarded display wiring. Keep full local measurement catalogue and licenses.
+  Reset uses the always-present Compact face. Document saved-index migration.
+- Gate draft installer copy/download pending exact ESPHome validation, full
+  firmware builds, size measurements and publication. No release is published.
+
+
+- Group Tune controls in native collapsible sections; keep Clock face, Hardware
+  and Device expanded initially, preserve settings when collapsed, and add
+  disclosure markup regression coverage. Correct stale configurator font counts.
+
 - Join the 8×8 modules in the configurator preview: the 8 px gap between the
   boards is gone, so a six-module panel is painted edge to edge like a soldered
   chain. A new *Module boundary guides* switch draws dashed seam markers as an
