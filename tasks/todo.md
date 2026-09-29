@@ -10,9 +10,9 @@
 
 ### Task 2: Join matrix modules in the configurator preview
 
-- [ ] Remove visual gaps between adjacent 8×8 modules in the matrix canvas.
-- [ ] Retain optional module-boundary guidance without shifting pixels.
-- [ ] Add boundary-focused configurator tests.
+- [x] Remove visual gaps between adjacent 8×8 modules in the matrix canvas — `moduleGeometry()` joins boards edge to edge (`gap = 0`), so the canvas is exactly `modulesX × mod` wide and each board starts where the previous one ends.
+- [x] Retain optional module-boundary guidance without shifting pixels — the *Module boundary guides* switch draws dashed lines into the shared bezel after the LEDs; the overlay is read-only and a single-module panel is a complete no-op.
+- [x] Add boundary-focused configurator tests — `src/MatrixCanvas.test.ts` asserts seam geometry across 1×1…16×4 panels at four canvas widths, guide placement, dpr scaling and preview-only YAML isolation (60 Vitest checks, up from 45).
 
 ### Task 3: Compact the configurator
 
@@ -22,8 +22,8 @@
 
 ### Checkpoint: UI and renderer
 
-- [ ] Renderer and configurator test suites pass.
-- [ ] Visual hardware check confirms animation and seamless module preview.
+- [x] Renderer and configurator test suites pass — `make -C tests test` reports 245 checks / 0 failures and `npm test` reports 60 passed in `web-configurator/`.
+- [ ] Visual hardware check confirms animation and seamless module preview — still open: it needs a physical panel and a downloaded firmware build.
 
 ## Phase 17: Firmware identity and resilient time
 

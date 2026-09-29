@@ -407,6 +407,16 @@ export default function App() {
                       : "Illustration only: one digit per 8×8 module. The installed firmware draws the clock proportionally."
                   }
                 />
+                <Toggle
+                  label="Module boundary guides"
+                  hint={
+                    geo.modulesX * geo.modulesY > 1
+                      ? "Dashed guides on the seam between two 8×8 boards. They are an overlay, so no pixel moves."
+                      : "Shown as soon as the panel has more than one 8×8 module."
+                  }
+                  checked={cfg.showModuleBoundaries}
+                  onChange={(value) => patch("showModuleBoundaries", value)}
+                />
                 <span className="field-label">Clock font</span>
                 <div className="font-grid">
                   {FONT_CATALOG.map((item) => {

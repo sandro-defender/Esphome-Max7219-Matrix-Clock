@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Join the 8×8 modules in the configurator preview: the 8 px gap between the
+  boards is gone, so a six-module panel is painted edge to edge like a soldered
+  chain. A new *Module boundary guides* switch draws dashed seam markers as an
+  overlay - single-module panels stay untouched and no pixel ever moves.
+- Add boundary regression coverage to the configurator: the module seam,
+  the guide placement inside the shared bezel, the device-pixel-ratio scaling
+  of the dashes and the preview-only keys are asserted directly.
+
 - Add the generated **Matrix 2px** clock face: digits fill all eight matrix
   rows and every number stroke is exactly two pixels thick. The TrueType file
   is produced by `scripts/generate_matrix_font.py` and is asserted

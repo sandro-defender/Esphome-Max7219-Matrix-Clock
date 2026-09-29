@@ -57,8 +57,10 @@ YAML with:
 
 The preview is drawn with the same glyph bitmaps, centring, text formats and
 font-fallback rules as `packages/max7219_clock_renderer.h`, so what you tune is
-what the panel shows. Settings are stored in the browser and can be shared as a
-link; nothing but display preferences is ever persisted.
+what the panel shows. Adjacent 8×8 modules are previewed joined edge to edge,
+exactly like a soldered chain, and an optional overlay draws dashed guides on
+each seam without moving a single pixel. Settings are stored in the browser and
+can be shared as a link; nothing but display preferences is ever persisted.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users
