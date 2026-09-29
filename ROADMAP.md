@@ -113,7 +113,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Add 28 additional clock faces and two OFL Georgian faces with their
       source licenses. Noto Sans Georgian and Noto Serif Georgian retain all 33
       modern Mkhedruli and all 33 Mtavruli letters as optional repository
-      assets; they are not compiled in the five-font default firmware.
+      assets; they are not compiled in the six-font default firmware.
 - [x] Reference fonts with explicit `type: web` URLs under
       `https://raw.githubusercontent.com/sandro-defender/Esphome-Max7219-Matrix-Clock/<tag>/fonts/...`.
 - [x] Pin production font URLs to the same release tag as the package; do not
@@ -142,7 +142,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [ ] Record firmware-size deltas for each enabled font and remove low-value
       choices if ESP8266 headroom becomes unsafe.
       ... the earlier 33-face build measured 529709 bytes flash and 63200 bytes
-      RAM; the default has since been reduced to five exact-8-row choices and
+      RAM; the default has since been reduced to six exact-8-row choices and
       awaits refreshed aggregate/per-face compile measurements
       if ESP8266 headroom becomes unsafe.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and

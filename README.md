@@ -1,7 +1,7 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
-ESP8266, with a full Home Assistant control surface, five large 8-row fonts, a
+ESP8266, with a full Home Assistant control surface, six large 8-row fonts, a
 built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -12,11 +12,13 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **Five large 8-row fonts plus a built-in fallback** - Jersey 15, Teko,
-  Rajdhani Bold, Kdam Thmor Pro and Rationale are compiled by default. Jersey
-  15 fills the 48-pixel clock width, and the compact 5×7 bitmap font always
-  fits and needs no download. More licensed source faces, including two
-  Georgian families, remain in `fonts/` for future testing.
+* **Six large 8-row fonts plus a built-in fallback** - Jersey 15, Teko,
+  Rajdhani Bold, Kdam Thmor Pro, Rationale and Matrix 2px are compiled by
+  default. Jersey 15 and Matrix 2px fill the 48-pixel clock width, and the
+  compact 5×7 bitmap font always fits and needs no download. Matrix 2px is
+  generated pixel-for-pixel for the panel: digits use all eight rows and every
+  number stroke is exactly two pixels thick. More licensed source faces,
+  including two Georgian families, remain in `fonts/` for future testing.
   Fonts are selected from Home Assistant and compiled into the firmware;
   nothing is downloaded at runtime. The web configurator paints every face with
   the very glyphs the firmware compiles.
@@ -159,7 +161,7 @@ All entities appear automatically through the ESPHome integration.
 | Time format | 24 hour, 12 hour |
 | Seconds display | Off, Digits, Bar |
 | Date format | DD.MM, MM/DD, DD/MM |
-| Clock font | five 8-row repository fonts plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
+| Clock font | six 8-row repository fonts plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
 | Message scroll | Scroll, Static |
 
 ### Numbers
@@ -335,7 +337,7 @@ The package configuration validates and generates C++ for ESPHome 2026.9.0 and
 the renderer is covered by host tests, but the following still needs a real
 device (see `VALIDATION.md` and `ROADMAP.md` for details):
 
-* on-panel readability of the five default 8-row fonts;
+* on-panel readability of the six default 8-row fonts;
 * OTA progress visibility during a real transfer;
 * wiring/orientation checks with the built-in test patterns.
 
