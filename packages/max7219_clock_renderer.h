@@ -635,7 +635,10 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
   if (start_x < 0) start_x = 0;
 
   const bool animate = animate_from != nullptr && progress < 1.0f && (int) strlen(animate_from) == len;
-  const int slide = c.height();
+  // Slide distance should match the glyph's ink height, not the canvas height.
+  // Using canvas height (8) for a 7px font creates a 1-pixel gap at progress=0
+  // where the new digit starts at row 8 (off-screen for 0-7 display).
+  const int slide = font.ink_height();
 
   int cursor = start_x;
   for (int i = 0; i < len; i++) {

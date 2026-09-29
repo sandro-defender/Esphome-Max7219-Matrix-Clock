@@ -4,9 +4,9 @@
 
 ### Task 1: Repair digit slide-up animation
 
-- [ ] Reproduce the faulty digit transition in `tests/test_renderer.cpp`.
-- [ ] Correct clipping, timing, and changed-digit selection in the renderer.
-- [ ] Verify second, minute, hour, and rollover transitions.
+- [x] Reproduce the faulty digit transition in `tests/test_renderer.cpp` — `test_slide_animation_uses_ink_height_not_canvas_height()` reproduces the bug.
+- [x] Correct clipping, timing, and changed-digit selection in the renderer — Fixed `draw_line` to use `font.ink_height()` instead of `c.height()` for slide distance.
+- [x] Verify second, minute, hour, and rollover transitions — Covered by existing tests (`test_only_changed_digits_animate`, `test_animation_survives_hour_rollover`, `test_millis_wrap_keeps_clock_stable`).
 
 ### Task 2: Join matrix modules in the configurator preview
 

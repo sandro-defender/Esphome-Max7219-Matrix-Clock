@@ -510,7 +510,8 @@ static void test_ota_narrowed_on_small_display() {
 
 static void test_only_changed_digits_animate() {
   FakeCanvas canvas;
-  FakeFont font(6);
+  // Use FakeFont with ink_height=7 like the built-in font
+  FakeFont font(6, /*ink_height=*/7, /*ink_top=*/0);
   Frame f = base_frame();  // shows "12:34"
   f.seconds_mode = SECONDS_OFF;
   f.animate = true;
@@ -528,11 +529,12 @@ static void test_only_changed_digits_animate() {
   render(canvas, font, compact, f, report);
   CHECK_EQ(font.calls_for('5'), 1);
   CHECK_EQ(font.calls_for('4'), 1);
-  const int box_top = compact.centered_box_top(8);
+  const int box_top = font.centered_box_top(8);  // = 0 for ink_height=7, display=8
   bool old_flew_up = false, new_came_from_below = false, unchanged_centered = false;
   for (const auto &call : font.calls) {
     if (call.ch == '4' && call.box_top == box_top) old_flew_up = true;          // progress == 0
-    if (call.ch == '5' && call.box_top == box_top + 8) new_came_from_below = true;
+    // FIXED: slide uses font.ink_height() (7), not canvas height (8)
+    if (call.ch == '5' && call.box_top == box_top + 7) new_came_from_below = true;
     if ((call.ch == '1' || call.ch == ':') && call.box_top == box_top) unchanged_centered = true;
   }
   CHECK(old_flew_up);
@@ -540,18 +542,18 @@ static void test_only_changed_digits_animate() {
   CHECK(unchanged_centered);
 
   // Mid animation (same content): the old digit is part way up, the new one
-  // part way down.
+  // part way down. offset = 3 (0.5 * 7 = 3.5 -> 3)
   font.calls.clear();
   canvas.clear();
   f.now_ms = 1125;
   render(canvas, font, compact, f, report);
   bool old_part_up = false, new_part_down = false;
   for (const auto &call : font.calls) {
-    if (call.ch == '4' && call.box_top == box_top - 4) old_part_up = true;
+    if (call.ch == '4' && call.box_top == box_top - 3) old_part_up = true;
     if (call.ch == '5' && call.box_top == box_top + 4) new_part_down = true;
   }
-  CHECK(old_part_up);
-  CHECK(new_part_down);
+  CHECK(old_part_up);   // Old digit 3px up
+  CHECK(new_part_down); // New digit 4px down from start (box_top+7 - 3 = box_top+4)
 
   // After the animation window the previous content is stable again.
   font.calls.clear();
@@ -560,6 +562,75 @@ static void test_only_changed_digits_animate() {
   render(canvas, font, compact, f, report);
   CHECK_EQ(font.calls_for('5'), 1);
   CHECK_EQ(font.calls_for('4'), 0);
+}
+
+// NEW TEST: Reproduce the per-digit slide-up animation clipping/gap bug.
+// The slide distance should match the glyph's ink_height (7px), not canvas height (8px).
+// Otherwise at progress=0 the new digit starts at box_top+8 (row 8), which is
+// completely off-screen for an 8px display (valid rows 0-7), leaving a 1-frame
+// gap where neither old nor new digit is visible on the bottom row.
+static void test_slide_animation_uses_ink_height_not_canvas_height() {
+  FakeCanvas canvas(48, 8);
+  // Font with ink_height=7 (like the built-in font), ink_top=0
+  FakeFont font(6, /*ink_height=*/7, /*ink_top=*/0);
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 250;
+
+  reset_state();
+  render(canvas, font, compact, f, report);  // baseline: "12:34"
+
+  // Change last digit: 12:34 -> 12:35
+  font.calls.clear();
+  canvas.clear();
+  f.minute = 35;
+  f.now_ms = 1000;  // progress = 0
+  render(canvas, font, compact, f, report);
+
+  const int box_top = font.centered_box_top(8);  // = 0 for ink_height=7, display=8
+
+  // At progress=0, the NEW digit should start at box_top + ink_height (7), NOT box_top + canvas_height (8).
+  // At box_top+7, the 7px glyph draws rows 7-13. Row 7 is the LAST visible row (bottom row).
+  // At box_top+8 (old behavior), it draws rows 8-14 - ALL OFF SCREEN.
+  bool new_digit_starts_on_bottom_row = false;
+  for (const auto &call : font.calls) {
+    if (call.ch == '5' && call.box_top == box_top + 7) {
+      new_digit_starts_on_bottom_row = true;
+    }
+  }
+  CHECK(new_digit_starts_on_bottom_row);  // This FAILS with current code (expects box_top+8)
+
+  // Also verify OLD digit starts at box_top (resting position)
+  bool old_digit_at_rest = false;
+  for (const auto &call : font.calls) {
+    if (call.ch == '4' && call.box_top == box_top) {
+      old_digit_at_rest = true;
+    }
+  }
+  CHECK(old_digit_at_rest);
+
+  // Mid-animation (progress=0.5): offset = 3 (0.5 * 7 = 3.5 -> 3)
+  // Old at box_top-3, New at box_top+4. They should meet with NO GAP.
+  font.calls.clear();
+  canvas.clear();
+  f.now_ms = 1125;  // 125ms into 250ms = 0.5 progress
+  render(canvas, font, compact, f, report);
+
+  bool old_at_minus3 = false, new_at_plus4 = false;
+  for (const auto &call : font.calls) {
+    if (call.ch == '4' && call.box_top == box_top - 3) old_at_minus3 = true;
+    if (call.ch == '5' && call.box_top == box_top + 4) new_at_plus4 = true;
+  }
+  CHECK(old_at_minus3);   // Old digit 3px up
+  CHECK(new_at_plus4);    // New digit 4px down from start (box_top+7 - 3 = box_top+4)
+
+  // Verify no 1-pixel gap: at mid-animation, row 3 (box_top+3) should have ink from OLD digit
+  // and row 4 (box_top+4) should have ink from NEW digit - contiguous coverage.
+  int row3_count = canvas.row_on(box_top + 3);
+  int row4_count = canvas.row_on(box_top + 4);
+  CHECK(row3_count > 0);  // Old digit still covering row 3
+  CHECK(row4_count > 0);  // New digit covering row 4
 }
 
 static void test_animation_disabled_and_mode_change_reset() {
@@ -1179,6 +1250,7 @@ int main() {
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
   test_default_layout_matches_readme();
+  test_slide_animation_uses_ink_height_not_canvas_height();
 
   printf("%d checks, %d failures\n", checks, failures);
   return failures == 0 ? 0 : 1;

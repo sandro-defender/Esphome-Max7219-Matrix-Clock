@@ -14,6 +14,7 @@ interface MatrixCanvasProps {
   powered: boolean;
   inverted: boolean;
   label: string;
+  showModuleBoundaries?: boolean; // Optional module-boundary guidance overlay
 }
 
 function chainIndex(col: number, row: number, cols: number, wiring: Wiring): number {
@@ -56,6 +57,7 @@ export function MatrixCanvas({
   powered,
   inverted,
   label,
+  showModuleBoundaries = false,
 }: MatrixCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,7 +85,9 @@ export function MatrixCanvas({
     let face = 8 * pitch - gapDot;
     let inset = 8;
     let mod = face + inset * 2;
-    let gap = 8;
+    // REMOVED: visual gap between modules (was 8px). Modules now join seamlessly.
+    // Module boundary guidance is drawn as overlay without shifting pixel positions.
+    let gap = 0;
     const target = Math.max(220, box - 8);
     while (dot > 3) {
       gapDot = Math.max(1, Math.round(dot * 0.18));
@@ -91,7 +95,7 @@ export function MatrixCanvas({
       face = 8 * pitch - gapDot;
       inset = Math.max(4, Math.round(dot * 0.62));
       mod = face + inset * 2;
-      gap = Math.max(4, Math.round(dot * 0.72));
+      // gap stays 0 for seamless joining
       const total = modulesX * mod + (modulesX - 1) * gap;
       if (total <= target) break;
       dot -= 1;
@@ -184,7 +188,34 @@ export function MatrixCanvas({
         }
       }
     }
-  }, [box, brightness, height, inverted, led, modulesX, modulesY, pixels, powered, width, wiring]);
+
+    // Optional module boundary overlay - drawn on top without shifting pixels
+    if (showModuleBoundaries && (modulesX > 1 || modulesY > 1)) {
+      ctx.strokeStyle = "rgba(255, 214, 160, 0.35)";
+      ctx.lineWidth = 1 / dpr;
+      ctx.setLineDash([4 / dpr, 4 / dpr]);
+      
+      // Vertical boundaries between modules
+      for (let mx = 1; mx < modulesX; mx++) {
+        const bx = mx * mod + mx * gap; // gap is 0, so just mx * mod
+        ctx.beginPath();
+        ctx.moveTo(bx, 0);
+        ctx.lineTo(bx, modulesY * mod + (modulesY - 1) * gap);
+        ctx.stroke();
+      }
+      
+      // Horizontal boundaries between modules
+      for (let my = 1; my < modulesY; my++) {
+        const by = my * mod + my * gap; // gap is 0, so just my * mod
+        ctx.beginPath();
+        ctx.moveTo(0, by);
+        ctx.lineTo(modulesX * mod + (modulesX - 1) * gap, by);
+        ctx.stroke();
+      }
+      
+      ctx.setLineDash([]);
+    }
+  }, [box, brightness, height, inverted, led, modulesX, modulesY, pixels, powered, width, wiring, showModuleBoundaries]);
 
   return (
     <div className="matrix-wrap" ref={wrapRef}>
