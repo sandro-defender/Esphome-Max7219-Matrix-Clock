@@ -145,13 +145,14 @@ describe("font catalog", () => {
       "Rajdhani Bold",
       "Kdam Thmor Pro",
       "Rationale",
+      "Matrix 2px",
       "Compact 5x7",
     ]);
   });
 
-  it("ships five exact-eight-row external faces by default", () => {
+  it("ships six exact-eight-row external faces by default", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
-    expect(options.slice(0, -1)).toHaveLength(5);
+    expect(options.slice(0, -1)).toHaveLength(6);
     for (const spec of FONT_CATALOG.slice(0, -1)) {
       const font = GENERATED_FONTS[spec.firmwareId ?? ""];
       expect(font.maxDigitHeight, spec.option).toBe(8);

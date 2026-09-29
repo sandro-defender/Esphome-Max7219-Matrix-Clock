@@ -68,6 +68,7 @@ display:
       max7219_clock::SourceFont rajdhani_bold_font(font_rajdhani_bold_source, &it);
       max7219_clock::SourceFont kdam_thmor_pro_font(font_kdam_thmor_pro_source, &it);
       max7219_clock::SourceFont rationale_font(font_rationale_source, &it);
+      max7219_clock::SourceFont matrix_2px_font(font_matrix_2px_source, &it);
       max7219_clock::BuiltinFont builtin_font;
       // StringRef: a view on the codegen literals, so no per-frame allocation.
       const StringRef font_option = id(clock_font).current_option();
@@ -82,6 +83,8 @@ display:
         selected = &kdam_thmor_pro_font;
       } else if (font_option == "Rationale") {
         selected = &rationale_font;
+      } else if (font_option == "Matrix 2px") {
+        selected = &matrix_2px_font;
       }
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 

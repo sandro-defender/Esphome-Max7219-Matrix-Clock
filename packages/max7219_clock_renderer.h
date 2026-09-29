@@ -193,6 +193,7 @@ inline const uint8_t *glyph(char c) {
   static const uint8_t PERCENT[7] = {0b01101, 0b01101, 0b00010, 0b00100, 0b01000, 0b10110, 0b10110};
   static const uint8_t EXCLAMATION[7] = {0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00000, 0b00100};
   static const uint8_t QUESTION[7] = {0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b00000, 0b00100};
+  static const uint8_t PLUS[7] = {0b00000, 0b00100, 0b00100, 0b01110, 0b00100, 0b00100, 0b00000};
 
   if (c >= '0' && c <= '9') return DIGITS[c - '0'];
   if (c >= 'A' && c <= 'Z') return LETTERS[c - 'A'];
@@ -216,6 +217,8 @@ inline const uint8_t *glyph(char c) {
       return EXCLAMATION;
     case '?':
       return QUESTION;
+    case '+':
+      return PLUS;
     default:
       return SPACE;
   }
@@ -596,16 +599,30 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
   if (height >= 8) {
     // Remaining pixels of a partial module row/column.
     int last_x = (width / 8) * 8;
-    if (last_x < width) c.fill_rect(last_x, 0, width - last_x, height > 1 ? 1 : 1, true);
+    if (last_x < width) c.fill_rect(last_x, 0, width - last_x, 1, true);
     int last_y = (height / 8) * 8;
     if (last_y < height) c.fill_rect(0, last_y, width, height - last_y, true);
   }
 }
 
+// Choose the face for a free-text string (message, alert, OTA): the selected
+// font when it has every glyph, otherwise the built-in fallback. The external
+// faces only compile clock glyphs (see fonts_*.yaml), so Latin messages and
+// the OTA texts would otherwise collapse onto zero-advance missing glyphs.
+inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text) {
+  if (text != nullptr)
+    for (const char *p = text; *p != '\0'; p++)
+      if (primary.advance(*p) == 0) return fallback;
+  return primary;
+}
+
 // Draw one text line. `animate_from` (may be nullptr) holds the previous
-// content of the same length; only changed digits are animated.
+// content of the same length; only changed digits are animated. With
+// `blank_colons` the ':' glyphs keep their advance but draw no ink, which is
+// how the blinking colon hides the separator without re-centring the line
+// (several faces have different ':' and ' ' advances).
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
-                      int alignment, int box_top) {
+                      int alignment, int box_top, bool blank_colons = false) {
   const int width = c.width();
   const int len = content == nullptr ? 0 : (int) strlen(content);
   int text_width = font.text_width(content);
@@ -631,7 +648,7 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
         const int offset = (int) (progress * slide);
         font.draw_glyph(c, animate_from[i], cursor, box_top - offset);
         font.draw_glyph(c, content[i], cursor, box_top + slide - offset);
-      } else {
+      } else if (!(blank_colons && content[i] == ':')) {
         font.draw_glyph(c, content[i], cursor, box_top);
       }
     }
@@ -678,8 +695,8 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
 }
 
 // OTA screen: state text, clamped percentage and a bottom-row progress bar.
-inline void draw_ota(Canvas &c, const GlyphFont &font, uint8_t ota_state, uint8_t percent, uint8_t error,
-                     int box_top) {
+inline void draw_ota(Canvas &c, const GlyphFont &font, const GlyphFont &fallback, uint8_t ota_state, uint8_t percent,
+                     uint8_t error) {
   char content[24];
   const int height = c.height();
   bool show_bar = false;
@@ -703,20 +720,22 @@ inline void draw_ota(Canvas &c, const GlyphFont &font, uint8_t ota_state, uint8_
   }
   if (content[0] == '\0') return;
 
-  // The progress bar takes the bottom row, so shift the text up by one row
-  // when it is shown and keep it inside the display.
-  int text_top = box_top;
-  if (show_bar && height > 7) text_top = box_top > 0 ? box_top - 1 : 0;
-
-  int available = c.width();
-  if (font.text_width(content) > available) {
+  // External faces have no Latin letters, so "OTA"/"ERROR" fall back to the
+  // built-in font; the numeric "100%" / "42%" parts keep the selected face.
+  if (font_for_text(font, fallback, content).text_width(content) > c.width()) {
     // Drop the percentage/error detail before clipping.
     if (ota_state == OTA_UPLOADING)
       snprintf(content, sizeof(content), "OTA");
     else if (ota_state == OTA_ERROR)
       snprintf(content, sizeof(content), "ERROR");
   }
-  draw_line(c, font, content, nullptr, 1.0f, ALIGN_CENTER, text_top);
+  const GlyphFont &text_font = font_for_text(font, fallback, content);
+
+  // The progress bar takes the bottom row, so shift the text up by one row
+  // when it is shown and keep it inside the display.
+  int text_top = text_font.centered_box_top(height);
+  if (show_bar && height > 7) text_top = text_top > 0 ? text_top - 1 : 0;
+  draw_line(c, text_font, content, nullptr, 1.0f, ALIGN_CENTER, text_top);
 
   if (show_bar) {
     const int lit = (int) ((int32_t) c.width() * (percent > 100 ? 100 : percent) / 100);
@@ -790,8 +809,10 @@ inline void housekeeping(const Frame &f, Report &report) {
   // Report when the effective level changes: a night/day flip OR a Home
   // Assistant edit of the Matrix/Night brightness entities. Without the
   // second condition the sliders would never reach the panel until the next
-  // night-window transition or reboot.
-  if (night != state.night_active || target_brightness != state.applied_brightness) {
+  // night-window transition or reboot. The epsilon keeps float representation
+  // noise in the entity states from republishing every second.
+  const float brightness_delta = target_brightness - state.applied_brightness;
+  if (night != state.night_active || (brightness_delta > 0.001f || brightness_delta < -0.001f)) {
     state.night_active = night;
     state.applied_brightness = target_brightness;
     report.brightness_changed = true;
@@ -868,11 +889,13 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   // The OTA screen owns its own text and progress bar.
   if (mode == MODE_OTA) {
     state.anim_active = false;
-    draw_ota(canvas, *active, state.ota_state, state.ota_percent, state.ota_error, active->centered_box_top(height));
+    draw_ota(canvas, *active, fallback, state.ota_state, state.ota_percent, state.ota_error);
     return;
   }
 
   // Free text (message or alert) scrolls or is centred depending on width.
+  // Latin text falls back to the built-in face, which is the only face that
+  // compiles letters (see fonts_*.yaml).
   if (mode == MODE_MESSAGE) {
     const bool alert = temporary_screen_active(state.alert_active, f.now_ms, state.alert_deadline_ms);
     const char *text = alert ? state.alert_text : state.message_text;
@@ -882,8 +905,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       state.scroll_started_ms = f.now_ms;
     }
     if (state.scroll_started_ms != 0) started = state.scroll_started_ms;
-    draw_free_text(canvas, *active, text, (uint32_t)(f.now_ms - started), f.message_scroll, f.scroll_ms_per_px,
-                   fallback.centered_box_top(height));
+    const GlyphFont &text_font = font_for_text(*active, fallback, text);
+    draw_free_text(canvas, text_font, text, (uint32_t)(f.now_ms - started), f.message_scroll, f.scroll_ms_per_px,
+                   text_font.centered_box_top(height));
     return;
   }
 
@@ -931,17 +955,16 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   }
   if (!state.anim_active) snprintf(state.anim_prev, sizeof(state.anim_prev), "%s", content);
 
-  // Blinking colon: keep the separators off during the odd second when enabled.
-  char draw_content[24];
-  snprintf(draw_content, sizeof(draw_content), "%s", content);
-  if (mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0) {
-    for (char *p = draw_content; *p != '\0'; p++)
-      if (*p == ':') *p = ' ';
-  }
+  // Blinking colon: hide the separator ink on odd seconds. The ':' glyph
+  // keeps its advance (draw_line blanks the ink instead of substituting a
+  // space), so the line can never re-centre itself when ':' and ' ' have
+  // different advances - that jitter is visible on Rajdhani/Rationale.
+  const bool blank_colons =
+      mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
 
   const int box_top = active->centered_box_top(height);
-  draw_line(canvas, *active, draw_content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
-            box_top);
+  draw_line(canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
+            box_top, blank_colons);
 
   // Seconds alternative: full-width progress bar on the bottom row.
   if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);

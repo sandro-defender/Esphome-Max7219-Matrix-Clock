@@ -113,6 +113,7 @@ select:
       - "Rajdhani Bold"
       - "Kdam Thmor Pro"
       - "Rationale"
+      - "Matrix 2px"
       - "Compact 5x7"
     set_action:
       - component.update: matrix

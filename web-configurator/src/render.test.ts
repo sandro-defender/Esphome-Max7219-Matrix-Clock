@@ -79,14 +79,14 @@ describe("renderScene", () => {
   });
 
   it("falls back to the built-in font when the panel is too narrow", () => {
-    const scene = sceneWith({ chips: 2, clockFont: "press-start-2p" });
+    const scene = sceneWith({ chips: 2, clockFont: "matrix-2px" });
     expect(scene.usedFallback).toBe(true);
     expect(scene.notices.some((notice) => notice.level === "warn")).toBe(true);
     expect(lit(scene.frame)).toBeGreaterThan(0);
   });
 
   it("drops the seconds before it falls back", () => {
-    const scene = sceneWith({ chips: 4, clockFont: "press-start-2p" });
+    const scene = sceneWith({ chips: 4, clockFont: "matrix-2px" });
     expect(scene.geometry.width).toBe(32);
     expect(scene.usedFallback).toBe(false);
     expect(scene.droppedSeconds).toBe(true);

@@ -12,6 +12,7 @@ export const CLOCK_FONTS = [
   "rajdhani-bold",
   "kdam-thmor-pro",
   "rationale",
+  "matrix-2px",
   "compact",
 ] as const;
 export type ClockFont = (typeof CLOCK_FONTS)[number];
