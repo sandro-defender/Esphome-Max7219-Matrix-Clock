@@ -72,6 +72,16 @@ export const FONT_CATALOG: readonly FontSpec[] = [
     blurb: "Tall condensed eight-row digits with maximum breathing room.",
   },
   {
+    id: "matrix-2px",
+    option: "Matrix 2px",
+    label: "Matrix 2px",
+    family: "Matrix 2px",
+    firmwareId: "font_matrix_2px_source",
+    size: 8,
+    license: "project source (scripts/generate_matrix_font.py)",
+    blurb: "Pixel-exact eight-row digits whose number strokes are two pixels thick.",
+  },
+  {
     id: "compact",
     option: "Compact 5x7",
     label: "Compact 5×7",

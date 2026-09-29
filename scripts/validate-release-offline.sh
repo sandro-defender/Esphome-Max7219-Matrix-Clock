@@ -16,7 +16,7 @@
 #          examples/release.yaml, so the script fails when the pin is stale)
 #   --keep keep the temporary directory for inspection
 #
-# Exit code 0 means: packages fetched at the pinned tag, all five web fonts
+# Exit code 0 means: packages fetched at the pinned tag, all six web fonts
 # downloaded, config valid, C++ generated with the C++ headers included.
 
 set -euo pipefail
@@ -116,7 +116,7 @@ grep -q '#include "max7219_clock_esphome.h"' "$MAIN_CPP" || { echo "FAILED: rend
   || { echo "FAILED: package headers not copied into the build"; exit 1; }
 
 FONTS=$(find "$WORK/config/.esphome/font" -name font.ttf 2>/dev/null | wc -l | tr -d ' ')
-[[ "$FONTS" -eq 5 ]] || { echo "FAILED: expected exactly 5 web fonts, downloaded $FONTS"; exit 1; }
+[[ "$FONTS" -eq 6 ]] || { echo "FAILED: expected exactly 6 web fonts, downloaded $FONTS"; exit 1; }
 
 echo
 echo "RESULT: release path OK (tag $REF)"

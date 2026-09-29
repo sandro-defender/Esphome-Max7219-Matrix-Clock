@@ -132,6 +132,7 @@ FONT_OPTION_BY_ID = {
     "font_rajdhani_bold_source": "Rajdhani Bold",
     "font_kdam_thmor_pro_source": "Kdam Thmor Pro",
     "font_rationale_source": "Rationale",
+    "font_matrix_2px_source": "Matrix 2px",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
@@ -577,6 +578,84 @@ class ConfigContractTests(unittest.TestCase):
                 MATRIX_ROW_HEIGHT,
                 max(digit_heights),
                 f"{entry['id']} does not use all eight rows for its largest digit",
+            )
+
+    def test_matrix_2px_font_is_pixel_exact_with_two_pixel_lines(self):
+        """Rasterise the generated Matrix 2px face exactly like ESPHome does.
+
+        The user-facing promise of fonts/matrix-2px is twofold: digits fill
+        all eight rows of the matrix, and every line of every number is
+        exactly two pixels thick. Both properties live in the design table of
+        scripts/generate_matrix_font.py; this test proves that FreeType (the
+        firmware path) reproduces that design pixel for pixel at the compiled
+        size, so no hinting round can thicken or thin a stroke.
+        """
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        sys.path.insert(0, str(REPO / "scripts"))
+        try:
+            import generate_matrix_font as design_source
+        finally:
+            sys.path.pop(0)
+
+        # The invariants that make "2 pixels" true, re-checked independently.
+        design_source.validate_design()
+
+        entry = next(
+            e for e in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+            if e["id"] == "font_matrix_2px_source"
+        )
+        face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+        face.set_pixel_sizes(entry["size"], 0)
+
+        expected = {
+            char: [list(row) for row in rows] for char, rows in design_source.DIGITS.items()
+        }
+        expected_advance = {char: 7 for char in design_source.DIGITS}
+        for char, (rows, advance) in design_source.PUNCTUATION.items():
+            expected[char] = [list(row) for row in rows]
+            expected_advance[char] = advance
+
+        for char, design in expected.items():
+            if char == " ":
+                continue
+            # Same load flags as esphome/components/font for bpp: 1.
+            face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            glyph = face.glyph
+            bitmap = glyph.bitmap
+            advance = (glyph.metrics.horiAdvance + 63) // 64
+            self.assertEqual(
+                expected_advance[char],
+                advance,
+                f"Matrix 2px '{char}' advances {advance}px, expected {expected_advance[char]}",
+            )
+            if char.isdigit():
+                self.assertEqual(
+                    MATRIX_ROW_HEIGHT,
+                    bitmap.rows,
+                    f"Matrix 2px digit '{char}' is {bitmap.rows}px tall, not a full matrix row",
+                )
+            # Re-ink the design canvas with what FreeType actually produced.
+            offset_y = (face.size.ascender + 63) // 64 - glyph.bitmap_top
+            canvas = [[0] * len(design[0]) for _ in range(MATRIX_ROW_HEIGHT)]
+            for y in range(bitmap.rows):
+                for x in range(bitmap.width):
+                    byte = bitmap.buffer[y * bitmap.pitch + (x // 8)]
+                    if byte & (1 << (7 - x % 8)):
+                        row, col = offset_y + y, glyph.bitmap_left + x
+                        self.assertTrue(
+                            0 <= row < MATRIX_ROW_HEIGHT and 0 <= col < len(design[0]),
+                            f"Matrix 2px '{char}' ink lands outside the matrix at ({row},{col})",
+                        )
+                        canvas[row][col] = 1
+            wanted = [[1 if cell == "#" else 0 for cell in row] for row in design]
+            self.assertEqual(
+                wanted,
+                canvas,
+                f"Matrix 2px '{char}' does not rasterise to its pixel design",
             )
 
     def test_every_compiled_font_is_selectable_and_wired(self):

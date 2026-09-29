@@ -970,6 +970,163 @@ static void test_millis_wrap_keeps_clock_stable() {
   CHECK(!state.anim_active);
 }
 
+static void test_blinking_colon_keeps_layout_stable() {
+  // Faces exist where ':' and ' ' have different advances (Rajdhani is 2 vs
+  // 3 px, Rationale is 3 vs 2 px). Substituting a space for the blinked
+  // separator changed the line width and visibly re-centred the clock every
+  // second; the ':' must keep its advance and only lose its ink.
+  class BlinkFont : public GlyphFont {
+   public:
+    int advance(char c) const override {
+      if (c == ':') return 9;
+      if (c == ' ') return 2;
+      return 6;
+    }
+    int ink_height() const override { return 7; }
+    int ink_top() const override { return 0; }
+    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+      calls.push_back({ch, x, box_top});
+      if (ch == ':' || ch == ' ') return;  // punctuation without ink
+      for (int row = 0; row < 7; row++)
+        for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
+    }
+    mutable std::vector<DrawCall> calls;
+    int calls_for(char ch) const {
+      int n = 0;
+      for (const auto &call : calls)
+        if (call.ch == ch) n++;
+      return n;
+    }
+  };
+
+  FakeCanvas canvas;
+  BlinkFont font;
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.blink_colon = true;
+  f.second = 56;  // even -> separator visible
+
+  reset_state();
+  render(canvas, font, compact, f, report);
+  CHECK_EQ(font.calls_for(':'), 1);
+  int first_x = -1;
+  for (const auto &call : font.calls)
+    if (call.ch == '1') first_x = call.x;
+  CHECK_EQ(first_x, 7);  // width 6+6+9+6+6 = 33, centred at (48-33)/2
+
+  font.calls.clear();
+  canvas.clear();
+  f.second = 57;  // odd -> separator blanked
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, report);
+  CHECK_EQ(font.calls_for(':'), 0);  // no colon ink...
+  CHECK_EQ(font.calls_for(' '), 0);  // ...and no space substituted for it
+  int blanked_first_x = -1;
+  for (const auto &call : font.calls)
+    if (call.ch == '1') blanked_first_x = call.x;
+  CHECK_EQ(blanked_first_x, first_x);  // identical layout on both half-seconds
+  CHECK(canvas.on_count() > 0);
+}
+
+// Mimics the external ESPHome faces: clock glyphs only, letters report the
+// advance 0 that the SourceFont adapter returns for missing glyphs.
+class ClockOnlyFont : public GlyphFont {
+ public:
+  static bool clock_glyph(char c) { return strchr("0123456789:.-/%!?+ ", c) != nullptr; }
+  int advance(char c) const override { return clock_glyph(c) ? 6 : 0; }
+  int ink_height() const override { return 8; }
+  int ink_top() const override { return 0; }
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    calls.push_back({ch, x, box_top});
+    if (!clock_glyph(ch)) return;
+    for (int row = 0; row < 8; row++)
+      for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
+  }
+  mutable std::vector<DrawCall> calls;
+  int calls_for(char ch) const {
+    int n = 0;
+    for (const auto &call : calls)
+      if (call.ch == ch) n++;
+    return n;
+  }
+};
+
+static void test_latin_message_falls_back_to_builtin_font() {
+  // The external faces compile no letters, so a Latin message must be drawn
+  // entirely with the built-in font instead of collapsing zero-advance
+  // glyphs on top of each other.
+  FakeCanvas canvas;
+  ClockOnlyFont font;
+  Frame f = base_frame();
+
+  reset_state();
+  state.set_message("HELLO", 0, 0);
+  render(canvas, font, compact, f, report);
+  CHECK(canvas.on_count() > 0);            // the built-in face drew the word
+  CHECK_EQ(font.calls.size(), 0u);         // the letter-less face was not used
+
+  // A numeric message keeps the selected face.
+  canvas.clear();
+  font.calls.clear();
+  state.clear_message();
+  state.set_message("42", 0, 0);
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, report);
+  CHECK_EQ(font.calls_for('4'), 1);
+  CHECK_EQ(font.calls_for('2'), 1);
+  CHECK(canvas.on_count() > 0);
+}
+
+static void test_message_uses_selected_font_metrics() {
+  // Vertical centring must come from the font that actually draws the text,
+  // not from the built-in fallback (ink 7 px, top 0 -> box_top 0).
+  FakeCanvas canvas;
+  FakeFont font(6, /*ink_height=*/6, /*ink_top=*/2);  // centred_box_top(8) = -1
+  Frame f = base_frame();
+
+  reset_state();
+  state.set_message("42", 0, 0);
+  render(canvas, font, compact, f, report);
+  CHECK(!font.calls.empty());
+  CHECK_EQ(font.calls[0].box_top, -1);
+}
+
+static void test_ota_text_falls_back_to_builtin_font() {
+  // "OTA"/"ERROR" contain letters the external faces do not compile; "100%"
+  // is all clock glyphs and stays on the selected face.
+  FakeCanvas canvas;
+  ClockOnlyFont font;
+  Frame f = base_frame();
+
+  reset_state();
+  state.ota_state = OTA_STARTING;
+  render(canvas, font, compact, f, report);
+  CHECK(canvas.on_count() > 0);
+  CHECK_EQ(font.calls.size(), 0u);
+
+  canvas.clear();
+  font.calls.clear();
+  state.ota_state = OTA_SUCCESS;
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, report);
+  CHECK_EQ(font.calls_for('1'), 1);
+  CHECK_EQ(font.calls_for('0'), 2);
+  CHECK_EQ(font.calls_for('%'), 1);
+  CHECK(canvas.on_count() > 0);
+}
+
+static void test_builtin_font_renders_every_required_glyph() {
+  // The built-in face is the message fallback, so it must cover the whole
+  // status glyph set - '+' was missing until now and silently drew blank.
+  for (const char *text = "0123456789:.-/%!?+ "; *text; ++text) {
+    FakeCanvas canvas;
+    const char one[2] = {*text, '\0'};
+    compact.draw_text(canvas, one, 0, 0);
+    CHECK(compact.advance(*text) > 0);
+    if (*text != ' ') CHECK(canvas.on_count() > 0);  // space is intentionally blank
+  }
+}
+
 static void test_default_layout_matches_readme() {
   // 6 modules of 8x8 in one row: 48x8 is the documented default.
   FakeCanvas canvas(48, 8);
@@ -1016,6 +1173,11 @@ int main() {
   test_12_hour_clock_blanks_leading_zero();
   test_deadline_rollover();
   test_millis_wrap_keeps_clock_stable();
+  test_blinking_colon_keeps_layout_stable();
+  test_latin_message_falls_back_to_builtin_font();
+  test_message_uses_selected_font_metrics();
+  test_ota_text_falls_back_to_builtin_font();
+  test_builtin_font_renders_every_required_glyph();
   test_default_layout_matches_readme();
 
   printf("%d checks, %d failures\n", checks, failures);
