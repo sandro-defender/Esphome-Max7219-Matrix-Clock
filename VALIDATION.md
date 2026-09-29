@@ -127,12 +127,28 @@ the complete validation sequence above before publication.
 | Configurator build (`npm run build`) | single-file `dist/index.html`, 347.79 kB (102.93 kB gzip) |
 | **Full firmware compile** (`scripts/validate.ps1`) | **PASS** with ESPHome 2026.9.0: 529709/1044464 bytes flash (50.7%), 63200/81920 bytes RAM (77.1%) |
 
+## Evidence from the Matrix 2px change (2026-09-29)
+
+Executed while adding the generated `fonts/matrix-2px` face and the renderer
+fixes shipped alongside it, in a Linux sandbox with ESPHome 2026.9.0 on
+Python 3.12:
+
+| Check | Result |
+|---|---|
+| Contract tests (`python tests/test_config.py`) | **31 tests, OK** — including the new `test_matrix_2px_font_is_pixel_exact_with_two_pixel_lines`, which re-inks every glyph with ESPHome's own FreeType load flags and compares it to the design table |
+| Renderer tests (`make -C tests test`) | **239 checks, 0 failures** (blink-colon layout stability, Latin message fallback, OTA fallback, built-in `+` glyph) |
+| `esphome config dev.yaml` | **`INFO Configuration is valid!`** — all six local fonts compile, glyph sets complete |
+| Release path (`scripts/validate-release-offline.sh 0.3.0`) | **PASS**: packages cloned at the pinned tag, **6 web fonts** downloaded (incl. `matrix-2px/Matrix2px.ttf`), config valid, `main.cpp` generated (3065 lines) with both package headers |
+| ESPHome codegen inspection | the generated glyph table for `font_matrix_2px_source` shows digits `advance 7, offset 0/0, 6x8` and colon `advance 3, offset 0/1, 2x6` — pixel-identical to the design |
+| Configurator (`npm test`, `npm run typecheck`, `npm run build`) | **45 tests pass**, clean type-check, single-file build; `generate_glyphs.py --check` reports fresh previews |
+| Full firmware compile | **not runnable here**: the sandbox's network policy blocks `registry.platformio.org`, so the ESP8266 toolchain cannot be installed. Run `esphome compile dev.yaml` (or `scripts/validate.ps1`) on an unrestricted machine before release. |
+
 ## Hardware-only checks that remain
 
 These cannot be verified without a real clock and are intentionally listed as
 open items in `ROADMAP.md`:
 
-1. On-panel readability of the five default 8-row fonts.
+1. On-panel readability of the six default 8-row fonts.
 2. OTA upload with the progress screen: does the MAX7219 redraw during the
    upload (the callbacks call `id(matrix).update()` directly)?
 3. Wiring, orientation and both test patterns on the real matrix.

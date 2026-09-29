@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- Add the generated **Matrix 2px** clock face: digits fill all eight matrix
+  rows and every number stroke is exactly two pixels thick. The TrueType file
+  is produced by `scripts/generate_matrix_font.py` and is asserted
+  pixel-for-pixel against its design in `tests/test_config.py`.
+- Fix the blinking colon re-centring the clock every second on Rajdhani Bold
+  and Rationale, where `:` and space have different advances: the separator
+  now keeps its advance and only its ink disappears.
+- Fix Latin messages and the `OTA`/`ERROR` screens when an external face is
+  selected: texts the selected font cannot render now fall back to the
+  built-in font (as the documentation promises) instead of collapsing
+  zero-advance glyphs, and message centring uses the metrics of the font that
+  actually draws.
+- Fix "Restore display defaults" setting the clock font to the non-existent
+  option `Silkscreen Bold`; it now restores `Jersey 15`.
+- Add the missing `+` glyph to the built-in font and stop float comparison
+  noise from republishing the brightness entities every second.
+- Fix the configurator type-check (a removed font id was still referenced by
+  the fallback tests).
+
 ## 0.3.0 - 2026-09-29
 
 - Make five large, exact-eight-row faces the default firmware font set: Jersey
