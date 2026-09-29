@@ -38,6 +38,7 @@ class DisplayCanvas : public Canvas {
 // Wraps a compiled ESPHome font. Drawing a single character through
 // font::Font::print keeps ESPHome's own per-glyph metrics authoritative, so the
 // renderer only decides positions and animation offsets.
+#ifdef USE_FONT
 class SourceFont : public GlyphFont {
  public:
   SourceFont(font::Font *font, display::Display *display) : font_(font), display_(display) {}
@@ -64,6 +65,8 @@ class SourceFont : public GlyphFont {
   font::Font *font_;
   display::Display *display_;
 };
+
+#endif  // USE_FONT
 
 // Option-string helpers: the YAML entities carry human readable options, the
 // renderer works on the enums from max7219_clock_renderer.h.

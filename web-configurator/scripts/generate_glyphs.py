@@ -83,7 +83,10 @@ def glyph_records(
 def build() -> str:
     if not FONT_PACKAGE.is_file():
         raise ConfigError(f"missing {FONT_PACKAGE}")
-    entries = (yaml.safe_load(FONT_PACKAGE.read_text(encoding="utf-8")) or {}).get("font") or []
+    class FontLoader(yaml.SafeLoader):
+        pass
+    FontLoader.add_constructor("!extend", lambda loader, node: loader.construct_scalar(node))
+    entries = (yaml.load(FONT_PACKAGE.read_text(encoding="utf-8"), Loader=FontLoader) or {}).get("font") or []
     if not entries:
         raise ConfigError(f"no font entries in {FONT_PACKAGE}")
 

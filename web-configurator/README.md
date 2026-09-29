@@ -1,8 +1,12 @@
 # MAX7219 Matrix Clock Web Configurator
 
 A client-side React/Vite configurator for the ESPHome MAX7219 Matrix Clock in
-this repository. It previews the display pixel by pixel and downloads one small
-installation YAML backed by the version-pinned modules in `../packages/`.
+this repository. It previews the display pixel by pixel and generates a small
+installation YAML backed by version-pinned modules in `../packages/`.
+
+**Staged for unpublished 0.4.0:** installer copy/download is disabled. The YAML
+is a clearly labeled draft until config validation, full firmware builds, size
+review, publication and remote-fetch verification pass. No release was published.
 
 ## The preview draws the firmware, not an approximation
 
@@ -43,14 +47,14 @@ which the boundary tests assert directly.
 The downloaded device file is the only YAML an end user needs to maintain. It
 contains local `!secret` references, substitutions, first-boot preferences and
 the complete remote `packages` declaration. During validation and compilation,
-ESPHome downloads the modular firmware and the six default bundled fonts from the
+ESPHome downloads the modular firmware and only the chosen external fonts from the
 matching repository release.
 
 The configurator does not copy the complete renderer into every generated file.
 That keeps the one-file installation path synchronized with the tested modular
 firmware instead of creating a second implementation that can drift.
 
-Every control in the Tune tab maps to a substitution or to a restored Home
+Font inclusion selects package files; other firmware controls map to a substitution or to a restored Home
 Assistant entity in `../packages/controls.yaml`; the tests compare the generated
 YAML against `../examples/release.yaml` and the font picker against
 `../packages/controls.yaml`, so the two cannot drift silently. The preview-only
@@ -117,12 +121,34 @@ includes the same module list as `../examples/release.yaml`:
 
 * base device and network/API configuration;
 * renderer and MAX7219 display bridge;
-* six repository-hosted fonts compiled by default (five OFL faces plus the
-  generated Matrix 2px pixel face), selected from a larger
-  licensed source catalogue that includes two Georgian families;
+* Matrix 2px and Dot Matrix included by default, up to three chosen extras,
+  plus the always-available built-in Compact 5×7 fallback;
 * Home Assistant controls and API actions;
 * diagnostics and on-matrix OTA progress;
 * authenticated web server with browser-based OTA disabled.
 
 Update the generator tests whenever the release package list or substitution
 contract changes.
+
+Tune uses native collapsible sections. Clock face, Hardware and Device start
+expanded so essential settings remain visible; open Screen, Messages and Light
+as needed. Section headers support keyboard focus and Enter/Space. Collapsing a
+section does not reset settings or change generated YAML or shared links.
+
+## Choosing compiled fonts
+
+Use the labeled checkboxes under **Fonts included in firmware**. A live counter
+shows `0 / 3` through `3 / 3` extras. At the limit, unchecked extras are disabled;
+uncheck one before adding another. The two default faces stay included.
+The active-face cards show only compiled choices. Removing the active extra
+returns to Dot Matrix without resetting other settings.
+
+The inclusion array is normalized into catalogue order, deduplicated, restricted
+to known external faces and clamped to three extras. Defaults are restored even
+from hostile links. Old links without a font array retain their active face as
+one extra. Reset returns to the two defaults; localStorage and share links retain
+extras otherwise. `src/fontSelection.test.tsx` covers these contracts.
+
+`packages/fonts_local.yaml` remains the complete measurement/preview catalogue,
+not the default release font set. Per-face release declarations are tested for
+id/size/glyph/source parity with it. No glyph regeneration noise is expected.

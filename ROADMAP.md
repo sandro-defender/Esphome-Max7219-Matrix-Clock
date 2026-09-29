@@ -398,6 +398,8 @@ defines “latest” as the newest immutable published release tag.
       tests assert the seam geometry of 1×1 … 16×4 panels
 - [ ] Compact the configurator into accessible sections that make future
       settings easier to select.
+      ... native Tune disclosures and static-render coverage added (61 web
+      tests pass); keyboard/small-screen browser verification remains open.
 - [ ] Show the project firmware version briefly at device boot.
 - [ ] Add configurable remote SNTP fallback servers, including a Google NTP
       endpoint, used only when Home Assistant time is invalid.
@@ -407,3 +409,15 @@ defines “latest” as the newest immutable published release tag.
       immutable release tag rather than an unpinned branch.
 - [ ] Update README documentation, contract tests, ESPHome validation, full
       ESP8266 compile, firmware-size evidence, and hardware verification.
+
+### Staged font-inclusion increment
+
+- [x] Add per-face release packages and Tune selection (Matrix 2px + Dot Matrix,
+      up to three extras), persistence and hostile-link clamping.
+- [x] Keep local measurement catalogue and glyph pipeline synchronized; test
+      subset option/wiring parity, including built-in only and all faces.
+- [ ] Exact ESPHome 2026.9.0 config + full builds, flash/RAM deltas, physical
+      matrix and browser keyboard/mobile verification for the new implementation.
+- [ ] Publish compatible immutable release and enable installer export; 0.4.0
+      remains a draft, with exports gated. Historical done boxes above do not
+      establish validation for these new firmware changes.

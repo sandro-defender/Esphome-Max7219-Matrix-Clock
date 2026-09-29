@@ -58,6 +58,8 @@ export interface Config {
   digitAnimation: boolean;
   animationMs: number;
   clockFont: ClockFont;
+  /** Included external faces: two defaults plus at most three extras. */
+  fonts: ClockFont[];
   layoutPreview: LayoutPreview;
 
   // Messages
@@ -110,6 +112,7 @@ export const DEFAULT_CONFIG: Config = {
   digitAnimation: true,
   animationMs: 250,
   clockFont: "dot-matrix",
+  fonts: ["matrix-2px", "dot-matrix"],
   layoutPreview: "firmware",
 
   message: "",

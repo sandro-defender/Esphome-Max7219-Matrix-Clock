@@ -1,3 +1,4 @@
+import { withFonts } from "./fontSelection";
 import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, SCREENS, clampNumber, isConfigKey, type Config } from "./types";
 
 /**
@@ -51,13 +52,17 @@ const RANGES: Partial<Record<keyof Config, { min: number; max: number }>> = {
 
 /** Merge arbitrary input over the defaults, dropping anything unusable. */
 export function sanitizeConfig(input: unknown): Config {
-  const config: Config = { ...DEFAULT_CONFIG };
+  const config: Config = { ...DEFAULT_CONFIG, fonts: [...DEFAULT_CONFIG.fonts] };
   if (!input || typeof input !== "object") return config;
   const source = input as Record<string, unknown>;
   for (const key of Object.keys(source)) {
     if (!isConfigKey(key)) continue;
     const value = source[key];
     const fallback = DEFAULT_CONFIG[key];
+    if (key === "fonts") {
+      config.fonts = withFonts(config, value).fonts;
+      continue;
+    }
     if (typeof fallback === "boolean") {
       if (typeof value === "boolean") config[key] = value as never;
       continue;
@@ -73,7 +78,8 @@ export function sanitizeConfig(input: unknown): Config {
     if (allowed && !allowed.includes(value)) continue;
     config[key] = (typeof fallback === "string" ? value.slice(0, 64) : value) as never;
   }
-  return config;
+  // Old links have no inclusion list: retain their selected face as one extra.
+  return withFonts(config, Object.prototype.hasOwnProperty.call(source, "fonts") ? config.fonts : [config.clockFont]);
 }
 
 function toBase64Url(text: string): string {
@@ -131,7 +137,7 @@ export function loadConfig(): { config: Config; from: "link" | "saved" | "defaul
       // Private mode or a corrupted entry: fall through to the defaults.
     }
   }
-  return { config: { ...DEFAULT_CONFIG }, from: "default" };
+  return { config: sanitizeConfig(null), from: "default" };
 }
 
 export function saveConfig(cfg: Config): void {

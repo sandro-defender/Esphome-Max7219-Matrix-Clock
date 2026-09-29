@@ -1,6 +1,4 @@
-# Default local-development font set. These five faces were measured with
-# FreeType using ESPHome's pixel metrics: every digit is exactly eight rows
-# high and worst-case 88:88:88 fits the default 48x8 panel.
+# Full local development/measurement catalogue (not the public default).
 
 font:
   - id: font_jersey_15_source
@@ -95,3 +93,31 @@ font:
     bpp: 1
     glyphs:
       - "0123456789:.-/%!?+ "
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_JERSEY_15
+    - -DMAX7219_FONT_TEKO
+    - -DMAX7219_FONT_RAJDHANI_BOLD
+    - -DMAX7219_FONT_KDAM_THMOR_PRO
+    - -DMAX7219_FONT_RATIONALE
+    - -DMAX7219_FONT_MATRIX_2PX
+    - -DMAX7219_FONT_DOT_MATRIX
+    - -DMAX7219_FONT_HANDJET
+    - -DMAX7219_FONT_OXANIUM
+    - -DMAX7219_FONT_SHARE_TECH_MONO
+
+select:
+  - id: !extend clock_font
+    initial_option: "Dot Matrix"
+    options:
+      - "Jersey 15"
+      - "Teko"
+      - "Rajdhani Bold"
+      - "Kdam Thmor Pro"
+      - "Rationale"
+      - "Matrix 2px"
+      - "Dot Matrix"
+      - "Handjet"
+      - "Oxanium"
+      - "Share Tech Mono"

@@ -1,3 +1,4 @@
+# DRAFT for unpublished 0.4.0. Do not install until validated and published.
 # Release example: downloads the pinned package files and font assets from the
 # GitHub release. Copy this file into your ESPHome configuration directory
 # next to your own secrets.yaml, then:
@@ -24,7 +25,7 @@ substitutions:
   web_server_password: !secret web_server_password
 
   # Must match `ref:` below.
-  project_ref: "0.3.0"
+  project_ref: "0.4.0"
 
   # --- Adapt to your hardware ---------------------------------------------
   # board: nodemcuv2
@@ -38,7 +39,7 @@ substitutions:
 packages:
   clock:
     url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
-    ref: "0.3.0"
+    ref: "0.4.0"
     # Refresh the cached package files at most once a day.
     refresh: 1d
     files:
@@ -46,9 +47,10 @@ packages:
       - packages/network.yaml
       - packages/renderer.yaml
       - packages/display.yaml
-      - packages/fonts_web.yaml
       - packages/controls.yaml
       - packages/actions.yaml
       - packages/diagnostics.yaml
       - packages/ota_ui.yaml
       - packages/web_server.yaml
+      - packages/fonts/matrix-2px.yaml
+      - packages/fonts/dot-matrix.yaml

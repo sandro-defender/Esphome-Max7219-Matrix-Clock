@@ -7,6 +7,11 @@ built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 The firmware is distributed as small package modules. Your YAML stays tiny: it
 holds your credentials, a few substitutions and the package list.
 
+> **Development / staged release:** font inclusion below targets the unpublished
+> `0.4.0` draft. Installer copy/download is disabled until exact ESPHome validation,
+> full firmware builds, size review and publication pass. `examples/release.yaml`
+> is a draft, not a currently installable release. Existing installs are unchanged.
+
 ## Features
 
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
@@ -14,7 +19,9 @@ holds your credentials, a few substitutions and the package list.
   progress bar, off), left/centre/right alignment.
 * **Ten large 8-row fonts plus a built-in fallback** - Dot Matrix, Jersey 15,
   Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium
-  and Share Tech Mono are compiled by default. Dot Matrix is the default and
+  and Share Tech Mono are available. The configurator includes **Matrix 2px and
+  Dot Matrix** by default and lets you add **up to three other faces**.
+  Dot Matrix is the initial clock face and
   fits `HH:MM` in 31 pixels on a 32x8 panel; Matrix 2px and Share Tech Mono fill
   the 48-pixel clock width, and the
   compact 5×7 bitmap font always fits and needs no download. Matrix 2px is
@@ -61,6 +68,8 @@ what the panel shows. Adjacent 8×8 modules are previewed joined edge to edge,
 exactly like a soldered chain, and an optional overlay draws dashed guides on
 each seam without moving a single pixel. Settings are stored in the browser and
 can be shared as a link; nothing but display preferences is ever persisted.
+Tune groups controls into keyboard-accessible collapsible sections, with Clock
+face, Hardware and Device expanded initially. Collapsing sections keeps all settings.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users
@@ -114,8 +123,9 @@ substitutions:
    Keep the existing API key if the device is already paired with Home
    Assistant.
 3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
-   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.3.0`) must be
-   a tag that exists in this repository - see `VALIDATION.md` for how the
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.4.0` in the staged draft) must be
+   a published tag that contains those packages. The current draft targets
+   **unpublished 0.4.0**; do not install it yet. See `VALIDATION.md` for how the
    release path is verified.
 4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
 5. `esphome run max7219-clock.yaml` - first flash over USB, later updates over
@@ -165,7 +175,7 @@ All entities appear automatically through the ESPHome integration.
 | Time format | 24 hour, 12 hour |
 | Seconds display | Off, Digits, Bar |
 | Date format | DD.MM, MM/DD, DD/MM |
-| Clock font | ten 8-row repository fonts plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
+| Clock font | only included external faces plus Compact 5x7; see [`fonts/README.md`](fonts/README.md) |
 | Message scroll | Scroll, Static |
 
 ### Numbers
@@ -317,7 +327,7 @@ while building these packages and the checks that need hardware.
   display lambda and the `get_status` action, and `packages/ota_ui.yaml` is
   what provides over-the-air updates. Only `packages/web_server.yaml` may be
   removed.
-* **Out of flash** - drop `packages/web_server.yaml` from the package list (and
+* **Out of flash** - remove optional extra fonts in Tune and rebuild, or drop `packages/web_server.yaml` from the package list (and
   delete it from `files:` in the release example) and rebuild.
 
 ## Project layout
@@ -337,11 +347,12 @@ ROADMAP.md      implementation contract and remaining work
 
 ## Remaining hardware-only verification
 
-The package configuration validates and generates C++ for ESPHome 2026.9.0 and
-the renderer is covered by host tests, but the following still needs a real
+Earlier releases were validated with ESPHome 2026.9.0. The current font-subset
+changes still need exact config validation and full firmware builds. The
+renderer is covered by host tests; the following also needs a real
 device (see `VALIDATION.md` and `ROADMAP.md` for details):
 
-* on-panel readability of the ten default 8-row fonts;
+* on-panel readability of the included 8-row fonts;
 * OTA progress visibility during a real transfer;
 * wiring/orientation checks with the built-in test patterns.
 
@@ -356,3 +367,19 @@ device (see `VALIDATION.md` and `ROADMAP.md` for details):
 * [Packages](https://esphome.io/components/packages/)
 * [Substitutions](https://esphome.io/components/substitutions/)
 * [Font Renderer](https://esphome.io/components/font/)
+
+### Included fonts and upgrades
+
+Tune → Clock face → **Fonts included in firmware** controls compile-time inclusion.
+The two default faces cannot be unchecked; select zero to three extras. Only
+included faces (and Compact 5×7) appear in the preview/first-boot face picker.
+Removing the active extra returns it to Dot Matrix. Reset restores the two
+fonts and clears extras. Preferences and share links preserve the selected set;
+old links retain their active face as an extra where necessary.
+
+ESPHome restores the Clock font **index**, not its name. Changing extra packages
+can map a saved index to a different included face; an out-of-range index uses
+the initial choice. Re-select the desired face after flashing a changed subset.
+The renderer always has a Compact fallback, and “Restore display defaults” uses
+Compact so it also works in a developer's built-in-only configuration.
+See [font package design and validation](packages/fonts/README.md).

@@ -154,3 +154,16 @@ open items in `ROADMAP.md`:
 3. Wiring, orientation and both test patterns on the real matrix.
 4. Button/switch behaviour on hardware (display power, inversion, night
    brightness).
+
+## Staged 0.4.0 font inclusion — not firmware-validated
+
+Matrix 2px + Dot Matrix default, at most three extras in the web UI. Offline
+subset contracts cover all 1024 firmware combinations; host syntax checks use
+stubs and do not establish ESPHome compatibility. Web tests: 71 passing;
+typecheck/build and glyph freshness pass. See `packages/fonts/README.md`.
+
+The sandbox Python 3.11 cannot install ESPHome 2026.9.0 (requires 3.12+).
+An attempted Python 3.12 download failed TLS; no exact config or firmware build
+was run. Default, one-face and maximum-extra RAM/flash deltas remain unmeasured.
+Playwright's Chromium download also failed TLS; browser interaction checks
+remain pending. No hardware is available. Draft 0.4.0 installer export is gated.

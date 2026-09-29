@@ -1,0 +1,23 @@
+# Optional release face. Source license is preserved under fonts/.
+substitutions:
+  project_ref: 0.4.0
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
+font:
+- id: font_rajdhani_bold_source
+  file:
+    type: web
+    url: ${fonts_base_url}/rajdhani/Rajdhani-Bold.ttf
+  size: 12
+  bpp: 1
+  glyphs:
+  - '0123456789:.-/%!?+ '
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_RAJDHANI_BOLD
+
+select:
+  - id: !extend clock_font
+    options:
+      - "Rajdhani Bold"
