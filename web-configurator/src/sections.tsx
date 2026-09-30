@@ -196,6 +196,15 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
           unit="ms"
           onChange={(value) => patch("animationMs", value)}
         />
+        <Slider
+          label="Animation digit gap"
+          value={cfg.animationGap}
+          min={LIMITS.animationGap.min}
+          max={LIMITS.animationGap.max}
+          step={1}
+          unit="px"
+          onChange={(value) => patch("animationGap", value)}
+        />
         <p className="hint">
           {cfg.animationMs === 0
             ? "0 ms switches the slide off: digits change in one step."

@@ -50,6 +50,7 @@ display:
       frame.blink_colon = id(clock_blink).state;
       frame.animate = id(clock_animate).state;
       frame.animation_ms = max7219_clock::clamp_u32((int) id(animation_duration).state, 0, 2000);
+      frame.animation_gap = max7219_clock::clamp_u8((int) id(animation_digit_gap).state, 0, 2);
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
       frame.night_manual = id(night_mode).state;

@@ -633,6 +633,33 @@ static void test_slide_animation_uses_ink_height_not_canvas_height() {
   CHECK(row4_count > 0);  // New digit covering row 4
 }
 
+static void test_animation_digit_gap_separates_adjacent_sliding_digits() {
+  FakeCanvas canvas;
+  FakeFont font(6, /*ink_height=*/7, /*ink_top=*/0);
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 250;
+  f.animation_gap = 1;
+
+  reset_state();
+  render(canvas, font, compact, f, report);
+  canvas.clear();
+  f.minute = 35;  // 12:34 -> 12:35; the last pair of digits shares a boundary.
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, report);
+
+  // With six-pixel fake glyph cells, the preceding '3' ends at x=32. The
+  // animation-only gap clears that shared boundary for every matrix row.
+  for (int y = 0; y < canvas.height(); y++) CHECK(!canvas.get(32, y));
+
+  // Once the slide settles, normal compact spacing is restored.
+  canvas.clear();
+  f.now_ms = 2000;
+  render(canvas, font, compact, f, report);
+  CHECK(canvas.get(32, 0));
+}
+
 static void test_animation_disabled_and_mode_change_reset() {
   FakeCanvas canvas;
   FakeFont font(6);
@@ -1251,6 +1278,7 @@ int main() {
   test_builtin_font_renders_every_required_glyph();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
+  test_animation_digit_gap_separates_adjacent_sliding_digits();
 
   printf("%d checks, %d failures\n", checks, failures);
   return failures == 0 ? 0 : 1;

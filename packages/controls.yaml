@@ -170,6 +170,21 @@ number:
       - component.update: matrix
 
   - platform: template
+    name: "Animation digit gap"
+    id: animation_digit_gap
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${animation_gap}
+    min_value: 0
+    max_value: 2
+    step: 1
+    unit_of_measurement: px
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Message scroll speed"
     id: message_scroll_speed
     entity_category: config

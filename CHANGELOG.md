@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3 - 2026-10-01
+
+- Add the **Animation digit gap** Home Assistant control (0–2 px, default 1).
+  While a digit slides, it clears a narrow boundary from its adjacent digit so
+  the two LED shapes do not join. The normal compact layout returns when the
+  slide finishes.
+
 ## 0.5.2 - 2026-10-01
 
 - Add **Pixel Clock 6×8**, an optional MAX7219 matrix-clock face with rounded

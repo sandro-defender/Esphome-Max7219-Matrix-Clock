@@ -131,7 +131,7 @@ substitutions:
    Keep the existing API key if the device is already paired with Home
    Assistant.
 3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
-   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.5.2`) must be
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.5.3`) must be
    a tag that exists in this repository - see `VALIDATION.md` for how the
    release path is verified.
 4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
@@ -192,6 +192,7 @@ All entities appear automatically through the ESPHome integration.
 | Matrix brightness | 0-15 | day brightness |
 | Night brightness | 0-15 | used by night mode / schedule |
 | Animation duration | 0-2000 ms | 0 disables the slide |
+| Animation digit gap | 0-2 px | blank separation between adjacent digits while one slides |
 | Message scroll speed | 20-200 ms/px | scrolling speed |
 | Default message duration | 0-3600 s | used when an action passes 0 |
 | Countdown duration | 10-3599 s | used by the "Start countdown" button |
@@ -322,9 +323,9 @@ while building these packages and the checks that need hardware.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
-* **`couldn't find remote ref 0.5.2`** - the `ref:` in your YAML pins a release
+* **`couldn't find remote ref 0.5.3`** - the `ref:` in your YAML pins a release
   tag that does not exist yet (in this repository, or in your fork). Publish it
-  first: `git tag 0.5.2 && git push origin 0.5.2` (or create a GitHub release
+  first: `git tag 0.5.3 && git push origin 0.5.3` (or create a GitHub release
   for that tag). If ESPHome already cached the failed attempt, run once with
   `refresh: 0s` on the package so it picks the tag up immediately.
 * **`Couldn't find ID 'display_mode'`** (or `countdown_remaining`,

@@ -43,6 +43,7 @@ const RANGES: Partial<Record<keyof Config, { min: number; max: number }>> = {
   brightness: LIMITS.brightness,
   nightBrightness: LIMITS.brightness,
   animationMs: LIMITS.animationMs,
+  animationGap: LIMITS.animationGap,
   scrollSpeed: LIMITS.scrollSpeed,
   cycleInterval: LIMITS.cycleInterval,
   messageHold: LIMITS.messageHold,

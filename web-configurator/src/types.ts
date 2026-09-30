@@ -60,6 +60,7 @@ export interface Config {
   blinkColon: boolean;
   digitAnimation: boolean;
   animationMs: number;
+  animationGap: number;
   clockFont: ClockFont;
   /** Included external faces: two defaults plus at most three extras. */
   fonts: ClockFont[];
@@ -114,6 +115,7 @@ export const DEFAULT_CONFIG: Config = {
   blinkColon: true,
   digitAnimation: true,
   animationMs: 600,
+  animationGap: 1,
   clockFont: "dot-matrix",
   fonts: ["matrix-2px", "dot-matrix"],
   layoutPreview: "firmware",
@@ -142,6 +144,7 @@ export const LIMITS = {
   rows: { min: 1, max: 4 },
   brightness: { min: 0, max: 15 },
   animationMs: { min: 0, max: 2000 },
+  animationGap: { min: 0, max: 2 },
   scrollSpeed: { min: 20, max: 200 },
   cycleInterval: { min: 5, max: 300 },
   messageHold: { min: 0, max: 3600 },

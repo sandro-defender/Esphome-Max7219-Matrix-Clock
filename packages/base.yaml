@@ -11,7 +11,7 @@ substitutions:
   device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
   # Version reported as the ESPHome project version. Keep this in sync with the
   # tag that the release example pins.
-  project_version: "0.5.2"
+  project_version: "0.5.3"
 
   # ----- Hardware ---------------------------------------------------------
   board: d1_mini                # ESP8266 board (Wemos D1 mini by default)
@@ -36,6 +36,7 @@ substitutions:
   # ----- Renderer timing --------------------------------------------------
   display_update_interval: 150ms   # fast enough for smooth message scrolling
   animation_ms: "600"              # slide-up duration, 0 disables the slide
+  animation_gap: "1"               # blank columns beside digits while sliding
   message_ms_per_px: "60"          # scrolling speed in ms per pixel
   screen_cycle_interval: "10"      # seconds between clock and date
   default_message_duration: "15"   # seconds used when an action passes <= 0

@@ -200,6 +200,7 @@ export function drawCells(
   font: PreviewFont,
   layout: ClockLayout,
   slide: SlideFrame = { from: null, progress: 1 },
+  animationGap = 0,
 ): void {
   const animate =
     slide.from !== null &&
@@ -219,6 +220,18 @@ export function drawCells(
     if (layout.blankColons && cell.char === ":") return;
     font.drawGlyph(frame, cell.char, cell.x, cell.top);
   });
+  if (animate && animationGap > 0) {
+    for (let index = 0; index + 1 < layout.cells.length; index += 1) {
+      const left = layout.cells[index];
+      const right = layout.cells[index + 1];
+      const leftChanged = left.digit && isDigit(from[index] ?? "") && left.char !== from[index];
+      const rightChanged = right.digit && isDigit(from[index + 1] ?? "") && right.char !== from[index + 1];
+      if (left.digit && right.digit && (leftChanged || rightChanged)) {
+        for (let x = left.x + left.advance - animationGap; x < left.x + left.advance; x += 1)
+          for (let y = 0; y < frame.height; y += 1) frame.pixels[y * frame.width + x] = 0;
+      }
+    }
+  }
 }
 
 /**
@@ -434,14 +447,14 @@ export function renderScene(
       }
       if (cfg.layoutPreview === "modules" && page === "clock") {
         layout = moduleClockLayout(frame, font, now);
-        drawCells(frame, font, layout, slide);
+        drawCells(frame, font, layout, slide, cfg.animationGap);
         drawModuleSeparators(frame, cfg.blinkColon && now.getSeconds() % 2 === 1);
       } else {
         // The ":" keeps its advance while blinking: only its ink disappears, so
         // the line can never re-centre itself between odd and even seconds.
         const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
         layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
-        drawCells(frame, font, layout, slide);
+        drawCells(frame, font, layout, slide, cfg.animationGap);
       }
       if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
     }
