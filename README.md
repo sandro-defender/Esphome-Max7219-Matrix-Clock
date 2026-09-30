@@ -59,17 +59,23 @@ YAML with:
 
 The preview is drawn with the same glyph bitmaps, centring, text formats and
 font-fallback rules as `packages/max7219_clock_renderer.h`, so what you tune is
-what the panel shows. Adjacent 8×8 modules are previewed joined edge to edge,
-exactly like a soldered chain, and an optional overlay draws dashed guides on
-each seam without moving a single pixel. Settings are stored in the browser and
-can be shared as a link; nothing but display preferences is ever persisted.
-Tune groups controls into keyboard-accessible collapsible sections, with Clock
-face, Hardware and Device expanded initially. Collapsing sections keeps all
-settings. Around the configurator, the page is now a complete project guide:
-Live preview, Tune, Font Lab (firmware faces vs preview-only candidates),
-Hardware and Wiring, Install YAML, Home Assistant entities and actions,
-Troubleshooting, a six-photo hardware gallery and documentation links - with
-the matrix pinned to the top while you scroll on a phone.
+what the panel shows — including the per-digit slide-up: only the digits whose
+value changed move, the old one leaves upwards while the new one arrives from
+below, colons and unchanged digits stay still, and the *Animation duration*
+slider (600 ms default), the *Digit slide-up animation* switch and
+`prefers-reduced-motion` all drive it. Adjacent 8×8 modules are previewed as one
+board — a single panel shell and one continuous dot lattice, exactly like a
+soldered chain — and an optional overlay draws dashed guides on each seam
+without moving a single pixel. Settings are stored in the browser and can be
+shared as a link; nothing but display preferences is ever persisted. Tune groups
+controls into keyboard-accessible collapsible sections, with Clock face,
+Hardware and Device expanded initially. Collapsing sections keeps all settings.
+Around the configurator, the page is now a complete project guide: Live preview,
+Tune, Font Lab (firmware faces vs preview-only candidates), Hardware and Wiring,
+Install YAML, Home Assistant entities and actions, Troubleshooting, a six-photo
+hardware gallery and documentation links. The matrix leads the first screen at
+every width: on a phone it stays pinned under the menu at a measured offset,
+from 980 px it is a sticky rail beside the settings.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users

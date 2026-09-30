@@ -110,12 +110,15 @@ export function Segmented<T extends string>({
   label,
   value,
   options,
+  labels,
   hint,
   onChange,
 }: {
   label?: string;
   value: T;
   options: readonly T[];
+  /** Reader-facing wording per option; the value stays the config string. */
+  labels?: Partial<Record<T, string>>;
   hint?: string;
   onChange: (next: T) => void;
 }) {
@@ -131,7 +134,7 @@ export function Segmented<T extends string>({
             aria-pressed={value === option}
             onClick={() => onChange(option)}
           >
-            {option}
+            {labels?.[option] ?? option}
           </button>
         ))}
       </div>

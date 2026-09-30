@@ -40,6 +40,43 @@ export interface Notice {
   text: string;
 }
 
+/**
+ * The slide-up state of one render, produced by src/digitAnimation.ts.
+ * `from` is the previous content and `progress` runs 0 → 1 over the configured
+ * animation duration; `{ from: null, progress: 1 }` draws the settled frame.
+ */
+export interface SlideFrame {
+  from: string | null;
+  progress: number;
+}
+
+/** One drawn character of a fixed-width text screen. */
+export interface ClockCell {
+  /** The character as drawn. A blinking ":" keeps its advance and loses ink. */
+  char: string;
+  /** Pixel column of the glyph origin. */
+  x: number;
+  /** Horizontal advance in pixels. */
+  advance: number;
+  /** Text box top of this cell; the line's `boxTop` unless it is centred alone. */
+  top: number;
+  /** True for digits, the only characters the firmware slides. */
+  digit: boolean;
+}
+
+/** Everything needed to draw (and to animate) one fixed-width text line. */
+export interface ClockLayout {
+  /** The content string the cells were built from. */
+  content: string;
+  cells: ClockCell[];
+  /** Text box top, mirroring `centered_box_top()`. */
+  boxTop: number;
+  /** Slide distance in pixel rows: the active font's ink height. */
+  slide: number;
+  /** Draw no ink for ":" — the blinking colon, without re-centring the line. */
+  blankColons: boolean;
+}
+
 export interface Scene {
   frame: Frame;
   geometry: Geometry;
@@ -59,6 +96,12 @@ export interface Scene {
   effectiveBrightness: number;
   nightNow: boolean;
   notices: Notice[];
+  /** Content of the fixed-width text screens; empty for messages and patterns. */
+  content: string;
+  /** Per-character layout of that content, or null when nothing is drawn. */
+  layout: ClockLayout | null;
+  /** Slide distance in rows for the active face (its ink height). */
+  slide: number;
 }
 
 export function geometry(chips: number, rows: number): Geometry {
@@ -110,15 +153,106 @@ export function dateContent(now: Date, cfg: Config): string {
   return `${day}.${month}`;
 }
 
-/** The firmware blanks the separators on odd seconds while blinking is on. */
-function blinkSeconds(cfg: Config, now: Date, content: string): string {
-  if (!cfg.blinkColon || now.getSeconds() % 2 === 0) return content;
-  return content.replace(/:/g, " ");
-}
-
 /** Mirrors draw_line(): alignment, centring and out-of-bounds clipping. */
 function drawLine(frame: Frame, font: PreviewFont, text: string, x: number, boxTop: number): void {
   drawTextLine(frame, font, text, x, boxTop);
+}
+
+function isDigit(char: string): boolean {
+  return char >= "0" && char <= "9";
+}
+
+/**
+ * Walks a content string exactly like the firmware's draw_line(): one cell per
+ * character, positioned by the font's own advances and centred as a whole.
+ * The cells are what makes the per-digit slide possible — each digit knows its
+ * own columns, so a changing digit can move while its neighbours stay put.
+ */
+export function clockLayout(
+  content: string,
+  font: PreviewFont,
+  frame: Frame,
+  alignment: Config["alignment"],
+  blankColons: boolean,
+): ClockLayout {
+  const width = font.measure(content) ?? 0;
+  // draw_line() clamps a negative start to 0, so a right-aligned line that is
+  // wider than the panel starts at the left edge instead of running off it.
+  const startX = Math.max(0, alignStart(alignment, width, frame.width));
+  const boxTop = font.boxTop(frame.height);
+  const cells: ClockCell[] = [];
+  let cursor = startX;
+  for (const char of content) {
+    const advance = font.advance(char);
+    cells.push({ char, x: cursor, advance, top: boxTop, digit: isDigit(char) });
+    cursor += advance;
+  }
+  return { content, cells, boxTop, slide: font.inkHeight, blankColons };
+}
+
+/**
+ * Draws the cells, sliding only the digits that changed — the browser twin of
+ * draw_line(): the outgoing digit travels up, the incoming digit arrives from
+ * below, every other character (including the colons) is drawn in place.
+ */
+export function drawCells(
+  frame: Frame,
+  font: PreviewFont,
+  layout: ClockLayout,
+  slide: SlideFrame = { from: null, progress: 1 },
+): void {
+  const animate =
+    slide.from !== null &&
+    slide.progress < 1 &&
+    slide.from.length === layout.content.length &&
+    layout.cells.length === layout.content.length;
+  const from = slide.from ?? "";
+  layout.cells.forEach((cell, index) => {
+    const previous = from[index];
+    const changed = animate && cell.digit && isDigit(previous) && cell.char !== previous;
+    if (changed) {
+      const offset = Math.floor(slide.progress * layout.slide);
+      font.drawGlyph(frame, previous, cell.x, cell.top - offset);
+      font.drawGlyph(frame, cell.char, cell.x, cell.top + layout.slide - offset);
+      return;
+    }
+    if (layout.blankColons && cell.char === ":") return;
+    font.drawGlyph(frame, cell.char, cell.x, cell.top);
+  });
+}
+
+/**
+ * Illustration only: one digit per 8×8 module, the layout people picture when
+ * they buy a six module strip. The firmware draws the clock proportionally.
+ * The digits are cells like any other line, so the slide animation works here
+ * too; the separators sit on the module boundary and never move.
+ */
+export function moduleClockLayout(frame: Frame, font: PreviewFont, now: Date): ClockLayout {
+  const digits = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`.slice(0, 6);
+  const cells: ClockCell[] = [];
+  for (let index = 0; index < 6 && index * 8 + 8 <= frame.width; index++) {
+    const char = digits[index];
+    const glyph = font.glyph(char);
+    cells.push({
+      char,
+      x: index * 8 + Math.max(0, Math.floor((8 - (glyph?.w ?? 8)) / 2)),
+      advance: 8,
+      top: Math.max(0, Math.floor((8 - (glyph?.h ?? 8)) / 2)),
+      digit: true,
+    });
+  }
+  return { content: digits.slice(0, cells.length), cells, boxTop: 0, slide: 8, blankColons: false };
+}
+
+/** The two-dot separators of the one-digit-per-module illustration. */
+export function drawModuleSeparators(frame: Frame, blinking: boolean): void {
+  if (blinking) return;
+  const y = Math.max(1, Math.floor((8 - 4) / 2));
+  for (const x of [15, 31, 47]) {
+    if (x >= frame.width) continue;
+    setPixel(frame, x, y);
+    setPixel(frame, x, y + 3);
+  }
 }
 
 function drawSecondsBar(frame: Frame, second: number): void {
@@ -176,36 +310,6 @@ function paintChecker(frame: Frame): void {
   }
 }
 
-/**
- * Illustration only: one digit per 8x8 module, the layout people picture when
- * they buy a six module strip. The firmware draws the clock proportionally.
- */
-function paintModuleClock(frame: Frame, cfg: Config, font: PreviewFont, now: Date): void {
-  const digits = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`.slice(0, 6);
-  const bar = cfg.secondsMode === "Bar";
-  for (let i = 0; i < 6 && i * 8 + 8 <= frame.width; i++) {
-    const glyph = font.glyph(digits[i]);
-    if (!glyph) continue;
-    const offsetX = i * 8 + Math.max(0, Math.floor((8 - glyph.w) / 2));
-    const offsetY = Math.max(0, Math.floor((8 - glyph.h) / 2));
-    for (let row = 0; row < glyph.rows.length; row++) {
-      for (let col = 0; col < glyph.w; col++) {
-        if (glyph.rows[row] & (1 << (glyph.w - 1 - col))) setPixel(frame, offsetX + col, offsetY + row);
-      }
-    }
-  }
-  // Separators sit on the module boundary, like a real wiring diagram.
-  if (!(cfg.blinkColon && now.getSeconds() % 2 === 1)) {
-    const y = Math.max(1, Math.floor((8 - 4) / 2));
-    for (const x of [15, 31, 47]) {
-      if (x >= frame.width) continue;
-      setPixel(frame, x, y);
-      setPixel(frame, x, y + 3);
-    }
-  }
-  if (bar) drawSecondsBar(frame, now.getSeconds());
-}
-
 function choosePage(cfg: Config, now: Date, messageActive: boolean): Page {
   if (messageActive) return "message";
   if (cfg.autoCycle) {
@@ -243,7 +347,18 @@ function pageLabel(page: Page): string {
   }
 }
 
-export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
+/**
+ * Renders one preview frame.
+ *
+ * `slide` is optional: pass the frame produced by src/digitAnimation.ts to draw
+ * the per-digit slide-up, or leave it out for the settled frame.
+ */
+export function renderScene(
+  cfg: Config,
+  now: Date,
+  messageAt: number,
+  slide: SlideFrame = { from: null, progress: 1 },
+): Scene {
   const geo = geometry(cfg.chips, cfg.rows);
   const frame: Frame = { width: geo.width, height: geo.height, pixels: new Uint8Array(geo.width * geo.height) };
   const notices: Notice[] = [];
@@ -288,6 +403,8 @@ export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
   let usedFallback = false;
   let withSeconds = cfg.secondsMode === "Digits" && page === "clock";
   let droppedSeconds = false;
+  let layout: ClockLayout | null = null;
+  let content = "";
 
   if (cfg.displayPower) {
     let font = selected;
@@ -305,7 +422,7 @@ export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
     } else {
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
       const build = (): string => (page === "date" ? dateContent(now, cfg) : clockContent(now, cfg, withSeconds));
-      let content = build();
+      content = build();
       if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width && withSeconds) {
         withSeconds = false;
         droppedSeconds = true;
@@ -316,16 +433,21 @@ export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
         usedFallback = true;
       }
       if (cfg.layoutPreview === "modules" && page === "clock") {
-        paintModuleClock(frame, cfg, font, now);
+        layout = moduleClockLayout(frame, font, now);
+        drawCells(frame, font, layout, slide);
+        drawModuleSeparators(frame, cfg.blinkColon && now.getSeconds() % 2 === 1);
       } else {
-        const shown = page === "clock" ? blinkSeconds(cfg, now, content) : content;
-        const startX = alignStart(cfg.alignment, font.measure(shown) ?? 0, frame.width);
-        drawLine(frame, font, shown, startX, font.boxTop(frame.height));
-        if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
+        // The ":" keeps its advance while blinking: only its ink disappears, so
+        // the line can never re-centre itself between odd and even seconds.
+        const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
+        layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
+        drawCells(frame, font, layout, slide);
       }
+      if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
     }
     if (cfg.flipX) mirror(frame);
   }
+  if (layout !== null) content = layout.content;
 
   const nightNow = cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd);
   const effectiveBrightness = nightNow ? cfg.nightBrightness : cfg.brightness;
@@ -371,6 +493,9 @@ export function renderScene(cfg: Config, now: Date, messageAt: number): Scene {
     effectiveBrightness,
     nightNow,
     notices,
+    content,
+    layout,
+    slide: layout?.slide ?? 0,
   };
 }
 

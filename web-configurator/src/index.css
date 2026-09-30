@@ -28,7 +28,12 @@
   --serif: "Fraunces", "Iowan Old Style", Palatino, serif;
   --sans: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
-  --nav-h: 52px;
+  /* Pinned chrome. The fallbacks keep the layout sane before the first
+     measurement; src/usePinnedChrome.ts overwrites both from the real nav. */
+  --nav-h: 48px;
+  --pin-top: 48px;
+  --chassis-h: 200px;
+  --pin-gap: 8px;
   --shell-max: 1280px;
 }
 
@@ -37,12 +42,9 @@
 html, body, #root { min-height: 100%; }
 
 html {
-  /* Anchor jumps land below the pinned nav + mobile chassis. */
+  /* Anchor jumps land below the pinned nav; the sections add the height of the
+     pinned matrix on phones, so the two never stack up to a huge offset. */
   scroll-padding-top: calc(var(--nav-h) + 12px);
-}
-
-@media (max-width: 979px) {
-  html { scroll-padding-top: calc(var(--nav-h) + 236px); }
 }
 
 body {
@@ -97,10 +99,11 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px 18px;
+  gap: 8px 18px;
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 16px 16px 12px;
+  /* Tight on purpose: the matrix, not the brand row, owns the first screen. */
+  padding: 12px 16px 8px;
 }
 
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -228,17 +231,22 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .site-nav {
   position: sticky;
   top: 0;
+  /* Above the pinned matrix (40) so the menu is never behind it, and opaque so
+     the matrix can never show through the menu. */
   z-index: 50;
-  background: rgba(16, 14, 12, 0.92);
+  background: rgba(16, 14, 12, 0.97);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--line-soft);
   border-bottom: 1px solid var(--line);
+  /* A notched phone in standalone mode keeps its inset clear of the menu. */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .site-nav ul {
   display: flex;
   gap: 2px;
   margin: 0 auto;
+  /* 6 px keeps the amber focus ring inside the scroll container. */
   padding: 6px 10px;
   max-width: var(--shell-max);
   list-style: none;
@@ -272,23 +280,24 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .shell {
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 18px 16px 64px;
+  padding: 14px 16px 64px;
 }
 
-.content-col { min-width: 0; margin-top: 28px; }
+.content-col { min-width: 0; margin-top: 26px; }
 
 @media (min-width: 980px) {
   .shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.18fr) minmax(340px, 0.92fr);
-    gap: 30px;
+    grid-template-columns: minmax(0, 1.16fr) minmax(360px, 0.94fr);
+    gap: 28px;
+    /* Both columns start at the same top edge: the matrix on the left, the
+       title and the preview controls on the right, all in the first screen. */
     align-items: start;
-    padding: 26px 24px 72px;
+    padding: 16px 24px 72px;
   }
   /* The rail spans the full row height so the sticky stage can follow the
      reader down the whole document. */
-  .shell { align-items: stretch; }
-  .stage-col { min-width: 0; }
+  .stage-col { min-width: 0; align-self: stretch; }
   .content-col { margin-top: 0; }
   .stage {
     position: sticky;
@@ -297,37 +306,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ------------------------------------------------------------------ *
- * Live stage + pinned chassis (mobile)
+ * Live stage: matrix first, then the time and the face readout
  * ------------------------------------------------------------------ */
 
 .stage { min-width: 0; }
 
-.kicker h1 {
-  margin: 0;
-  font-family: var(--serif);
-  font-weight: 560;
-  font-size: clamp(1.7rem, 4.6vw, 2.6rem);
-  letter-spacing: -0.035em;
-  line-height: 1;
-}
-
-.kicker h1 em { font-style: italic; color: var(--amber-2); }
-
-.kicker p {
-  margin: 10px 0 0;
-  max-width: 58ch;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
 /* The slot reserves the chassis height in the flow; on phones the chassis
-   itself is fixed under the nav, so the matrix stays pinned while every
-   section scrolls past. */
+   itself is fixed under the pinned chrome, so the matrix stays put while every
+   section scrolls past. JS replaces the height with the measured one. */
 .chassis-slot { height: 0; }
 
 .chassis {
   position: relative;
-  margin-top: 16px;
+  margin-top: 0;
   padding: 14px 12px 10px;
   border-radius: var(--r-l);
   background:
@@ -341,15 +332,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 979px) {
   .stage { display: flex; flex-direction: column; }
-  /* Matrix first on phones: the slot sits above the hero and the fixed
-     chassis paints exactly over it, so the panel is the first thing on screen
-     and stays pinned while everything else scrolls past. */
-  .chassis-slot { order: -1; height: 216px; }
+  .chassis-slot { height: 200px; }
   .chassis {
+    /* `--pin-top` is the measured bottom edge of the pinned chrome, so the
+       matrix always sits exactly under the menu: never behind it at the top of
+       the page, never covering the brand row or the header buttons. */
     position: fixed;
-    top: calc(var(--nav-h) + 6px);
-    left: 10px;
-    right: 10px;
+    top: calc(var(--pin-top) + var(--pin-gap));
+    /* Centred and capped, so a landscape tablet does not get a wall of LEDs. */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2 * max(10px, env(safe-area-inset-left, 0px)));
+    max-width: 640px;
+    /* Below the nav (50), above the scrolling content. */
     z-index: 40;
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 236, 210, 0.14);
   }
@@ -412,9 +407,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .matrix-wrap {
   display: flex;
   justify-content: center;
+  min-width: 0;
   min-height: 92px;
   padding: 4px 6px 0;
 }
+
+.matrix-wrap canvas { display: block; max-width: 100%; }
 
 .halo {
   pointer-events: none;
@@ -433,7 +431,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   grid-template-columns: auto 1fr;
   gap: 14px;
   align-items: end;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .big-time {
@@ -466,7 +464,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Labelled status strip: face, panel size, fit, fallback. */
 .status-strip {
   list-style: none;
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -532,13 +530,25 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .notices li.warn { border-color: rgba(255, 146, 115, 0.4); background: rgba(48, 22, 16, 0.6); color: #ffd8cb; }
 .notices li.info { border-color: rgba(159, 214, 164, 0.32); background: rgba(21, 34, 24, 0.55); color: #d7ecd9; }
 
-.preview-clock, .composer {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-l);
-  background: var(--bg-2);
+/* The preview control cards are `.panel`s; only their contents are styled
+   here, so they inherit one consistent box from the design system. */
+.preview-controls { min-width: 0; }
+
+.preview-intro h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 560;
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
 }
+
+.preview-intro h1 em { font-style: italic; color: var(--amber-2); }
+
+.preview-intro .section-lead { margin-top: 10px; max-width: 58ch; }
+
+.slide-panel .slider-head strong { font-size: 0.92rem; }
+.slide-panel .btn-row { margin-top: 10px; }
 
 .preview-clock label {
   display: flex;
@@ -595,7 +605,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 10px 12px;
   border-radius: var(--r-m);
   border: 1px dashed var(--line);
@@ -610,7 +620,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
  * Sections
  * ------------------------------------------------------------------ */
 
-.doc-section { margin-top: 40px; scroll-margin-top: calc(var(--nav-h) + 12px); }
+.doc-section { margin-top: 40px; scroll-margin-top: 0; }
+
+@media (max-width: 979px) {
+  /* An anchor target has to clear the pinned matrix, not just the menu. */
+  .doc-section, .stage { scroll-margin-top: calc(var(--chassis-h) + var(--pin-gap) + 4px); }
+}
 
 .doc-section > h2 {
   margin: 0;
@@ -815,8 +830,11 @@ input[type="range"] {
 .toggle-row.on i { background: var(--amber); }
 .toggle-row.on i::after { transform: translateX(16px); background: var(--ink-on-amber); }
 
+/* Reduced motion: no smooth scrolling, no thumb slide, no dot cross-fade.
+   The per-digit slide is switched off in src/digitAnimation.ts. */
 @media (prefers-reduced-motion: reduce) {
   .toggle-row i::after { transition: none; }
+  .font-card { transition: none; }
   html { scroll-behavior: auto; }
 }
 

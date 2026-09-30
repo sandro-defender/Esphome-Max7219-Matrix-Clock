@@ -8,9 +8,16 @@ The page is a single scrolling document with an anchor nav: **Live preview ·
 Tune · Font Lab · Hardware and Wiring · Install YAML · Home Assistant ·
 Troubleshooting · Gallery · Docs**. The design contract — visual language,
 responsive strategy, accessibility checklist and the test matrix — lives in
-[REDESIGN.md](REDESIGN.md). On phones the matrix chassis is pinned directly
-under the section nav while the settings scroll past; from 980 px the preview
-becomes a sticky rail beside the sections.
+[REDESIGN.md](REDESIGN.md).
+
+The live matrix is the first thing on screen at every width. The preview column
+holds only the device — panel, current time, selected face and fit — so the
+whole block stays above the fold and can remain pinned while the settings scroll
+past; the preview controls (frozen preview time, message composer, digit-slide
+readout, fact strip) head the settings column beside it. On phones the chassis
+is pinned under the header at the *measured* offset, so the section nav can
+never cover the matrix and the matrix can never cover the header buttons; from
+980 px the preview becomes a sticky rail beside the sections.
 
 ## The preview draws the firmware, not an approximation
 
@@ -39,12 +46,36 @@ python3 scripts/generate_glyphs.py --check   # fail if it is stale (used in CI)
 The one-digit-per-8×8-module drawing is explicitly labelled *illustration* in
 the UI: the firmware draws the clock proportionally.
 
-`src/MatrixCanvas.tsx` joins the modules edge to edge (`gap === 0`), so a
-six-module panel is painted as one contiguous 48×8 board instead of six islands.
-The optional **Module boundary guides** switch draws dashed lines into the
-shared bezel between two boards. The guides are an overlay: they are drawn after
-the LEDs and never change the dot pitch, the module origins or the canvas size,
-which the boundary tests assert directly.
+`src/MatrixCanvas.tsx` joins the modules edge to edge (`gap === 0`,
+`inset === 0`) and paints **one** board: a single panel shell, a single dark
+face and one continuous dot lattice, so nothing is drawn between two 8×8 boards
+and the dot pitch is identical at every seam. The sizer also caps the pitch by
+the available width, so the panel is never wider than its container — no
+horizontal page overflow at 320 px. The optional **Module boundary guides**
+switch draws dashed lines into the shared bezel between two boards. The guides
+are an overlay: they are drawn after the LEDs and never change the dot pitch,
+the module origins or the canvas size, which the boundary tests assert
+directly.
+
+## The preview slides digits like the firmware
+
+`src/digitAnimation.ts` mirrors `draw_line()` in
+`../packages/max7219_clock_renderer.h`: when the clock content changes, only the
+characters that are digits in both the old and the new content and whose value
+changed move. The outgoing digit is drawn `offset` rows higher and the incoming
+digit `slide - offset` rows lower, with `slide = font.ink_height()` and
+`offset = floor(progress * slide)`; `progress` runs 0 → 1 over the **Animation
+duration** slider (600 ms default, 0 disables the slide) and the **Digit
+slide-up animation** switch turns the whole effect off. Colons keep their
+advance and never move, unchanged digits never move, and a screen or length
+change cancels the slide — the firmware's `same_layout` rule. `Replay last
+change` in the preview controls runs one slide from the previous second so the
+effect can be seen on a frozen preview time.
+
+The animation is time-driven, never blocking: a `requestAnimationFrame` loop
+repaints only when the whole-row offset changes (an eight-row panel cannot show
+sub-row positions) and stops as soon as the slide settles. `prefers-reduced-motion:
+reduce` disables it completely and says so in the panel.
 
 ## What “one YAML” means
 
@@ -83,7 +114,7 @@ stored in JavaScript, browser storage, generated YAML or this repository.
 
 ```text
 npm install
-npm test
+npm test          # vitest, including the jsdom mount in src/app.dom.test.tsx
 npm run typecheck
 npm run dev
 ```
@@ -103,8 +134,10 @@ The Vite single-file plugin emits `dist/index.html`. Build output and
 |---|---|
 | `src/yaml.test.ts` | generated installer YAML, release-example sync, clamping, font options, storage/share links |
 | `src/render.test.ts` | clock/date text, font fallback, seconds modes, test patterns, night dimming, auto cycling |
-| `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, optional boundary guides, LED optics |
-| `src/app.test.tsx` | the whole app renders (static markup smoke test): sections, nav, gallery alt/captions, doc links, pinned-mobile CSS, disclosure groups |
+| `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, panel-fits-its-box sizing, optional boundary guides, LED optics |
+| `src/digitAnimation.test.ts` | the per-digit slide: timing, duration, switch, reduced motion, layout changes, and the drawn frame (changed digit moves, everything else is pixel-identical) |
+| `src/app.test.tsx` | the whole app renders (static markup smoke test): sections, nav, gallery alt/captions, doc links, disclosure groups, and the parsed layout contract (preview order, sticky rail, pinned-mobile offsets and stacking) |
+| `src/app.dom.test.tsx` | the mounted app in jsdom: measured pin offsets, matrix-first markup, slide replay/settle through the UI, reduced motion, font checkbox → preview → installer YAML, gallery, no credential inputs |
 | `src/fontSelection.test.tsx` | font inclusion contracts plus the Font Lab width-warning wording |
 
 `src/yaml.test.ts` also reads the firmware sources next door, so adding a font

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { LiveMark, LiveStage } from "./LiveStage";
+import { PreviewControls } from "./PreviewControls";
 import { FontLab } from "./FontLab";
 import {
   AssistantSection,
@@ -11,10 +12,12 @@ import {
   TroubleshootingSection,
   TuneSection,
 } from "./sections";
-import { geometry } from "./render";
+import { geometry, type Geometry } from "./render";
 import type { Config } from "./types";
 import { clearSavedConfig, loadConfig, sanitizeConfig, saveConfig, shareUrl } from "./storage";
-import { CopyButton, copyText } from "./ui";
+import { CopyButton, copyText, type Patch } from "./ui";
+import { usePinnedChrome } from "./usePinnedChrome";
+import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
 
 const NAV: { id: string; label: string }[] = [
@@ -29,10 +32,50 @@ const NAV: { id: string; label: string }[] = [
   { id: "docs", label: "Docs" },
 ];
 
+/**
+ * Everything below the preview controls, memoised as one block. The preview
+ * ticks 20 times a second, so this keeps the settings — including Font Lab's
+ * glyph strips and the generated YAML — out of that work; they only re-render
+ * when the configuration, the geometry or the YAML actually changes.
+ */
+const SettingsColumn = memo(function SettingsColumn({
+  cfg,
+  patch,
+  setCfg,
+  geo,
+  yaml,
+}: {
+  cfg: Config;
+  patch: Patch;
+  setCfg: Dispatch<SetStateAction<Config>>;
+  geo: Geometry;
+  yaml: string;
+}) {
+  return (
+    <>
+      <TuneSection cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} />
+      <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
+      <HardwareSection cfg={cfg} geo={geo} />
+      <InstallSection cfg={cfg} yaml={yaml} />
+      <AssistantSection cfg={cfg} />
+      <TroubleshootingSection />
+      <GallerySection />
+      <DocsSection />
+    </>
+  );
+});
+
 export default function App() {
   const initial = useRef(loadConfig()).current;
   const [cfg, setCfg] = useState<Config>(initial.config);
   const [notice, setNotice] = useState<string | null>(initial.from === "link" ? "Settings loaded from the shared link." : null);
+  const topbarRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Where the pinned chrome ends, so the pinned matrix can sit exactly under it.
+  usePinnedChrome(topbarRef, navRef);
+
+  const { now, scene, sliding, reducedMotion, replay } = usePreview(cfg);
 
   useEffect(() => {
     saveConfig(cfg);
@@ -57,7 +100,7 @@ export default function App() {
     window.history.replaceState(null, "", `#${url.split("#")[1]}`);
     if (await copyText(url)) {
       setNotice("Share link copied — it encodes these display settings only.");
-      window.setTimeout(() => setNotice((current) => current?.startsWith("Share link") ? null : current), 4000);
+      window.setTimeout(() => setNotice((current) => (current?.startsWith("Share link") ? null : current)), 4000);
     }
   }, [cfg]);
 
@@ -72,7 +115,7 @@ export default function App() {
       <a className="skip-link" href="#tune">
         Skip to the controls
       </a>
-      <header className="topbar">
+      <header className="topbar" ref={topbarRef}>
         <div className="brand">
           <LiveMark />
           <div>
@@ -83,7 +126,12 @@ export default function App() {
           </div>
         </div>
         <div className="top-actions">
-          <button type="button" className="btn ghost" onClick={share} title="Copy a link that reopens the configurator with these settings">
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={share}
+            title="Copy a link that reopens the configurator with these settings"
+          >
             Share
           </button>
           <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
@@ -102,7 +150,7 @@ export default function App() {
         </div>
       ) : null}
 
-      <nav className="site-nav" aria-label="Page sections">
+      <nav className="site-nav" aria-label="Page sections" ref={navRef}>
         <ul>
           {NAV.map((item) => (
             <li key={item.id}>
@@ -114,18 +162,20 @@ export default function App() {
 
       <main id="main" className="shell">
         <div className="stage-col">
-          <LiveStage cfg={cfg} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} />
+          <LiveStage cfg={cfg} scene={scene} now={now} />
         </div>
 
         <div className="content-col">
-          <TuneSection cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} />
-          <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
-          <HardwareSection cfg={cfg} geo={geo} />
-          <InstallSection cfg={cfg} yaml={yaml} />
-          <AssistantSection cfg={cfg} />
-          <TroubleshootingSection />
-          <GallerySection />
-          <DocsSection />
+          <PreviewControls
+            cfg={cfg}
+            scene={scene}
+            sliding={sliding}
+            reducedMotion={reducedMotion}
+            onMessage={(value) => patch("message", value)}
+            onPreviewTime={(value) => patch("previewTime", value)}
+            onReplay={replay}
+          />
+          <SettingsColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} yaml={yaml} />
         </div>
       </main>
 
@@ -142,10 +192,18 @@ export default function App() {
           your local <code>secrets.yaml</code> and nothing else leaves your browser.
         </p>
         <p className="footer-links">
-          <a href={PROJECT.readme} target="_blank" rel="noreferrer">README</a>
-          <a href={PROJECT.validation} target="_blank" rel="noreferrer">VALIDATION</a>
-          <a href={PROJECT.roadmap} target="_blank" rel="noreferrer">ROADMAP</a>
-          <a href={PROJECT.issues} target="_blank" rel="noreferrer">Issues</a>
+          <a href={PROJECT.readme} target="_blank" rel="noreferrer">
+            README
+          </a>
+          <a href={PROJECT.validation} target="_blank" rel="noreferrer">
+            VALIDATION
+          </a>
+          <a href={PROJECT.roadmap} target="_blank" rel="noreferrer">
+            ROADMAP
+          </a>
+          <a href={PROJECT.issues} target="_blank" rel="noreferrer">
+            Issues
+          </a>
         </p>
       </footer>
     </div>

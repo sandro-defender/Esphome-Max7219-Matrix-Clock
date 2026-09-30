@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+- Rework the configurator layout around the live matrix: the preview column now
+  holds only the device (48x8 panel, current time, selected face and fit), so
+  the first desktop screen shows the whole matrix with no empty gap above it,
+  and the preview controls (frozen time, message composer, digit-slide readout,
+  fact strip) head the settings column beside it. Tighter topbar/shell padding,
+  matrix-first markup on phones as well.
+- Fix the pinned matrix on phones: it is positioned at the *measured* bottom
+  edge of the section nav (`--pin-top`, written by `usePinnedChrome`) instead of
+  a hard-coded offset, so the menu no longer overlaps the panel at the top of
+  the page and the panel no longer covers the header buttons. Explicit stacking
+  (opaque nav at 50, chassis at 40), safe-area-aware centring with a 640 px cap,
+  a measured `--chassis-h` for anchor jumps, and a `ResizeObserver`-guarded
+  canvas measurement.
+- Paint the panel as one board: a single shell and a single dark face under one
+  continuous dot lattice, so no bezel is drawn at the former 8x8 seams, and cap
+  the dot pitch by the available width so the panel is never wider than its
+  container (no horizontal overflow at 320 px).
+- Add the firmware's per-digit slide-up animation to the preview
+  (`src/digitAnimation.ts`): only digits whose value changed move, the old digit
+  leaves upwards and the new one arrives from below, colons and unchanged digits
+  stay still, `offset = floor(progress * ink_height)` runs over the *Animation
+  duration* slider (600 ms default, 0 off) behind the *Digit slide-up animation*
+  switch, and `prefers-reduced-motion` disables it. Repaints are rAF-driven and
+  only fire when the whole-row offset changes; *Replay last change* demonstrates
+  one slide on a frozen preview time. LED dots are blitted from cached sprites.
+- Renderer fidelity: the blinking colon keeps its advance and only loses ink, so
+  the line no longer re-centres between odd and even seconds, and `draw_line()`'s
+  clamp of a negative start to 0 is mirrored.
+- Copy and controls: accurate Font Lab counts in Tune, readable preview-layout
+  option labels, an animation-duration hint, corrected "above"/"below" wording.
+- Tests: 94 -> 131. New `src/digitAnimation.test.ts` (slide timing, drawn
+  frames, switch/duration/reduced-motion), a jsdom mount in
+  `src/app.dom.test.tsx` (measured pin offsets, matrix-first markup, slide
+  replay and settle through the UI, font checkbox -> preview -> installer YAML,
+  gallery and no-credential checks), extended panel/seam geometry, and a parsed
+  CSS layout contract in `src/app.test.tsx`.
+
 - Redesign the web configurator into a complete, mobile-first project website:
   one scrolling document (Live preview, Tune, Font Lab, Hardware and Wiring,
   Install YAML, Home Assistant, Troubleshooting, Gallery, Docs) with a sticky
