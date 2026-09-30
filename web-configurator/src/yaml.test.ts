@@ -184,6 +184,7 @@ describe("preview-only fonts", () => {
 describe("font catalog", () => {
   it("offers every validated 48x8 clock font for user comparison", () => {
     expect(FONT_CATALOG.map((spec) => spec.option)).toEqual([
+      "MD MAX72XX System",
       "Jersey 15",
       "Teko",
       "Rajdhani Bold",
@@ -198,9 +199,9 @@ describe("font catalog", () => {
     ]);
   });
 
-  it("offers ten measured exact-eight-row external faces", () => {
+  it("offers eleven measured exact-eight-row external faces", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
-    expect(options.slice(0, -1)).toHaveLength(10);
+    expect(options.slice(0, -1)).toHaveLength(11);
     for (const spec of FONT_CATALOG.slice(0, -1)) {
       const font = GENERATED_FONTS[spec.firmwareId ?? ""];
       expect(font.maxDigitHeight, spec.option).toBe(8);

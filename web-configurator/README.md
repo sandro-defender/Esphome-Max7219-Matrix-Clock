@@ -178,8 +178,8 @@ Troubleshooting uses the same native disclosures.
 
 The **Font Lab** section separates the two tiers visibly:
 
-* **Fonts included in firmware** — labelled checkboxes over the eight optional
-  faces, a live `0 / 3` … `3 / 3` counter, and cards rasterised from the exact
+* **Fonts included in firmware** — labelled checkboxes over every optional
+  face, a live `0 / 3` … `3 / 3` counter, and cards rasterised from the exact
   compiled files. Checking an optional face adds the package *and immediately
   selects it in the live preview*; at the limit, unchecked extras are disabled;
   uncheck one before adding another. Matrix 2px and Dot Matrix are fixed

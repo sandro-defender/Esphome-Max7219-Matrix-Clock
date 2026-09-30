@@ -1,7 +1,7 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
-ESP8266, with a full Home Assistant control surface, ten large 8-row fonts, a
+ESP8266, with a full Home Assistant control surface, eleven large 8-row fonts, a
 built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -12,9 +12,10 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **Ten large 8-row fonts plus a built-in fallback** - Dot Matrix, Jersey 15,
-  Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium
-  and Share Tech Mono are available. The configurator includes **Matrix 2px and
+* **Eleven large 8-row fonts plus a built-in fallback** - Dot Matrix, Jersey 15,
+  Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium,
+  Share Tech Mono and MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are
+  available. The configurator includes **Matrix 2px and
   Dot Matrix** by default and lets you add **up to three other faces**.
   Dot Matrix is the initial clock face and
   fits `HH:MM` in 31 pixels on a 32x8 panel; Matrix 2px and Share Tech Mono fill

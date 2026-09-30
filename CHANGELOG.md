@@ -32,7 +32,11 @@
   clamp of a negative start to 0 is mirrored.
 - Copy and controls: accurate Font Lab counts in Tune, readable preview-layout
   option labels, an animation-duration hint, corrected "above"/"below" wording.
-- Tests: 94 -> 131. New `src/digitAnimation.test.ts` (slide timing, drawn
+- Onboard the MD MAX72XX System face added to the firmware: a Font Lab entry
+  (size 8, LGPL-2.1-or-later) and regenerated preview glyphs, so selecting it
+  includes `packages/fonts/md-max72xx-system.yaml` in the installer and the
+  catalogue sync guard (`yaml.test.ts`) stays green.
+- Tests: 94 -> 134. New `src/digitAnimation.test.ts` (slide timing, drawn
   frames, switch/duration/reduced-motion), a jsdom mount in
   `src/app.dom.test.tsx` (measured pin offsets, matrix-first markup, slide
   replay and settle through the UI, font checkbox -> preview -> installer YAML,

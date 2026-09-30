@@ -245,6 +245,32 @@ describe("mounted configurator", () => {
     expect(yaml).toContain("packages/fonts/handjet.yaml");
   });
 
+  it("offers the MD MAX72XX System face and installs its package", async () => {
+    const mounted = await mount();
+    const choice = [...mounted.querySelectorAll("label.font-choice")].find((label) =>
+      label.textContent?.includes("MD MAX72XX System"),
+    )!;
+    expect(choice.textContent).toContain("adds a package and switches the preview to it");
+
+    await act(async () => {
+      (choice.querySelector("input[type=checkbox]") as HTMLInputElement).click();
+    });
+
+    // Checking a firmware face selects it in the live preview and in the YAML.
+    expect(statusValue(mounted, "Face")).toBe("MD MAX72XX System");
+    const card = [...mounted.querySelectorAll(".font-card")].find((entry) =>
+      entry.textContent?.includes("MD MAX72XX System"),
+    )!;
+    // Measured from the rasterised firmware glyphs, not from a hard-coded number.
+    expect(card.textContent).toContain("size 8 · HH:MM:SS 34px · digits 8px tall");
+    expect(card.textContent).toContain("_sysfont");
+    expect(mounted.textContent).toContain("font_md_max72xx_system_source");
+    expect(mounted.textContent).toContain("LGPL-2.1-or-later");
+    const yaml = [...mounted.querySelectorAll("pre")].map((pre) => pre.textContent ?? "").join("\n");
+    expect(yaml).toContain("packages/fonts/md-max72xx-system.yaml");
+    expect(yaml).toContain('initial_option: "MD MAX72XX System"');
+  });
+
   it("never offers a preview-only face in the installer", async () => {
     const mounted = await mount();
     const yaml = [...mounted.querySelectorAll("pre")].map((pre) => pre.textContent ?? "").join("\n");

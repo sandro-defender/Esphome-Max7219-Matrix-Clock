@@ -40,6 +40,16 @@ export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
 
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
+    id: "md-max72xx-system",
+    option: "MD MAX72XX System",
+    label: "MD MAX72XX System",
+    family: "MD MAX72XX System",
+    firmwareId: "font_md_max72xx_system_source",
+    size: 8,
+    license: "LGPL-2.1-or-later",
+    blurb: "The MD_MAX72XX `_sysfont` numerals, faithful to the Arduino library: seven-row digits, 34 px for 88:88:88.",
+  },
+  {
     id: "jersey-15",
     option: "Jersey 15",
     label: "Jersey 15",
