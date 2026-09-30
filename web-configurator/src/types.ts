@@ -110,7 +110,7 @@ export const DEFAULT_CONFIG: Config = {
   secondsMode: "Digits",
   blinkColon: true,
   digitAnimation: true,
-  animationMs: 250,
+  animationMs: 600,
   clockFont: "dot-matrix",
   fonts: ["matrix-2px", "dot-matrix"],
   layoutPreview: "firmware",

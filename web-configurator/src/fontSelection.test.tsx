@@ -10,11 +10,22 @@ import { buildYaml, INSTALLER_READY } from "./yaml";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("firmware font inclusion", () => {
+  it("shows Georgian candidates as preview-only rather than installer choices", () => {
+    const markup = renderToStaticMarkup(<App />);
+    expect(markup).toContain("Font lab · test candidates");
+    expect(markup).toContain("Noto Sans Georgian");
+    expect(markup).toContain("Noto Serif Georgian");
+    expect(markup).toContain("preview only");
+    expect(markup).toContain("Audiowide");
+    expect(markup).toContain("Bitcount Grid Double");
+  });
+
   it("defaults to Matrix 2px and Dot Matrix, with Dot Matrix active", () => {
     expect(DEFAULT_CONFIG.fonts).toEqual(DEFAULT_FONTS);
     expect(DEFAULT_CONFIG.clockFont).toBe("dot-matrix");
     expect(normalizeFonts([])).toEqual(DEFAULT_FONTS);
     expect(normalizeFonts(null)).toEqual(DEFAULT_FONTS);
+    expect(DEFAULT_CONFIG.animationMs).toBe(600);
   });
 
   it("permits three extras, rejects a fourth without replacing earlier choices", () => {

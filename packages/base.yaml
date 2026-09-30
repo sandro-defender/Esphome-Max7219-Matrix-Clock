@@ -35,7 +35,7 @@ substitutions:
 
   # ----- Renderer timing --------------------------------------------------
   display_update_interval: 150ms   # fast enough for smooth message scrolling
-  animation_ms: "250"              # slide-up duration, 0 disables the slide
+  animation_ms: "600"              # slide-up duration, 0 disables the slide
   message_ms_per_px: "60"          # scrolling speed in ms per pixel
   screen_cycle_interval: "10"      # seconds between clock and date
   default_message_duration: "15"   # seconds used when an action passes <= 0

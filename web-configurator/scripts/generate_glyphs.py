@@ -33,6 +33,7 @@ HERE = Path(__file__).resolve().parent
 APP = HERE.parent
 REPO = APP.parent
 FONT_PACKAGE = REPO / "packages" / "fonts_local.yaml"
+PREVIEW_CANDIDATES = HERE / "font_preview_candidates.yaml"
 OUTPUT = APP / "src" / "glyphs.generated.ts"
 
 CLOCK_TEXT = "88:88:88"
@@ -87,6 +88,8 @@ def build() -> str:
         pass
     FontLoader.add_constructor("!extend", lambda loader, node: loader.construct_scalar(node))
     entries = (yaml.load(FONT_PACKAGE.read_text(encoding="utf-8"), Loader=FontLoader) or {}).get("font") or []
+    preview_entries = (yaml.load(PREVIEW_CANDIDATES.read_text(encoding="utf-8"), Loader=FontLoader) or {}).get("font") or []
+    entries += preview_entries
     if not entries:
         raise ConfigError(f"no font entries in {FONT_PACKAGE}")
 
@@ -96,7 +99,8 @@ def build() -> str:
         size = int(entry["size"])
         if int(entry.get("bpp", 1)) != 1:
             raise ConfigError(f"{font_id}: only bpp: 1 fonts are supported by the preview")
-        source = (FONT_PACKAGE.parent / entry["file"]["path"]).resolve()
+        source_root = HERE if entry in preview_entries else FONT_PACKAGE.parent
+        source = (source_root / entry["file"]["path"]).resolve()
         if not source.is_file():
             raise ConfigError(f"{font_id}: missing font file {source}")
         characters = "".join(entry["glyphs"])

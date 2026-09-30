@@ -1,0 +1,44 @@
+# Preview-only candidates. They are deliberately separate from firmware font
+# packages: seeing a face here must never add it to an ESP8266 build.
+font:
+  - id: font_noto_sans_georgian_preview
+    file:
+      type: local
+      path: ../../fonts/noto-sans-georgian/NotoSansGeorgian-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+  - id: font_noto_serif_georgian_preview
+    file:
+      type: local
+      path: ../../fonts/noto-serif-georgian/NotoSerifGeorgian-Variable.ttf
+    size: 10
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+  - id: font_audiowide_preview
+    file: { type: local, path: ../../fonts/audiowide/Audiowide-Regular.ttf }
+    size: 11
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_bitcount_grid_double_preview
+    file: { type: local, path: ../../fonts/bitcount-grid-double/BitcountGridDouble-Variable.ttf }
+    size: 14
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_bitcount_grid_single_preview
+    file: { type: local, path: ../../fonts/bitcount-grid-single/BitcountGridSingle-Variable.ttf }
+    size: 14
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_bitcount_prop_double_preview
+    file: { type: local, path: ../../fonts/bitcount-prop-double/BitcountPropDouble-Variable.ttf }
+    size: 14
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_bitcount_prop_single_preview
+    file: { type: local, path: ../../fonts/bitcount-prop-single/BitcountPropSingle-Variable.ttf }
+    size: 14
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]

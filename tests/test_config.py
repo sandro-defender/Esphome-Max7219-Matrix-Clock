@@ -278,6 +278,19 @@ class ConfigContractTests(unittest.TestCase):
             "the default layout must stay 48 pixels wide",
         )
 
+    def test_default_animation_duration_has_multiple_visible_refresh_frames(self):
+        """The stock slide must have enough frames to be recognisably animated."""
+        base_text = read(PACKAGES / "base.yaml")
+        refresh_ms = int(
+            re.search(r"display_update_interval:\s*(\d+)ms", base_text).group(1)
+        )
+        animation_ms = int(
+            re.search(r'animation_ms:\s*"(\d+)"', base_text).group(1)
+        )
+        # With the display's 150 ms cadence, four elapsed refresh intervals
+        # yield five visible positions (initial frame plus four updates).
+        self.assertLessEqual(refresh_ms * 4, animation_ms)
+
     # ------------------------------------------------------------------ #
     # 2026.9 API / OTA requirements
     # ------------------------------------------------------------------ #

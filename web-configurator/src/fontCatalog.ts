@@ -20,6 +20,24 @@ export interface FontSpec {
   blurb: string;
 }
 
+/** Faces rendered for comparison only; they are never included in installer YAML. */
+export interface PreviewCandidate {
+  id: string;
+  label: string;
+  generatedId: string;
+  license: string;
+}
+
+export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
+  { id: "noto-sans-georgian", label: "Noto Sans Georgian", generatedId: "font_noto_sans_georgian_preview", license: "SIL Open Font License 1.1" },
+  { id: "noto-serif-georgian", label: "Noto Serif Georgian", generatedId: "font_noto_serif_georgian_preview", license: "SIL Open Font License 1.1" },
+  { id: "audiowide", label: "Audiowide", generatedId: "font_audiowide_preview", license: "SIL Open Font License 1.1" },
+  { id: "bitcount-grid-double", label: "Bitcount Grid Double", generatedId: "font_bitcount_grid_double_preview", license: "SIL Open Font License 1.1" },
+  { id: "bitcount-grid-single", label: "Bitcount Grid Single", generatedId: "font_bitcount_grid_single_preview", license: "SIL Open Font License 1.1" },
+  { id: "bitcount-prop-double", label: "Bitcount Prop Double", generatedId: "font_bitcount_prop_double_preview", license: "SIL Open Font License 1.1" },
+  { id: "bitcount-prop-single", label: "Bitcount Prop Single", generatedId: "font_bitcount_prop_single_preview", license: "SIL Open Font License 1.1" },
+];
+
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
     id: "jersey-15",

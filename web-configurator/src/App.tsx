@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LiveMark, LiveStage } from "./LiveStage";
 import { GlyphStrip } from "./GlyphStrip";
 import { LEDS } from "./leds";
-import { FONT_CATALOG, fitForPanel, fontSpec, previewFont } from "./fontCatalog";
+import { FONT_CATALOG, PREVIEW_CANDIDATES, fitForPanel, fontSpec, previewFont } from "./fontCatalog";
+import { generatedFont } from "./fonts";
 import { deviceSlug } from "./device";
 import { geometry } from "./render";
 import { clearSavedConfig, loadConfig, saveConfig, shareUrl, sanitizeConfig } from "./storage";
@@ -465,6 +466,23 @@ export default function App() {
                   Every face is rasterised from the very file the firmware downloads, at the very size it compiles. Home
                   Assistant switches between them at runtime through the <code>Clock font</code> select.
                 </p>
+                <details className="font-preview-lab">
+                  <summary>Font lab · test candidates</summary>
+                  <p className="hint">These are real bundled-font previews for comparison only. They are not installed into firmware or exported in YAML.</p>
+                  <div className="font-grid">
+                    {PREVIEW_CANDIDATES.map((item) => {
+                      const itemFont = generatedFont(item.generatedId, item.label);
+                      if (!itemFont) return null;
+                      const itemFit = fitForPanel(itemFont, geo.width, Math.min(8, geo.height));
+                      return <div key={item.id} className="font-card">
+                        <span className="font-name">{item.label}<em>preview only</em></span>
+                        <GlyphStrip font={itemFont} text="0123456789" scale={2} />
+                        <span className="font-meta">{itemFit.width}px · {itemFit.digitHeight}px tall</span>
+                        <span className="font-blurb">{item.license}</span>
+                      </div>;
+                    })}
+                  </div>
+                </details>
                 <ul className="entity-list font-facts">
                   <li>
                     Compiled file <code>{spec.firmwareId ?? "builtin"}</code>

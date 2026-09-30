@@ -190,7 +190,7 @@ describe("font catalog", () => {
     const ids = FONT_CATALOG.map((spec) => spec.firmwareId).filter((id): id is string => Boolean(id));
     expect(ids.sort()).toEqual([...firmwareFontIds()].sort());
     for (const id of ids) expect(GENERATED_FONTS[id]).toBeDefined();
-    expect(Object.keys(GENERATED_FONTS).sort()).toEqual([...firmwareFontIds()].sort());
+    expect(Object.keys(GENERATED_FONTS).filter((id) => !id.endsWith("_preview")).sort()).toEqual([...firmwareFontIds()].sort());
   });
 
   it("resolves options back to configurator ids", () => {
