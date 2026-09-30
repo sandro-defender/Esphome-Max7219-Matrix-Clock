@@ -1,9 +1,15 @@
 # Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
-Validated release baseline: **0.2.0**. The working tree now targets **0.3.0**,
-but its full firmware/release validation was intentionally not run, so the
-evidence below remains historical 0.2.0 evidence and must not be read as a
-0.3.0 release claim.
+Validated historical baseline: **0.2.0** (sections 1–10 below preserve that
+initial modularization report). The working tree now targets **0.4.0**, whose
+default two-face configuration (`Matrix 2px` + `Dot Matrix` + built-in
+`Compact 5x7`) and optional subsets have been validated and compiled with
+ESPHome `2026.9.0` on Python 3.12.7 (`505,141 / 1,044,464 B` flash `48.4%`,
+`41,276 / 81,920 B` RAM `50.4%`) and `scripts/validate-release-offline.sh 0.4.0`;
+see [`VALIDATION.md`](VALIDATION.md) and
+[`packages/fonts/README.md`](packages/fonts/README.md) for current `0.4.0`
+measurements and status. Tag `0.4.0` remains unpublished pending explicit user
+approval.
 
 Scope: replace the single-file `max7219-clock.yaml` with the modular package
 layout from `ROADMAP.md`, add the renderer/state machine with fonts, animation,

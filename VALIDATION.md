@@ -85,7 +85,7 @@ touching GitHub.
   stay identical: `tests/test_config.py` fails when they drift apart, and the
   release example must never use `@main`.
 * The tag must exist in the repository before the example can be used:
-  `git tag 0.2.0 && git push origin 0.2.0` (see `VALIDATION.md` evidence for the
+  `git tag 0.4.0 && git push origin 0.4.0` (see `VALIDATION.md` evidence for the
   tested tag).
 * `refresh:` controls how often the cache is re-checked (`refresh: 1d` in the
   release example, `refresh: 0s` while developing the packages).
@@ -155,15 +155,48 @@ open items in `ROADMAP.md`:
 4. Button/switch behaviour on hardware (display power, inversion, night
    brightness).
 
-## Staged 0.4.0 font inclusion — not firmware-validated
+## Evidence for staged 0.4.0 (2026-09-30, Python 3.12.7 + ESPHome 2026.9.0)
 
-Matrix 2px + Dot Matrix default, at most three extras in the web UI. Offline
-subset contracts cover all 1024 firmware combinations; host syntax checks use
-stubs and do not establish ESPHome compatibility. Web tests: 71 passing;
-typecheck/build and glyph freshness pass. See `packages/fonts/README.md`.
+Executed in a Linux sandbox with Python 3.12.7, `esphome==2026.9.0`, and the
+ESP8266 Arduino 3.1.2 (`3.30102.0`) / `toolchain-xtensa` GCC 10.3.0
+(`2.100300.220621`) build environment. Because tag `0.4.0` is not yet published
+on GitHub, the default two-face configuration (`Matrix 2px` + `Dot Matrix` +
+built-in `Compact 5x7`) and subset configurations were validated and compiled
+both via temporary local-font package equivalents (preserving identical font IDs,
+sizes, `bpp: 1`, glyph sets, `-DMAX7219_FONT_*` build flags and `!extend
+clock_font` options / `initial_option: "Dot Matrix"`) and via
+`scripts/validate-release-offline.sh 0.4.0` (tagged local git repository + local
+HTTP font server):
 
-The sandbox Python 3.11 cannot install ESPHome 2026.9.0 (requires 3.12+).
-An attempted Python 3.12 download failed TLS; no exact config or firmware build
-was run. Default, one-face and maximum-extra RAM/flash deltas remain unmeasured.
-Playwright's Chromium download also failed TLS; browser interaction checks
-remain pending. No hardware is available. Draft 0.4.0 installer export is gated.
+| Check | Result |
+|---|---|
+| Contract tests (`python tests/test_config.py`, Python 3.12.7 + ESPHome 2026.9.0) | **34 tests, 0 skips, OK** — includes `test_exact_esphome_font_option_merge` exercising ESPHome 2026.9.0's `merge_config` and `resolve_extend_remove` across all 1,024 font subsets and the default two-face release order |
+| Renderer unit tests (`make -C tests test`) | **245 checks, 0 failures** |
+| Preview glyph check (`python web-configurator/scripts/generate_glyphs.py --check`) | **`glyphs.generated.ts is up to date`** |
+| Web configurator (`npm test`, `npm run typecheck`, `npm run build`) | **71 tests pass** across 5 test files, clean `tsc --noEmit`, single-file `dist/index.html` (`314.12 kB`, `98.17 kB` gzip) |
+| Default two-face config (`esphome config` + `esphome compile`, `Matrix 2px` + `Dot Matrix` + `Compact 5x7`) | **`INFO Configuration is valid!`** (`clock_font` options `["Compact 5x7", "Matrix 2px", "Dot Matrix"]`, `initial_option: "Dot Matrix"`), **`INFO Successfully compiled program.`** (`main.cpp` 3,012 lines) |
+| Offline release path (`scripts/validate-release-offline.sh 0.4.0`) | **PASS**: packages cloned at tag `0.4.0`, **2 default web fonts** downloaded (`matrix-2px/Matrix2px.ttf`, `dot-matrix/DotMatrix.ttf`), config valid, `main.cpp` generated (3,018 lines), headers copied, `compile exit code: 0` |
+| Full 10-face local catalogue (`esphome config dev.yaml` + `esphome compile dev.yaml`) | **`INFO Configuration is valid!`**, **`INFO Successfully compiled program.`** (`main.cpp` 3,182 lines) |
+
+### Measured ESP8266 flash and RAM usage (ESPHome 2026.9.0, `d1_mini`)
+
+| Configuration | External faces | `Clock font` options | Flash used / 1,044,464 B | Flash delta vs 0 faces | RAM used / 81,920 B | RAM delta vs 0 faces |
+|---|---:|---|---:|---:|---:|---:|
+| Built-in only (`zero_faces`) | 0 | `Compact 5x7` | 501,589 B (48.0%) | — | 40,088 B (48.9%) | — |
+| Single face (`Matrix 2px`) | 1 | `Compact 5x7`, `Matrix 2px` | 504,085 B (48.3%) | +2,496 B | 40,676 B (49.7%) | +588 B |
+| Single face (`Dot Matrix`) | 1 | `Compact 5x7`, `Dot Matrix` | 504,101 B (48.3%) | +2,512 B | 40,676 B (49.7%) | +588 B |
+| **Default release pair (`Matrix 2px` + `Dot Matrix`)** | **2** | **`Compact 5x7`, `Matrix 2px`, `Dot Matrix` (initial: `Dot Matrix`)** | **505,141 B (48.4%)** | **+3,552 B (+1,040 B vs 1 face)** | **41,276 B (50.4%)** | **+1,188 B (+600 B vs 1 face)** |
+| Max configurator subset (default 2 + 3 extras: `Jersey 15`, `Teko`, `Rajdhani Bold`) | 5 | `Compact 5x7`, `Matrix 2px`, `Dot Matrix`, `Jersey 15`, `Teko`, `Rajdhani Bold` | 507,181 B (48.6%) | +5,592 B (+2,040 B vs default 2) | 43,012 B (52.5%) | +2,924 B (+1,736 B vs default 2) |
+| Full local catalogue (`dev.yaml`, `packages/fonts_local.yaml`) | 10 | `Compact 5x7` + all 10 external faces | 510,589 B (48.9%) | +9,000 B (+5,448 B vs default 2) | 45,964 B (56.1%) | +5,876 B (+4,688 B vs default 2) |
+
+* The **default two-face configuration** leaves **51.6% flash (539,323 B)** and
+  **49.6% RAM (40,644 B)** free on the ESP8266, saving **5,448 B flash** and
+  **4,688 B RAM** compared with compiling all ten external faces in `dev.yaml`.
+* Even with the maximum three optional extras selected in the web configurator
+  (five external faces total), **51.4% flash** and **47.5% RAM** remain free.
+* Remaining non-hardware blockers before flipping `INSTALLER_READY` to `true`:
+  explicit user approval to publish tag/release `0.4.0`, followed by live
+  remote-fetch verification of `examples/release.yaml` against the published
+  `0.4.0` tag. Interactive browser keyboard/mobile checks also remain open in
+  this sandbox because no browser binary is installed and Playwright browser
+  downloads are blocked by the sandbox network policy.

@@ -418,6 +418,10 @@ defines “latest” as the newest immutable published release tag.
       subset option/wiring parity, including built-in only and all faces.
 - [ ] Exact ESPHome 2026.9.0 config + full builds, flash/RAM deltas, physical
       matrix and browser keyboard/mobile verification for the new implementation.
+      _(Exact ESPHome 2026.9.0 config + full ESP8266 builds and flash/RAM deltas
+      completed on Python 3.12.7: default two-face build uses 505,141 B / 48.4%
+      flash and 41,276 B / 50.4% RAM; physical matrix and browser keyboard/mobile
+      verification remain open — see `VALIDATION.md`.)_
 - [ ] Publish compatible immutable release and enable installer export; 0.4.0
       remains a draft, with exports gated. Historical done boxes above do not
       establish validation for these new firmware changes.
