@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2 - 2026-10-01
+
+- Add **Pixel Clock 6×8**, an optional MAX7219 matrix-clock face with rounded
+  six-column digits and two-column edges. It is selectable in Font Lab and the
+  Home Assistant Clock font control, fits `HH:MM:SS` exactly on a 48×8 panel,
+  and uses the existing per-digit slide-up animation.
+
 ## 0.5.1 - 2026-09-30
 
 - Add **MD Parola Numeric 7-Segment**, an optional 8×8 MAX7219 matrix clock

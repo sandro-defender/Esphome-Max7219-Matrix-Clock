@@ -1,6 +1,15 @@
 # Full local development/measurement catalogue (not the public default).
 
 font:
+  - id: font_pixel_clock_6x8_source
+    file:
+      type: local
+      path: ../fonts/pixel-clock-6x8/PixelClock6x8.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
   - id: font_md_parola_numeric_7seg_source
     file:
       type: local
@@ -114,6 +123,7 @@ font:
 
 esphome:
   build_flags:
+    - -DMAX7219_FONT_PIXEL_CLOCK_6X8
     - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
     - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
     - -DMAX7219_FONT_JERSEY_15
@@ -131,6 +141,7 @@ select:
   - id: !extend clock_font
     initial_option: "Dot Matrix"
     options:
+      - "Pixel Clock 6x8"
       - "MD Parola Numeric 7-Segment"
       - "MD MAX72XX System"
       - "Jersey 15"

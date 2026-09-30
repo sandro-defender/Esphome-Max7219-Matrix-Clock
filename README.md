@@ -2,7 +2,7 @@
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
 ESP8266, with a full Home Assistant control surface, ten large 8-row fonts, the
-optional MD Parola Numeric 7-Segment and MD MAX72XX System faces, a built-in fallback font, per-digit
+optional Pixel Clock 6×8, MD Parola Numeric 7-Segment and MD MAX72XX System faces, a built-in fallback font, per-digit
 slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -13,9 +13,9 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **Ten large 8-row fonts, MD Parola Numeric 7-Segment, MD MAX72XX System, plus a built-in fallback** - Dot Matrix, Jersey 15,
+* **Ten large 8-row fonts, Pixel Clock 6×8, MD Parola Numeric 7-Segment, MD MAX72XX System, plus a built-in fallback** - Dot Matrix, Jersey 15,
   Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium,
-  Share Tech Mono, MD Parola Numeric 7-Segment (a MAX7219-matrix bitmap face), and MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are
+  Share Tech Mono, Pixel Clock 6×8 (rounded six-column MAX7219-matrix digits), MD Parola Numeric 7-Segment (a MAX7219-matrix bitmap face), and MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are
   available. The configurator includes **Matrix 2px and
   Dot Matrix** by default and lets you add **up to three other faces**.
   Dot Matrix is the initial clock face and
@@ -131,7 +131,7 @@ substitutions:
    Keep the existing API key if the device is already paired with Home
    Assistant.
 3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
-   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.5.1`) must be
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.5.2`) must be
    a tag that exists in this repository - see `VALIDATION.md` for how the
    release path is verified.
 4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
@@ -322,9 +322,9 @@ while building these packages and the checks that need hardware.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
-* **`couldn't find remote ref 0.5.1`** - the `ref:` in your YAML pins a release
+* **`couldn't find remote ref 0.5.2`** - the `ref:` in your YAML pins a release
   tag that does not exist yet (in this repository, or in your fork). Publish it
-  first: `git tag 0.5.1 && git push origin 0.5.1` (or create a GitHub release
+  first: `git tag 0.5.2 && git push origin 0.5.2` (or create a GitHub release
   for that tag). If ESPHome already cached the failed attempt, run once with
   `refresh: 0s` on the package so it picks the tag up immediately.
 * **`Couldn't find ID 'display_mode'`** (or `countdown_remaining`,

@@ -40,6 +40,16 @@ export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
 
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
+    id: "pixel-clock-6x8",
+    option: "Pixel Clock 6x8",
+    label: "Pixel Clock 6×8",
+    family: "Pixel Clock 6x8",
+    firmwareId: "font_pixel_clock_6x8_source",
+    size: 8,
+    license: "project source (scripts/generate_pixel_clock_6x8_font.py)",
+    blurb: "Rounded six-column matrix-clock digits with two-column edges; fits 48 px HH:MM:SS.",
+  },
+  {
     id: "md-parola-numeric-7seg",
     option: "MD Parola Numeric 7-Segment",
     label: "MD Parola Numeric 7-Segment",

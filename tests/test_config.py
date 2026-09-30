@@ -127,6 +127,7 @@ REQUIRED_ACTIONS = {
 # teaching the select, the display lambda and the web configurator about it is
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
+    "font_pixel_clock_6x8_source": "Pixel Clock 6x8",
     "font_md_parola_numeric_7seg_source": "MD Parola Numeric 7-Segment",
     "font_md_max72xx_system_source": "MD MAX72XX System",
     "font_jersey_15_source": "Jersey 15",
@@ -518,7 +519,7 @@ class ConfigContractTests(unittest.TestCase):
         for external, entry in zip(web, local):
             self.assertEqual(external["file"]["url"].replace("${fonts_base_url}/", ""),
                              entry["file"]["path"].removeprefix("../fonts/"))
-            if entry["id"] not in ("font_matrix_2px_source", "font_dot_matrix_source"):
+            if entry["id"] not in ("font_pixel_clock_6x8_source", "font_matrix_2px_source", "font_dot_matrix_source"):
                 font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
                 shared_lgpl = (
                     entry["id"] == "font_md_parola_numeric_7seg_source"
@@ -836,7 +837,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 12)
+        self.assertEqual(len(faces), 13)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
@@ -865,7 +866,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 self.assertIn(fid, by_macro[macro])
                 self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
                 self.assertNotIn('id(' + fid, display)
-                self.assertEqual(face["substitutions"]["project_ref"], "0.5.1")
+                self.assertEqual(face["substitutions"]["project_ref"], "0.5.2")
         # A declaration anywhere outside a feature guard would break zero-font builds.
         unguarded = re.sub(r"#ifdef MAX7219_FONT_\w+\n.*?#endif", "", display, flags=re.S)
         self.assertNotRegex(unguarded, r"font_\w+_source")
