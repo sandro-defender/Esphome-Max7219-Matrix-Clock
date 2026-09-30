@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+- Redesign the web configurator into a complete, mobile-first project website:
+  one scrolling document (Live preview, Tune, Font Lab, Hardware and Wiring,
+  Install YAML, Home Assistant, Troubleshooting, Gallery, Docs) with a sticky
+  anchor nav, replacing the five-tab deck. Dark workshop restyle with amber/red
+  LED accents, hazard-stripe section rules, small radii and stronger contrast.
+- Pin the matrix preview on phones: the chassis is fixed under the nav (with a
+  ResizeObserver-sized spacer) so the live panel stays visible over every
+  section; from 980 px it becomes a sticky rail. Add a labelled status strip
+  (selected face, panel pixel size, HH:MM:SS fit, fallback state) and a clear
+  width warning whenever the selected font exceeds the panel.
+- Move font selection into a dedicated Font Lab that visibly separates
+  "Fonts included in firmware" from the preview-only candidates, states that
+  candidates are never compiled or exported, and keeps the checkbox-selects-
+  preview behaviour. Replace the self-hosting tab with a documentation section
+  linking README, VALIDATION, ROADMAP and Issues; deployment notes stay in
+  `web-configurator/README.md`. Design contract recorded in
+  `web-configurator/REDESIGN.md`.
+- Add a six-photo hardware gallery (running clock, back-side wiring, controller
+  end view, D1 Mini, module macro, workbench) with full alt text and captions,
+  a wiring table, and troubleshooting entries for blank display, mirrored
+  modules, wrong time, wide fonts and encrypted native OTA.
+- Tests: seamless-lattice assertions (zero gap/inset, cross-seam pitch, exact
+  canvas size), gallery/section/nav coverage, pinned-mobile CSS coverage,
+  width-warning wording, and preview-only font exclusion from generated YAML
+  (94 tests total; renderer, YAML-safety and font-inclusion suites unchanged).
+
 ## 0.4.0 - 2026-09-30
 
 - Add compile-time font inclusion for 0.4.0: Matrix 2px and Dot Matrix are

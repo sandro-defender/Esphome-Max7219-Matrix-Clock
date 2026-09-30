@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import App from "./App";
-import { FONT_CATALOG } from "./fontCatalog";
+import { FONT_CATALOG, fitForPanel, fontSpec, previewFont, widthWarning } from "./fontCatalog";
 import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect, normalizeFonts, toggleExtraFont } from "./fontSelection";
 import { decodeConfig, encodeConfig, loadConfig, sanitizeConfig, saveConfig, shareUrl } from "./storage";
 import { DEFAULT_CONFIG, type Config } from "./types";
@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("firmware font inclusion", () => {
   it("shows Georgian candidates as preview-only rather than installer choices", () => {
     const markup = renderToStaticMarkup(<App />);
-    expect(markup).toContain("Font lab · test candidates");
+    expect(markup).toContain("Preview-only Font Lab");
     expect(markup).toContain("Noto Sans Georgian");
     expect(markup).toContain("Noto Serif Georgian");
     expect(markup).toContain("preview only");
@@ -114,10 +114,53 @@ describe("firmware font inclusion", () => {
     expect(yaml).not.toContain("unpublished");
     const markup = renderToStaticMarkup(<App />);
     expect(markup).toContain("Fonts included in firmware");
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(8);
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(EXTRA_FONTS.length);
     expect(markup).toContain("Add up to three other fonts");
     expect(markup).not.toContain("Installer copy/download is disabled");
     expect(markup).not.toContain("DRAFT");
-    expect(markup).toMatch(/<button(?![^>]*disabled)[^>]*>Copy install YAML/);
+    expect(markup).toMatch(/<button(?![^>]*disabled)[^>]*>(<span[^>]*>)?Copy install YAML/);
+  });
+});
+
+describe("font width warnings", () => {
+  it("stays silent while the face fits the 48 px default panel with seconds", () => {
+    for (const spec of FONT_CATALOG) {
+      const fit = fitForPanel(previewFont(spec.id), 48, 8);
+      if (!fit.dropsSeconds && !fit.tooNarrow) {
+        expect(widthWarning(spec.label, fit, 48), spec.label).toBeNull();
+      }
+    }
+  });
+
+  it("warns in plain language when HH:MM:SS exceeds the panel", () => {
+    const fit = { width: 52, minutesWidth: 33, digitHeight: 8, dropsSeconds: true, tooNarrow: false, usesBottomRow: false };
+    const message = widthWarning("Teko", fit, 48);
+    expect(message).toContain("Teko needs 52 px");
+    expect(message).toContain("4 px wider");
+    expect(message).toContain("drops the seconds");
+  });
+
+  it("warns when even the built-in fallback cannot fit", () => {
+    const fit = { width: 60, minutesWidth: 40, digitHeight: 8, dropsSeconds: false, tooNarrow: true, usesBottomRow: false };
+    expect(widthWarning("Jersey 15", fit, 24)).toContain("not even the built-in 5×7 fallback");
+  });
+
+  it("flags the real faces that drop seconds on a 32 px panel", () => {
+    let flagged = 0;
+    for (const spec of FONT_CATALOG) {
+      const fit = fitForPanel(previewFont(spec.id), 32, 8);
+      const warning = widthWarning(spec.label, fit, 32);
+      expect(warning === null).toBe(!fit.dropsSeconds && !fit.tooNarrow);
+      if (warning) flagged += 1;
+    }
+    expect(flagged).toBeGreaterThan(0);
+    expect(flagged).toBeLessThan(FONT_CATALOG.length);
+  });
+
+  it("measures every extra candidate against the live panel size", () => {
+    const spec = fontSpec("dot-matrix");
+    const fit = fitForPanel(previewFont("dot-matrix"), 48, 8);
+    expect(fit.width).toBeGreaterThan(0);
+    expect(widthWarning(spec.label, fit, 48)).toBeNull();
   });
 });

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-import { FONT_CATALOG, fontForOption } from "./fontCatalog";
+import { FONT_CATALOG, PREVIEW_CANDIDATES, fontForOption } from "./fontCatalog";
 import { GENERATED_FONTS } from "./glyphs.generated";
 import { decodeConfig, encodeConfig, sanitizeConfig, shareUrl } from "./storage";
 import { DEFAULT_CONFIG, type Config } from "./types";
 import { buildYaml } from "./yaml";
+import { EXTRA_FONTS } from "./fontSelection";
 
 const repoFile = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 
@@ -147,6 +148,35 @@ describe("buildYaml", () => {
     for (const spec of FONT_CATALOG) {
       const yaml = buildYaml({ ...DEFAULT_CONFIG, fonts: [...DEFAULT_CONFIG.fonts, spec.id], clockFont: spec.id });
       expect(yaml).toContain(`id: !extend clock_font\n    initial_option: "${spec.option}"`);
+    }
+  });
+});
+
+describe("preview-only fonts", () => {
+  it("never writes a Font Lab candidate into the installer YAML", () => {
+    for (const candidate of PREVIEW_CANDIDATES) {
+      const yaml = buildYaml(DEFAULT_CONFIG);
+      expect(yaml, candidate.id).not.toContain(candidate.id);
+      expect(yaml, candidate.generatedId).not.toContain(candidate.generatedId);
+    }
+  });
+
+  it("never writes a preview-only id into the YAML even when extras are maxed", () => {
+    const cfg = { ...DEFAULT_CONFIG, fonts: [...EXTRA_FONTS].slice(0, 3), clockFont: "handjet" as const };
+    const yaml = buildYaml(cfg);
+    for (const candidate of PREVIEW_CANDIDATES) {
+      expect(yaml, candidate.id).not.toContain(candidate.id);
+    }
+    expect(yaml).not.toMatch(/font_\w+_preview/);
+    expect(yaml).not.toContain("preview");
+  });
+
+  it("draws the package font list only from the firmware catalogue", () => {
+    const yaml = buildYaml(DEFAULT_CONFIG);
+    const paths = [...yaml.matchAll(/- packages\/fonts\/([a-z0-9-]+)\.yaml/g)].map((m) => m[1]);
+    for (const id of paths) {
+      expect(FONT_CATALOG.some((spec) => spec.id === id && spec.firmwareId), id).toBe(true);
+      expect(PREVIEW_CANDIDATES.some((candidate) => candidate.id === id), id).toBe(false);
     }
   });
 });

@@ -297,3 +297,74 @@ describe("MatrixCanvas module boundary overlay", () => {
     expect(calls).toEqual([]);
   });
 });
+
+/**
+ * The panel must read as ONE continuous LED display. Whatever the viewport
+ * size, adjacent 8x8 modules share the same dot pitch across the seam: no
+ * inter-module gap, no per-module inset, lattice distances preserved.
+ */
+describe("seamless panel", () => {
+  const SEAM_LAYOUTS = [
+    [1, 1],
+    [4, 1],
+    [6, 1],
+    [8, 1],
+    [12, 1],
+    [16, 1],
+    [2, 2],
+    [8, 2],
+    [12, 4],
+  ] as const;
+
+  it("joins modules with zero gap and zero inset at every size", () => {
+    for (const [cols, rows] of SEAM_LAYOUTS) {
+      for (const box of [240, 320, 640, 1280]) {
+        const geo = moduleGeometry(box, cols, rows);
+        expect(geo.gap, `${cols}x${rows} @${box}`).toBe(0);
+        expect(geo.inset, `${cols}x${rows} @${box}`).toBe(0);
+      }
+    }
+  });
+
+  it("paints the panel exactly as wide as the continuous LED lattice", () => {
+    for (const [cols, rows] of SEAM_LAYOUTS) {
+      const geo = moduleGeometry(640, cols, rows);
+      const label = `${cols}x${rows}`;
+      // No seam allowance: width = columns * 8 * pitch, height = rows * 8 * pitch.
+      expect(geo.cssW, `width ${label}`).toBe(cols * 8 * geo.pitch);
+      expect(geo.cssH, `height ${label}`).toBe(rows * 8 * geo.pitch + geo.labelH);
+      expect(geo.mod, `module size ${label}`).toBe(geo.face);
+    }
+  });
+
+  it("keeps the dot pitch identical across every module seam", () => {
+    for (const [cols, rows] of SEAM_LAYOUTS) {
+      if (cols < 2 && rows < 2) continue;
+      const geo = moduleGeometry(640, cols, rows);
+      const label = `${cols}x${rows}`;
+
+      for (let mx = 1; mx < cols; mx++) {
+        // Last dot of the left module to the first dot of the right module.
+        const seam = ledCenter(geo, mx, 0, 0, 0).x - ledCenter(geo, mx - 1, 0, 7, 0).x;
+        expect(seam, `vertical seam before module ${mx} of ${label}`).toBeCloseTo(geo.pitch, 6);
+      }
+      for (let my = 1; my < rows; my++) {
+        const seam = ledCenter(geo, 0, my, 0, 0).y - ledCenter(geo, 0, my - 1, 0, 7).y;
+        expect(seam, `horizontal seam before row ${my} of ${label}`).toBeCloseTo(geo.pitch, 6);
+      }
+    }
+  });
+
+  it("maps the default 6x1 build onto one uninterrupted 48x8 grid", () => {
+    const scene = geometry(DEFAULT_CONFIG.chips, DEFAULT_CONFIG.rows);
+    expect(scene).toMatchObject({ modulesX: 6, modulesY: 1, width: 48, height: 8 });
+
+    const geo = moduleGeometry(640, scene.modulesX, scene.modulesY);
+    for (let px = 0; px < 48; px++) {
+      const moduleIndex = Math.floor(px / 8);
+      const col = px % 8;
+      const x = ledCenter(geo, moduleIndex, 0, col, 0).x;
+      expect(x, `pixel ${px}`).toBeCloseTo(px * geo.pitch + geo.dot / 2, 6);
+    }
+  });
+});

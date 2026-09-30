@@ -202,3 +202,17 @@ export function fitForPanel(font: PreviewFont, panelWidth: number, panelHeight: 
     usesBottomRow: font.maxDigitHeight >= panelHeight,
   };
 }
+
+/**
+ * Plain-language warning for a face that does not fit the panel, mirroring the
+ * firmware's fallback chain. Null when the face fits with seconds.
+ */
+export function widthWarning(label: string, fit: FontFit, panelWidth: number): string | null {
+  if (fit.tooNarrow) {
+    return `Only ${panelWidth} px wide: not even the built-in 5×7 fallback can show HH:MM. Add modules or choose a narrower face.`;
+  }
+  if (fit.dropsSeconds) {
+    return `${label} needs ${fit.width} px for HH:MM:SS — ${fit.width - panelWidth} px wider than this ${panelWidth} px panel. The firmware drops the seconds digits and shows HH:MM with the seconds bar.`;
+  }
+  return null;
+}

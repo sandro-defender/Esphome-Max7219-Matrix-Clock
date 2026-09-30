@@ -1,8 +1,16 @@
 # MAX7219 Matrix Clock Web Configurator
 
-A client-side React/Vite configurator for the ESPHome MAX7219 Matrix Clock in
-this repository. It previews the display pixel by pixel and downloads one small
+A client-side React/Vite project site for the ESPHome MAX7219 Matrix Clock in
+this repository. It previews the display pixel by pixel and generates one small
 installation YAML backed by the version-pinned modules in `../packages/`.
+
+The page is a single scrolling document with an anchor nav: **Live preview ·
+Tune · Font Lab · Hardware and Wiring · Install YAML · Home Assistant ·
+Troubleshooting · Gallery · Docs**. The design contract — visual language,
+responsive strategy, accessibility checklist and the test matrix — lives in
+[REDESIGN.md](REDESIGN.md). On phones the matrix chassis is pinned directly
+under the section nav while the settings scroll past; from 980 px the preview
+becomes a sticky rail beside the sections.
 
 ## The preview draws the firmware, not an approximation
 
@@ -96,7 +104,8 @@ The Vite single-file plugin emits `dist/index.html`. Build output and
 | `src/yaml.test.ts` | generated installer YAML, release-example sync, clamping, font options, storage/share links |
 | `src/render.test.ts` | clock/date text, font fallback, seconds modes, test patterns, night dimming, auto cycling |
 | `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, optional boundary guides, LED optics |
-| `src/app.test.tsx` | the whole app renders (static markup smoke test) |
+| `src/app.test.tsx` | the whole app renders (static markup smoke test): sections, nav, gallery alt/captions, doc links, pinned-mobile CSS, disclosure groups |
+| `src/fontSelection.test.tsx` | font inclusion contracts plus the Font Lab width-warning wording |
 
 `src/yaml.test.ts` also reads the firmware sources next door, so adding a font
 to `../packages/fonts_local.yaml` without adding it to `src/fontCatalog.ts` (or
@@ -130,14 +139,24 @@ Tune uses native collapsible sections. Clock face, Hardware and Device start
 expanded so essential settings remain visible; open Screen, Messages and Light
 as needed. Section headers support keyboard focus and Enter/Space. Collapsing a
 section does not reset settings or change generated YAML or shared links.
+Troubleshooting uses the same native disclosures.
 
 ## Choosing compiled fonts
 
-Use the labeled checkboxes under **Fonts included in firmware**. A live counter
-shows `0 / 3` through `3 / 3` extras. At the limit, unchecked extras are disabled;
-uncheck one before adding another. The two default faces stay included.
-The active-face cards show only compiled choices. Removing the active extra
-returns to Dot Matrix without resetting other settings.
+The **Font Lab** section separates the two tiers visibly:
+
+* **Fonts included in firmware** — labelled checkboxes over the eight optional
+  faces, a live `0 / 3` … `3 / 3` counter, and cards rasterised from the exact
+  compiled files. Checking an optional face adds the package *and immediately
+  selects it in the live preview*; at the limit, unchecked extras are disabled;
+  uncheck one before adding another. Matrix 2px and Dot Matrix are fixed
+  defaults; removing the active extra returns to Dot Matrix without resetting
+  other settings. A plain-language warning fires whenever the selected face is
+  wider than the panel (seconds dropped → HH:MM + bar → built-in 5×7).
+* **Preview-only Font Lab** — candidate faces (Georgian families, Audiowide,
+  Bitcount …) for side-by-side comparison. They are labelled *preview only*,
+  never compiled into the ESP8266 firmware and never written into the
+  generated installer YAML; the YAML tests assert both.
 
 The inclusion array is normalized into catalogue order, deduplicated, restricted
 to known external faces and clamped to three extras. Defaults are restored even

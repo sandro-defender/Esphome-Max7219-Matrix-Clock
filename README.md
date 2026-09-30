@@ -64,7 +64,12 @@ exactly like a soldered chain, and an optional overlay draws dashed guides on
 each seam without moving a single pixel. Settings are stored in the browser and
 can be shared as a link; nothing but display preferences is ever persisted.
 Tune groups controls into keyboard-accessible collapsible sections, with Clock
-face, Hardware and Device expanded initially. Collapsing sections keeps all settings.
+face, Hardware and Device expanded initially. Collapsing sections keeps all
+settings. Around the configurator, the page is now a complete project guide:
+Live preview, Tune, Font Lab (firmware faces vs preview-only candidates),
+Hardware and Wiring, Install YAML, Home Assistant entities and actions,
+Troubleshooting, a six-photo hardware gallery and documentation links - with
+the matrix pinned to the top while you scroll on a phone.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users
@@ -321,7 +326,7 @@ while building these packages and the checks that need hardware.
   display lambda and the `get_status` action, and `packages/ota_ui.yaml` is
   what provides over-the-air updates. Only `packages/web_server.yaml` may be
   removed.
-* **Out of flash** - remove optional extra fonts in Tune and rebuild, or drop `packages/web_server.yaml` from the package list (and
+* **Out of flash** - remove optional extra fonts in Font Lab and rebuild, or drop `packages/web_server.yaml` from the package list (and
   delete it from `files:` in the release example) and rebuild.
 
 ## Project layout
@@ -365,7 +370,7 @@ covered by host tests; the following still needs a real device (see
 
 ### Included fonts and upgrades
 
-Tune → Clock face → **Fonts included in firmware** controls compile-time inclusion.
+Font Lab → **Fonts included in firmware** controls compile-time inclusion.
 The two default faces cannot be unchecked; select zero to three extras. Only
 included faces (and Compact 5×7) appear in the preview/first-boot face picker.
 Removing the active extra returns it to Dot Matrix. Reset restores the two
