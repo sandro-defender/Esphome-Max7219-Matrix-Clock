@@ -46,6 +46,16 @@ manual development tests, independently of that UI limit. The base select is
 Compact 5x7; the Dot Matrix package changes its initial option to Dot Matrix.
 A generated install can override the initial option to any included face.
 
+## MD_MAX72XX System import
+
+`fonts/md-max72xx-system/MDMax72xxSystem.ttf` is an optional ESPHome-ready
+conversion of the system font used by both the MD_MAX72XX and MD_Parola Arduino
+libraries. It is deliberately **not** in the default release pair: include
+`packages/fonts/md-max72xx-system.yaml` after the core package files to compile
+and select it. Its LGPL-2.1-or-later license and reproducible conversion script
+are retained alongside the font. The face compiles only
+`0123456789:.-/%!?+ `, exactly like the other clock faces.
+
 ESPHome saves a **numeric index**. The web order keeps Compact, Matrix 2px and
 Dot Matrix stable, but changing extras may remap a saved extra index to another
 included face. Out-of-range indices use initial_option. Older all-font builds

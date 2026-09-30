@@ -95,7 +95,7 @@ Write-Host "Working dir: $workDir"
 
 try {
     New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-    foreach ($item in @("packages", "fonts", "tests", "scripts", "examples", "dev.yaml", "secrets.yaml.example", "requirements-validation.txt", ".gitignore", "README.md", "VALIDATION.md")) {
+    foreach ($item in @("packages", "fonts", "tests", "scripts", "examples", "web-configurator", "dev.yaml", "secrets.yaml.example", "requirements-validation.txt", ".gitignore", "README.md", "VALIDATION.md")) {
         Copy-Item -LiteralPath (Join-Path $repoRoot $item) -Destination $workDir -Recurse -Force
     }
     New-FakeSecrets -Path (Join-Path $workDir "secrets.yaml")

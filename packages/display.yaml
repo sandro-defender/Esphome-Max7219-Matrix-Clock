@@ -67,6 +67,12 @@ display:
       const StringRef font_option = id(clock_font).current_option();
       max7219_clock::GlyphFont *selected = &builtin_font;
       // Raw generated pointers intentionally avoid id() resolution for omitted faces.
+      // The MD_MAX72XX system face is a faithfully converted bitmap source;
+      // it remains optional so existing release firmware size is unchanged.
+      #ifdef MAX7219_FONT_MD_MAX72XX_SYSTEM
+      max7219_clock::SourceFont md_max72xx_system_font(font_md_max72xx_system_source, &it);
+      if (font_option == "MD MAX72XX System") selected = &md_max72xx_system_font;
+      #endif
       #ifdef MAX7219_FONT_JERSEY_15
       max7219_clock::SourceFont jersey_15_font(font_jersey_15_source, &it);
       if (font_option == "Jersey 15") selected = &jersey_15_font;
