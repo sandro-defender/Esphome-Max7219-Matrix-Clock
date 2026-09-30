@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 - 2026-09-30
 
 - Rework the configurator layout around the live matrix: the preview column now
   holds only the device (48x8 panel, current time, selected face and fit), so

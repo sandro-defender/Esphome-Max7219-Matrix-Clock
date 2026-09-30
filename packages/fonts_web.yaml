@@ -1,6 +1,6 @@
 # Convenience default release set; installers list these faces explicitly.
 substitutions:
-  project_ref: 0.4.0
+  project_ref: 0.5.0
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
 
