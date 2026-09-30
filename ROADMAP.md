@@ -422,6 +422,9 @@ defines “latest” as the newest immutable published release tag.
       completed on Python 3.12.7: default two-face build uses 505,141 B / 48.4%
       flash and 41,276 B / 50.4% RAM; physical matrix and browser keyboard/mobile
       verification remain open — see `VALIDATION.md`.)_
-- [ ] Publish compatible immutable release and enable installer export; 0.4.0
-      remains a draft, with exports gated. Historical done boxes above do not
-      establish validation for these new firmware changes.
+- [x] Publish compatible immutable release and enable installer export; tag and
+      GitHub release `0.4.0` published at validated commit
+      `7c85cc49ec9c01c08adc26be9b2905ed85b9bd96`, verified via clean remote
+      `esphome config` fetch of `https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`,
+      `INSTALLER_READY = true` enabled, draft warnings removed, and gate tests
+      updated.

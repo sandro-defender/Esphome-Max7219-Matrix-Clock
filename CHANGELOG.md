@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased (0.4.0 staged — awaiting release approval)
+## 0.4.0 - 2026-09-30
 
-- Stage compile-time font inclusion for 0.4.0: Matrix 2px and Dot Matrix are
+- Add compile-time font inclusion for 0.4.0: Matrix 2px and Dot Matrix are
   defaults (with Dot Matrix as the initial active clock face); users can add up
   to three external faces in Tune. Compact 5×7 stays always available. Persist
   and validate inclusion arrays in saved settings and share links.
@@ -18,10 +18,9 @@
   `4,688 B` RAM vs all 10 faces), built-in-only (`0` faces), single-face
   (`Matrix 2px`, `Dot Matrix`), max configurator subset (`5` faces), and offline
   release path (`scripts/validate-release-offline.sh 0.4.0`).
-- Synchronize version metadata (`0.4.0`) across firmware packages, release
-  example, and `web-configurator`. Keep draft installer copy/download gated
-  (`INSTALLER_READY = false`) pending explicit user approval to publish `0.4.0`
-  and post-publication remote fetch verification.
+- Publish immutable release tag `0.4.0`, verify remote configuration fetch from
+  GitHub (`ref: "0.4.0"`), remove draft `0.4.0` warnings, and enable installer
+  copy/download (`INSTALLER_READY = true`) in the web configurator.
 
 
 - Group Tune controls in native collapsible sections; keep Clock face, Hardware

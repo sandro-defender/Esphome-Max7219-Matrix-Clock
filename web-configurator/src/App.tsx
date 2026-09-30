@@ -22,7 +22,7 @@ import {
   type Wiring,
 } from "./types";
 import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, toggleExtraFont } from "./fontSelection";
-import { INSTALLER_READY, INSTALLER_NOTICE, buildYaml, entityMap, installCommand, sampleAction } from "./yaml";
+import { INSTALLER_READY, buildYaml, entityMap, installCommand, sampleAction } from "./yaml";
 import { cn } from "./utils/cn";
 
 const TABS = ["Tune", "Install YAML", "Assistant", "Wiring", "GitHub"] as const;
@@ -359,7 +359,7 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
             Reset
           </button>
-          <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(yaml, "yaml")}>
+          <button type="button" className="btn primary" disabled={!INSTALLER_READY} onClick={() => copy(yaml, "yaml")}>
             {copied === "yaml" ? "Copied" : "Copy install YAML"}
           </button>
         </div>
@@ -420,7 +420,6 @@ export default function App() {
                 />
                 <fieldset className="font-inclusion">
                   <legend>Fonts included in firmware</legend>
-                  <p className="warn">{INSTALLER_NOTICE}</p>
                   <p className="hint">Matrix 2px and Dot Matrix are included by default. Compact 5×7 is always available.
                     Add up to three other fonts. Removing the active extra returns the clock to Dot Matrix.</p>
                   <p aria-live="polite">{cfg.fonts.length - DEFAULT_FONTS.length} / {MAX_EXTRA_FONTS} extra fonts added</p>
@@ -736,35 +735,34 @@ export default function App() {
 
           {tab === "Install YAML" ? (
             <div className="stack">
-              <p className="warn" role="status">{INSTALLER_NOTICE}</p>
               <div className="panel">
                 <div className="yaml-bar">
                   <span>
                     {deviceSlug(cfg.deviceName)}.yaml · {lines} lines
                   </span>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" className="btn ghost" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={download}>
+                    <button type="button" className="btn ghost" disabled={!INSTALLER_READY} onClick={download}>
                       Download
                     </button>
-                    <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(yaml, "yaml")}>
+                    <button type="button" className="btn primary" disabled={!INSTALLER_READY} onClick={() => copy(yaml, "yaml")}>
                       {copied === "yaml" ? "Copied" : "Copy"}
                     </button>
                   </div>
                 </div>
                 <p>
-                  This is a draft one-file installer. After release approval, keep it beside your existing <code>secrets.yaml</code>. ESPHome
+                  This is the complete one-file installer. Keep it beside your existing <code>secrets.yaml</code>. ESPHome
                   downloads the version-pinned modular firmware and only the included external fonts from this repository during
                   validation and compilation.
                 </p>
                 <ol>
-                  <li>Wait for a validated, published release before downloading this YAML.</li>
+                  <li>Download this YAML into your ESPHome configuration directory.</li>
                   <li>Confirm the six required entries exist in <code>secrets.yaml</code>.</li>
                   <li>Validate it with <code>esphome config {deviceSlug(cfg.deviceName)}.yaml</code>.</li>
                   <li>Flash over USB first, then use encrypted OTA once the node is adopted.</li>
                 </ol>
                 <div className="action-bar">
                   <span className="meta">Install command</span>
-                  <button type="button" className="btn primary" disabled={!INSTALLER_READY} title={INSTALLER_NOTICE} onClick={() => copy(installCommand(cfg), "run")}>
+                  <button type="button" className="btn primary" disabled={!INSTALLER_READY} onClick={() => copy(installCommand(cfg), "run")}>
                     {copied === "run" ? "Copied" : "Copy"}
                   </button>
                 </div>

@@ -90,13 +90,17 @@ describe("firmware font inclusion", () => {
     expect(yaml).not.toContain("fonts/handjet.yaml");
   });
 
-  it("keeps drafts visibly gated and exposes labeled extra checkboxes", () => {
-    expect(INSTALLER_READY).toBe(false);
+  it("enables installer export for published 0.4.0 and exposes labeled extra checkboxes", () => {
+    expect(INSTALLER_READY).toBe(true);
+    const yaml = buildYaml(DEFAULT_CONFIG);
+    expect(yaml).not.toContain("DRAFT");
+    expect(yaml).not.toContain("unpublished");
     const markup = renderToStaticMarkup(<App />);
     expect(markup).toContain("Fonts included in firmware");
     expect(markup.match(/type="checkbox"/g)).toHaveLength(8);
     expect(markup).toContain("Add up to three other fonts");
-    expect(markup).toContain("Installer copy/download is disabled");
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Copy install YAML/);
+    expect(markup).not.toContain("Installer copy/download is disabled");
+    expect(markup).not.toContain("DRAFT");
+    expect(markup).toMatch(/<button(?![^>]*disabled)[^>]*>Copy install YAML/);
   });
 });
