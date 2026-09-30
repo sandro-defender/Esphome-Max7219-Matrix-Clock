@@ -448,11 +448,15 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn("DEVELOPMENT", read(REPO / "examples/development.yaml"))
 
         # base.yaml reports the version, fonts_web.yaml pins the fonts, the
-        # example pins the packages: all three must name the same release.
+        # example pins the packages, and the web configurator metadata matches.
         base_version = load_yaml(PACKAGES / "base.yaml")["substitutions"]["project_version"]
         web_ref = load_yaml(PACKAGES / "fonts_web.yaml")["substitutions"]["project_ref"]
         self.assertEqual(ref, base_version, "release ref must equal the project version")
         self.assertEqual(ref, web_ref, "release ref must equal fonts_web project_ref")
+        pkg_version = re.search(r'"version":\s*"([^"]+)"', read(REPO / "web-configurator/package.json")).group(1)
+        yaml_ts_ref = re.search(r'const PROJECT_REF = "([^"]+)";', read(REPO / "web-configurator/src/yaml.ts")).group(1)
+        self.assertEqual(ref, pkg_version, "web-configurator package.json version must match release ref")
+        self.assertEqual(ref, yaml_ts_ref, "web-configurator PROJECT_REF must match release ref")
 
     def test_remote_file_list_matches_local_modules(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)
@@ -467,6 +471,10 @@ class ConfigContractTests(unittest.TestCase):
             Path(f"packages/{name}") for name in local_names
         } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts/matrix-2px.yaml"), Path("packages/fonts/dot-matrix.yaml")}
         self.assertEqual(sorted(p.as_posix() for p in expected), sorted(files))
+        release_fonts = [f for f in files if f.startswith("packages/fonts/")]
+        offline_script = read(REPO / "scripts/validate-release-offline.sh")
+        expected_offline_fonts = int(re.search(r'\[\[\s*"\$FONTS"\s*-eq\s*(\d+)\s*\]\]', offline_script).group(1))
+        self.assertEqual(len(release_fonts), expected_offline_fonts, "offline validator font count must match release.yaml")
 
     def test_font_packages_are_equivalent(self):
         web = [load_yaml(PACKAGES / "fonts" / (fid[5:-7].replace("_", "-") + ".yaml"))["font"][0] for fid in FONT_OPTION_BY_ID]
@@ -738,6 +746,22 @@ class ConfigContractTests(unittest.TestCase):
             select = next(e for e in merged["select"] if e["id"] == "clock_font")
             self.assertEqual(select["options"], expected)
             self.assertIn(select["initial_option"], expected)
+        # Verify the default release pair in exact release order (matrix-2px then dot-matrix).
+        default_merged = copy.deepcopy(base)
+        for rel_name in ("matrix-2px.yaml", "dot-matrix.yaml"):
+            default_merged = merge_config(default_merged, convert(load_yaml(PACKAGES / "fonts" / rel_name)))
+        resolve_extend_remove(default_merged)
+        default_select = next(e for e in default_merged["select"] if e["id"] == "clock_font")
+        self.assertEqual(default_select["options"], ["Compact 5x7", "Matrix 2px", "Dot Matrix"])
+        self.assertEqual(default_select["initial_option"], "Dot Matrix")
+        self.assertEqual(
+            default_merged["esphome"]["build_flags"],
+            ["-DMAX7219_FONT_MATRIX_2PX", "-DMAX7219_FONT_DOT_MATRIX"],
+        )
+        self.assertEqual(
+            [f["id"] for f in default_merged["font"]],
+            ["font_matrix_2px_source", "font_dot_matrix_source"],
+        )
         self.assertEqual(merge_config({"lambda": "first"}, {"lambda": "second"}), {"lambda": "second"})
 
     @unittest.skipUnless(shutil.which("g++"), "g++ unavailable")

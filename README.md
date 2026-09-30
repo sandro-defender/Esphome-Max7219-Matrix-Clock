@@ -8,9 +8,14 @@ The firmware is distributed as small package modules. Your YAML stays tiny: it
 holds your credentials, a few substitutions and the package list.
 
 > **Development / staged release:** font inclusion below targets the unpublished
-> `0.4.0` draft. Installer copy/download is disabled until exact ESPHome validation,
-> full firmware builds, size review and publication pass. `examples/release.yaml`
-> is a draft, not a currently installable release. Existing installs are unchanged.
+> `0.4.0` draft. Exact ESPHome `2026.9.0` config validation, full ESP8266
+> firmware builds (`505,141 / 1,044,464 B` flash `48.4%`, `41,276 / 81,920 B`
+> RAM `50.4%` for the default two-face pair), and offline release-path validation
+> (`scripts/validate-release-offline.sh 0.4.0`) have passed (see
+> [`VALIDATION.md`](VALIDATION.md)). Installer copy/download remains disabled
+> until explicit user approval to publish `0.4.0` and post-publication remote
+> fetch verification. `examples/release.yaml` is staged for `0.4.0`; existing
+> installs are unchanged.
 
 ## Features
 
@@ -315,9 +320,9 @@ while building these packages and the checks that need hardware.
 * **OTA progress not visible** - the panel is updated directly from the OTA
   callbacks; if the custom display lambda is bypassed by a hardware quirk the
   upload still completes. Report it with your board details.
-* **`couldn't find remote ref 0.3.0`** - the `ref:` in your YAML pins a release
+* **`couldn't find remote ref 0.4.0`** - the `ref:` in your YAML pins a release
   tag that does not exist yet (in this repository, or in your fork). Publish it
-  first: `git tag 0.3.0 && git push origin 0.3.0` (or create a GitHub release
+  first: `git tag 0.4.0 && git push origin 0.4.0` (or create a GitHub release
   for that tag). If ESPHome already cached the failed attempt, run once with
   `refresh: 0s` on the package so it picks the tag up immediately.
 * **`Couldn't find ID 'display_mode'`** (or `countdown_remaining`,
@@ -347,10 +352,11 @@ ROADMAP.md      implementation contract and remaining work
 
 ## Remaining hardware-only verification
 
-Earlier releases were validated with ESPHome 2026.9.0. The current font-subset
-changes still need exact config validation and full firmware builds. The
-renderer is covered by host tests; the following also needs a real
-device (see `VALIDATION.md` and `ROADMAP.md` for details):
+Validated with **ESPHome 2026.9.0** on Python 3.12.7 (`esphome config`, full
+ESP8266 `esphome compile` for the default two-face configuration and subset
+builds, and `scripts/validate-release-offline.sh 0.4.0`). The renderer is
+covered by host tests; the following still needs a real device (see
+`VALIDATION.md` and `ROADMAP.md` for details):
 
 * on-panel readability of the included 8-row fonts;
 * OTA progress visibility during a real transfer;

@@ -26,15 +26,17 @@ without ESPHome trying to resolve their IDs first. `SourceFont` is guarded by
 `USE_FONT`, so a built-in-only build needs no font namespace. The built-in
 fallback and reset option are always available.
 
-The official tag's unmodified merge/extend function definitions were exercised
-in isolation over all 1024 subsets: options concatenate correctly and initial
-choices remain present. This is **not** full ESPHome configuration validation.
-Offline contracts also cover all subsets and host C++ syntax checks cover zero,
-each individual face, the default pair, five faces and all ten (ESPHome stubs).
-`test_exact_esphome_font_option_merge` repeats the resolver checks when exactly
-2026.9.0 is installed (otherwise explicitly skipped).
-Full codegen, include order, pointer visibility and compiler flag propagation
-remain to be verified in exact ESPHome builds.
+The official tag's merge/extend resolver (`merge_config` and
+`resolve_extend_remove`) is exercised over all 1024 subsets and the exact
+default release order by `test_exact_esphome_font_option_merge` when ESPHome
+2026.9.0 is installed. In addition, full ESPHome 2026.9.0 `esphome config` and
+`esphome compile` (ESP8266 `d1_mini`) have been executed for the default
+two-face configuration (`Matrix 2px` + `Dot Matrix` + built-in `Compact 5x7`),
+built-in-only (`0` external faces), single-face (`Matrix 2px` and `Dot Matrix`),
+five-face (default two + three extras), and full ten-face configurations, as
+well as the offline release path (`scripts/validate-release-offline.sh 0.4.0`),
+confirming codegen, include order, pointer visibility and compiler flag
+propagation.
 
 ## Selection and restoration
 
@@ -54,14 +56,22 @@ to Compact for any unmatched string. Restore display defaults selects Compact.
 ## Release gate and measurement
 
 0.4.0 is a reserved draft, not a published release. `examples/release.yaml`,
-project version and font asset refs are synchronized to that draft.
-`INSTALLER_READY` remains false. Before enabling export, validate exact
-ESPHome 2026.9.0 config and full ESP8266 builds for zero, one, default two,
-maximum five and full ten faces, record RAM/flash, publish the approved tag and
-verify a clean remote fetch. Then remove draft banners and enable export in
-one tested release increment. Do not point these paths at 0.3.0.
+project version, web-configurator metadata and font asset refs are synchronized
+to that draft. There is **one** default release configuration (`Matrix 2px` +
+`Dot Matrix` + built-in `Compact 5x7`); users may optionally add up to three
+extra font packages in the web configurator.
 
-No new font files were added; source notices remain in `fonts/*/OFL.txt`.
-Matrix 2px and Dot Matrix are project-generated faces. Current default/one-face
-firmware-size deltas are **unmeasured**. Older aggregate figures do not establish
-headroom for this change.
+Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM):
+
+- **Built-in only (0 external faces):** 501,589 B flash (48.0%), 40,088 B RAM (48.9%)
+- **Single face (`Matrix 2px`):** 504,085 B flash (48.3%, +2,496 B), 40,676 B RAM (49.7%, +588 B)
+- **Single face (`Dot Matrix`):** 504,101 B flash (48.3%, +2,512 B), 40,676 B RAM (49.7%, +588 B)
+- **Default two-face pair (`Matrix 2px` + `Dot Matrix`):** **505,141 B flash (48.4%, +3,552 B vs 0 faces)**, **41,276 B RAM (50.4%, +1,188 B vs 0 faces)**
+- **Max configurator subset (default 2 + 3 extras):** 507,181 B flash (48.6%, +2,040 B vs default 2), 43,012 B RAM (52.5%, +1,736 B vs default 2)
+- **Full 10-face catalogue (`dev.yaml`):** 510,589 B flash (48.9%, +5,448 B vs default 2), 45,964 B RAM (56.1%, +4,688 B vs default 2)
+
+`INSTALLER_READY` remains `false` until the user explicitly approves publishing
+tag/release `0.4.0` and a clean temporary configuration verifies fetching the
+live `0.4.0` tag and raw font URLs from GitHub. Do not point these paths at
+`0.3.0`. No new font files were added; source notices remain in `fonts/*/OFL.txt`.
+Matrix 2px and Dot Matrix are project-generated faces.

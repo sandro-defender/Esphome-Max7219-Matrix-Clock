@@ -75,9 +75,9 @@ absent from that tag.
 - [x] Implement per-face packages and subset-safe display/select wiring — source contracts over 1024 subsets and host syntax checks; exact ESPHome validation remains below.
 - [x] Add included-font state, sanitization, persistence and share-link tests — 10 focused tests; default pair + max three extras.
 - [x] Add Tune inclusion checkboxes and gate unsupported release downloads — draft 0.4.0, copy/download disabled.
-- [x] Test built-in only, one face, all faces and hostile links — offline/source and stub C++ checks only, not full firmware builds.
-- [ ] Validate exact ESPHome 2026.9.0 configurations and full firmware builds.
-- [ ] Record default/one-face flash and RAM deltas.
+- [x] Test built-in only, one face, all faces and hostile links — offline/source and stub C++ checks plus full ESPHome 2026.9.0 builds across 0, 1, 2, 5, and 10 external faces.
+- [x] Validate exact ESPHome 2026.9.0 configurations and full firmware builds — validated on Python 3.12.7 + ESPHome 2026.9.0 (`esphome config`, `esphome compile`, and `scripts/validate-release-offline.sh 0.4.0`).
+- [x] Record default/one-face flash and RAM deltas — default pair (`Matrix 2px` + `Dot Matrix`): 505,141 B flash (48.4%, +3,552 B vs 0 faces), 41,276 B RAM (50.4%, +1,188 B vs 0 faces); single face (`Matrix 2px`): 504,085 B flash (+2,496 B), 40,676 B RAM (+588 B); single face (`Dot Matrix`): 504,101 B flash (+2,512 B), 40,676 B RAM (+588 B); recorded in `VALIDATION.md` and `packages/fonts/README.md`.
 
 Baseline rerun: renderer 245 checks, Python 32 tests (no skips after installing
 measurement dependencies), configurator 60 tests, typecheck/build and glyph
@@ -90,15 +90,15 @@ lists, replacement for scalar values (do not append lambda strings). Exact-tag
 `esphome/components/template/select/template_select.cpp` at 2026.9.0 restores
 an index: a valid old index selects the possibly different face now at that
 index; an invalid index uses initial_option. Subset migration must document this
-and keep every reachable option compiled. Actual !extend merge tests remain open.
+and keep every reachable option compiled.
 
-Font increment evidence: 71 Vitest tests, clean typecheck/build (314.12 kB single
-HTML); unchanged glyph freshness. Exact ESPHome install blocked on Python 3.12+
-(the sandbox Python is 3.11); runtime download failed TLS. Browser installation
-also failed TLS, so keyboard/mobile interaction checks remain open. No firmware
-compile or size delta is claimed. See packages/fonts/README.md for merge research,
-restored-index behavior and release-enabling requirements.
-
-Final host run: renderer 245 checks; Python 34 tests (1 skipped: exact installed
-ESPHome resolver test). The exact-tag resolver was separately exercised via its
-unmodified AST functions, not represented as full ESPHome validation.
+Final validation run (Python 3.12.7 + ESPHome 2026.9.0): renderer 245 checks (0
+failures); Python 34 tests (0 skips, including `test_exact_esphome_font_option_merge`
+over all 1,024 subsets and the default two-face release order); 71 Vitest tests,
+clean typecheck/build (314.12 kB single HTML), glyph freshness verified;
+`scripts/validate-release-offline.sh 0.4.0` passed with 2 default web fonts and
+full firmware compilation (`exit code: 0`). Browser installation still blocked by
+sandbox network policy, so real browser keyboard/mobile interaction checks and
+physical hardware verification remain open. `INSTALLER_READY` stays `false`
+pending user approval to publish `0.4.0` and post-publication remote fetch
+verification.

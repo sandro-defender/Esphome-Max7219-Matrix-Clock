@@ -1,15 +1,27 @@
 # Changelog
 
-## Unreleased
+## Unreleased (0.4.0 staged — awaiting release approval)
 
 - Stage compile-time font inclusion for 0.4.0: Matrix 2px and Dot Matrix are
-  defaults; users can add up to three external faces in Tune. Compact 5×7 stays
-  available. Persist and validate inclusion arrays in saved settings/share links.
-- Split release fonts into per-face packages with matching select extensions
-  and guarded display wiring. Keep full local measurement catalogue and licenses.
-  Reset uses the always-present Compact face. Document saved-index migration.
-- Gate draft installer copy/download pending exact ESPHome validation, full
-  firmware builds, size measurements and publication. No release is published.
+  defaults (with Dot Matrix as the initial active clock face); users can add up
+  to three external faces in Tune. Compact 5×7 stays always available. Persist
+  and validate inclusion arrays in saved settings and share links.
+- Split release fonts into per-face packages (`packages/fonts/*.yaml`) with
+  matching `!extend clock_font` option extensions, `-DMAX7219_FONT_*` compiler
+  flags, and guarded display wiring. Keep full local measurement catalogue and
+  licenses (`packages/fonts_local.yaml`). Reset uses the always-present Compact
+  face. Document saved numeric-index restoration semantics (`restore_value: true`)
+  across subset changes.
+- Validate exact ESPHome 2026.9.0 (Python 3.12.7) config and full ESP8266
+  firmware builds for the default two-face configuration (`505,141 / 1,044,464 B`
+  flash `48.4%`, `41,276 / 81,920 B` RAM `50.4%`, saving `5,448 B` flash and
+  `4,688 B` RAM vs all 10 faces), built-in-only (`0` faces), single-face
+  (`Matrix 2px`, `Dot Matrix`), max configurator subset (`5` faces), and offline
+  release path (`scripts/validate-release-offline.sh 0.4.0`).
+- Synchronize version metadata (`0.4.0`) across firmware packages, release
+  example, and `web-configurator`. Keep draft installer copy/download gated
+  (`INSTALLER_READY = false`) pending explicit user approval to publish `0.4.0`
+  and post-publication remote fetch verification.
 
 
 - Group Tune controls in native collapsible sections; keep Clock face, Hardware
