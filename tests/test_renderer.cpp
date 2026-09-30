@@ -633,14 +633,14 @@ static void test_slide_animation_uses_ink_height_not_canvas_height() {
   CHECK(row4_count > 0);  // New digit covering row 4
 }
 
-static void test_animation_digit_gap_separates_adjacent_sliding_digits() {
+static void test_animation_row_gap_separates_old_and_new_digits() {
   FakeCanvas canvas;
   FakeFont font(6, /*ink_height=*/7, /*ink_top=*/0);
   Frame f = base_frame();
   f.seconds_mode = SECONDS_OFF;
   f.animate = true;
   f.animation_ms = 250;
-  f.animation_gap = 1;
+  f.animation_row_gap = 2;
 
   reset_state();
   render(canvas, font, compact, f, report);
@@ -649,15 +649,23 @@ static void test_animation_digit_gap_separates_adjacent_sliding_digits() {
   f.now_ms = 1000;
   render(canvas, font, compact, f, report);
 
-  // With six-pixel fake glyph cells, the preceding '3' ends at x=32. The
-  // animation-only gap clears that shared boundary for every matrix row.
-  for (int y = 0; y < canvas.height(); y++) CHECK(!canvas.get(32, y));
+  const int box_top = font.centered_box_top(8);
+  bool old_at_rest = false, new_below_with_two_blank_rows = false;
+  for (const auto &call : font.calls) {
+    if (call.ch == '4' && call.box_top == box_top) old_at_rest = true;
+    if (call.ch == '5' && call.box_top == box_top + 9) new_below_with_two_blank_rows = true;
+  }
+  CHECK(old_at_rest);
+  CHECK(new_below_with_two_blank_rows);
 
-  // Once the slide settles, normal compact spacing is restored.
+  // Once the slide settles, the new glyph returns to its resting row.
   canvas.clear();
   f.now_ms = 2000;
   render(canvas, font, compact, f, report);
-  CHECK(canvas.get(32, 0));
+  bool new_at_rest = false;
+  for (const auto &call : font.calls)
+    if (call.ch == '5' && call.box_top == box_top) new_at_rest = true;
+  CHECK(new_at_rest);
 }
 
 static void test_animation_disabled_and_mode_change_reset() {
@@ -1278,7 +1286,7 @@ int main() {
   test_builtin_font_renders_every_required_glyph();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
-  test_animation_digit_gap_separates_adjacent_sliding_digits();
+  test_animation_row_gap_separates_old_and_new_digits();
 
   printf("%d checks, %d failures\n", checks, failures);
   return failures == 0 ? 0 : 1;

@@ -76,7 +76,7 @@ REQUIRED_ENTITIES = {
         "Matrix brightness",
         "Night brightness",
         "Animation duration",
-        "Animation digit gap",
+        "Animation row gap",
         "Message scroll speed",
         "Default message duration",
         "Countdown duration",
@@ -867,7 +867,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 self.assertIn(fid, by_macro[macro])
                 self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
                 self.assertNotIn('id(' + fid, display)
-                self.assertEqual(face["substitutions"]["project_ref"], "0.5.3")
+                self.assertEqual(face["substitutions"]["project_ref"], "0.5.4")
         # A declaration anywhere outside a feature guard would break zero-font builds.
         unguarded = re.sub(r"#ifdef MAX7219_FONT_\w+\n.*?#endif", "", display, flags=re.S)
         self.assertNotRegex(unguarded, r"font_\w+_source")

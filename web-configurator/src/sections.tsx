@@ -197,13 +197,13 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
           onChange={(value) => patch("animationMs", value)}
         />
         <Slider
-          label="Animation digit gap"
-          value={cfg.animationGap}
-          min={LIMITS.animationGap.min}
-          max={LIMITS.animationGap.max}
+          label="Animation row gap"
+          value={cfg.animationRowGap}
+          min={LIMITS.animationRowGap.min}
+          max={LIMITS.animationRowGap.max}
           step={1}
-          unit="px"
-          onChange={(value) => patch("animationGap", value)}
+          unit="rows"
+          onChange={(value) => patch("animationRowGap", value)}
         />
         <p className="hint">
           {cfg.animationMs === 0

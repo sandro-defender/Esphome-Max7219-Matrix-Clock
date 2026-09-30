@@ -276,7 +276,7 @@ struct Frame {
   bool blink_colon = true;
   bool animate = true;
   uint32_t animation_ms = 250;
-  uint8_t animation_gap = 1;
+  uint8_t animation_row_gap = 0;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
 
@@ -623,7 +623,7 @@ inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont 
 // how the blinking colon hides the separator without re-centring the line
 // (several faces have different ':' and ' ' advances).
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
-                      int alignment, int box_top, bool blank_colons = false, uint8_t animation_gap = 0) {
+                      int alignment, int box_top, bool blank_colons = false, uint8_t animation_row_gap = 0) {
   const int width = c.width();
   const int len = content == nullptr ? 0 : (int) strlen(content);
   int text_width = font.text_width(content);
@@ -640,6 +640,7 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
   // Using canvas height (8) for a 7px font creates a 1-pixel gap at progress=0
   // where the new digit starts at row 8 (off-screen for 0-7 display).
   const int slide = font.ink_height();
+  const int travel = slide + animation_row_gap;
 
   int cursor = start_x;
   for (int i = 0; i < len; i++) {
@@ -649,31 +650,14 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
     if (cursor + step > 0 && cursor < width) {
       if (changed) {
         // Old digit slides up, new digit enters from below.
-        const int offset = (int) (progress * slide);
+        const int offset = (int) (progress * travel);
         font.draw_glyph(c, animate_from[i], cursor, box_top - offset);
-        font.draw_glyph(c, content[i], cursor, box_top + slide - offset);
+        font.draw_glyph(c, content[i], cursor, box_top + travel - offset);
       } else if (!(blank_colons && content[i] == ':')) {
         font.draw_glyph(c, content[i], cursor, box_top);
       }
     }
     cursor += step;
-  }
-
-  // Do not let two touching digit cells merge while one slides. Clearing the
-  // trailing columns of a cell preserves the resting layout and only affects
-  // the active animation frame. Most matrix fonts already reserve one column;
-  // the setting also handles faces whose ink reaches the next cell.
-  if (animate && animation_gap > 0) {
-    cursor = start_x;
-    for (int i = 0; i + 1 < len; i++) {
-      const int step = font.advance(content[i]);
-      const bool left_changed = is_digit(content[i]) && is_digit(animate_from[i]) && content[i] != animate_from[i];
-      const bool right_changed = is_digit(content[i + 1]) && is_digit(animate_from[i + 1]) &&
-                                 content[i + 1] != animate_from[i + 1];
-      if (is_digit(content[i]) && is_digit(content[i + 1]) && (left_changed || right_changed))
-        c.fill_rect(cursor + step - animation_gap, 0, animation_gap, c.height(), false);
-      cursor += step;
-    }
   }
 
   // Seconds progress bar (bottom row), drawn after the digits so it wins.
@@ -985,7 +969,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   const int box_top = active->centered_box_top(height);
   draw_line(canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
-            box_top, blank_colons, f.animation_gap);
+            box_top, blank_colons, f.animation_row_gap);
 
   // Seconds alternative: full-width progress bar on the bottom row.
   if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);

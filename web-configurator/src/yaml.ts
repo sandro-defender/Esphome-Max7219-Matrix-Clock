@@ -4,7 +4,7 @@ import { deviceSlug, nodeId } from "./device";
 import { clampNumber, type Config } from "./types";
 
 const PROJECT_REPOSITORY = "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock";
-const PROJECT_REF = "0.5.3";
+const PROJECT_REF = "0.5.4";
 export const INSTALLER_READY = true;
 
 /** Must stay identical to examples/release.yaml (checked by yaml.test.ts). */
@@ -124,7 +124,7 @@ substitutions:
   matrix_intensity: "${boundedInteger(cfg.brightness, 0, 15)}"
   matrix_night_intensity: "${boundedInteger(cfg.nightBrightness, 0, 15)}"
   animation_ms: "${boundedInteger(cfg.animationMs, 0, 2000)}"
-  animation_gap: "${boundedInteger(cfg.animationGap, 0, 2)}"
+  animation_row_gap: "${boundedInteger(cfg.animationRowGap, 0, 2)}"
   message_ms_per_px: "${boundedInteger(cfg.scrollSpeed, 20, 200)}"
   screen_cycle_interval: "${boundedInteger(cfg.cycleInterval, 5, 300)}"
   default_message_duration: "${boundedInteger(cfg.messageHold, 0, 3600)}"
@@ -162,8 +162,8 @@ number:
     initial_value: ${boundedInteger(cfg.nightEnd, 0, 23)}
   - id: !extend animation_duration
     initial_value: ${boundedInteger(cfg.animationMs, 0, 2000)}
-  - id: !extend animation_digit_gap
-    initial_value: ${boundedInteger(cfg.animationGap, 0, 2)}
+  - id: !extend animation_row_gap
+    initial_value: ${boundedInteger(cfg.animationRowGap, 0, 2)}
   - id: !extend message_scroll_speed
     initial_value: ${boundedInteger(cfg.scrollSpeed, 20, 200)}
   - id: !extend screen_cycle_interval

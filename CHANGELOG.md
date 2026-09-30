@@ -1,11 +1,15 @@
 # Changelog
 
+## 0.5.4 - 2026-10-01
+
+- Correct the animation separation control: **Animation row gap** (0–2 rows,
+  default 1) now adds blank vertical LED rows between the outgoing digit and
+  the incoming digit. It no longer changes horizontal digit spacing.
+
 ## 0.5.3 - 2026-10-01
 
-- Add the **Animation digit gap** Home Assistant control (0–2 px, default 1).
-  While a digit slides, it clears a narrow boundary from its adjacent digit so
-  the two LED shapes do not join. The normal compact layout returns when the
-  slide finishes.
+- Add an animation-separation control. Superseded by 0.5.4's vertical
+  **Animation row gap** implementation.
 
 ## 0.5.2 - 2026-10-01
 
