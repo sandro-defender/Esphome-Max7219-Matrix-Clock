@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  frameSignature,
   MODULE_BOUNDARY_COLOR,
   MODULE_BOUNDARY_DASH,
   drawModuleBoundaries,
   isLedVisuallyOn,
   ledCenter,
   ledGlowRadius,
+  ledLevel,
   moduleBoundaries,
   moduleGeometry,
   moduleOrigin,
+  panelBounds,
+  pixelCenter,
   type ModuleBoundaryCtx,
 } from "./MatrixCanvas";
 import { geometry } from "./render";
@@ -366,5 +370,95 @@ describe("seamless panel", () => {
       const x = ledCenter(geo, moduleIndex, 0, col, 0).x;
       expect(x, `pixel ${px}`).toBeCloseTo(px * geo.pitch + geo.dot / 2, 6);
     }
+  });
+});
+
+/**
+ * The panel is one board: a single shell, one dot lattice, and a width that
+ * never exceeds the space it is given — at any viewport, for any module count.
+ */
+describe("panel as one board", () => {
+  const LAYOUTS: [number, number][] = [
+    [1, 1],
+    [4, 1],
+    [6, 1],
+    [8, 1],
+    [12, 1],
+    [16, 1],
+    [8, 2],
+    [12, 4],
+  ];
+
+  it("never paints the lattice wider than its box", () => {
+    for (const [cols, rows] of LAYOUTS) {
+      for (let box = cols * 8 + 8; box <= 1400; box += 37) {
+        const geo = moduleGeometry(box, cols, rows);
+        const label = `${cols}x${rows} @${box}`;
+        expect(geo.cssW, label).toBeLessThanOrEqual(box - 8);
+        expect(geo.cssW, label).toBe(cols * 8 * geo.pitch);
+        expect(geo.pitch, label).toBeGreaterThanOrEqual(geo.dot + geo.gapDot);
+        expect(geo.dot, label).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it("keeps one pitch across every seam at any width", () => {
+    for (const cols of [4, 6, 8, 12, 16]) {
+      for (const box of [200, 240, 320, 375, 480, 768, 1024, 1280]) {
+        const geo = moduleGeometry(box, cols, 1);
+        const inside = ledCenter(geo, 0, 0, 1, 0).x - ledCenter(geo, 0, 0, 0, 0).x;
+        for (let mx = 1; mx < cols; mx++) {
+          const seam = ledCenter(geo, mx, 0, 0, 0).x - ledCenter(geo, mx - 1, 0, 7, 0).x;
+          const label = `${cols} modules @${box}px seam ${mx}`;
+          expect(seam, label).toBeCloseTo(inside, 6);
+          expect(seam, label).toBeCloseTo(geo.pitch, 6);
+        }
+      }
+    }
+  });
+
+  it("spans the whole chain with a single panel rectangle", () => {
+    const wide = moduleGeometry(640, 6, 1);
+    expect(panelBounds(wide, 6, 1)).toEqual({ x: 0, y: 0, w: wide.cssW, h: wide.mod });
+    expect(panelBounds(wide, 6, 1).w).toBe(48 * wide.pitch);
+
+    const stacked = moduleGeometry(640, 2, 2);
+    expect(panelBounds(stacked, 2, 2)).toEqual({ x: 0, y: 0, w: stacked.cssW, h: 2 * stacked.mod });
+
+    const single = moduleGeometry(320, 1, 1);
+    expect(panelBounds(single, 1, 1)).toEqual({ x: 0, y: 0, w: single.mod, h: single.mod });
+  });
+
+  it("addresses every panel pixel on the same continuous lattice", () => {
+    const geo = moduleGeometry(640, 6, 1);
+    for (let px = 0; px < 48; px++) {
+      const centre = pixelCenter(geo, px, 0);
+      expect(centre.x, `pixel ${px}`).toBeCloseTo(ledCenter(geo, Math.floor(px / 8), 0, px % 8, 0).x, 6);
+      expect(centre.x, `pixel ${px}`).toBeCloseTo(px * geo.pitch + geo.dot / 2, 6);
+    }
+    for (let py = 0; py < 8; py++) {
+      expect(pixelCenter(geo, 0, py).y).toBeCloseTo(py * geo.pitch + geo.dot / 2, 6);
+    }
+  });
+
+  it("maps brightness onto the LED level inside its bounds", () => {
+    expect(ledLevel(0)).toBeCloseTo(0.2, 6);
+    expect(ledLevel(15)).toBeCloseTo(1, 6);
+    expect(ledLevel(-5)).toBeCloseTo(0.2, 6);
+    expect(ledLevel(99)).toBeCloseTo(1, 6);
+  });
+});
+
+describe("frame signature", () => {
+  it("ignores a new array holding the same frame", () => {
+    const a = new Uint8Array([0, 1, 0, 255, 7, 0]);
+    expect(frameSignature(new Uint8Array(a))).toBe(frameSignature(a));
+  });
+
+  it("changes when a single LED changes", () => {
+    const a = new Uint8Array(384).fill(0);
+    const b = new Uint8Array(a);
+    b[383] = 1;
+    expect(frameSignature(a)).not.toBe(frameSignature(b));
   });
 });

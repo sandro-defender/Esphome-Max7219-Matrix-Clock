@@ -1,7 +1,7 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
-ESP8266, with a full Home Assistant control surface, ten large 8-row fonts, a
+ESP8266, with a full Home Assistant control surface, eleven large 8-row fonts, a
 built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
@@ -12,9 +12,10 @@ holds your credentials, a few substitutions and the package list.
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
   12/24-hour modes, three date formats, three seconds modes (digits, bottom-row
   progress bar, off), left/centre/right alignment.
-* **Ten large 8-row fonts plus a built-in fallback** - Dot Matrix, Jersey 15,
-  Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium
-  and Share Tech Mono are available. The configurator includes **Matrix 2px and
+* **Eleven large 8-row fonts plus a built-in fallback** - Dot Matrix, Jersey 15,
+  Teko, Rajdhani Bold, Kdam Thmor Pro, Rationale, Matrix 2px, Handjet, Oxanium,
+  Share Tech Mono and MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are
+  available. The configurator includes **Matrix 2px and
   Dot Matrix** by default and lets you add **up to three other faces**.
   Dot Matrix is the initial clock face and
   fits `HH:MM` in 31 pixels on a 32x8 panel; Matrix 2px and Share Tech Mono fill
@@ -59,17 +60,23 @@ YAML with:
 
 The preview is drawn with the same glyph bitmaps, centring, text formats and
 font-fallback rules as `packages/max7219_clock_renderer.h`, so what you tune is
-what the panel shows. Adjacent 8×8 modules are previewed joined edge to edge,
-exactly like a soldered chain, and an optional overlay draws dashed guides on
-each seam without moving a single pixel. Settings are stored in the browser and
-can be shared as a link; nothing but display preferences is ever persisted.
-Tune groups controls into keyboard-accessible collapsible sections, with Clock
-face, Hardware and Device expanded initially. Collapsing sections keeps all
-settings. Around the configurator, the page is now a complete project guide:
-Live preview, Tune, Font Lab (firmware faces vs preview-only candidates),
-Hardware and Wiring, Install YAML, Home Assistant entities and actions,
-Troubleshooting, a six-photo hardware gallery and documentation links - with
-the matrix pinned to the top while you scroll on a phone.
+what the panel shows — including the per-digit slide-up: only the digits whose
+value changed move, the old one leaves upwards while the new one arrives from
+below, colons and unchanged digits stay still, and the *Animation duration*
+slider (600 ms default), the *Digit slide-up animation* switch and
+`prefers-reduced-motion` all drive it. Adjacent 8×8 modules are previewed as one
+board — a single panel shell and one continuous dot lattice, exactly like a
+soldered chain — and an optional overlay draws dashed guides on each seam
+without moving a single pixel. Settings are stored in the browser and can be
+shared as a link; nothing but display preferences is ever persisted. Tune groups
+controls into keyboard-accessible collapsible sections, with Clock face,
+Hardware and Device expanded initially. Collapsing sections keeps all settings.
+Around the configurator, the page is now a complete project guide: Live preview,
+Tune, Font Lab (firmware faces vs preview-only candidates), Hardware and Wiring,
+Install YAML, Home Assistant entities and actions, Troubleshooting, a six-photo
+hardware gallery and documentation links. The matrix leads the first screen at
+every width: on a phone it stays pinned under the menu at a measured offset,
+from 980 px it is a sticky rail beside the settings.
 
 This provides both requested forms without maintaining two divergent firmware
 implementations: developers work with the modules in `packages/`, while users

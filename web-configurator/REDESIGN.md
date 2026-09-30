@@ -48,10 +48,15 @@ Rules:
 The five-tab deck becomes one scrolling document with a sticky anchor nav.
 Order follows the way a builder actually works:
 
-1. **Live preview** (`#preview`) — hero line, the seam-free 48×8 chassis with
-   the matrix, status readout (selected face, panel pixel size, HH:MM:SS width
-   vs panel, fallback state), preview-time freeze, Home-Assistant message
-   composer, live fact strip. Pinned on mobile (see §3).
+1. **Live preview** (`#preview`) — the seam-free 48×8 chassis with the matrix
+   *first*, then the status readout (current time, selected face, panel pixel
+   size, HH:MM:SS width vs panel, fallback state) and the width/fallback
+   notices. Nothing else lives in this column, so the block is short enough to
+   stay fully visible while it is pinned. The preview controls — hero line,
+   preview-time freeze, digit-slide readout with *Replay last change*,
+   Home-Assistant message composer and live fact strip — head the settings
+   column, so the first desktop screen shows the matrix *and* the controls that
+   drive it. Pinned on mobile (see §3).
 2. **Tune** (`#tune`) — native `<details>` groups: Clock face (preview layout,
    module-boundary guides, face facts, link into Font Lab), Screen, Messages,
    Light, Hardware, Device. Clock face, Hardware and Device start open.
@@ -113,20 +118,31 @@ Mobile-first, one stylesheet (`src/index.css`), design tokens in `:root`:
   forms and entity tables collapse to one column; code blocks and tables get
   `overflow-x: auto` wrappers so nothing overflows the viewport.
 * **Pinned preview (≤ 979 px)** — the matrix chassis becomes `position:
-  fixed` directly under the nav (`top: calc(var(--nav-h) + 8px)`), with an
-  in-flow `.chassis-slot` spacer sized from a `ResizeObserver` so no content
-  jumps or hides. The readout, notices and controls scroll normally beneath
-  it. This is the strongest possible interpretation of "keep the matrix
-  preview pinned near the top while the user scrolls settings", and it works
-  across every section because the chassis leaves the flow only visually.
-* **≥ 980 px** — two-column shell: the preview column is a grid item spanning
-  the full row height with `position: sticky` (`top: calc(var(--nav-h) +
-  16px)`), so the matrix stays visible beside every section; Tune groups can
-  sit open without pushing the matrix away.
+  fixed` under the header, centred and capped (`max-width: 640px`) so a
+  landscape tablet does not get a wall of LEDs. Its `top` is
+  `calc(var(--pin-top) + var(--pin-gap))`, where `--pin-top` is the **measured**
+  bottom edge of the section nav (`src/usePinnedChrome.ts`, written straight
+  onto the document element so scrolling never re-renders React). Measuring is
+  what keeps the two apart: at the top of the page the nav still sits below the
+  brand row, and its height moves with the safe-area inset, the notice bar and
+  the user's font size — a hard-coded offset let the menu overlap the matrix
+  and the matrix overlap the header buttons. Stacking is explicit: nav `z-index:
+  50` with an opaque background, chassis `z-index: 40`, content below both. An
+  in-flow `.chassis-slot` spacer sized from a `ResizeObserver` keeps the
+  document height honest, and anchor targets add `--chassis-h` to their
+  `scroll-margin-top` so a jump never lands under the pinned panel.
+* **≥ 980 px** — two-column shell (`align-items: start`, preview column
+  `align-self: stretch`): the preview column spans the full row height and the
+  stage inside it is `position: sticky` (`top: calc(var(--nav-h) + 14px)`), so
+  the matrix, the time and the face readout stay visible beside every section;
+  Tune groups can sit open without pushing the matrix away. Because the sticky
+  block is short, its bottom is never cut off by the viewport.
 * **≥ 720 px** — photo grid 2 columns, font grid 2 columns, `two` field pairs
   side by side; **≥ 1240 px** the shell is capped and centred.
 * Motion: `@media (prefers-reduced-motion: reduce)` disables smooth scrolling
-  and the brand dot animation.
+  and the transition on the toggle thumb and font cards, and
+  `src/digitAnimation.ts` switches the per-digit slide off entirely (the panel
+  says so in plain words).
 
 ## 4. Accessibility checklist
 
@@ -161,8 +177,12 @@ Mobile-first, one stylesheet (`src/index.css`), design tokens in `:root`:
 * Font inclusion: Matrix 2px + Dot Matrix defaults, ≤ 3 extras, canonical
   order, hostile-input sanitised, removal of the active extra falls back to
   Dot Matrix, checking an extra immediately selects it in the preview.
-* The panel is painted as one continuous LED lattice (no module seams), with
-  optional boundary guides that move no pixel.
+* The panel is painted as one continuous LED lattice (no module seams, one
+  panel shell, one dot pitch at every seam, never wider than its container),
+  with optional boundary guides that move no pixel.
+* The digit slide is per digit: only changed digits move, colons and unchanged
+  digits never move, the duration comes from `animation_ms` (600 ms default),
+  and `prefers-reduced-motion` disables it.
 * Fallback chain mirrors the firmware: full HH:MM:SS → HH:MM + seconds bar →
   built-in 5×7; the readout and Font Lab state which rung is active.
 
@@ -174,7 +194,10 @@ Mobile-first, one stylesheet (`src/index.css`), design tokens in `:root`:
 | Extra-font limits, order, hostile input, share-link round trip | `fontSelection.test.tsx` |
 | Matrix is one seamless lattice: `gap === 0`, `inset === 0`, cross-seam dot pitch equals in-module pitch, canvas width `= cols × pitch × 8` | `MatrixCanvas.test.ts` ("seamless panel") |
 | Boundary guides move no pixel | `MatrixCanvas.test.ts` (existing) |
-| Mobile pinned preview: fixed-chassis rule exists at the pin breakpoint and the stage renders the spacer slot | `app.test.tsx` + `liveStage` markup assertions |
+| Desktop opens with the matrix: markup order, no top padding above the chassis, sticky rail | `app.test.tsx` ("responsive layout") |
+| Mobile pinned preview: fixed chassis at the measured `--pin-top`, stacking below the opaque nav, spacer slot, anchor clearance | `app.test.tsx` (parsed CSS) + `app.dom.test.tsx` (measured `--nav-h` / `--pin-top` / `--chassis-h`) |
+| Panel is one board: single shell rect, one pitch across every seam at any width, never wider than its box | `MatrixCanvas.test.ts` ("panel as one board") |
+| Per-digit slide: only changed digits move, old up / new from below, toggle + duration + reduced motion, layout change cancels | `digitAnimation.test.ts` + `app.dom.test.tsx` |
 | Gallery: every photo file exists, every file is used, each `figure` has `alt` ≥ 40 chars + caption; doc links (README/VALIDATION/ROADMAP/issues) present | `app.test.tsx` |
 | Sections + nav: all nine section ids, nav anchors, one `h1`, native `<details>` groups | `app.test.tsx` |
 | Generated YAML never includes preview-only fonts or settings | `yaml.test.ts` + new assertions over `PREVIEW_CANDIDATES` ids |

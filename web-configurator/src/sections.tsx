@@ -15,7 +15,7 @@ import { fitForPanel, fontSpec, previewFont } from "./fontCatalog";
 import { geometry, type Geometry } from "./render";
 import { cn } from "./utils/cn";
 import { CopyButton, NumberField, Patch, PinField, Section, Segmented, Slider, Toggle } from "./ui";
-import { MAX_EXTRA_FONTS } from "./fontSelection";
+import { EXTRA_FONTS, MAX_EXTRA_FONTS } from "./fontSelection";
 import { INSTALLER_READY, entityMap, installCommand, sampleAction } from "./yaml";
 
 const ZONES = [
@@ -69,8 +69,8 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
       title="Tune"
       lead={
         <>
-          Every control here changes the live preview above and the generated installer below. Groups use native
-          collapsible panels — Clock face, Hardware and Device start open.
+          Every control here changes the live preview and the generated installer. Groups use native collapsible
+          panels — Clock face, Hardware and Device start open.
         </>
       }
     >
@@ -80,6 +80,7 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
           label="Preview layout"
           value={cfg.layoutPreview}
           options={["firmware", "modules"] as const}
+          labels={{ firmware: "As the firmware draws it", modules: "One digit per module" }}
           onChange={(value) => patch("layoutPreview", value)}
           hint={
             cfg.layoutPreview === "firmware"
@@ -99,8 +100,9 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
         />
         <p className="hint">
           The installed faces live in <a href="#font-lab">Font Lab</a>: {cfg.fonts.length} external{" "}
-          {cfg.fonts.length === 1 ? "face" : "faces"} compiled plus the built-in Compact 5×7 fallback, out of{" "}
-          {MAX_EXTRA_FONTS} optional candidates. Checking a face there switches this preview immediately.
+          {cfg.fonts.length === 1 ? "face" : "faces"} compiled plus the built-in Compact 5×7 fallback. Font Lab lists{" "}
+          {EXTRA_FONTS.length} optional faces and takes up to {MAX_EXTRA_FONTS} of them; checking one there switches
+          this preview to it immediately.
         </p>
         <ul className="entity-list font-facts">
           <li>
@@ -181,7 +183,7 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
         />
         <Toggle
           label="Digit slide-up animation"
-          hint="Only the digits that changed slide, and never while the firmware shows OTA progress."
+          hint="Only the digits whose value changed slide: the old one leaves upwards, the new one arrives from below. Colons and unchanged digits stay still, and nothing slides while the firmware shows OTA progress. The preview above follows this switch."
           checked={cfg.digitAnimation}
           onChange={(value) => patch("digitAnimation", value)}
         />
@@ -194,6 +196,12 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
           unit="ms"
           onChange={(value) => patch("animationMs", value)}
         />
+        <p className="hint">
+          {cfg.animationMs === 0
+            ? "0 ms switches the slide off: digits change in one step."
+            : `One slide takes ${cfg.animationMs} ms — 600 ms is the default the firmware ships with.`}{" "}
+          The preview uses exactly this value, and it stays still if your system asks for reduced motion.
+        </p>
       </details>
 
       <details className="panel tune-section">
@@ -494,7 +502,7 @@ export function InstallSection({ cfg, yaml }: { cfg: Config; yaml: string }) {
       <div className="panel">
         <h3>Install in five steps</h3>
         <ol className="install-steps">
-          <li>Tune the settings above until the preview matches your panel.</li>
+          <li>Tune the settings until the preview matches your panel.</li>
           <li>
             Copy or download <code>{slug}.yaml</code> below into your ESPHome configuration directory, next to your{" "}
             <code>secrets.yaml</code>.
@@ -794,7 +802,7 @@ export function TroubleshootingSection() {
     <Section
       id="troubleshooting"
       title="Troubleshooting"
-      lead={<>Symptoms first, fix second, in the order the hardware fails. Every entry maps to a control above or an entity in Home Assistant.</>}
+      lead={<>Symptoms first, fix second, in the order the hardware fails. Every entry maps to a control in Tune or an entity in Home Assistant.</>}
     >
       {TROUBLE.map((item) => (
         <details key={item.term} className="panel trouble">

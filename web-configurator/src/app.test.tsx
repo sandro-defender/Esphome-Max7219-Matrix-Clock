@@ -12,7 +12,6 @@ import { FONT_CATALOG, PREVIEW_CANDIDATES } from "./fontCatalog";
  */
 describe("App", () => {
   const markup = renderToStaticMarkup(<App />);
-  const css = readFileSync(new URL("./index.css", import.meta.url), "utf8");
 
   it("renders the configurator shell", () => {
     expect(markup).toContain("Clock<span>lab</span>");
@@ -71,20 +70,6 @@ describe("App", () => {
     expect(markup).toContain('class="chassis-slot"');
     expect(markup).toContain('class="chassis"');
     expect(markup.match(/role="img"/g)!.length).toBeGreaterThan(0);
-  });
-
-  it("pins the chassis on phones with a fixed rule and reserves its space", () => {
-    const pinAt = css.indexOf("@media (max-width: 979px) {\n  .stage { display: flex");
-    expect(pinAt).toBeGreaterThan(0);
-    const pinBlock = css.slice(pinAt, pinAt + 700);
-    expect(pinBlock).toContain("position: fixed");
-    expect(css).toContain(".chassis-slot { order: -1; height: 216px; }");
-    // Desktop: the stage becomes a sticky rail instead.
-    const desktopAt = css.indexOf("@media (min-width: 980px)");
-    const stickyAt = css.indexOf("position: sticky", desktopAt);
-    expect(desktopAt).toBeGreaterThan(0);
-    expect(stickyAt).toBeGreaterThan(desktopAt);
-    expect(stickyAt - desktopAt).toBeLessThan(800);
   });
 
   it("documents the default wiring values in the hardware section", () => {
@@ -147,5 +132,138 @@ describe("App", () => {
     for (const candidate of PREVIEW_CANDIDATES) {
       expect(markup, candidate.label).toContain(candidate.label);
     }
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * Layout contract
+ *
+ * Parsed out of index.css and the rendered markup instead of eyeballed, so a
+ * spacing or stacking regression fails here rather than on a phone.
+ * ------------------------------------------------------------------ */
+
+const DESKTOP = "@media (min-width: 980px)";
+const PHONE = "@media (max-width: 979px)";
+
+/** Bodies of every `{…}` block that follows `opener`, braces balanced. */
+function blocks(scope: string, opener: string): string[] {
+  const found: string[] = [];
+  let from = 0;
+  for (;;) {
+    const start = scope.indexOf(opener, from);
+    if (start < 0) break;
+    let depth = 0;
+    let index = scope.indexOf("{", start);
+    const body = index + 1;
+    for (; index < scope.length; index++) {
+      if (scope[index] === "{") depth += 1;
+      else if (scope[index] === "}") {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+    }
+    found.push(scope.slice(body, index));
+    from = index + 1;
+  }
+  return found;
+}
+
+/** Declarations of a selector, optionally inside every block of a media query. */
+function rule(css: string, selector: string, media?: string): string {
+  const scopes = media ? blocks(css, media) : [css];
+  expect(scopes.length, `missing ${media ?? "css"}`).toBeGreaterThan(0);
+  const matches = scopes.flatMap((scope) => blocks(scope, `${selector} {`));
+  expect(matches.length, `missing ${selector}${media ? ` in ${media}` : ""}`).toBeGreaterThan(0);
+  return matches.join("\n");
+}
+
+describe("responsive layout", () => {
+  const markup = renderToStaticMarkup(<App />);
+  const css = readFileSync(new URL("./index.css", import.meta.url), "utf8");
+
+  it("opens the preview column with the matrix, then the time and the face", () => {
+    const stage = markup.indexOf('<section id="preview"');
+    const chassis = markup.indexOf('class="chassis"', stage);
+    const readout = markup.indexOf('class="readout"', stage);
+    const status = markup.indexOf('aria-label="Preview status"', stage);
+
+    expect(stage).toBeGreaterThan(-1);
+    expect(chassis).toBeGreaterThan(stage);
+    expect(chassis).toBeLessThan(readout);
+    expect(readout).toBeLessThan(status);
+    // The page title sits in the settings column: no block of text is stacked
+    // above the panel, so the first desktop screen is the matrix itself.
+    expect(markup.indexOf("<h1")).toBeGreaterThan(status);
+  });
+
+  it("keeps the essential preview controls above the fold beside the matrix", () => {
+    const controls = markup.indexOf('id="preview-time"');
+    const composer = markup.indexOf('id="ha-message"');
+    const tune = markup.indexOf('<section id="tune"');
+
+    expect(controls).toBeGreaterThan(0);
+    expect(composer).toBeGreaterThan(0);
+    expect(controls).toBeLessThan(tune);
+    expect(composer).toBeLessThan(tune);
+    // They live in the settings column, not under the sticky device rail.
+    expect(markup.indexOf('class="content-col"')).toBeLessThan(controls);
+  });
+
+  it("wastes no vertical space above the desktop matrix", () => {
+    const shell = rule(css, ".shell", DESKTOP);
+    expect(shell).toContain("display: grid");
+    expect(shell).toContain("align-items: start");
+    expect(Number(/padding: (\d+)px/.exec(shell)![1])).toBeLessThanOrEqual(16);
+    expect(rule(css, ".chassis")).toContain("margin-top: 0");
+    expect(rule(css, ".chassis-slot")).toContain("height: 0");
+    expect(rule(css, ".topbar")).toContain("padding: 12px 16px 8px");
+  });
+
+  it("keeps the desktop preview a sticky rail beside every section", () => {
+    expect(rule(css, ".stage-col", DESKTOP)).toContain("align-self: stretch");
+    const stage = rule(css, ".stage", DESKTOP);
+    expect(stage).toContain("position: sticky");
+    expect(stage).toContain("top: calc(var(--nav-h) + 14px)");
+  });
+
+  it("pins the phone matrix under the measured chrome and under the menu", () => {
+    const chassis = rule(css, ".chassis", PHONE);
+    expect(chassis).toContain("position: fixed");
+    expect(chassis).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
+    expect(chassis).toContain("z-index: 40");
+    expect(chassis).toContain("env(safe-area-inset-left");
+    // Centred and capped instead of stretched across a landscape tablet.
+    expect(chassis).toContain("left: 50%");
+    expect(chassis).toContain("max-width: 640px");
+
+    const nav = rule(css, ".site-nav");
+    expect(nav).toContain("position: sticky");
+    expect(nav).toContain("top: 0");
+    expect(nav).toContain("env(safe-area-inset-top");
+    // Stacking and opacity: the menu paints over the matrix, never through it.
+    expect(Number(/z-index: (\d+)/.exec(nav)![1])).toBeGreaterThan(40);
+    expect(Number(/rgba\(16, 14, 12, ([\d.]+)\)/.exec(nav)![1])).toBeGreaterThanOrEqual(0.95);
+
+    // The spacer keeps the document height honest while the chassis is fixed.
+    expect(rule(css, ".chassis-slot", PHONE)).toContain("height: 200px");
+    expect(markup).toContain('class="chassis-slot"');
+  });
+
+  it("gives anchor jumps room for the menu and the pinned matrix", () => {
+    expect(rule(css, "html")).toContain("scroll-padding-top: calc(var(--nav-h) + 12px)");
+    expect(rule(css, ".doc-section, .stage", PHONE)).toContain("var(--chassis-h)");
+  });
+
+  it("keeps the panel centred and inside its column", () => {
+    const wrap = rule(css, ".matrix-wrap");
+    expect(wrap).toContain("justify-content: center");
+    expect(wrap).toContain("min-width: 0");
+  });
+
+  it("surfaces the per-digit slide and a way to see it", () => {
+    expect(markup).toContain("Digit slide-up");
+    expect(markup).toContain("600 ms");
+    expect(markup).toContain("Replay last change");
+    expect(markup).toContain("Tune → Screen");
   });
 });
