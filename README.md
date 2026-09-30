@@ -7,16 +7,6 @@ built-in fallback font, per-digit slide-up animation and on-screen OTA progress.
 The firmware is distributed as small package modules. Your YAML stays tiny: it
 holds your credentials, a few substitutions and the package list.
 
-> **Development / staged release:** font inclusion below targets the unpublished
-> `0.4.0` draft. Exact ESPHome `2026.9.0` config validation, full ESP8266
-> firmware builds (`505,141 / 1,044,464 B` flash `48.4%`, `41,276 / 81,920 B`
-> RAM `50.4%` for the default two-face pair), and offline release-path validation
-> (`scripts/validate-release-offline.sh 0.4.0`) have passed (see
-> [`VALIDATION.md`](VALIDATION.md)). Installer copy/download remains disabled
-> until explicit user approval to publish `0.4.0` and post-publication remote
-> fetch verification. `examples/release.yaml` is staged for `0.4.0`; existing
-> installs are unchanged.
-
 ## Features
 
 * **Clock and date screens** - full `HH:MM:SS` on the default 48×8 panel,
@@ -128,9 +118,8 @@ substitutions:
    Keep the existing API key if the device is already paired with Home
    Assistant.
 3. Copy `examples/release.yaml` next to your `secrets.yaml` and adjust the
-   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.4.0` in the staged draft) must be
-   a published tag that contains those packages. The current draft targets
-   **unpublished 0.4.0**; do not install it yet. See `VALIDATION.md` for how the
+   substitutions for your hardware. Its `ref:`/`project_ref:` (`0.4.0`) must be
+   a tag that exists in this repository - see `VALIDATION.md` for how the
    release path is verified.
 4. `esphome config max7219-clock.yaml` - must report `Configuration is valid!`
 5. `esphome run max7219-clock.yaml` - first flash over USB, later updates over

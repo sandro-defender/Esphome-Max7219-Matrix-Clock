@@ -454,9 +454,13 @@ class ConfigContractTests(unittest.TestCase):
         self.assertEqual(ref, base_version, "release ref must equal the project version")
         self.assertEqual(ref, web_ref, "release ref must equal fonts_web project_ref")
         pkg_version = re.search(r'"version":\s*"([^"]+)"', read(REPO / "web-configurator/package.json")).group(1)
-        yaml_ts_ref = re.search(r'const PROJECT_REF = "([^"]+)";', read(REPO / "web-configurator/src/yaml.ts")).group(1)
+        yaml_ts = read(REPO / "web-configurator/src/yaml.ts")
+        yaml_ts_ref = re.search(r'const PROJECT_REF = "([^"]+)";', yaml_ts).group(1)
         self.assertEqual(ref, pkg_version, "web-configurator package.json version must match release ref")
         self.assertEqual(ref, yaml_ts_ref, "web-configurator PROJECT_REF must match release ref")
+        self.assertIn("export const INSTALLER_READY = true;", yaml_ts)
+        self.assertNotIn("DRAFT", read(REPO / "examples/release.yaml"))
+        self.assertNotIn("DRAFT", yaml_ts)
 
     def test_remote_file_list_matches_local_modules(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)

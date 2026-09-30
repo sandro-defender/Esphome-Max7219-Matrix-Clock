@@ -1,4 +1,4 @@
-# Optional release fonts (staged 0.4.0)
+# Optional release fonts (0.4.0)
 
 Each YAML owns one web font declaration, one compiler feature flag, and one
 `!extend clock_font` option. Installers list these files explicitly, after the
@@ -53,13 +53,13 @@ have a different order too: reselect your desired font after flashing.
 No restored option can reference an omitted font; the renderer still defaults
 to Compact for any unmatched string. Restore display defaults selects Compact.
 
-## Release gate and measurement
+## Release 0.4.0 and measurements
 
-0.4.0 is a reserved draft, not a published release. `examples/release.yaml`,
-project version, web-configurator metadata and font asset refs are synchronized
-to that draft. There is **one** default release configuration (`Matrix 2px` +
-`Dot Matrix` + built-in `Compact 5x7`); users may optionally add up to three
-extra font packages in the web configurator.
+Release `0.4.0` is published and verified. `examples/release.yaml`, project
+version, web-configurator metadata and font asset refs are pinned to `0.4.0`.
+There is **one** default release configuration (`Matrix 2px` + `Dot Matrix` +
+built-in `Compact 5x7`); users may optionally add up to three extra font
+packages in the web configurator.
 
 Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM):
 
@@ -70,8 +70,9 @@ Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM):
 - **Max configurator subset (default 2 + 3 extras):** 507,181 B flash (48.6%, +2,040 B vs default 2), 43,012 B RAM (52.5%, +1,736 B vs default 2)
 - **Full 10-face catalogue (`dev.yaml`):** 510,589 B flash (48.9%, +5,448 B vs default 2), 45,964 B RAM (56.1%, +4,688 B vs default 2)
 
-`INSTALLER_READY` remains `false` until the user explicitly approves publishing
-tag/release `0.4.0` and a clean temporary configuration verifies fetching the
-live `0.4.0` tag and raw font URLs from GitHub. Do not point these paths at
-`0.3.0`. No new font files were added; source notices remain in `fonts/*/OFL.txt`.
-Matrix 2px and Dot Matrix are project-generated faces.
+After tag and GitHub release `0.4.0` were published and verified via a clean
+remote configuration check (`INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`,
+`INFO Configuration is valid!`), `INSTALLER_READY` is set to `true` and
+installer copy/download is enabled. No new font files were added; source
+notices remain in `fonts/*/OFL.txt`. Matrix 2px and Dot Matrix are
+project-generated faces.

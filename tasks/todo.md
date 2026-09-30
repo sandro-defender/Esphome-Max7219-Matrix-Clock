@@ -65,18 +65,16 @@
 - [ ] Firmware-size delta is recorded and retains safe ESP8266 headroom.
 - [ ] README documents update behaviour, privacy, and the latest-release policy.
 
-## Font-subset work — staged for a future release
+## Font-subset work — published in 0.4.0
 
 Latest user decision: Matrix 2px and Dot Matrix are included by default; add
-up to three extras. Compact 5×7 is always available. Stage the subset feature for a future immutable release, without
-publishing or pushing. The existing 0.3.0 installer must not reference new paths
-absent from that tag.
+up to three extras. Compact 5×7 is always available.
 
 - [x] Implement per-face packages and subset-safe display/select wiring — source contracts over 1024 subsets and host syntax checks; exact ESPHome validation remains below.
 - [x] Add included-font state, sanitization, persistence and share-link tests — 10 focused tests; default pair + max three extras.
-- [x] Add Tune inclusion checkboxes and gate unsupported release downloads — draft 0.4.0, copy/download disabled.
+- [x] Add Tune inclusion checkboxes and enable release downloads after 0.4.0 publication — `INSTALLER_READY = true`, draft 0.4.0 warnings removed, gate tests updated.
 - [x] Test built-in only, one face, all faces and hostile links — offline/source and stub C++ checks plus full ESPHome 2026.9.0 builds across 0, 1, 2, 5, and 10 external faces.
-- [x] Validate exact ESPHome 2026.9.0 configurations and full firmware builds — validated on Python 3.12.7 + ESPHome 2026.9.0 (`esphome config`, `esphome compile`, and `scripts/validate-release-offline.sh 0.4.0`).
+- [x] Validate exact ESPHome 2026.9.0 configurations and full firmware builds — validated on Python 3.12.7 + ESPHome 2026.9.0 (`esphome config`, `esphome compile`, `scripts/validate-release-offline.sh 0.4.0`, and live remote fetch of `https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`).
 - [x] Record default/one-face flash and RAM deltas — default pair (`Matrix 2px` + `Dot Matrix`): 505,141 B flash (48.4%, +3,552 B vs 0 faces), 41,276 B RAM (50.4%, +1,188 B vs 0 faces); single face (`Matrix 2px`): 504,085 B flash (+2,496 B), 40,676 B RAM (+588 B); single face (`Dot Matrix`): 504,101 B flash (+2,512 B), 40,676 B RAM (+588 B); recorded in `VALIDATION.md` and `packages/fonts/README.md`.
 
 Baseline rerun: renderer 245 checks, Python 32 tests (no skips after installing
@@ -95,10 +93,9 @@ and keep every reachable option compiled.
 Final validation run (Python 3.12.7 + ESPHome 2026.9.0): renderer 245 checks (0
 failures); Python 34 tests (0 skips, including `test_exact_esphome_font_option_merge`
 over all 1,024 subsets and the default two-face release order); 71 Vitest tests,
-clean typecheck/build (314.12 kB single HTML), glyph freshness verified;
-`scripts/validate-release-offline.sh 0.4.0` passed with 2 default web fonts and
-full firmware compilation (`exit code: 0`). Browser installation still blocked by
-sandbox network policy, so real browser keyboard/mobile interaction checks and
-physical hardware verification remain open. `INSTALLER_READY` stays `false`
-pending user approval to publish `0.4.0` and post-publication remote fetch
-verification.
+clean typecheck/build, glyph freshness verified; `scripts/validate-release-offline.sh 0.4.0`
+and live remote fetch of `https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`
+passed. Tag and GitHub release `0.4.0` published at `7c85cc49ec9c01c08adc26be9b2905ed85b9bd96`,
+`INSTALLER_READY` set to `true`, draft warnings removed, and gate tests updated.
+Browser installation still blocked by sandbox network policy, so real browser
+keyboard/mobile interaction checks and physical hardware verification remain open.

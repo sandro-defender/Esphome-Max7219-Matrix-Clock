@@ -1,4 +1,3 @@
-# DRAFT for unpublished 0.4.0. Do not install until validated and published.
 # Release example: downloads the pinned package files and font assets from the
 # GitHub release. Copy this file into your ESPHome configuration directory
 # next to your own secrets.yaml, then:

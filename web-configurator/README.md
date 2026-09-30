@@ -1,12 +1,8 @@
 # MAX7219 Matrix Clock Web Configurator
 
 A client-side React/Vite configurator for the ESPHome MAX7219 Matrix Clock in
-this repository. It previews the display pixel by pixel and generates a small
-installation YAML backed by version-pinned modules in `../packages/`.
-
-**Staged for unpublished 0.4.0:** installer copy/download is disabled. The YAML
-is a clearly labeled draft until config validation, full firmware builds, size
-review, publication and remote-fetch verification pass. No release was published.
+this repository. It previews the display pixel by pixel and downloads one small
+installation YAML backed by the version-pinned modules in `../packages/`.
 
 ## The preview draws the firmware, not an approximation
 
