@@ -1,6 +1,15 @@
 # Full local development/measurement catalogue (not the public default).
 
 font:
+  - id: font_md_max72xx_system_source
+    file:
+      type: local
+      path: ../fonts/md-max72xx-system/MDMax72xxSystem.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
   - id: font_jersey_15_source
     file:
       type: local
@@ -96,6 +105,7 @@ font:
 
 esphome:
   build_flags:
+    - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
     - -DMAX7219_FONT_JERSEY_15
     - -DMAX7219_FONT_TEKO
     - -DMAX7219_FONT_RAJDHANI_BOLD
@@ -111,6 +121,7 @@ select:
   - id: !extend clock_font
     initial_option: "Dot Matrix"
     options:
+      - "MD MAX72XX System"
       - "Jersey 15"
       - "Teko"
       - "Rajdhani Bold"

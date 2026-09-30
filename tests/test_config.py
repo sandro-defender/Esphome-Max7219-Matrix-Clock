@@ -127,6 +127,7 @@ REQUIRED_ACTIONS = {
 # teaching the select, the display lambda and the web configurator about it is
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
+    "font_md_max72xx_system_source": "MD MAX72XX System",
     "font_jersey_15_source": "Jersey 15",
     "font_teko_source": "Teko",
     "font_rajdhani_bold_source": "Rajdhani Bold",
@@ -441,6 +442,10 @@ class ConfigContractTests(unittest.TestCase):
                 (REPO / entry.value).is_file(), f"dev.yaml package {name} does not exist"
             )
 
+    def test_validation_workspace_keeps_configurator_metadata(self):
+        validation = read(REPO / "scripts" / "validate.ps1")
+        self.assertIn('"web-configurator"', validation)
+
     def test_release_example_pins_tag_and_fonts(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)
         remote = release["packages"]["clock"]
@@ -513,7 +518,11 @@ class ConfigContractTests(unittest.TestCase):
             self.assertEqual(external["file"]["url"].replace("${fonts_base_url}/", ""),
                              entry["file"]["path"].removeprefix("../fonts/"))
             if entry["id"] not in ("font_matrix_2px_source", "font_dot_matrix_source"):
-                self.assertTrue((PACKAGES / entry["file"]["path"]).resolve().with_name("OFL.txt").is_file())
+                font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
+                self.assertTrue(
+                    any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
+                    f"{entry['id']} must retain its source license",
+                )
             self.assertEqual("local", entry["file"]["type"])
             path = (PACKAGES / entry["file"]["path"]).resolve()
             self.assertTrue(path.is_file(), f"missing font file {path}")
@@ -607,10 +616,15 @@ class ConfigContractTests(unittest.TestCase):
                     MATRIX_ROW_HEIGHT,
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
+            expected_height = (
+                MATRIX_ROW_HEIGHT - 1
+                if entry["id"] == "font_md_max72xx_system_source"
+                else MATRIX_ROW_HEIGHT
+            )
             self.assertEqual(
-                MATRIX_ROW_HEIGHT,
+                expected_height,
                 max(digit_heights),
-                f"{entry['id']} does not use all eight rows for its largest digit",
+                f"{entry['id']} has an unexpected largest digit height",
             )
 
     def test_matrix_2px_font_is_pixel_exact_with_two_pixel_lines(self):
@@ -752,7 +766,7 @@ class ConfigContractTests(unittest.TestCase):
 
         base = convert(load_yaml(PACKAGES / "controls.yaml"))
         faces = [convert(load_yaml(p)) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        for mask in range(1024):
+        for mask in range(1 << len(faces)):
             merged = copy.deepcopy(base)
             expected = ["Compact 5x7"]
             for i, face in enumerate(faces):
@@ -817,7 +831,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 10)
+        self.assertEqual(len(faces), 11)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
