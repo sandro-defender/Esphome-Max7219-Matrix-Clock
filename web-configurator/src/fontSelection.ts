@@ -23,3 +23,11 @@ export function toggleExtraFont(config: Config, font: ClockFont): Config {
   if (fonts.length >= DEFAULT_FONTS.length + MAX_EXTRA_FONTS) return config;
   return withFonts(config, [...fonts, font]);
 }
+
+/** Adds an optional face and immediately uses it in the live preview. */
+export function addExtraFontAndSelect(config: Config, font: ClockFont): Config {
+  const next = toggleExtraFont(config, font);
+  return next !== config && !config.fonts.includes(font) && next.fonts.includes(font)
+    ? { ...next, clockFont: font }
+    : next;
+}

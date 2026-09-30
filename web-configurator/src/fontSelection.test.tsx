@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import App from "./App";
 import { FONT_CATALOG } from "./fontCatalog";
-import { DEFAULT_FONTS, EXTRA_FONTS, normalizeFonts, toggleExtraFont } from "./fontSelection";
+import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect, normalizeFonts, toggleExtraFont } from "./fontSelection";
 import { decodeConfig, encodeConfig, loadConfig, sanitizeConfig, saveConfig, shareUrl } from "./storage";
 import { DEFAULT_CONFIG, type Config } from "./types";
 import { buildYaml, INSTALLER_READY } from "./yaml";
@@ -36,6 +36,12 @@ describe("firmware font inclusion", () => {
     cfg = toggleExtraFont(cfg, "teko");
     expect(toggleExtraFont(cfg, "jersey-15").fonts).toContain("jersey-15");
     for (const font of [...DEFAULT_FONTS, "compact"] as const) expect(toggleExtraFont(cfg, font)).toBe(cfg);
+  });
+
+  it("selects a newly checked font for the live matrix preview", () => {
+    const cfg = addExtraFontAndSelect(sanitizeConfig(null), "handjet");
+    expect(cfg.fonts).toContain("handjet");
+    expect(cfg.clockFont).toBe("handjet");
   });
 
   it("removing the active extra resets only the active face to Dot Matrix", () => {

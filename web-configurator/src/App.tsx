@@ -22,7 +22,7 @@ import {
   type SecondsMode,
   type Wiring,
 } from "./types";
-import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, toggleExtraFont } from "./fontSelection";
+import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
 import { INSTALLER_READY, buildYaml, entityMap, installCommand, sampleAction } from "./yaml";
 import { cn } from "./utils/cn";
 
@@ -428,7 +428,9 @@ export default function App() {
                     <label key={id} className="font-choice">
                       <input type="checkbox" checked={cfg.fonts.includes(id)}
                         disabled={!cfg.fonts.includes(id) && cfg.fonts.length >= DEFAULT_FONTS.length + MAX_EXTRA_FONTS}
-                        onChange={() => setCfg((current) => toggleExtraFont(current, id))} />
+                        onChange={(event) => setCfg((current) => event.target.checked
+                          ? addExtraFontAndSelect(current, id)
+                          : toggleExtraFont(current, id))} />
                       {fontSpec(id).label}
                     </label>
                   ))}
@@ -881,6 +883,18 @@ data:
                 <figure>
                   <img src="./images/d1-mini.jpg" alt="Close photograph of a Wemos D1 Mini on a dark mat" />
                   <figcaption>D1 Mini. Pin labels in the YAML are D0–D8.</figcaption>
+                </figure>
+                <figure>
+                  <img src="./images/wired-matrix-back.jpg" alt="Back of the LED matrix modules wired to a D1 Mini" />
+                  <figcaption>Back-side wiring: the D1 Mini connects directly to the matrix chain.</figcaption>
+                </figure>
+                <figure>
+                  <img src="./images/wired-matrix-end.jpg" alt="End view of the D1 Mini attached to the LED matrix" />
+                  <figcaption>End view of the controller mounted at the matrix input.</figcaption>
+                </figure>
+                <figure>
+                  <img src="./images/clock-in-use.jpg" alt="Red LED matrix clock showing the current time" />
+                  <figcaption>Clock running on the matrix with a live full-width time display.</figcaption>
                 </figure>
               </div>
               <div className="panel">

@@ -623,6 +623,12 @@ p code, li code, .card code {
 @media (max-width: 980px) {
   .shell { grid-template-columns: 1fr; }
   .stage { position: static; }
+  .chassis {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  }
   .readout { grid-template-columns: 1fr; }
   .photo-grid, .two { grid-template-columns: 1fr; }
 }

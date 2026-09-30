@@ -115,7 +115,7 @@ describe("MatrixCanvas module joining", () => {
       // with the pitch of the previous step, which widens the dot gap by 1 px
       // instead of moving pixels; the grid still has to fit.
       expect(geo.pitch, `${box}px`).toBeGreaterThanOrEqual(geo.dot + geo.gapDot);
-      expect(geo.face, `${box}px`).toBeCloseTo(8 * geo.pitch - geo.gapDot, 6);
+      expect(geo.face, `${box}px`).toBeCloseTo(8 * geo.pitch, 6);
       for (let col = 1; col < 8; col++) {
         const step = ledCenter(geo, 0, 0, col, 0).x - ledCenter(geo, 0, 0, col - 1, 0).x;
         expect(step, `${box}px column ${col}`).toBeCloseTo(geo.pitch, 6);
@@ -135,18 +135,13 @@ describe("MatrixCanvas module joining", () => {
     }
   });
 
-  it("only leaves the two module bezels at a seam, never extra slack", () => {
+  it("uses one continuous LED grid without visual module gaps", () => {
     const geo = moduleGeometry(640, 6, 1);
     const inside = ledCenter(geo, 0, 0, 1, 0).x - ledCenter(geo, 0, 0, 0, 0).x;
     const seam = ledCenter(geo, 1, 0, 0, 0).x - ledCenter(geo, 0, 0, 7, 0).x;
 
-    // Two boards meet edge to edge, so the dark room between the facing LED
-    // columns is the two bezels that belong to the modules themselves.
-    expect(seam).toBeCloseTo(geo.dot + 2 * geo.inset, 6);
-    // Regression guard for the removed 8 px board gap: the seam may never add
-    // more than those two bezels on top of the normal intra-module pitch.
-    expect(seam - inside).toBeLessThanOrEqual(2 * geo.inset);
-    expect(seam - inside).toBeCloseTo(2 * geo.inset - geo.gapDot, 6);
+    expect(geo.inset).toBe(0);
+    expect(seam).toBeCloseTo(inside, 6);
   });
 
   it("joins the default 6x1 panel into five evenly sized boards", () => {

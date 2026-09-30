@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 
 import App from "./App";
 import { FONT_CATALOG } from "./fontCatalog";
@@ -48,5 +49,14 @@ describe("App", () => {
   it("offers the optional module boundary guides", () => {
     expect(markup).toContain("Module boundary guides");
     expect(markup).toContain("Dashed guides on the seam between two 8×8 boards");
+  });
+
+  it("shows the supplied hardware-photo gallery in the Wiring section", () => {
+    const source = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+    for (const photo of ["wired-matrix-back.jpg", "wired-matrix-end.jpg", "clock-in-use.jpg"]) {
+      expect(source).toContain(`./images/${photo}`);
+    }
+    expect(source).toContain("Back-side wiring");
+    expect(source).toContain("Clock running on the matrix");
   });
 });

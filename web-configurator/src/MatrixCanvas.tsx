@@ -45,11 +45,11 @@ export interface ModuleGeometry {
   gapDot: number;
   /** Centre-to-centre LED distance inside a module face, in CSS px. */
   pitch: number;
-  /** Lit width of one 8x8 face (eight pitches minus the trailing dot gap). */
+  /** Width of one 8x8 region, including the final regular pixel pitch. */
   face: number;
-  /** Bezel between a module's board edge and its face. Part of the module. */
+  /** Extra space around a module face. Zero keeps the panel pixel-continuous. */
   inset: number;
-  /** Board width and height of one module, bezel included, in CSS px. */
+  /** Width and height of one 8x8 module region, in CSS px. */
   mod: number;
   /** Space between two boards. Always 0: adjacent modules join seamlessly. */
   gap: number;
@@ -64,9 +64,8 @@ export interface ModuleGeometry {
 /**
  * Chooses the largest dot size that still fits the available width.
  *
- * Modules are joined edge to edge (`gap === 0`), so two bezels meet at every
- * seam and the canvas width is exactly `modulesX * mod`. Guide lines are an
- * overlay and never change these numbers.
+ * Modules are joined as one continuous LED grid (`gap === 0`, `inset === 0`),
+ * so a 6x1 panel reads visually as an uninterrupted 48x8 display.
  */
 export function moduleGeometry(box: number, modulesX: number, modulesY: number): ModuleGeometry {
   const cols = Math.max(1, Math.floor(modulesX));
@@ -75,8 +74,8 @@ export function moduleGeometry(box: number, modulesX: number, modulesY: number):
   let dot = cols >= 12 ? 6 : cols >= 8 ? 8 : cols <= 4 ? 13 : 11;
   let gapDot = 2;
   let pitch = dot + gapDot;
-  let face = 8 * pitch - gapDot;
-  let inset = 8;
+  let face = 8 * pitch;
+  let inset = 0;
   let mod = face + inset * 2;
   // Adjacent boards touch. The bezel is part of a module, so two bezels meet
   // at a seam instead of an extra gap between the boards.
@@ -85,8 +84,8 @@ export function moduleGeometry(box: number, modulesX: number, modulesY: number):
   while (dot > 3) {
     gapDot = Math.max(1, Math.round(dot * 0.18));
     pitch = dot + gapDot;
-    face = 8 * pitch - gapDot;
-    inset = Math.max(4, Math.round(dot * 0.62));
+    face = 8 * pitch;
+    inset = 0;
     mod = face + inset * 2;
     const total = cols * mod + (cols - 1) * gap;
     if (total <= target) break;
