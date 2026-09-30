@@ -1,6 +1,15 @@
 # Full local development/measurement catalogue (not the public default).
 
 font:
+  - id: font_md_parola_numeric_7seg_source
+    file:
+      type: local
+      path: ../fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - "0123456789:.-/%!?+ "
+
   - id: font_md_max72xx_system_source
     file:
       type: local
@@ -105,6 +114,7 @@ font:
 
 esphome:
   build_flags:
+    - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
     - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
     - -DMAX7219_FONT_JERSEY_15
     - -DMAX7219_FONT_TEKO
@@ -121,6 +131,7 @@ select:
   - id: !extend clock_font
     initial_option: "Dot Matrix"
     options:
+      - "MD Parola Numeric 7-Segment"
       - "MD MAX72XX System"
       - "Jersey 15"
       - "Teko"

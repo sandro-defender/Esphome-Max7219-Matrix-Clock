@@ -40,6 +40,16 @@ export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
 
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
+    id: "md-parola-numeric-7seg",
+    option: "MD Parola Numeric 7-Segment",
+    label: "MD Parola Numeric 7-Segment",
+    family: "MD Parola",
+    firmwareId: "font_md_parola_numeric_7seg_source",
+    size: 8,
+    license: "LGPL-2.1-or-later",
+    blurb: "The bold numeric7Seg clock face from the MD Parola example: seven-row numerals, 32 px for 88:88:88.",
+  },
+  {
     id: "md-max72xx-system",
     option: "MD MAX72XX System",
     label: "MD MAX72XX System",

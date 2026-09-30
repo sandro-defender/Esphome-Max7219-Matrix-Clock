@@ -7,6 +7,7 @@ export type MessageScroll = "Scroll" | "Static";
 
 /** Home Assistant "Clock font" options compiled by the firmware. */
 export const CLOCK_FONTS = [
+  "md-parola-numeric-7seg",
   "md-max72xx-system",
   "jersey-15",
   "teko",

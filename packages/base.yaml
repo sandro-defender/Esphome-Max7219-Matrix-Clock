@@ -11,7 +11,7 @@ substitutions:
   device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
   # Version reported as the ESPHome project version. Keep this in sync with the
   # tag that the release example pins.
-  project_version: "0.5.0"
+  project_version: "0.5.1"
 
   # ----- Hardware ---------------------------------------------------------
   board: d1_mini                # ESP8266 board (Wemos D1 mini by default)

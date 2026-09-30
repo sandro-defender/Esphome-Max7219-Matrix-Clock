@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 - 2026-09-30
+
+- Add **MD Parola Numeric 7-Segment**, an optional 8×8 MAX7219 matrix clock
+  face converted from the `numeric7Seg` bitmap used by the upstream
+  `Parola_Zone_TimeMsg` example. It is available in Font Lab and supports the
+  existing per-digit slide-up animation. The source conversion, limited clock
+  glyph set, and LGPL-2.1-or-later notice are retained in the repository.
+
 ## 0.5.0 - 2026-09-30
 
 - Rework the configurator layout around the live matrix: the preview column now

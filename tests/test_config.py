@@ -127,6 +127,7 @@ REQUIRED_ACTIONS = {
 # teaching the select, the display lambda and the web configurator about it is
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
+    "font_md_parola_numeric_7seg_source": "MD Parola Numeric 7-Segment",
     "font_md_max72xx_system_source": "MD MAX72XX System",
     "font_jersey_15_source": "Jersey 15",
     "font_teko_source": "Teko",
@@ -519,8 +520,12 @@ class ConfigContractTests(unittest.TestCase):
                              entry["file"]["path"].removeprefix("../fonts/"))
             if entry["id"] not in ("font_matrix_2px_source", "font_dot_matrix_source"):
                 font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
+                shared_lgpl = (
+                    entry["id"] == "font_md_parola_numeric_7seg_source"
+                    and (REPO / "fonts" / "md-max72xx-system" / "LICENSE.txt").is_file()
+                )
                 self.assertTrue(
-                    any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
+                    shared_lgpl or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
                     f"{entry['id']} must retain its source license",
                 )
             self.assertEqual("local", entry["file"]["type"])
@@ -618,7 +623,7 @@ class ConfigContractTests(unittest.TestCase):
                 )
             expected_height = (
                 MATRIX_ROW_HEIGHT - 1
-                if entry["id"] == "font_md_max72xx_system_source"
+                if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source")
                 else MATRIX_ROW_HEIGHT
             )
             self.assertEqual(
@@ -831,7 +836,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 11)
+        self.assertEqual(len(faces), 12)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
@@ -860,7 +865,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 self.assertIn(fid, by_macro[macro])
                 self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
                 self.assertNotIn('id(' + fid, display)
-                self.assertEqual(face["substitutions"]["project_ref"], "0.5.0")
+                self.assertEqual(face["substitutions"]["project_ref"], "0.5.1")
         # A declaration anywhere outside a feature guard would break zero-font builds.
         unguarded = re.sub(r"#ifdef MAX7219_FONT_\w+\n.*?#endif", "", display, flags=re.S)
         self.assertNotRegex(unguarded, r"font_\w+_source")

@@ -44,6 +44,13 @@ describe("firmware font inclusion", () => {
     expect(cfg.clockFont).toBe("handjet");
   });
 
+  it("offers the MD Parola Numeric 7-Segment face as an installable extra", () => {
+    const cfg = addExtraFontAndSelect(sanitizeConfig(null), "md-parola-numeric-7seg");
+    expect(cfg.fonts).toContain("md-parola-numeric-7seg");
+    expect(cfg.clockFont).toBe("md-parola-numeric-7seg");
+    expect(buildYaml(cfg)).toContain("packages/fonts/md-parola-numeric-7seg.yaml");
+  });
+
   it("removing the active extra resets only the active face to Dot Matrix", () => {
     const cfg = sanitizeConfig({ fonts: ["handjet"], clockFont: "handjet", brightness: 9 });
     const next = toggleExtraFont(cfg, "handjet");

@@ -56,6 +56,14 @@ and select it. Its LGPL-2.1-or-later license and reproducible conversion script
 are retained alongside the font. The face compiles only
 `0123456789:.-/%!?+ `, exactly like the other clock faces.
 
+## MD Parola Numeric 7-Segment import
+
+`fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf` converts the
+`numeric7Seg` bitmap used by MD Parola's `Parola_Zone_TimeMsg` MAX7219 example.
+“Seven-segment” describes the digit design: it is an 8×8 LED-matrix font, not
+a separate display type. The 16-pixel `numeric7SegDouble` variant is excluded
+because this clock has one 8-pixel matrix row.
+
 ESPHome saves a **numeric index**. The web order keeps Compact, Matrix 2px and
 Dot Matrix stable, but changing extras may remap a saved extra index to another
 included face. Out-of-range indices use initial_option. Older all-font builds

@@ -67,6 +67,10 @@ display:
       const StringRef font_option = id(clock_font).current_option();
       max7219_clock::GlyphFont *selected = &builtin_font;
       // Raw generated pointers intentionally avoid id() resolution for omitted faces.
+      #ifdef MAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
+      max7219_clock::SourceFont md_parola_numeric_7seg_font(font_md_parola_numeric_7seg_source, &it);
+      if (font_option == "MD Parola Numeric 7-Segment") selected = &md_parola_numeric_7seg_font;
+      #endif
       // The MD_MAX72XX system face is a faithfully converted bitmap source;
       // it remains optional so existing release firmware size is unchanged.
       #ifdef MAX7219_FONT_MD_MAX72XX_SYSTEM

@@ -31,8 +31,8 @@ describe("buildYaml", () => {
     const yaml = buildYaml(DEFAULT_CONFIG);
 
     expect(yaml).toContain("url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock");
-    expect(yaml).toContain('ref: "0.5.0"');
-    expect(yaml).toContain('project_ref: "0.5.0"');
+    expect(yaml).toContain('ref: "0.5.1"');
+    expect(yaml).toContain('project_ref: "0.5.1"');
     expect(yaml).toContain("- packages/base.yaml");
     expect(yaml).toContain("- packages/fonts/dot-matrix.yaml");
     expect(yaml).toContain("- packages/fonts/matrix-2px.yaml");
@@ -184,6 +184,7 @@ describe("preview-only fonts", () => {
 describe("font catalog", () => {
   it("offers every validated 48x8 clock font for user comparison", () => {
     expect(FONT_CATALOG.map((spec) => spec.option)).toEqual([
+      "MD Parola Numeric 7-Segment",
       "MD MAX72XX System",
       "Jersey 15",
       "Teko",
@@ -199,9 +200,9 @@ describe("font catalog", () => {
     ]);
   });
 
-  it("offers eleven measured exact-eight-row external faces", () => {
+  it("offers twelve measured exact-eight-row external faces", () => {
     const options = FONT_CATALOG.map((spec) => spec.option);
-    expect(options.slice(0, -1)).toHaveLength(11);
+    expect(options.slice(0, -1)).toHaveLength(12);
     for (const spec of FONT_CATALOG.slice(0, -1)) {
       const font = GENERATED_FONTS[spec.firmwareId ?? ""];
       expect(font.maxDigitHeight, spec.option).toBe(8);
