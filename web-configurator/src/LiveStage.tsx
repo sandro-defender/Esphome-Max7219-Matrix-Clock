@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MatrixCanvas } from "./MatrixCanvas";
 import { LEDS } from "./leds";
 import { normalizeMessage } from "./fonts";
-import { FONT_CATALOG, fitForPanel, fontSpec } from "./fontCatalog";
+import { fitForPanel, fontSpec } from "./fontCatalog";
+import { widthWarning } from "./fontCatalog";
 import { renderScene } from "./render";
 import { SCREENS, type Config } from "./types";
 import { cn } from "./utils/cn";
@@ -46,16 +47,36 @@ interface LiveStageProps {
   onPreviewTime: (value: string) => void;
 }
 
+/**
+ * The live preview stage.
+ *
+ * On narrow viewports the chassis leaves the flow (`position: fixed`, see
+ * index.css) so the matrix stays pinned under the nav while every section
+ * scrolls past. A `.chassis-slot` spacer keeps the document height honest by
+ * mirroring the chassis height from a ResizeObserver.
+ */
 export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
   const [tick, setTick] = useState(() => new Date());
   const messageAt = useRef(Date.now());
   const prevMessage = useRef(cfg.message);
+  const chassisRef = useRef<HTMLDivElement>(null);
+  const [chassisH, setChassisH] = useState(0);
 
   useEffect(() => {
     if (cfg.previewTime) return;
     const id = window.setInterval(() => setTick(new Date()), 50);
     return () => window.clearInterval(id);
   }, [cfg.previewTime]);
+
+  useLayoutEffect(() => {
+    const el = chassisRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setChassisH(el.offsetHeight);
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    measure();
+    return () => observer.disconnect();
+  }, []);
 
   if (prevMessage.current !== cfg.message) {
     prevMessage.current = cfg.message;
@@ -68,6 +89,7 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
   const spec = fontSpec(cfg.clockFont);
   const fit = fitForPanel(scene.font, scene.geometry.width, Math.min(8, scene.geometry.height));
   const led = LEDS[cfg.led];
+  const warning = widthWarning(spec.label, fit, scene.geometry.width);
   const seconds = now.getSeconds();
   let hour = now.getHours();
   const suffix = cfg.hourFormat === "12-hour" ? (hour >= 12 ? "PM" : "AM") : "";
@@ -76,22 +98,30 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
     if (hour === 0) hour = 12;
   }
   const hourText = pad(hour);
+  const fitLabel = scene.usedFallback
+    ? "built-in 5×7 fallback"
+    : scene.droppedSeconds
+      ? "seconds dropped"
+      : fit.width <= scene.geometry.width
+        ? "fits"
+        : "fallback";
 
   return (
-    <section className="stage">
+    <section id="preview" className="stage" aria-labelledby="preview-title">
       <div className="kicker">
         <div>
-          <h1>
+          <h1 id="preview-title">
             Your matrix clock, <em>pixel by pixel</em>.
           </h1>
           <p>
-            The panel below is painted with the same glyph bitmaps, centring and fallback rules the firmware uses. Tune the
-            clock, pick a font, then download one small ESPHome installer.
+            A Wemos D1 Mini, six MAX7219 modules, one seamless 48×8 panel. The preview below is painted with the same
+            glyph bitmaps, centring and fallback rules as the firmware — tune it, then install one small YAML.
           </p>
         </div>
       </div>
 
-      <div className="chassis">
+      <div className="chassis-slot" style={chassisH ? { height: chassisH } : undefined} aria-hidden="true" />
+      <div className="chassis" ref={chassisRef}>
         <i className="screw tl" />
         <i className="screw tr" />
         <i className="screw bl" />
@@ -134,21 +164,47 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
           {suffix ? <span className="secs"> {suffix}</span> : null}
         </div>
         <div className="summary">
-          <h2>{scene.summary}</h2>
+          <p className="summary-title">{scene.summary}</p>
           <p>{scene.detail}</p>
-          <div className="chip-row">
-            <span className="seg-tag">{spec.label}</span>
-            <span className="seg-tag">
-              HH:MM:SS <b>{fit.width}px</b>
-            </span>
-            <span className="seg-tag">
-              digits <b>{fit.digitHeight}px</b>
-            </span>
-            {scene.usedFallback ? <span className="seg-tag warn-tag">built-in fallback</span> : null}
-            {scene.nightNow ? <span className="seg-tag">night {cfg.nightBrightness}/15</span> : null}
-          </div>
         </div>
       </div>
+
+      <ul className="status-strip" aria-label="Preview status">
+        <li>
+          <span>Face</span>
+          <b>{spec.label}</b>
+        </li>
+        <li>
+          <span>Panel</span>
+          <b>
+            {scene.geometry.width}×{scene.geometry.height} px
+          </b>
+        </li>
+        <li>
+          <span>HH:MM:SS</span>
+          <b>
+            {fit.width} px of {scene.geometry.width}
+          </b>
+        </li>
+        <li>
+          <span>Fallback</span>
+          <b className={cn(scene.usedFallback || scene.droppedSeconds ? "warn-text" : "ok-text")}>{fitLabel}</b>
+        </li>
+        {scene.nightNow ? (
+          <li>
+            <span>Night</span>
+            <b>
+              {cfg.nightBrightness}/15
+            </b>
+          </li>
+        ) : null}
+      </ul>
+
+      {warning ? (
+        <p className="warn stage-warn" role="status">
+          <strong>Too wide:</strong> {warning}
+        </p>
+      ) : null}
 
       {scene.notices.length > 0 ? (
         <ul className="notices">
@@ -174,11 +230,7 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
           />
         </label>
         <div className="chips">
-          <button
-            type="button"
-            className={cn("chip", cfg.previewTime === "" && "on")}
-            onClick={() => onPreviewTime("")}
-          >
+          <button type="button" className={cn("chip", cfg.previewTime === "" && "on")} onClick={() => onPreviewTime("")}>
             Live
           </button>
           {["00:00:00", "9:05:07", "23:59:59", "12:34:56"].map((value) => (
@@ -226,7 +278,7 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
 
       <div className="facts">
         <span>
-          <b>{cfg.chips}</b> modules · {cfg.chips * 8}×{cfg.rows * 8} px
+          <b>{cfg.chips}</b> modules · {scene.geometry.width}×{scene.geometry.height} px
         </span>
         <span>
           Screen <b>{cfg.autoCycle ? `Auto ${cfg.cycleInterval}s` : cfg.screen}</b>
@@ -235,17 +287,12 @@ export function LiveStage({ cfg, onMessage, onPreviewTime }: LiveStageProps) {
           Brightness <b>{scene.effectiveBrightness}/15</b>
         </span>
         <span>
-          Fonts compiled <b>{FONT_CATALOG.length}</b>
+          Faces compiled <b>{cfg.fonts.length + 1}</b>
         </span>
         <span>
           Screens <b>{SCREENS.length}</b> · {cfg.scrollMode.toLowerCase()} messages
         </span>
       </div>
-
-      <figure className="polaroid">
-        <img src="./images/module-macro.jpg" alt="Macro of an 8 by 8 LED matrix with dots lit" />
-        <figcaption>Six 8×8 modules give the 48×8 panel the full-size HH:MM:SS layout.</figcaption>
-      </figure>
     </section>
   );
 }
