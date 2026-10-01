@@ -11,7 +11,7 @@
 
     Steps:
       1. regression tests            (tests/test_config.py, C++ renderer tests)
-      2. virtual environment         (esphome==2026.9.0, requirements-validation.txt)
+      2. virtual environment         (esphome==2026.9.1, requirements-validation.txt)
       3. ESPHome config validation   (dev.yaml, local packages)
       4. optional firmware compile  (dev.yaml -> ESP8266, enabled with -Compile)
       5. optional remote validation  (examples/release.yaml, needs network, -Remote)
@@ -78,7 +78,7 @@ function Invoke-ValidationStep {
 
 function New-FakeSecrets {
     param([string]$Path)
-    # Deterministic non-zero dummy bytes: accepted by ESPHome 2026.9.0, but
+    # Deterministic non-zero dummy bytes: accepted by ESPHome 2026.9.1, but
     # obviously not a real deployment secret.
     $key = [Convert]::ToBase64String([byte[]](1..32))
     @(
@@ -112,7 +112,7 @@ try {
         if (-not (Test-Path $esphome)) { $esphome = Join-Path $workDir ".venv/bin/esphome" }
     }
     else {
-        Invoke-ValidationStep "Create virtual environment and install esphome==2026.9.0" {
+        Invoke-ValidationStep "Create virtual environment and install esphome==2026.9.1" {
             & $Python -m venv (Join-Path $workDir ".venv")
             $venvPython = Join-Path $workDir ".venv/Scripts/python.exe"
             if (-not (Test-Path $venvPython)) { $venvPython = Join-Path $workDir ".venv/bin/python" }

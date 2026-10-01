@@ -18,7 +18,7 @@ Before changing any project file:
       font assets directly from this repository.
 - [ ] Preserve every font's license, restrict compiled glyphs, and measure
       ESP8266 firmware size before adding another font.
-- [ ] Target ESPHome **2026.9.0 exactly** unless the user explicitly changes
+- [ ] Target ESPHome **2026.9.1 exactly** unless the user explicitly changes
       the target.
 - [ ] Verify ESPHome-specific decisions against official documentation.
 - [ ] Never ask for or expose Wi-Fi credentials, API keys, SSH keys, OTA keys,

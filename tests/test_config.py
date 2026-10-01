@@ -26,6 +26,7 @@ Exit code is non-zero when any test fails.
 from __future__ import annotations
 
 import base64
+import json
 import os
 import re
 import shutil
@@ -43,7 +44,8 @@ except ImportError:  # pragma: no cover - PyYAML ships with ESPHome
 
 REPO = Path(__file__).resolve().parent.parent
 PACKAGES = REPO / "packages"
-TARGET_VERSION = "2026.9.0"
+FIRMWARE = json.loads((REPO / "web-configurator/src/firmware.generated.json").read_text())
+TARGET_VERSION = "2026.9.1"
 DEFAULT_MATRIX_WIDTH = 48  # six 8x8 modules in one row
 
 REQUIRED_MODULES = [
@@ -260,7 +262,7 @@ class ConfigContractTests(unittest.TestCase):
         self.assertEqual(TARGET_VERSION, base["esphome"]["min_version"])
         self.assertEqual(
             TARGET_VERSION,
-            read(REPO / "requirements-validation.txt").strip().split("==")[-1],
+            re.search(r"^esphome==([^\s]+)$", read(REPO / "requirements-validation.txt"), re.M).group(1),
         )
 
     def test_device_identity_and_board_are_substitutions(self):
@@ -424,7 +426,9 @@ class ConfigContractTests(unittest.TestCase):
             "network.yaml",
             "renderer.yaml",
             "display.yaml",
-            "fonts_local.yaml",
+            "fonts_default_local.yaml",
+            "boot_ui.yaml",
+            "restore_defaults.generated.yaml",
             "controls.yaml",
             "actions.yaml",
             "diagnostics.yaml",
@@ -460,20 +464,22 @@ class ConfigContractTests(unittest.TestCase):
         )
         self.assertIn("DEVELOPMENT", read(REPO / "examples/development.yaml"))
 
-        # base.yaml reports the version, fonts_web.yaml pins the fonts, the
-        # example pins the packages, and the web configurator metadata matches.
-        base_version = load_yaml(PACKAGES / "base.yaml")["substitutions"]["project_version"]
-        web_ref = load_yaml(PACKAGES / "fonts_web.yaml")["substitutions"]["project_ref"]
-        self.assertEqual(ref, base_version, "release ref must equal the project version")
-        self.assertEqual(ref, web_ref, "release ref must equal fonts_web project_ref")
-        pkg_version = re.search(r'"version":\s*"([^"]+)"', read(REPO / "web-configurator/package.json")).group(1)
+        # Only base.yaml owns the canonical version/ref and font URL. Generated
+        # examples and npm metadata follow it; installers take an explicit,
+        # independently verified immutable tag instead of a copied constant.
+        substitutions = load_yaml(PACKAGES / "base.yaml")["substitutions"]
+        self.assertEqual(ref, substitutions["project_ref"])
+        self.assertEqual("${project_ref}", substitutions["project_version"])
+        self.assertIn("${project_ref}", substitutions["fonts_base_url"])
+        self.assertNotIn("substitutions", load_yaml(PACKAGES / "fonts_web.yaml"))
+        self.assertEqual(ref, FIRMWARE["releaseVersion"])
+        self.assertEqual(ref, json.loads(read(REPO / "web-configurator/package.json"))["version"])
         yaml_ts = read(REPO / "web-configurator/src/yaml.ts")
-        yaml_ts_ref = re.search(r'const PROJECT_REF = "([^"]+)";', yaml_ts).group(1)
-        self.assertEqual(ref, pkg_version, "web-configurator package.json version must match release ref")
-        self.assertEqual(ref, yaml_ts_ref, "web-configurator PROJECT_REF must match release ref")
-        self.assertIn("export const INSTALLER_READY = true;", yaml_ts)
-        self.assertNotIn("DRAFT", read(REPO / "examples/release.yaml"))
-        self.assertNotIn("DRAFT", yaml_ts)
+        self.assertIn("buildYaml(input: Config, releaseTag: string)", yaml_ts)
+        self.assertIn("validReleaseTag(releaseTag)", yaml_ts)
+        self.assertNotIn("const PROJECT_REF", yaml_ts)
+        self.assertNotIn("INSTALLER_READY", yaml_ts)
+        self.assertIn("await release.verify()", read(REPO / "web-configurator/src/App.tsx"))
 
     def test_remote_file_list_matches_local_modules(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)
@@ -482,22 +488,19 @@ class ConfigContractTests(unittest.TestCase):
             Path(entry.value).name
             for entry in load_yaml(REPO / "dev.yaml", base_dir=REPO)["packages"].values()
         }
-        # The remote list is every module the development entry point loads,
-        # with the released web-font module instead of the local one.
+        # The release replaces the generated local default wrapper with the
+        # corresponding per-face remote packages; non-font modules are identical.
+        default_fonts = [f for f in FIRMWARE["fonts"] if f["id"] in FIRMWARE["defaultFonts"]]
         expected = {
-            Path(f"packages/{name}") for name in local_names
-        } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts/matrix-2px.yaml"), Path("packages/fonts/dot-matrix.yaml")}
-        self.assertEqual(sorted(p.as_posix() for p in expected), sorted(files))
-        # The configurator's installer lists the same non-font package files.
-        yaml_ts = read(REPO / "web-configurator/src/yaml.ts")
-        match = re.search(r"const PACKAGE_FILES = \[(.*?)\] as const;", yaml_ts, re.S)
-        self.assertIsNotNone(match, "web-configurator PACKAGE_FILES not found")
-        configurator_files = re.findall(r'"([^"]+)"', match.group(1))
+            f"packages/{name}" for name in local_names
+        } - {"packages/fonts_default_local.yaml"} | {f["package"] for f in default_fonts}
+        self.assertEqual(sorted(expected), sorted(files))
         self.assertEqual(
-            configurator_files,
+            FIRMWARE["packageFiles"],
             [f for f in files if not f.startswith("packages/fonts/")],
             "the configurator must install the same modules as examples/release.yaml",
         )
+        self.assertIn("...FIRMWARE.packageFiles", read(REPO / "web-configurator/src/yaml.ts"))
         release_fonts = [f for f in files if f.startswith("packages/fonts/")]
         offline_script = read(REPO / "scripts/validate-release-offline.sh")
         expected_offline_fonts = int(re.search(r'\[\[\s*"\$FONTS"\s*-eq\s*(\d+)\s*\]\]', offline_script).group(1))
@@ -505,7 +508,8 @@ class ConfigContractTests(unittest.TestCase):
 
     def test_font_packages_are_equivalent(self):
         web = [load_yaml(PACKAGES / "fonts" / (fid[5:-7].replace("_", "-") + ".yaml"))["font"][0] for fid in FONT_OPTION_BY_ID]
-        local = load_yaml(PACKAGES / "fonts_local.yaml")["font"]
+        local = sorted(load_yaml(PACKAGES / "fonts_local.yaml")["font"], key=lambda entry: entry["id"])
+        web.sort(key=lambda entry: entry["id"])
 
         def shape(entries):
             return [
@@ -513,7 +517,7 @@ class ConfigContractTests(unittest.TestCase):
             ]
 
         self.assertEqual(shape(web), shape(local))
-        web_base = load_yaml(PACKAGES / "fonts_web.yaml")["substitutions"]["fonts_base_url"]
+        web_base = load_yaml(PACKAGES / "base.yaml")["substitutions"]["fonts_base_url"]
         self.assertTrue(web_base.startswith("https://raw.githubusercontent.com"))
         self.assertIn("${project_ref}", web_base)
         for entry in web:
@@ -757,7 +761,7 @@ class ConfigContractTests(unittest.TestCase):
             from importlib.metadata import version
             installed = version("esphome")
         except Exception:
-            self.skipTest("ESPHome 2026.9.0 not installed; offline contracts still run")
+            self.skipTest("ESPHome 2026.9.1 not installed; offline contracts still run")
         if installed != TARGET_VERSION:
             self.skipTest("Requires exactly ESPHome " + TARGET_VERSION)
         from esphome.config import resolve_extend_remove
@@ -786,21 +790,23 @@ class ConfigContractTests(unittest.TestCase):
             select = next(e for e in merged["select"] if e["id"] == "clock_font")
             self.assertEqual(select["options"], expected)
             self.assertIn(select["initial_option"], expected)
-        # Verify the default release pair in exact release order (matrix-2px then dot-matrix).
+        # Enforce the requested default pair independently of the generated
+        # contract, then exercise that exact order with the real tagged resolver.
+        self.assertEqual(FIRMWARE["defaultFonts"], ["pixel-clock-6x8", "matrix-2px"])
         default_merged = copy.deepcopy(base)
-        for rel_name in ("matrix-2px.yaml", "dot-matrix.yaml"):
+        for rel_name in ("pixel-clock-6x8.yaml", "matrix-2px.yaml"):
             default_merged = merge_config(default_merged, convert(load_yaml(PACKAGES / "fonts" / rel_name)))
         resolve_extend_remove(default_merged)
         default_select = next(e for e in default_merged["select"] if e["id"] == "clock_font")
-        self.assertEqual(default_select["options"], ["Compact 5x7", "Matrix 2px", "Dot Matrix"])
-        self.assertEqual(default_select["initial_option"], "Dot Matrix")
+        self.assertEqual(default_select["options"], ["Compact 5x7", "Pixel Clock 6x8", "Matrix 2px"])
+        self.assertEqual(default_select["initial_option"], "Pixel Clock 6x8")
         self.assertEqual(
             default_merged["esphome"]["build_flags"],
-            ["-DMAX7219_FONT_MATRIX_2PX", "-DMAX7219_FONT_DOT_MATRIX"],
+            ["-DMAX7219_FONT_PIXEL_CLOCK_6X8", "-DMAX7219_FONT_MATRIX_2PX"],
         )
         self.assertEqual(
             [f["id"] for f in default_merged["font"]],
-            ["font_matrix_2px_source", "font_dot_matrix_source"],
+            ["font_pixel_clock_6x8_source", "font_matrix_2px_source"],
         )
         self.assertEqual(merge_config({"lambda": "first"}, {"lambda": "second"}), {"lambda": "second"})
 
@@ -848,7 +854,10 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
         base = next(e for e in load_yaml(PACKAGES / "controls.yaml")["select"] if e["id"] == "clock_font")
         self.assertEqual(base["options"], ["Compact 5x7"])
         self.assertEqual(base["initial_option"], "Compact 5x7")
-        self.assertIn('option: "Compact 5x7"', read(PACKAGES / "renderer.yaml"))
+        reset = read(PACKAGES / "restore_defaults.generated.yaml")
+        self.assertIn('"Compact 5x7"', reset)
+        self.assertIn('"Pixel Clock 6x8"', reset)
+        self.assertIn('has_option("Pixel Clock 6x8")', reset)
         self.assertIn("#ifdef USE_FONT", read(PACKAGES / "max7219_clock_esphome.h"))
         local = load_yaml(PACKAGES / "fonts_local.yaml")
         self.assertEqual(set(local["select"][0]["options"]), set(FONT_OPTION_BY_ID.values()))
@@ -869,7 +878,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 self.assertIn(fid, by_macro[macro])
                 self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
                 self.assertNotIn('id(' + fid, display)
-                self.assertEqual(face["substitutions"]["project_ref"], "0.5.5")
+                self.assertNotIn("substitutions", face, "only base.yaml owns the release/font ref")
         # A declaration anywhere outside a feature guard would break zero-font builds.
         unguarded = re.sub(r"#ifdef MAX7219_FONT_\w+\n.*?#endif", "", display, flags=re.S)
         self.assertNotRegex(unguarded, r"font_\w+_source")

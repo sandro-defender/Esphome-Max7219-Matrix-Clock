@@ -1,178 +1,1988 @@
-// GENERATED FILE - do not edit by hand.
-//
-// Source of truth: packages/fonts_local.yaml plus the TTF/OTF files in fonts/.
-// Regenerate with:  python3 scripts/generate_glyphs.py
-//
-// Rows are bit masks, most significant bit = leftmost pixel. `top` is the
-// distance from the text box top to the first ink row, which is the value
-// ESPHome stores as glyph.offset_y and the renderer uses for centring.
-
+// GENERATED from real firmware font packages, TTFs and C++ built-in glyphs.
+// Regenerate with scripts/generate_glyphs.py; do not edit by hand.
 export interface GeneratedGlyph {
-  w: number;
-  h: number;
-  top: number;
-  advance: number;
-  rows: number[];
+  w: number; h: number; left: number; top: number; advance: number; rows: number[];
 }
-
 export interface GeneratedFont {
-  file: string;
-  size: number;
-  /** Ink height of the digit 0; the renderer centres on it. */
-  inkHeight: number;
-  /** Offset of the digit 0 ink from the text box top. */
-  inkTop: number;
-  /** Width of worst-case "88:88:88" in pixels, the 48 px panel budget. */
-  clockWidth: number;
-  /** Tallest digit, in pixels. */
-  maxDigitHeight: number;
-  glyphs: Record<string, GeneratedGlyph>;
+  file: string; size: number; inkHeight: number; inkTop: number;
+  clockWidth: number; maxDigitHeight: number; glyphs: Record<string, GeneratedGlyph>;
 }
-
 export const GENERATED_FONTS: Record<string, GeneratedFont> = {
-  font_pixel_clock_6x8_source: {
-    file: "fonts/pixel-clock-6x8/PixelClock6x8.ttf",
-    size: 8,
-    inkHeight: 8,
-    inkTop: 0,
-    clockWidth: 48,
-    maxDigitHeight: 8,
-    glyphs: {
-      "0": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 102, 102, 102, 102, 60] },
-      "1": { w: 7, h: 8, top: 0, advance: 7, rows: [48, 112, 48, 48, 48, 48, 48, 120] },
-      "2": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 6, 12, 24, 48, 96, 126] },
-      "3": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 6, 28, 6, 6, 102, 60] },
-      "4": { w: 7, h: 8, top: 0, advance: 7, rows: [14, 30, 54, 102, 102, 126, 6, 6] },
-      "5": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 96, 96, 124, 6, 6, 102, 60] },
-      "6": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 96, 124, 102, 102, 102, 60] },
-      "7": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 6, 6, 12, 24, 24, 24, 24] },
-      "8": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 60, 102, 102, 102, 60] },
-      "9": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 102, 62, 6, 102, 60] },
-      ":": { w: 3, h: 6, top: 2, advance: 3, rows: [4, 0, 0, 4, 0, 0] },
-      ".": { w: 3, h: 2, top: 6, advance: 3, rows: [4, 0] },
-      "-": { w: 5, h: 5, top: 3, advance: 5, rows: [30, 0, 0, 0, 0] },
-      "/": { w: 6, h: 8, top: 0, advance: 6, rows: [2, 2, 4, 8, 16, 32, 32, 0] },
-      "%": { w: 6, h: 8, top: 0, advance: 6, rows: [50, 50, 4, 8, 16, 38, 38, 0] },
-      "!": { w: 3, h: 8, top: 0, advance: 3, rows: [4, 4, 4, 4, 4, 0, 4, 0] },
-      "?": { w: 6, h: 8, top: 0, advance: 6, rows: [60, 2, 2, 28, 16, 0, 16, 0] },
-      "+": { w: 6, h: 7, top: 1, advance: 6, rows: [8, 8, 62, 8, 8, 0, 0] },
-      "space": { w: 3, h: 0, top: 0, advance: 3, rows: [] },
-    },
+  "font_pixel_clock_6x8_source": {
+    "file": "fonts/pixel-clock-6x8/PixelClock6x8.ttf",
+    "size": 8,
+    "inkHeight": 8,
+    "inkTop": 0,
+    "clockWidth": 48,
+    "maxDigitHeight": 8,
+    "glyphs": {
+      "0": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          51,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "1": {
+        "w": 4,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          6,
+          14,
+          6,
+          6,
+          6,
+          6,
+          6,
+          15
+        ]
+      },
+      "2": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          3,
+          6,
+          12,
+          24,
+          48,
+          63
+        ]
+      },
+      "3": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          3,
+          14,
+          3,
+          3,
+          51,
+          30
+        ]
+      },
+      "4": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          7,
+          15,
+          27,
+          51,
+          51,
+          63,
+          3,
+          3
+        ]
+      },
+      "5": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          48,
+          48,
+          62,
+          3,
+          3,
+          51,
+          30
+        ]
+      },
+      "6": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          48,
+          62,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "7": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          3,
+          3,
+          6,
+          12,
+          12,
+          12,
+          12
+        ]
+      },
+      "8": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          30,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "9": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          51,
+          31,
+          3,
+          51,
+          30
+        ]
+      },
+      ":": {
+        "w": 1,
+        "h": 4,
+        "left": 0,
+        "top": 2,
+        "advance": 3,
+        "rows": [
+          1,
+          0,
+          0,
+          1
+        ]
+      },
+      ".": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 6,
+        "advance": 3,
+        "rows": [
+          1
+        ]
+      },
+      "-": {
+        "w": 4,
+        "h": 1,
+        "left": 0,
+        "top": 3,
+        "advance": 5,
+        "rows": [
+          15
+        ]
+      },
+      "/": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 6,
+        "rows": [
+          1,
+          1,
+          2,
+          4,
+          8,
+          16,
+          16
+        ]
+      },
+      "%": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 6,
+        "rows": [
+          25,
+          25,
+          2,
+          4,
+          8,
+          19,
+          19
+        ]
+      },
+      "!": {
+        "w": 1,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 3,
+        "rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1
+        ]
+      },
+      "?": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 6,
+        "rows": [
+          30,
+          1,
+          1,
+          14,
+          8,
+          0,
+          8
+        ]
+      },
+      "+": {
+        "w": 5,
+        "h": 5,
+        "left": 0,
+        "top": 1,
+        "advance": 6,
+        "rows": [
+          4,
+          4,
+          31,
+          4,
+          4
+        ]
+      },
+      "space": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 7,
+        "advance": 3,
+        "rows": [
+          0
+        ]
+      }
+    }
   },
-  font_md_parola_numeric_7seg_source: {
-    file: "fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf",
-    size: 8,
-    inkHeight: 8,
-    inkTop: 0,
-    clockWidth: 32,
-    maxDigitHeight: 8,
-    glyphs: {
-      "0": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 17, 17, 17, 17, 17, 31, 0] },
-      "1": { w: 5, h: 8, top: 0, advance: 5, rows: [16, 16, 16, 16, 16, 16, 16, 0] },
-      "2": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 1, 1, 31, 16, 16, 31, 0] },
-      "3": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 1, 1, 31, 1, 1, 31, 0] },
-      "4": { w: 5, h: 8, top: 0, advance: 5, rows: [17, 17, 17, 31, 1, 1, 1, 0] },
-      "5": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 16, 16, 31, 1, 1, 31, 0] },
-      "6": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 16, 16, 31, 17, 17, 31, 0] },
-      "7": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 1, 1, 1, 1, 1, 1, 0] },
-      "8": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 17, 17, 31, 17, 17, 31, 0] },
-      "9": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 17, 17, 31, 1, 1, 31, 0] },
-      ":": { w: 1, h: 6, top: 2, advance: 1, rows: [1, 0, 1, 0, 0, 0] },
-      ".": { w: 1, h: 2, top: 6, advance: 1, rows: [1, 0] },
-      "-": { w: 4, h: 5, top: 3, advance: 4, rows: [15, 0, 0, 0, 0] },
-      "/": { w: 5, h: 8, top: 0, advance: 5, rows: [1, 1, 2, 4, 8, 16, 16, 0] },
-      "%": { w: 5, h: 8, top: 0, advance: 5, rows: [25, 25, 2, 4, 8, 19, 19, 0] },
-      "!": { w: 1, h: 8, top: 0, advance: 1, rows: [1, 1, 1, 1, 1, 0, 1, 0] },
-      "?": { w: 5, h: 8, top: 0, advance: 5, rows: [30, 1, 1, 14, 8, 0, 8, 0] },
-      "+": { w: 5, h: 7, top: 1, advance: 5, rows: [4, 4, 31, 4, 4, 0, 0] },
-      "space": { w: 1, h: 0, top: 0, advance: 1, rows: [] },
-    },
+  "font_matrix_2px_source": {
+    "file": "fonts/matrix-2px/Matrix2px.ttf",
+    "size": 8,
+    "inkHeight": 8,
+    "inkTop": 0,
+    "clockWidth": 48,
+    "maxDigitHeight": 8,
+    "glyphs": {
+      "0": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          51,
+          51,
+          51,
+          51,
+          51,
+          51,
+          63,
+          63
+        ]
+      },
+      "1": {
+        "w": 4,
+        "h": 8,
+        "left": 2,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          15,
+          15,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      },
+      "2": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          3,
+          63,
+          63,
+          48,
+          63,
+          63
+        ]
+      },
+      "3": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          3,
+          63,
+          63,
+          3,
+          63,
+          63
+        ]
+      },
+      "4": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          51,
+          51,
+          51,
+          63,
+          63,
+          3,
+          3,
+          3
+        ]
+      },
+      "5": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          48,
+          63,
+          63,
+          3,
+          63,
+          63
+        ]
+      },
+      "6": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          48,
+          63,
+          63,
+          51,
+          63,
+          63
+        ]
+      },
+      "7": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      },
+      "8": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          51,
+          63,
+          63,
+          51,
+          63,
+          63
+        ]
+      },
+      "9": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          51,
+          63,
+          63,
+          3,
+          63,
+          63
+        ]
+      },
+      ":": {
+        "w": 2,
+        "h": 6,
+        "left": 0,
+        "top": 1,
+        "advance": 3,
+        "rows": [
+          3,
+          3,
+          0,
+          0,
+          3,
+          3
+        ]
+      },
+      ".": {
+        "w": 2,
+        "h": 2,
+        "left": 0,
+        "top": 6,
+        "advance": 3,
+        "rows": [
+          3,
+          3
+        ]
+      },
+      "-": {
+        "w": 4,
+        "h": 2,
+        "left": 0,
+        "top": 3,
+        "advance": 5,
+        "rows": [
+          15,
+          15
+        ]
+      },
+      "/": {
+        "w": 5,
+        "h": 6,
+        "left": 1,
+        "top": 1,
+        "advance": 7,
+        "rows": [
+          3,
+          3,
+          6,
+          6,
+          24,
+          24
+        ]
+      },
+      "%": {
+        "w": 7,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          96,
+          99,
+          6,
+          12,
+          12,
+          96,
+          99,
+          3
+        ]
+      },
+      "!": {
+        "w": 2,
+        "h": 8,
+        "left": 1,
+        "top": 0,
+        "advance": 4,
+        "rows": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          0,
+          3,
+          3
+        ]
+      },
+      "?": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          63,
+          3,
+          3,
+          12,
+          0,
+          12,
+          12
+        ]
+      },
+      "+": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          12,
+          12,
+          12,
+          63,
+          63,
+          12,
+          12,
+          12
+        ]
+      },
+      "space": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 7,
+        "advance": 3,
+        "rows": [
+          0
+        ]
+      }
+    }
   },
-  font_md_max72xx_system_source: {
-    file: "fonts/md-max72xx-system/MDMax72xxSystem.ttf",
-    size: 8,
-    inkHeight: 8,
-    inkTop: 0,
-    clockWidth: 34,
-    maxDigitHeight: 8,
-    glyphs: {
-      "0": { w: 5, h: 8, top: 0, advance: 5, rows: [14, 17, 19, 21, 25, 17, 14, 0] },
-      "1": { w: 3, h: 8, top: 0, advance: 3, rows: [1, 3, 5, 1, 1, 1, 1, 0] },
-      "2": { w: 5, h: 8, top: 0, advance: 5, rows: [30, 1, 1, 14, 16, 16, 31, 0] },
-      "3": { w: 5, h: 8, top: 0, advance: 5, rows: [30, 1, 1, 14, 1, 1, 30, 0] },
-      "4": { w: 5, h: 8, top: 0, advance: 5, rows: [17, 17, 17, 31, 1, 1, 1, 0] },
-      "5": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 16, 16, 30, 1, 1, 30, 0] },
-      "6": { w: 5, h: 8, top: 0, advance: 5, rows: [14, 16, 16, 30, 17, 17, 14, 0] },
-      "7": { w: 5, h: 8, top: 0, advance: 5, rows: [31, 17, 1, 1, 1, 1, 1, 0] },
-      "8": { w: 5, h: 8, top: 0, advance: 5, rows: [14, 17, 17, 14, 17, 17, 14, 0] },
-      "9": { w: 5, h: 8, top: 0, advance: 5, rows: [14, 17, 17, 15, 1, 1, 14, 0] },
-      ":": { w: 2, h: 6, top: 2, advance: 2, rows: [3, 3, 0, 3, 3, 0] },
-      ".": { w: 2, h: 3, top: 5, advance: 2, rows: [3, 3, 0] },
-      "-": { w: 4, h: 5, top: 3, advance: 4, rows: [15, 0, 0, 0, 0] },
-      "/": { w: 5, h: 8, top: 0, advance: 5, rows: [1, 1, 2, 4, 8, 16, 16, 0] },
-      "%": { w: 5, h: 8, top: 0, advance: 5, rows: [25, 25, 2, 4, 8, 19, 19, 0] },
-      "!": { w: 1, h: 8, top: 0, advance: 1, rows: [1, 1, 1, 1, 1, 0, 1, 0] },
-      "?": { w: 5, h: 8, top: 0, advance: 5, rows: [30, 1, 1, 14, 8, 0, 8, 0] },
-      "+": { w: 5, h: 7, top: 1, advance: 5, rows: [4, 4, 31, 4, 4, 0, 0] },
-      "space": { w: 2, h: 0, top: 0, advance: 2, rows: [] },
-    },
+  "font_md_parola_numeric_7seg_source": {
+    "file": "fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf",
+    "size": 8,
+    "inkHeight": 7,
+    "inkTop": 0,
+    "clockWidth": 32,
+    "maxDigitHeight": 7,
+    "glyphs": {
+      "0": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          17,
+          17,
+          17,
+          17,
+          17,
+          31
+        ]
+      },
+      "1": {
+        "w": 1,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "2": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          1,
+          1,
+          31,
+          16,
+          16,
+          31
+        ]
+      },
+      "3": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          1,
+          1,
+          31,
+          1,
+          1,
+          31
+        ]
+      },
+      "4": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          17,
+          17,
+          17,
+          31,
+          1,
+          1,
+          1
+        ]
+      },
+      "5": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          16,
+          16,
+          31,
+          1,
+          1,
+          31
+        ]
+      },
+      "6": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          16,
+          16,
+          31,
+          17,
+          17,
+          31
+        ]
+      },
+      "7": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "8": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          17,
+          17,
+          31,
+          17,
+          17,
+          31
+        ]
+      },
+      "9": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          17,
+          17,
+          31,
+          1,
+          1,
+          31
+        ]
+      },
+      ":": {
+        "w": 1,
+        "h": 3,
+        "left": 0,
+        "top": 2,
+        "advance": 1,
+        "rows": [
+          1,
+          0,
+          1
+        ]
+      },
+      ".": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 6,
+        "advance": 1,
+        "rows": [
+          1
+        ]
+      },
+      "-": {
+        "w": 4,
+        "h": 1,
+        "left": 0,
+        "top": 3,
+        "advance": 4,
+        "rows": [
+          15
+        ]
+      },
+      "/": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          1,
+          1,
+          2,
+          4,
+          8,
+          16,
+          16
+        ]
+      },
+      "%": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          25,
+          25,
+          2,
+          4,
+          8,
+          19,
+          19
+        ]
+      },
+      "!": {
+        "w": 1,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 1,
+        "rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1
+        ]
+      },
+      "?": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          30,
+          1,
+          1,
+          14,
+          8,
+          0,
+          8
+        ]
+      },
+      "+": {
+        "w": 5,
+        "h": 5,
+        "left": 0,
+        "top": 1,
+        "advance": 5,
+        "rows": [
+          4,
+          4,
+          31,
+          4,
+          4
+        ]
+      },
+      "space": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 7,
+        "advance": 1,
+        "rows": [
+          0
+        ]
+      }
+    }
   },
-  font_matrix_2px_source: {
-    file: "fonts/matrix-2px/Matrix2px.ttf",
-    size: 8,
-    inkHeight: 8,
-    inkTop: 0,
-    clockWidth: 48,
-    maxDigitHeight: 8,
-    glyphs: {
-      "0": { w: 7, h: 8, top: 0, advance: 7, rows: [6, 6, 102, 102, 102, 102, 126, 126] },
-      "1": { w: 7, h: 8, top: 0, advance: 7, rows: [30, 30, 6, 6, 6, 6, 6, 6] },
-      "2": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 126, 126, 96, 126, 126] },
-      "3": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 126, 126, 6, 126, 126] },
-      "4": { w: 7, h: 8, top: 0, advance: 7, rows: [102, 102, 102, 126, 126, 6, 6, 6] },
-      "5": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 96, 126, 126, 6, 126, 126] },
-      "6": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 96, 126, 126, 102, 126, 126] },
-      "7": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 6, 6, 6, 6, 6] },
-      "8": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 102, 126, 126, 102, 126, 126] },
-      "9": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 102, 126, 126, 6, 126, 126] },
-      ":": { w: 3, h: 7, top: 1, advance: 3, rows: [6, 6, 0, 0, 6, 6, 0] },
-      ".": { w: 3, h: 2, top: 6, advance: 3, rows: [6, 6] },
-      "-": { w: 5, h: 5, top: 3, advance: 5, rows: [30, 30, 0, 0, 0] },
-      "/": { w: 7, h: 7, top: 1, advance: 7, rows: [6, 6, 12, 12, 48, 48, 0] },
-      "%": { w: 7, h: 8, top: 0, advance: 7, rows: [96, 99, 6, 12, 12, 96, 99, 3] },
-      "!": { w: 4, h: 8, top: 0, advance: 4, rows: [6, 6, 6, 6, 6, 0, 6, 6] },
-      "?": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 6, 24, 0, 24, 24] },
-      "+": { w: 7, h: 8, top: 0, advance: 7, rows: [24, 24, 24, 126, 126, 24, 24, 24] },
-      "space": { w: 3, h: 0, top: 0, advance: 3, rows: [] },
-    },
+  "font_md_max72xx_system_source": {
+    "file": "fonts/md-max72xx-system/MDMax72xxSystem.ttf",
+    "size": 8,
+    "inkHeight": 7,
+    "inkTop": 0,
+    "clockWidth": 34,
+    "maxDigitHeight": 7,
+    "glyphs": {
+      "0": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          14,
+          17,
+          19,
+          21,
+          25,
+          17,
+          14
+        ]
+      },
+      "1": {
+        "w": 3,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 3,
+        "rows": [
+          1,
+          3,
+          5,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "2": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          30,
+          1,
+          1,
+          14,
+          16,
+          16,
+          31
+        ]
+      },
+      "3": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          30,
+          1,
+          1,
+          14,
+          1,
+          1,
+          30
+        ]
+      },
+      "4": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          17,
+          17,
+          17,
+          31,
+          1,
+          1,
+          1
+        ]
+      },
+      "5": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          16,
+          16,
+          30,
+          1,
+          1,
+          30
+        ]
+      },
+      "6": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          14,
+          16,
+          16,
+          30,
+          17,
+          17,
+          14
+        ]
+      },
+      "7": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          31,
+          17,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "8": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          14,
+          17,
+          17,
+          14,
+          17,
+          17,
+          14
+        ]
+      },
+      "9": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          14,
+          17,
+          17,
+          15,
+          1,
+          1,
+          14
+        ]
+      },
+      ":": {
+        "w": 2,
+        "h": 5,
+        "left": 0,
+        "top": 2,
+        "advance": 2,
+        "rows": [
+          3,
+          3,
+          0,
+          3,
+          3
+        ]
+      },
+      ".": {
+        "w": 2,
+        "h": 2,
+        "left": 0,
+        "top": 5,
+        "advance": 2,
+        "rows": [
+          3,
+          3
+        ]
+      },
+      "-": {
+        "w": 4,
+        "h": 1,
+        "left": 0,
+        "top": 3,
+        "advance": 4,
+        "rows": [
+          15
+        ]
+      },
+      "/": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          1,
+          1,
+          2,
+          4,
+          8,
+          16,
+          16
+        ]
+      },
+      "%": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          25,
+          25,
+          2,
+          4,
+          8,
+          19,
+          19
+        ]
+      },
+      "!": {
+        "w": 1,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 1,
+        "rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1
+        ]
+      },
+      "?": {
+        "w": 5,
+        "h": 7,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          30,
+          1,
+          1,
+          14,
+          8,
+          0,
+          8
+        ]
+      },
+      "+": {
+        "w": 5,
+        "h": 5,
+        "left": 0,
+        "top": 1,
+        "advance": 5,
+        "rows": [
+          4,
+          4,
+          31,
+          4,
+          4
+        ]
+      },
+      "space": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 7,
+        "advance": 2,
+        "rows": [
+          0
+        ]
+      }
+    }
   },
-  font_dot_matrix_source: {
-    file: "fonts/dot-matrix/DotMatrix.ttf",
-    size: 8,
-    inkHeight: 8,
-    inkTop: 0,
-    clockWidth: 48,
-    maxDigitHeight: 8,
-    glyphs: {
-      "0": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 102, 102, 102, 102, 60] },
-      "1": { w: 7, h: 8, top: 0, advance: 7, rows: [24, 120, 24, 24, 24, 24, 24, 124] },
-      "2": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 6, 12, 24, 48, 96, 126] },
-      "3": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 6, 28, 6, 6, 102, 60] },
-      "4": { w: 7, h: 8, top: 0, advance: 7, rows: [12, 28, 44, 108, 126, 12, 12, 12] },
-      "5": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 96, 124, 6, 6, 6, 102, 60] },
-      "6": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 96, 124, 102, 102, 102, 60] },
-      "7": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 6, 12, 12, 24, 24, 48, 48] },
-      "8": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 60, 102, 102, 102, 60] },
-      "9": { w: 7, h: 8, top: 0, advance: 7, rows: [60, 102, 102, 102, 62, 6, 102, 60] },
-      ":": { w: 3, h: 6, top: 2, advance: 3, rows: [4, 0, 0, 4, 0, 0] },
-      ".": { w: 3, h: 2, top: 6, advance: 3, rows: [4, 4] },
-      "-": { w: 5, h: 5, top: 3, advance: 5, rows: [28, 28, 0, 0, 0] },
-      "/": { w: 6, h: 7, top: 1, advance: 6, rows: [4, 8, 8, 16, 32, 32, 0] },
-      "%": { w: 6, h: 8, top: 0, advance: 6, rows: [49, 50, 4, 8, 16, 33, 3, 6] },
-      "!": { w: 3, h: 8, top: 0, advance: 3, rows: [4, 4, 4, 4, 4, 0, 4, 4] },
-      "?": { w: 6, h: 8, top: 0, advance: 6, rows: [30, 51, 3, 6, 12, 0, 12, 12] },
-      "+": { w: 7, h: 8, top: 0, advance: 7, rows: [16, 16, 16, 124, 124, 16, 16, 16] },
-      "space": { w: 3, h: 0, top: 0, advance: 3, rows: [] },
-    },
-  },
+  "font_dot_matrix_source": {
+    "file": "fonts/dot-matrix/DotMatrix.ttf",
+    "size": 8,
+    "inkHeight": 8,
+    "inkTop": 0,
+    "clockWidth": 48,
+    "maxDigitHeight": 8,
+    "glyphs": {
+      "0": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          51,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "1": {
+        "w": 5,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          6,
+          30,
+          6,
+          6,
+          6,
+          6,
+          6,
+          31
+        ]
+      },
+      "2": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          3,
+          6,
+          12,
+          24,
+          48,
+          63
+        ]
+      },
+      "3": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          3,
+          14,
+          3,
+          3,
+          51,
+          30
+        ]
+      },
+      "4": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          6,
+          14,
+          22,
+          54,
+          63,
+          6,
+          6,
+          6
+        ]
+      },
+      "5": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          48,
+          62,
+          3,
+          3,
+          3,
+          51,
+          30
+        ]
+      },
+      "6": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          48,
+          62,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "7": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          63,
+          3,
+          6,
+          6,
+          12,
+          12,
+          24,
+          24
+        ]
+      },
+      "8": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          30,
+          51,
+          51,
+          51,
+          30
+        ]
+      },
+      "9": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          30,
+          51,
+          51,
+          51,
+          31,
+          3,
+          51,
+          30
+        ]
+      },
+      ":": {
+        "w": 1,
+        "h": 4,
+        "left": 0,
+        "top": 2,
+        "advance": 3,
+        "rows": [
+          1,
+          0,
+          0,
+          1
+        ]
+      },
+      ".": {
+        "w": 1,
+        "h": 2,
+        "left": 0,
+        "top": 6,
+        "advance": 3,
+        "rows": [
+          1,
+          1
+        ]
+      },
+      "-": {
+        "w": 3,
+        "h": 2,
+        "left": 0,
+        "top": 3,
+        "advance": 5,
+        "rows": [
+          7,
+          7
+        ]
+      },
+      "/": {
+        "w": 4,
+        "h": 6,
+        "left": 0,
+        "top": 1,
+        "advance": 6,
+        "rows": [
+          1,
+          2,
+          2,
+          4,
+          8,
+          8
+        ]
+      },
+      "%": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 6,
+        "rows": [
+          49,
+          50,
+          4,
+          8,
+          16,
+          33,
+          3,
+          6
+        ]
+      },
+      "!": {
+        "w": 1,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 3,
+        "rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1
+        ]
+      },
+      "?": {
+        "w": 6,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 6,
+        "rows": [
+          30,
+          51,
+          3,
+          6,
+          12,
+          0,
+          12,
+          12
+        ]
+      },
+      "+": {
+        "w": 5,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 7,
+        "rows": [
+          4,
+          4,
+          4,
+          31,
+          31,
+          4,
+          4,
+          4
+        ]
+      },
+      "space": {
+        "w": 1,
+        "h": 1,
+        "left": 0,
+        "top": 7,
+        "advance": 3,
+        "rows": [
+          0
+        ]
+      }
+    }
+  }
 };
+export const BUILTIN_GLYPHS: Record<string, number[]> = {
+  "0": [
+    14,
+    17,
+    19,
+    21,
+    25,
+    17,
+    14
+  ],
+  "1": [
+    4,
+    12,
+    4,
+    4,
+    4,
+    4,
+    14
+  ],
+  "2": [
+    14,
+    17,
+    1,
+    2,
+    4,
+    8,
+    31
+  ],
+  "3": [
+    30,
+    1,
+    1,
+    14,
+    1,
+    1,
+    30
+  ],
+  "4": [
+    2,
+    6,
+    10,
+    18,
+    31,
+    2,
+    2
+  ],
+  "5": [
+    31,
+    16,
+    16,
+    30,
+    1,
+    1,
+    30
+  ],
+  "6": [
+    6,
+    8,
+    16,
+    30,
+    17,
+    17,
+    14
+  ],
+  "7": [
+    31,
+    1,
+    2,
+    4,
+    8,
+    8,
+    8
+  ],
+  "8": [
+    14,
+    17,
+    17,
+    14,
+    17,
+    17,
+    14
+  ],
+  "9": [
+    14,
+    17,
+    17,
+    15,
+    1,
+    2,
+    28
+  ],
+  "A": [
+    14,
+    17,
+    17,
+    31,
+    17,
+    17,
+    17
+  ],
+  "B": [
+    30,
+    17,
+    17,
+    30,
+    17,
+    17,
+    30
+  ],
+  "C": [
+    14,
+    17,
+    16,
+    16,
+    16,
+    17,
+    14
+  ],
+  "D": [
+    28,
+    18,
+    17,
+    17,
+    17,
+    18,
+    28
+  ],
+  "E": [
+    31,
+    16,
+    16,
+    30,
+    16,
+    16,
+    31
+  ],
+  "F": [
+    31,
+    16,
+    16,
+    30,
+    16,
+    16,
+    16
+  ],
+  "G": [
+    14,
+    17,
+    16,
+    23,
+    17,
+    17,
+    14
+  ],
+  "H": [
+    17,
+    17,
+    17,
+    31,
+    17,
+    17,
+    17
+  ],
+  "I": [
+    14,
+    4,
+    4,
+    4,
+    4,
+    4,
+    14
+  ],
+  "J": [
+    7,
+    2,
+    2,
+    2,
+    2,
+    18,
+    12
+  ],
+  "K": [
+    17,
+    18,
+    20,
+    24,
+    20,
+    18,
+    17
+  ],
+  "L": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    31
+  ],
+  "M": [
+    17,
+    27,
+    21,
+    21,
+    17,
+    17,
+    17
+  ],
+  "N": [
+    17,
+    17,
+    25,
+    21,
+    19,
+    17,
+    17
+  ],
+  "O": [
+    14,
+    17,
+    17,
+    17,
+    17,
+    17,
+    14
+  ],
+  "P": [
+    30,
+    17,
+    17,
+    30,
+    16,
+    16,
+    16
+  ],
+  "Q": [
+    14,
+    17,
+    17,
+    17,
+    21,
+    18,
+    13
+  ],
+  "R": [
+    30,
+    17,
+    17,
+    30,
+    20,
+    18,
+    17
+  ],
+  "S": [
+    15,
+    16,
+    16,
+    14,
+    1,
+    1,
+    30
+  ],
+  "T": [
+    31,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "U": [
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    14
+  ],
+  "V": [
+    17,
+    17,
+    17,
+    17,
+    17,
+    10,
+    4
+  ],
+  "W": [
+    17,
+    17,
+    17,
+    21,
+    21,
+    27,
+    17
+  ],
+  "X": [
+    17,
+    17,
+    10,
+    4,
+    10,
+    17,
+    17
+  ],
+  "Y": [
+    17,
+    17,
+    10,
+    4,
+    4,
+    4,
+    4
+  ],
+  "Z": [
+    31,
+    1,
+    2,
+    4,
+    8,
+    16,
+    31
+  ],
+  " ": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  ":": [
+    0,
+    12,
+    12,
+    0,
+    12,
+    12,
+    0
+  ],
+  ".": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    12,
+    12
+  ],
+  ",": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    4,
+    8
+  ],
+  "-": [
+    0,
+    0,
+    0,
+    14,
+    0,
+    0,
+    0
+  ],
+  "_": [
+    0,
+    0,
+    0,
+    14,
+    0,
+    0,
+    0
+  ],
+  "/": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    0,
+    0
+  ],
+  "%": [
+    13,
+    13,
+    2,
+    4,
+    8,
+    22,
+    22
+  ],
+  "!": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    0,
+    4
+  ],
+  "?": [
+    14,
+    17,
+    1,
+    2,
+    4,
+    0,
+    4
+  ],
+  "+": [
+    0,
+    4,
+    4,
+    14,
+    4,
+    4,
+    0
+  ]
+};
+export const BUILTIN_ADVANCES: Record<string, number> = {
+  "0": 6,
+  "1": 6,
+  "2": 6,
+  "3": 6,
+  "4": 6,
+  "5": 6,
+  "6": 6,
+  "7": 6,
+  "8": 6,
+  "9": 6,
+  "A": 6,
+  "B": 6,
+  "C": 6,
+  "D": 6,
+  "E": 6,
+  "F": 6,
+  "G": 6,
+  "H": 6,
+  "I": 6,
+  "J": 6,
+  "K": 6,
+  "L": 6,
+  "M": 6,
+  "N": 6,
+  "O": 6,
+  "P": 6,
+  "Q": 6,
+  "R": 6,
+  "S": 6,
+  "T": 6,
+  "U": 6,
+  "V": 6,
+  "W": 6,
+  "X": 6,
+  "Y": 6,
+  "Z": 6,
+  " ": 3,
+  ":": 3,
+  ".": 3,
+  ",": 3,
+  "-": 6,
+  "_": 6,
+  "/": 6,
+  "%": 6,
+  "!": 3,
+  "?": 6,
+  "+": 6
+};
+export const BUILTIN_METRICS = {"inkHeight": 7, "inkTop": 0, "maxDigitHeight": 7, "clockWidth": 42, "defaultAdvance": 6};

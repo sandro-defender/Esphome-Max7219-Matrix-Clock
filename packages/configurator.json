@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "description": "UI bindings only. Defaults, entity names/options/ranges, fonts, package files, version and release notes are extracted from the actual firmware, never repeated here.",
+  "internalSubstitutions": [
+    "project_ref",
+    "project_repo",
+    "project_version",
+    "fonts_base_url"
+  ],
+  "substitutions": {
+    "deviceName": {
+      "target": "device_name",
+      "group": "Device",
+      "label": "Device name",
+      "input": "text"
+    },
+    "friendlyName": {
+      "target": "friendly_name",
+      "group": "Device",
+      "label": "Friendly name",
+      "input": "text"
+    },
+    "deviceComment": {
+      "target": "device_comment",
+      "group": "Device",
+      "label": "Device comment",
+      "input": "text"
+    },
+    "timezone": {
+      "target": "timezone",
+      "group": "Device",
+      "label": "Timezone",
+      "input": "text"
+    },
+    "board": {
+      "target": "board",
+      "group": "Hardware",
+      "label": "ESP8266 board",
+      "input": "text"
+    },
+    "clkPin": {
+      "target": "matrix_clk_pin",
+      "group": "Hardware",
+      "label": "CLK pin",
+      "input": "pin"
+    },
+    "mosiPin": {
+      "target": "matrix_mosi_pin",
+      "group": "Hardware",
+      "label": "DIN / MOSI pin",
+      "input": "pin"
+    },
+    "csPin": {
+      "target": "matrix_cs_pin",
+      "group": "Hardware",
+      "label": "CS pin",
+      "input": "pin"
+    },
+    "chips": {
+      "target": "matrix_chips",
+      "group": "Hardware",
+      "label": "Modules",
+      "input": "integer"
+    },
+    "rows": {
+      "target": "matrix_rows",
+      "group": "Hardware",
+      "label": "Rows",
+      "input": "integer"
+    },
+    "wiring": {
+      "target": "matrix_wiring",
+      "group": "Hardware",
+      "label": "Wiring",
+      "input": "driver-option",
+      "driverKey": "chip_lines_style"
+    },
+    "rotateChip": {
+      "target": "matrix_rotate_chip",
+      "group": "Hardware",
+      "label": "Rotate each chip",
+      "input": "driver-option",
+      "driverKey": "rotate_chip"
+    },
+    "flipX": {
+      "target": "matrix_flip_x",
+      "group": "Hardware",
+      "label": "Flip X",
+      "input": "boolean"
+    },
+    "displayUpdateMs": {
+      "target": "display_update_interval",
+      "group": "Device",
+      "label": "Display redraw interval (ms)",
+      "input": "milliseconds"
+    },
+    "bootVersionMs": {
+      "target": "boot_version_duration",
+      "group": "Device",
+      "label": "Boot version duration (ms)",
+      "input": "integer"
+    },
+    "otaBrightness": {
+      "target": "ota_display_intensity",
+      "group": "Device",
+      "label": "OTA brightness",
+      "input": "integer"
+    },
+    "otaPort": {
+      "target": "ota_port",
+      "group": "Device",
+      "label": "Native OTA port",
+      "input": "integer"
+    },
+    "logLevel": {
+      "target": "log_level",
+      "group": "Device",
+      "label": "Log level",
+      "input": "logger-option"
+    },
+    "fallbackSsid": {
+      "target": "fallback_ap_ssid",
+      "group": "Device",
+      "label": "Fallback hotspot name",
+      "input": "text"
+    }
+  },
+  "entities": {
+    "clockFont": {
+      "target": "clock_font",
+      "group": "Clock face",
+      "input": "font"
+    },
+    "screen": {
+      "target": "screen_mode",
+      "group": "Screen"
+    },
+    "alignment": {
+      "target": "clock_alignment",
+      "group": "Screen"
+    },
+    "hourFormat": {
+      "target": "time_format",
+      "group": "Screen",
+      "transform": "hour-format"
+    },
+    "secondsMode": {
+      "target": "seconds_display",
+      "group": "Screen"
+    },
+    "dateFormat": {
+      "target": "date_format",
+      "group": "Screen"
+    },
+    "scrollMode": {
+      "target": "message_scroll_behavior",
+      "group": "Messages"
+    },
+    "brightness": {
+      "target": "matrix_brightness",
+      "group": "Light",
+      "input": "range"
+    },
+    "nightBrightness": {
+      "target": "night_brightness",
+      "group": "Light",
+      "input": "range"
+    },
+    "animationMs": {
+      "target": "animation_duration",
+      "group": "Screen",
+      "input": "range"
+    },
+    "animationRowGap": {
+      "target": "animation_row_gap",
+      "group": "Screen",
+      "input": "range"
+    },
+    "scrollSpeed": {
+      "target": "message_scroll_speed",
+      "group": "Messages",
+      "input": "range"
+    },
+    "messageHold": {
+      "target": "default_message_duration",
+      "group": "Messages"
+    },
+    "countdownDuration": {
+      "target": "countdown_duration",
+      "group": "Screen"
+    },
+    "cycleInterval": {
+      "target": "screen_cycle_interval",
+      "group": "Screen"
+    },
+    "nightStart": {
+      "target": "night_start_hour",
+      "group": "Light"
+    },
+    "nightEnd": {
+      "target": "night_end_hour",
+      "group": "Light"
+    },
+    "displayPower": {
+      "target": "matrix_display_power",
+      "group": "Light"
+    },
+    "blinkColon": {
+      "target": "clock_blink",
+      "group": "Screen"
+    },
+    "digitAnimation": {
+      "target": "clock_animate",
+      "group": "Screen"
+    },
+    "autoCycle": {
+      "target": "auto_cycle",
+      "group": "Screen"
+    },
+    "nightManual": {
+      "target": "night_mode",
+      "group": "Light"
+    },
+    "nightDim": {
+      "target": "night_schedule_enabled",
+      "group": "Light"
+    },
+    "invert": {
+      "target": "display_inversion",
+      "group": "Light"
+    },
+    "alarmMode": {
+      "target": "alarm_mode",
+      "group": "Light"
+    }
+  },
+  "fontMetadata": {
+    "pixel-clock-6x8": {
+      "label": "Pixel Clock 6×8",
+      "license": "Project-generated",
+      "source": "scripts/generate_pixel_clock_6x8_font.py"
+    },
+    "matrix-2px": {
+      "label": "Matrix 2px",
+      "license": "Project-generated",
+      "source": "scripts/generate_matrix_font.py"
+    },
+    "dot-matrix": {
+      "label": "Dot Matrix",
+      "license": "Project-generated",
+      "source": "scripts/generate_dot_matrix_font.py"
+    },
+    "md-parola-numeric-7seg": {
+      "label": "MD Parola Numeric 7-Segment",
+      "license": "LGPL-2.1-or-later",
+      "source": "fonts/md-max72xx-system/LICENSE.txt"
+    },
+    "md-max72xx-system": {
+      "label": "MD MAX72XX System",
+      "license": "LGPL-2.1-or-later",
+      "source": "fonts/md-max72xx-system/LICENSE.txt"
+    }
+  }
+}

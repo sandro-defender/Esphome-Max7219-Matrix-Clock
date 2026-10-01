@@ -1,0 +1,10 @@
+# Brief installed-release splash after restored preferences and networking setup.
+# A scheduled ESPHome delay returns immediately; networking/OTA keep running.
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          max7219_clock::state.begin_boot(ESPHOME_PROJECT_VERSION,
+              ${boot_version_duration}, millis());
+      - component.update: matrix

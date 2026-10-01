@@ -40,6 +40,7 @@ enum Mode : uint8_t {
   MODE_OTA,
   MODE_GRID_TEST,
   MODE_PIXEL_TEST,
+  MODE_BOOT,
 };
 
 enum Screen : uint8_t {
@@ -98,6 +99,22 @@ class Canvas {
   }
 };
 
+// A changed digit owns one stationary ink window. Sliding ink must never
+// leak below that window (especially on a multi-row panel) or into neighbours.
+class ClipCanvas : public Canvas {
+ public:
+  ClipCanvas(Canvas &parent, int x, int y, int w, int h)
+      : parent_(parent), x_(x), y_(y), w_(w), h_(h) {}
+  void pixel(int x, int y, bool on) override {
+    if (x >= x_ && x < x_ + w_ && y >= y_ && y < y_ + h_) parent_.pixel(x, y, on);
+  }
+  int width() const override { return parent_.width(); }
+  int height() const override { return parent_.height(); }
+ private:
+  Canvas &parent_;
+  int x_, y_, w_, h_;
+};
+
 // --------------------------------------------------------------------------
 // Font interface: one glyph cell at a time so that the renderer owns layout,
 // alignment and the per-digit slide-up animation.
@@ -107,6 +124,7 @@ class GlyphFont {
   virtual ~GlyphFont() {}
   // Horizontal step for one character, in pixels.
   virtual int advance(char c) const = 0;
+  virtual const void *identity() const { return this; }
   // Ink height and the ink offset from the text box top, measured on a digit.
   // The renderer uses both to centre the ink inside the display.
   virtual int ink_height() const = 0;
@@ -144,6 +162,9 @@ namespace builtin {
 
 // 7 rows, 5 columns, bit 4 = leftmost pixel.
 inline const uint8_t *glyph(char c) {
+  // Immutable release suffixes are lowercase hex; use existing uppercase ink
+  // without changing the stored project version or adding another font.
+  if (c >= 'a' && c <= 'z') c = (char) (c - 'a' + 'A');
   static const uint8_t DIGITS[10][7] = {
       {0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110},  // 0
       {0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110},  // 1
@@ -275,8 +296,8 @@ struct Frame {
   bool use_12h = false;
   bool blink_colon = true;
   bool animate = true;
-  uint32_t animation_ms = 250;
-  uint8_t animation_row_gap = 0;
+  uint32_t animation_ms = 600;
+  uint8_t animation_row_gap = 1;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
 
@@ -288,6 +309,7 @@ struct Frame {
   float brightness_day = 3.0f;
   float brightness_night = 1.0f;
   bool alarm_mode = false;
+  float ota_brightness = 3.0f;
 
   // Automatic screen cycling
   bool auto_cycle = false;
@@ -300,6 +322,12 @@ struct Frame {
 // can set message, alert and countdown state directly.
 // --------------------------------------------------------------------------
 struct Runtime {
+  // Installed firmware splash: temporary, bounded and rollover-safe.
+  char boot_version[64] = {0};
+  bool boot_active = false;
+  uint32_t boot_started_ms = 0;
+  uint32_t boot_duration_ms = 2500;
+
   // Temporary screens
   char message_text[48] = {0};  // scrolling message from Home Assistant
   bool message_active = false;
@@ -325,6 +353,8 @@ struct Runtime {
   int anim_prev_mode = -1;
   uint32_t anim_started_ms = 0;
   bool anim_active = false;
+  const void *anim_font_identity = nullptr;
+  int anim_width = 0, anim_height = 0, anim_alignment = -1;
 
   // Message/alert scrolling identity
   uint32_t scroll_hash = 0;
@@ -337,6 +367,8 @@ struct Runtime {
   // Home Assistant brightness change reaches the panel even without a
   // night/day flip.
   float applied_brightness = -1.0f;
+  int applied_power = -1;
+  int applied_inversion = -1;
   uint32_t cycle_last_ms = 0;
 
   // Last values published to Home Assistant (publish on change only)
@@ -344,6 +376,27 @@ struct Runtime {
   int reported_ota_state = -1;
   int reported_remaining_s = -2;
   int reported_percent = -1;
+
+  void reset_animation() {
+    this->anim_active = false;
+    this->anim_prev[0] = '\0';
+    this->anim_prev_mode = -1;
+  }
+  void begin_boot(const char *version, uint32_t duration_ms, uint32_t now_ms) {
+    snprintf(this->boot_version, sizeof(this->boot_version), "V%.62s", version == nullptr ? "?" : version);
+    this->boot_started_ms = now_ms;
+    this->boot_duration_ms = std::min<uint32_t>(duration_ms, 10000UL);
+    this->boot_active = duration_ms > 0;
+    this->reset_animation();
+  }
+  void begin_ota(bool powered) {
+    this->display_power_before_ota = powered;
+    this->boot_active = false;
+    this->ota_state = OTA_STARTING;
+    this->ota_percent = 0;
+    this->ota_error = 0;
+    this->reset_animation();
+  }
 
   void set_message(const char *text, uint32_t duration_ms, uint32_t now_ms) {
     if (text == nullptr) text = "";
@@ -430,6 +483,8 @@ inline const char *mode_name(uint8_t mode) {
       return "Countdown";
     case MODE_OTA:
       return "OTA";
+    case MODE_BOOT:
+      return "Firmware version";
     case MODE_GRID_TEST:
       return "Module grid test";
     case MODE_PIXEL_TEST:
@@ -474,6 +529,19 @@ inline const char *ota_state_name(uint8_t ota_state) {
 // Rollover-safe "deadline reached?" test for millis() based deadlines.
 inline bool deadline_reached(uint32_t now_ms, uint32_t deadline_ms) {
   return deadline_ms != 0 && (int32_t)(now_ms - deadline_ms) >= 0;
+}
+
+inline uint8_t ota_progress_percent(float percentage) {
+  if (!(percentage >= 0.0f)) return 0;  // includes NaN
+  if (percentage >= 100.0f) return 100;
+  return (uint8_t) percentage;
+}
+inline bool set_ota_progress(float percentage) {
+  const uint8_t percent = ota_progress_percent(percentage);
+  if (state.ota_state == OTA_UPLOADING && state.ota_percent == percent) return false;
+  state.ota_state = OTA_UPLOADING;
+  state.ota_percent = percent;
+  return true;
 }
 
 inline bool is_digit(char c) { return c >= '0' && c <= '9'; }
@@ -637,9 +705,8 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
   if (start_x < 0) start_x = 0;
 
   const bool animate = animate_from != nullptr && progress < 1.0f && (int) strlen(animate_from) == len;
-  // Slide distance should match the glyph's ink height, not the canvas height.
-  // Using canvas height (8) for a 7px font creates a 1-pixel gap at progress=0
-  // where the new digit starts at row 8 (off-screen for 0-7 display).
+  // Integer LED rows are the only real positions. Use ink height + the HA
+  // row-gap setting, sampled at 20 ms by the display package (not 150 ms).
   const int slide = font.ink_height();
   const int travel = slide + animation_row_gap;
 
@@ -652,8 +719,9 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
       if (changed) {
         // Old digit slides up, new digit enters from below.
         const int offset = (int) (progress * travel);
-        font.draw_glyph(c, animate_from[i], cursor, box_top - offset);
-        font.draw_glyph(c, content[i], cursor, box_top + travel - offset);
+        ClipCanvas cell(c, cursor, box_top + font.ink_top(), step, slide);
+        font.draw_glyph(cell, animate_from[i], cursor, box_top - offset);
+        font.draw_glyph(cell, content[i], cursor, box_top + travel - offset);
       } else if (!(blank_colons && content[i] == ':')) {
         font.draw_glyph(c, content[i], cursor, box_top);
       }
@@ -700,49 +768,38 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
 // OTA screen: state text, clamped percentage and a bottom-row progress bar.
 inline void draw_ota(Canvas &c, const GlyphFont &font, const GlyphFont &fallback, uint8_t ota_state, uint8_t percent,
                      uint8_t error) {
-  char content[24];
-  const int height = c.height();
-  bool show_bar = false;
+  (void) font;
+  char content[24] = {0};
+  percent = std::min<uint8_t>(percent, 100);
+  const bool show_bar = ota_state == OTA_UPLOADING || ota_state == OTA_SUCCESS;
   switch (ota_state) {
     case OTA_STARTING:
       snprintf(content, sizeof(content), "OTA");
       break;
     case OTA_UPLOADING:
       snprintf(content, sizeof(content), "OTA %u%%", (unsigned) percent);
-      show_bar = true;
+      if (fallback.text_width(content) > c.width())
+        snprintf(content, sizeof(content), "%u%%", (unsigned) percent);
       break;
     case OTA_SUCCESS:
       snprintf(content, sizeof(content), "100%%");
       break;
     case OTA_ERROR:
       snprintf(content, sizeof(content), "ERROR %u", (unsigned) error);
+      if (fallback.text_width(content) > c.width())
+        snprintf(content, sizeof(content), "ERR %u", (unsigned) error);
+      if (fallback.text_width(content) > c.width())
+        snprintf(content, sizeof(content), "E%u", (unsigned) error);
       break;
     default:
-      content[0] = '\0';
-      break;
+      return;
   }
-  if (content[0] == '\0') return;
-
-  // External faces have no Latin letters, so "OTA"/"ERROR" fall back to the
-  // built-in font; the numeric "100%" / "42%" parts keep the selected face.
-  if (font_for_text(font, fallback, content).text_width(content) > c.width()) {
-    // Drop the percentage/error detail before clipping.
-    if (ota_state == OTA_UPLOADING)
-      snprintf(content, sizeof(content), "OTA");
-    else if (ota_state == OTA_ERROR)
-      snprintf(content, sizeof(content), "ERROR");
-  }
-  const GlyphFont &text_font = font_for_text(font, fallback, content);
-
-  // The progress bar takes the bottom row, so shift the text up by one row
-  // when it is shown and keep it inside the display.
-  int text_top = text_font.centered_box_top(height);
-  if (show_bar && height > 7) text_top = text_top > 0 ? text_top - 1 : 0;
-  draw_line(c, text_font, content, nullptr, 1.0f, ALIGN_CENTER, text_top);
-
+  const int top = show_bar ? std::max(0, (c.height() - 1 - fallback.ink_height()) / 2) - fallback.ink_top()
+                           : fallback.centered_box_top(c.height());
+  draw_line(c, fallback, content, nullptr, 1.0f, ALIGN_CENTER, top);
   if (show_bar) {
-    const int lit = (int) ((int32_t) c.width() * (percent > 100 ? 100 : percent) / 100);
-    if (lit > 0) c.hline(0, height - 1, lit, true);
+    const int lit = (int) ((int32_t) c.width() * percent / 100);
+    if (lit > 0) c.hline(0, c.height() - 1, lit, true);
   }
 }
 
@@ -750,6 +807,7 @@ inline void draw_ota(Canvas &c, const GlyphFont &font, const GlyphFont &fallback
 // OTA > alert > message > countdown > selected screen.
 inline uint8_t effective_mode(const Frame &f) {
   if (state.ota_state != OTA_IDLE) return MODE_OTA;
+  if (state.boot_active) return MODE_BOOT;
   if (temporary_screen_active(state.alert_active, f.now_ms, state.alert_deadline_ms)) return MODE_MESSAGE;
   if (temporary_screen_active(state.message_active, f.now_ms, state.message_deadline_ms)) return MODE_MESSAGE;
   if (state.countdown_deadline_ms != 0 && !deadline_reached(f.now_ms, state.countdown_deadline_ms))
@@ -773,6 +831,8 @@ inline uint8_t effective_mode(const Frame &f) {
 // toggle once per second would never see the parity change and the panel
 // would freeze at one level instead of flashing.
 inline void housekeeping(const Frame &f, Report &report) {
+  if (state.boot_active && (uint32_t)(f.now_ms - state.boot_started_ms) >= state.boot_duration_ms)
+    state.boot_active = false;
   const bool once_per_second =
       state.last_tick_ms == 0 || (uint32_t)(f.now_ms - state.last_tick_ms) >= 1000UL;
   if (once_per_second) state.last_tick_ms = f.now_ms == 0 ? 1 : f.now_ms;
@@ -815,8 +875,11 @@ inline void housekeeping(const Frame &f, Report &report) {
   }
   const bool night = f.night_manual || in_window;
   // Alarm mode overrides normal/night brightness and flashes twice per second.
-  const float target_brightness = f.alarm_mode ? (((f.now_ms / 500UL) & 1U) ? 15.0f : 0.0f)
-                                               : (night ? f.brightness_night : f.brightness_day);
+  const float normal_brightness = f.alarm_mode ? (((f.now_ms / 500UL) & 1U) ? 15.0f : 0.0f)
+                                              : (night ? f.brightness_night : f.brightness_day);
+  const float target_brightness = state.ota_state != OTA_IDLE ? std::max(1.0f, f.ota_brightness)
+                                 : state.boot_active ? std::max(1.0f, normal_brightness)
+                                                     : normal_brightness;
   // Report when the effective level changes: a night/day flip OR a Home
   // Assistant edit of the Matrix/Night brightness entities. Without the
   // second condition the sliders would never reach the panel until the next
@@ -834,7 +897,7 @@ inline void housekeeping(const Frame &f, Report &report) {
   // temporary screen (message, countdown, OTA) is active.
   if (once_per_second) {
     if (f.auto_cycle && !state.alert_active && !state.message_active &&
-        state.countdown_deadline_ms == 0 && state.ota_state == OTA_IDLE &&
+        state.countdown_deadline_ms == 0 && state.ota_state == OTA_IDLE && !state.boot_active &&
         (f.screen == SCREEN_CLOCK || f.screen == SCREEN_DATE)) {
       const uint32_t interval = (f.cycle_interval_s < 5 ? 5 : f.cycle_interval_s) * 1000UL;
       const uint32_t now = f.now_ms == 0 ? 1 : f.now_ms;
@@ -892,17 +955,22 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   // Bitmap test screens never draw text.
   if (mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
-    state.anim_active = false;
-    state.anim_prev[0] = '\0';
-    state.anim_prev_mode = -1;
+    state.reset_animation();
     draw_bitmap_test(canvas, mode);
     return;
   }
 
   // The OTA screen owns its own text and progress bar.
   if (mode == MODE_OTA) {
-    state.anim_active = false;
+    state.reset_animation();
     draw_ota(canvas, *active, fallback, state.ota_state, state.ota_percent, state.ota_error);
+    return;
+  }
+
+  if (mode == MODE_BOOT) {
+    state.reset_animation();
+    draw_free_text(canvas, fallback, state.boot_version, (uint32_t)(f.now_ms - state.boot_started_ms),
+                   true, 25, fallback.centered_box_top(height));
     return;
   }
 
@@ -910,6 +978,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   // Latin text falls back to the built-in face, which is the only face that
   // compiles letters (see fonts_*.yaml).
   if (mode == MODE_MESSAGE) {
+    state.reset_animation();
     const bool alert = temporary_screen_active(state.alert_active, f.now_ms, state.alert_deadline_ms);
     const char *text = alert ? state.alert_text : state.message_text;
     uint32_t started = alert ? state.alert_started_ms : state.message_started_ms;
@@ -944,7 +1013,15 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   }
 
   // Slide-up animation: only for unchanged layouts (same mode and length).
-  const bool same_layout = state.anim_prev_mode == (int) mode && (int) strlen(state.anim_prev) == (int) strlen(content);
+  const bool same_layout = state.anim_prev_mode == (int) mode &&
+                           strlen(state.anim_prev) == strlen(content) &&
+                           state.anim_font_identity == active->identity() &&
+                           state.anim_width == width && state.anim_height == height &&
+                           state.anim_alignment == f.alignment;
+  state.anim_font_identity = active->identity();
+  state.anim_width = width;
+  state.anim_height = height;
+  state.anim_alignment = f.alignment;
   if (!same_layout) {
     state.anim_active = false;
     snprintf(state.anim_prev, sizeof(state.anim_prev), "%s", content);
@@ -958,6 +1035,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     }
   }
 
+  // Home Assistant can switch animation off or set duration to zero mid-slide.
+  // Cancel immediately, even when the content has not changed (no divide by 0).
+  if (!f.animate || f.animation_ms == 0) state.anim_active = false;
   float progress = 1.0f;
   if (state.anim_active) {
     progress = (float) (uint32_t)(f.now_ms - state.anim_started_ms) / (float) f.animation_ms;

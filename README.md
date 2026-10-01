@@ -1,6 +1,6 @@
 # ESPHome MAX7219 Matrix Clock
 
-A modular ESPHome 2026.9.0 firmware for a MAX7219 LED matrix clock on an
+A modular ESPHome 2026.9.1 firmware for a MAX7219 LED matrix clock on an
 ESP8266, with a full Home Assistant control surface, five optional 8-row clock
 faces (Dot Matrix, Matrix 2px, Pixel Clock 6×8, MD Parola Numeric 7-Segment and
 MD MAX72XX System), a built-in fallback font, per-digit
@@ -8,6 +8,27 @@ slide-up animation and on-screen OTA progress.
 
 The firmware is distributed as small package modules. Your YAML stays tiny: it
 holds your credentials, a few substitutions and the package list.
+
+## Current work: draft candidate 0.7.0
+
+This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
+checkpoint**, not a ready-to-merge firmware release. The default external pair
+is **Pixel Clock 6×8 + Matrix 2px**, with Compact 5×7 built in and other compatible
+faces optional without an artificial selection cap.
+
+Current C++/Python/web regressions, generated-source freshness, TypeScript/build
+and five isolated YAML/code-generation variants pass. Full ESP8266 compilation
+is blocked by PlatformIO toolchain-download TLS errors; current flash/RAM and
+real boot/OTA behavior are not verified. Automatic main-push release/Pages
+workflows are still unfinished. See [ROADMAP.md](ROADMAP.md),
+[REPORT.md](REPORT.md) and [VALIDATION.md](VALIDATION.md).
+
+The candidate installer verifies the newest published immutable release before
+export and fails closed when its tagged contract is unavailable or mismatched.
+Older published releases without that contract cannot be installed through this
+candidate UI yet. The generated `0.7.0` example is not a published installation
+pin until a matching immutable release exists. Do not use `main` as a public
+installation reference or treat historical build measurements as current ones.
 
 ## Features
 
@@ -19,8 +40,9 @@ holds your credentials, a few substitutions and the package list.
   MD Parola Numeric 7-Segment (a MAX7219-matrix bitmap face) and
   MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are available, next to
   the compact 5×7 bitmap font, which always fits and needs no download.
-  The configurator ships **Pixel Clock 6×8**
-  by default and lets you add any of the other faces. Pixel Clock 6×8 is the
+  Default builds include exactly **Pixel Clock 6×8 + Matrix 2px**;
+  the configurator lets you opt into other compatible faces without a cap.
+  Pixel Clock 6×8 is the
   initial clock face and
   fills the 48-pixel clock width; Dot Matrix fits `HH:MM` in 31 pixels on a
   32x8 panel. Matrix 2px is
@@ -128,7 +150,7 @@ substitutions:
 
 ## Installation
 
-1. Install ESPHome 2026.9.0 (`pip install -r requirements-validation.txt`).
+1. Install ESPHome 2026.9.1 (`pip install -r requirements-validation.txt`).
 2. Copy `secrets.yaml.example` to `secrets.yaml` and fill in your values.
    Keep the existing API key if the device is already paired with Home
    Assistant.
@@ -285,7 +307,7 @@ there is no plaintext firmware upload endpoint next to the encrypted native OTA.
 ```bash
 python tests/test_config.py      # offline contract tests + font measurements
 make -C tests test               # pure C++ renderer tests
-esphome config dev.yaml          # ESPHome 2026.9.0 validation
+esphome config dev.yaml          # ESPHome 2026.9.1 validation
 # The build server additionally runs: esphome compile dev.yaml
 ```
 
@@ -358,19 +380,23 @@ ROADMAP.md      implementation contract and remaining work
 
 ## Remaining hardware-only verification
 
-Validated with **ESPHome 2026.9.0** on Python 3.12.7 (`esphome config`, full
-ESP8266 `esphome compile` for the default two-face configuration and subset
-builds, and `scripts/validate-release-offline.sh 0.4.0`). The renderer is
-covered by host tests; the following still needs a real device (see
-`VALIDATION.md` and `ROADMAP.md` for details):
+The current candidate passes ESPHome **2026.9.1** YAML validation and C++
+code generation for five isolated variants, plus host renderer/web tests.
+Full ESP8266 compilation and fresh size measurements still require a build
+host with working PlatformIO downloads. Release/Pages automation and live
+installer fetch remain roadmap work, not completed deployment.
 
-* on-panel readability of the included 8-row fonts;
-* OTA progress visibility during a real transfer;
+The following also needs a real device (see `VALIDATION.md` and `ROADMAP.md`):
+
+* on-panel readability, repaired Matrix zero and smooth changed-digit slides;
+* installed immutable version at boot and subsequent preference restoration;
+* secure OTA progress/bar/completion/error visibility during a real transfer,
+  including display-off, inversion, dim/night/alarm preferences;
 * wiring/orientation checks with the built-in test patterns.
 
 ## References
 
-* [ESPHome 2026.9.0 release notes](https://esphome.io/changelog/2026.9.0/)
+* [ESPHome 2026.9.1 release notes](https://github.com/esphome/esphome/releases/tag/2026.9.1)
 * [MAX7219 Digit Display](https://esphome.io/components/display/max7219digit/)
 * [Native API](https://esphome.io/components/api/)
 * [OTA automations](https://esphome.io/components/ota/#ota-automations)

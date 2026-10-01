@@ -1,385 +1,58 @@
-import {
-  LIMITS,
-  SCREENS,
-  type Alignment,
-  type Config,
-  type DateFormat,
-  type HourFormat,
-  type MessageScroll,
-  type SecondsMode,
-  type Wiring,
-} from "./types";
+import type { Config, LedName } from "./types";
 import { LEDS } from "./leds";
 import { deviceSlug } from "./device";
-import { fitForPanel, fontSpec, previewFont } from "./fontCatalog";
-import { geometry, type Geometry } from "./render";
-import { cn } from "./utils/cn";
-import { CopyButton, NumberField, Patch, PinField, Section, Segmented, Slider, Toggle } from "./ui";
-import { EXTRA_FONTS, MAX_EXTRA_FONTS } from "./fontSelection";
-import { INSTALLER_READY, entityMap, installCommand, sampleAction } from "./yaml";
+import { fontSpec } from "./fontCatalog";
+import { type Geometry } from "./render";
+import { CopyButton, NumberField, type Patch, Section, Slider, Toggle } from "./ui";
+import { entityId, entityMap, installCommand, sampleAction } from "./yaml";
+import { FIRMWARE, PROJECT, limitsFor, type FirmwareSetting } from "./firmware";
+export { PROJECT } from "./firmware";
 
-const ZONES = [
-  "UTC",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Europe/Amsterdam",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-];
-
-const PRESETS: { label: string; chips: number; rows: number }[] = [
-  { label: "6×1 · 48×8", chips: 6, rows: 1 },
-  { label: "4×1 · 32×8", chips: 4, rows: 1 },
-  { label: "8×1 · 64×8", chips: 8, rows: 1 },
-  { label: "12×1 · 96×8", chips: 12, rows: 1 },
-  { label: "8×2 · 64×16", chips: 8, rows: 2 },
-  { label: "12×2 · 96×16", chips: 12, rows: 2 },
-];
-
-export const PROJECT = {
-  repo: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock",
-  readme: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/README.md",
-  validation: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/VALIDATION.md",
-  roadmap: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/ROADMAP.md",
-  issues: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/issues",
-  live: "https://sandro-defender.github.io/Esphome-Max7219-Matrix-Clock/",
-  ref: "main",
-  esphome: "2026.9.0",
-};
-
-/* ------------------------------------------------------------------ *
- * Tune — the live controls
- * ------------------------------------------------------------------ */
-
-export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: Patch; setCfg: (update: (current: Config) => Config) => void; geo: Geometry }) {
-  const spec = fontSpec(cfg.clockFont);
-  const font = previewFont(cfg.clockFont);
-  const fit = fitForPanel(font, geo.width, Math.min(8, geo.height));
-  const pinClash = new Set([cfg.clkPin, cfg.mosiPin, cfg.csPin]).size < 3;
-  const bootPin = [cfg.clkPin, cfg.mosiPin, cfg.csPin].some((pin) => pin === "D3" || pin === "D4" || pin === "D8");
-
-  return (
-    <Section
-      id="tune"
-      title="Tune"
-      lead={
-        <>
-          Every control here changes the live preview and the generated installer. Groups use native collapsible
-          panels — Clock face, Hardware and Device start open.
-        </>
-      }
-    >
-      <details className="panel tune-section" open>
-        <summary>Clock face</summary>
-        <Segmented
-          label="Preview layout"
-          value={cfg.layoutPreview}
-          options={["firmware", "modules"] as const}
-          labels={{ firmware: "As the firmware draws it", modules: "One digit per module" }}
-          onChange={(value) => patch("layoutPreview", value)}
-          hint={
-            cfg.layoutPreview === "firmware"
-              ? "What the firmware draws: the selected font, centred, with the same fallback rules."
-              : "Illustration only: one digit per 8×8 module. The installed firmware draws the clock proportionally."
-          }
-        />
-        <Toggle
-          label="Module boundary guides · preview overlay"
-          hint={
-            geo.modulesX * geo.modulesY > 1
-              ? "Dashed guides on the seam between two 8×8 boards. They are an overlay, so no pixel moves."
-              : "Shown as soon as the panel has more than one 8×8 module."
-          }
-          checked={cfg.showModuleBoundaries}
-          onChange={(value) => patch("showModuleBoundaries", value)}
-        />
-        <p className="hint">
-          The installed faces live in <a href="#font-lab">Font Lab</a>: {cfg.fonts.length} external{" "}
-          {cfg.fonts.length === 1 ? "face" : "faces"} compiled plus the built-in Compact 5×7 fallback. Font Lab lists{" "}
-          {EXTRA_FONTS.length} optional faces and{" "}
-          {Number.isFinite(MAX_EXTRA_FONTS) ? `takes up to ${MAX_EXTRA_FONTS} of them` : "takes any of them"}; checking one
-          there switches this preview to it immediately.
-        </p>
-        <ul className="entity-list font-facts">
-          <li>
-            Selected face <code>{spec.label}</code>
-          </li>
-          <li>
-            Compiled file <code>{spec.firmwareId ?? "builtin"}</code>
-          </li>
-          <li>
-            HH:MM:SS <code>{fit.width} px of {geo.width} px</code>
-          </li>
-          <li>
-            Tallest digit <code>{fit.digitHeight} px</code>
-          </li>
-          <li>
-            License <code>{spec.license}</code>
-          </li>
-        </ul>
-      </details>
-
-      <details className="panel tune-section">
-        <summary>Screen</summary>
-        <label className="field">
-          <span className="field-label">Screen select</span>
-          <select value={cfg.screen} onChange={(event) => patch("screen", event.target.value as Config["screen"])}>
-            {SCREENS.map((screen) => (
-              <option key={screen}>{screen}</option>
-            ))}
-          </select>
-          <span className="hint">The five options the firmware exposes in Home Assistant.</span>
-        </label>
-        <Toggle
-          label="Automatic screen cycling"
-          hint="Switches between the clock and the date on its own. The screen select above is used on the first pass."
-          checked={cfg.autoCycle}
-          onChange={(value) => patch("autoCycle", value)}
-        />
-        <Slider
-          label="Cycle interval"
-          value={cfg.cycleInterval}
-          min={LIMITS.cycleInterval.min}
-          max={LIMITS.cycleInterval.max}
-          step={5}
-          unit="s"
-          onChange={(value) => patch("cycleInterval", value)}
-        />
-        <Segmented
-          label="Alignment"
-          value={cfg.alignment}
-          options={["Left", "Center", "Right"] as const}
-          onChange={(value) => patch("alignment", value as Alignment)}
-        />
-        <Segmented
-          label="Hour format"
-          value={cfg.hourFormat}
-          options={["24-hour", "12-hour"] as const}
-          onChange={(value) => patch("hourFormat", value as HourFormat)}
-          hint="12-hour mode blanks the leading digit below 10, exactly like the firmware."
-        />
-        <Segmented
-          label="Date format"
-          value={cfg.dateFormat}
-          options={["DD.MM", "MM/DD", "DD/MM"] as const}
-          onChange={(value) => patch("dateFormat", value as DateFormat)}
-        />
-        <Segmented
-          label="Seconds display"
-          value={cfg.secondsMode}
-          options={["Off", "Digits", "Bar"] as const}
-          onChange={(value) => patch("secondsMode", value as SecondsMode)}
-          hint="Bar draws a full-width progress line on the bottom row instead of the seconds digits."
-        />
-        <Toggle
-          label="Blink colon"
-          hint="The separator disappears on odd seconds."
-          checked={cfg.blinkColon}
-          onChange={(value) => patch("blinkColon", value)}
-        />
-        <Toggle
-          label="Digit slide-up animation"
-          hint="Only the digits whose value changed slide: the old one leaves upwards, the new one arrives from below. Colons and unchanged digits stay still, and nothing slides while the firmware shows OTA progress. The preview above follows this switch."
-          checked={cfg.digitAnimation}
-          onChange={(value) => patch("digitAnimation", value)}
-        />
-        <Slider
-          label="Animation duration"
-          value={cfg.animationMs}
-          min={LIMITS.animationMs.min}
-          max={LIMITS.animationMs.max}
-          step={10}
-          unit="ms"
-          onChange={(value) => patch("animationMs", value)}
-        />
-        <Slider
-          label="Animation row gap"
-          value={cfg.animationRowGap}
-          min={LIMITS.animationRowGap.min}
-          max={LIMITS.animationRowGap.max}
-          step={1}
-          unit="rows"
-          onChange={(value) => patch("animationRowGap", value)}
-        />
-        <p className="hint">
-          {cfg.animationMs === 0
-            ? "0 ms switches the slide off: digits change in one step."
-            : `One slide takes ${cfg.animationMs} ms — 600 ms is the default the firmware ships with.`}{" "}
-          The preview uses exactly this value, and it stays still if your system asks for reduced motion.
-        </p>
-      </details>
-
-      <details className="panel tune-section">
-        <summary>Messages</summary>
-        <Slider
-          label="Default hold"
-          value={cfg.messageHold}
-          min={LIMITS.messageHold.min}
-          max={LIMITS.messageHold.max}
-          step={5}
-          unit="s"
-          onChange={(value) => patch("messageHold", value)}
-        />
-        <span className="hint">
-          {cfg.messageHold === 0
-            ? "A message stays on the matrix until it is cleared or replaced."
-            : `A message takes the whole display for ${cfg.messageHold} s, then the clock returns.`}
-        </span>
-        <Segmented
-          label="Long messages"
-          value={cfg.scrollMode}
-          options={["Scroll", "Static"] as const}
-          onChange={(value) => patch("scrollMode", value as MessageScroll)}
-          hint="Scroll loops the text, Static shows the part that fits."
-        />
-        <Slider
-          label="Scroll speed"
-          value={cfg.scrollSpeed}
-          min={LIMITS.scrollSpeed.min}
-          max={LIMITS.scrollSpeed.max}
-          step={5}
-          unit="ms/px"
-          onChange={(value) => patch("scrollSpeed", value)}
-        />
-        <p className="hint">The preview keeps the message on the matrix for as long as the firmware would, then falls back to the selected screen.</p>
-      </details>
-
-      <details className="panel tune-section">
-        <summary>Light</summary>
-        <Slider label="Brightness" value={cfg.brightness} min={LIMITS.brightness.min} max={LIMITS.brightness.max} step={1} onChange={(value) => patch("brightness", value)} />
-        <Toggle
-          label="Night dimming"
-          hint="Uses the clock hour on the device, not the browser."
-          checked={cfg.nightDim}
-          onChange={(value) => patch("nightDim", value)}
-        />
-        <Slider
-          label="Night brightness"
-          value={cfg.nightBrightness}
-          min={LIMITS.brightness.min}
-          max={LIMITS.brightness.max}
-          step={1}
-          onChange={(value) => patch("nightBrightness", value)}
-        />
-        <div className="two">
-          <NumberField label="Night starts" value={cfg.nightStart} min={0} max={23} onChange={(value) => patch("nightStart", value)} />
-          <NumberField label="Night ends" value={cfg.nightEnd} min={0} max={23} onChange={(value) => patch("nightEnd", value)} />
-        </div>
-        <p className="hint">
-          Night runs from {cfg.nightStart}:00 until {cfg.nightEnd}:00. The preview dims while the local hour is inside that window.
-        </p>
-        <Toggle label="Display power" checked={cfg.displayPower} onChange={(value) => patch("displayPower", value)} />
-        <Toggle
-          label="Invert"
-          hint="Lit background, dark glyphs. Useful if a module is mounted backwards."
-          checked={cfg.invert}
-          onChange={(value) => patch("invert", value)}
-        />
-        <Segmented
-          label="LED colour · preview only"
-          value={cfg.led}
-          options={Object.keys(LEDS) as Config["led"][]}
-          onChange={(value) => patch("led", value)}
-        />
-      </details>
-
-      <details className="panel tune-section" open>
-        <summary>Hardware</summary>
-        <div className="preset-row">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              className={cn("chip", cfg.chips === preset.chips && cfg.rows === preset.rows && "on")}
-              onClick={() => setCfg((current) => ({ ...current, chips: preset.chips, rows: preset.rows }))}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <div className="two">
-          <NumberField label="Modules" value={cfg.chips} min={LIMITS.chips.min} max={LIMITS.chips.max} onChange={(value) => patch("chips", value)} />
-          <NumberField label="Rows" value={cfg.rows} min={LIMITS.rows.min} max={LIMITS.rows.max} onChange={(value) => patch("rows", value)} />
-        </div>
-        <Segmented
-          label="Wiring"
-          value={cfg.wiring}
-          options={["snake", "zigzag"] as const}
-          onChange={(value) => patch("wiring", value as Wiring)}
-          hint="Numbers under the modules are chain order, not pixel order. Snake reverses every other row."
-        />
-        <div className="two">
-          <PinField label="CLK" value={cfg.clkPin} onChange={(value) => patch("clkPin", value)} />
-          <PinField label="DIN / MOSI" value={cfg.mosiPin} onChange={(value) => patch("mosiPin", value)} />
-        </div>
-        <PinField label="CS" value={cfg.csPin} onChange={(value) => patch("csPin", value)} />
-        {pinClash ? <p className="warn">CLK, DIN, and CS need three different pins.</p> : null}
-        {bootPin ? (
-          <p className="hint">
-            D3, D4, and D8 are boot straps. D8 as CLK is the wiring most builds already have and it is fine if the board
-            starts. If it does not, move CLK to D5.
-          </p>
-        ) : null}
-        <label className="field">
-          <span className="field-label">Rotate each chip</span>
-          <select value={cfg.rotateChip} onChange={(event) => patch("rotateChip", Number(event.target.value) as Config["rotateChip"])}>
-            {[0, 90, 180, 270].map((deg) => (
-              <option key={deg} value={deg}>
-                {deg}°
-              </option>
-            ))}
-          </select>
-          <span className="hint">Applied by the driver, not redrawn in the preview. Use the grid test if a module looks sideways.</span>
-        </label>
-        <Toggle label="Flip X" checked={cfg.flipX} onChange={(value) => patch("flipX", value)} />
-      </details>
-
-      <details className="panel tune-section" open>
-        <summary>Device</summary>
-        <label className="field">
-          <span className="field-label">Device name</span>
-          <input type="text" value={cfg.deviceName} spellCheck={false} onChange={(e) => patch("deviceName", e.target.value)} />
-          <span className="hint">Installs as {deviceSlug(cfg.deviceName)}. Keep max7219-clock if this device is already adopted.</span>
-        </label>
-        <label className="field">
-          <span className="field-label">Friendly name</span>
-          <input type="text" value={cfg.friendlyName} onChange={(e) => patch("friendlyName", e.target.value)} />
-        </label>
-        <label className="field">
-          <span className="field-label">SNTP timezone</span>
-          <input list="zones" value={cfg.timezone} onChange={(e) => patch("timezone", e.target.value)} />
-          <datalist id="zones">
-            {ZONES.map((zone) => (
-              <option key={zone} value={zone} />
-            ))}
-          </datalist>
-          <span className="hint">Home Assistant time is already local; this is only the SNTP fallback.</span>
-        </label>
-        <p className="hint">
-          Wi-Fi, API, OTA, fallback AP, and web-server credentials stay in your local <code>secrets.yaml</code>. The
-          configurator never asks for or stores them.
-        </p>
-      </details>
-    </Section>
-  );
+/** One widget for every real firmware binding; labels/options/bounds are generated. */
+function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Config; patch: Patch }) {
+  const value = cfg[item.key];
+  if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} onChange={(next) => patch(item.key, next)} />;
+  const options = item.input === "pin" ? Object.keys(FIRMWARE.pinMappings[cfg.board] ?? {}) :
+    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : item.options;
+  if (options) return <label className="field"><span className="field-label">{item.label}</span>
+    <select value={String(value)} onChange={(event) => patch(item.key, typeof item.default === "number" ? Number(event.target.value) : event.target.value)}>
+      {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid pin</option> : null}
+      {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
+    </select></label>;
+  if (typeof item.default === "number") {
+    const range = limitsFor(item.key);
+    return item.input === "range" ? <Slider label={item.label} value={Number(value)} {...range} unit={item.unit} onChange={(next) => patch(item.key, next)} /> :
+      <NumberField label={item.label + (item.unit ? ` (${item.unit})` : "")} value={Number(value)} {...range} onChange={(next) => patch(item.key, next)} />;
+  }
+  return <label className="field"><span className="field-label">{item.label}</span>
+    <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} /></label>;
 }
 
-/* ------------------------------------------------------------------ *
- * Hardware & Wiring
- * ------------------------------------------------------------------ */
+export function TuneSection({ cfg, patch, geo }: { cfg: Config; patch: Patch; geo: Geometry }) {
+  const groups = [...new Set(FIRMWARE.settings.map((item) => item.group))];
+  return <Section id="tune" title="Settings">
+    <div className="tune-grid">{groups.map((group) => <fieldset className="control-group" key={group}>
+      <legend>{group}</legend>{FIRMWARE.settings.filter((item) => item.group === group).map((item) =>
+        <FirmwareField key={item.key} item={item} cfg={cfg} patch={patch} />)}
+    </fieldset>)}</div>
+    <fieldset className="control-group"><legend>Preview</legend>
+      <label className="field"><span className="field-label">Message</span><input value={cfg.message} maxLength={FIRMWARE.renderer.messageMaxBytes} onChange={(event) => patch("message", event.target.value)} /></label>
+      <label className="field"><span className="field-label">LED colour</span><select value={cfg.led} onChange={(event) => patch("led", event.target.value as LedName)}>
+        {Object.entries(LEDS).map(([key, led]) => <option key={key} value={key}>{led.label}</option>)}
+      </select></label>
+      <Toggle label="Module boundaries" checked={cfg.showModuleBoundaries} onChange={(value) => patch("showModuleBoundaries", value)} />
+    </fieldset>
+    {!geo.valid ? <p className="warn" role="alert">Module count must divide evenly into rows.</p> : null}
+  </Section>;
+}
 
 export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
-  const softwareSpi = cfg.clkPin !== "D5" || (cfg.mosiPin !== "D7" && cfg.mosiPin !== "D6");
+  const softwareSpi = cfg.clkPin !== "D5" || (cfg.mosiPin !== "D7");
   return (
     <Section
       id="hardware"
       title="Hardware and Wiring"
-      lead={<>The default build is a Wemos D1 Mini driving six MAX7219 modules in one row — a 48×8 panel wired with three data lines and shared 5 V power.</>}
+      lead={<>The reference build uses {String(FIRMWARE.defaults.board)}, {String(FIRMWARE.defaults.chips)} modules and {String(FIRMWARE.defaults.rows)} row, with three data lines and shared 5 V power.</>}
     >
       <div className="panel">
         <h3>Default wiring</h3>
@@ -398,19 +71,19 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
               <td>Clock</td>
               <td>CLK</td>
               <td>{cfg.clkPin}</td>
-              <td>D8 by default; D5 is the hardware SPI clock alternative</td>
+              <td>{String(FIRMWARE.defaults.clkPin)} by default; D5 is the hardware SPI clock alternative</td>
             </tr>
             <tr>
               <td>Data</td>
               <td>DIN</td>
               <td>{cfg.mosiPin}</td>
-              <td>D6 by default; first module only — then OUT → IN down the chain</td>
+              <td>{String(FIRMWARE.defaults.mosiPin)} by default; first module only — then OUT → IN down the chain</td>
             </tr>
             <tr>
               <td>Load / chip select</td>
               <td>CS</td>
               <td>{cfg.csPin}</td>
-              <td>D7 by default</td>
+              <td>{String(FIRMWARE.defaults.csPin)} by default</td>
             </tr>
             <tr>
               <td>Ground</td>
@@ -441,7 +114,7 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
             they are if the clock already runs.
           </p>
         ) : (
-          <p>CLK and DIN sit on the hardware SPI pins (D5/D7 or D6), so ESPHome drives the chain over hardware SPI.</p>
+          <p>CLK and DIN sit on the hardware SPI pins (D5/D7), so ESPHome drives the chain over hardware SPI.</p>
         )}
       </div>
 
@@ -476,285 +149,65 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Install YAML
- * ------------------------------------------------------------------ */
-
-export function InstallSection({ cfg, yaml }: { cfg: Config; yaml: string }) {
+export function InstallSection({ cfg, yaml, ready = false, releaseTag, getInstaller }: { cfg: Config; yaml: string; ready?: boolean; releaseTag?: string | null; getInstaller?: () => Promise<string | null> }) {
   const slug = deviceSlug(cfg.deviceName);
-  const renames = slug !== "max7219-clock";
-  const ids = entityMap(cfg);
-  const lines = yaml.split("\n").length;
-  const download = () => {
-    if (!INSTALLER_READY) return;
-    const blob = new Blob([yaml], { type: "text/yaml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slug}.yaml`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <Section
-      id="install"
-      title="Install YAML"
-      lead={
-        <>
-          One small file installs everything. Copy or download it into your ESPHome configuration directory,{" "}
-          <strong>beside your existing <code>secrets.yaml</code></strong> — ESPHome downloads the version-pinned firmware
-          packages and the selected fonts straight from the project repository during validation and compilation, so
-          nothing else has to be copied.
-        </>
-      }
-    >
-      <div className="panel">
-        <h3>Install in five steps</h3>
-        <ol className="install-steps">
-          <li>Tune the settings until the preview matches your panel.</li>
-          <li>
-            Copy or download <code>{slug}.yaml</code> below into your ESPHome configuration directory, next to your{" "}
-            <code>secrets.yaml</code>.
-          </li>
-          <li>
-            Make sure the six entries exist in <code>secrets.yaml</code>: <code>wifi_ssid</code>,{" "}
-            <code>wifi_password</code>, <code>api_encryption_key</code>, <code>fallback_ap_password</code>,{" "}
-            <code>web_server_username</code>, <code>web_server_password</code>. The file never leaves your machine and
-            the generated YAML only references the names with <code>!secret</code>.
-          </li>
-          <li>
-            Validate: <code>esphome config {slug}.yaml</code> must report <em>Configuration is valid!</em> See{" "}
-            <a href={PROJECT.validation} target="_blank" rel="noreferrer">
-              VALIDATION.md
-            </a>{" "}
-            for the full offline procedure.
-          </li>
-          <li>
-            Flash over USB once: <code>esphome run {slug}.yaml</code>. After the node is adopted in Home Assistant,
-            update it over encrypted native OTA — there is no plaintext web upload.
-          </li>
-        </ol>
-        <div className="action-bar">
-          <span className="meta">Install command</span>
-          <CopyButton text={installCommand(cfg)} id="run" label="Copy" copiedLabel="Copied" className="ghost" />
-        </div>
-        <pre className="code">{installCommand(cfg)}</pre>
-        {renames ? (
-          <p className="warn">
-            The device name is <code>{slug}</code>. ESPHome treats that as a new node unless you set it back to
-            max7219-clock.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="panel">
-        <h3>What the generated file sets — and where to change it</h3>
-        <p>
-          These are the current values; change each one in Tune and the installer follows. Defaults come from the
-          reference build: six modules, one row, D8/D6/D7, UTC.
-        </p>
-        <div className="table-scroll">
-          <table className="pin-table">
-            <thead>
-              <tr>
-                <th>Substitution</th>
-                <th>Current value</th>
-                <th>Change in</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>device_name</td>
-                <td>{slug}</td>
-                <td>Tune → Device</td>
-              </tr>
-              <tr>
-                <td>friendly_name</td>
-                <td>{cfg.friendlyName}</td>
-                <td>Tune → Device</td>
-              </tr>
-              <tr>
-                <td>timezone</td>
-                <td>{cfg.timezone}</td>
-                <td>Tune → Device</td>
-              </tr>
-              <tr>
-                <td>board</td>
-                <td>d1_mini</td>
-                <td>edit the YAML (any ESP8266 board id)</td>
-              </tr>
-              <tr>
-                <td>matrix_clk_pin / mosi / cs</td>
-                <td>
-                  {cfg.clkPin} / {cfg.mosiPin} / {cfg.csPin}
-                </td>
-                <td>Tune → Hardware</td>
-              </tr>
-              <tr>
-                <td>matrix_chips · matrix_rows</td>
-                <td>
-                  {cfg.chips} · {cfg.rows} ({geoLabel(cfg)})
-                </td>
-                <td>Tune → Hardware</td>
-              </tr>
-              <tr>
-                <td>matrix_wiring</td>
-                <td>{cfg.wiring}</td>
-                <td>Tune → Hardware</td>
-              </tr>
-              <tr>
-                <td>matrix_rotate_chip · matrix_flip_x</td>
-                <td>
-                  {cfg.rotateChip}° · {String(cfg.flipX)}
-                </td>
-                <td>Tune → Hardware</td>
-              </tr>
-              <tr>
-                <td>font packages</td>
-                <td>
-                  {cfg.fonts.length} external face{cfg.fonts.length === 1 ? "" : "s"} + Compact 5×7 fallback
-                </td>
-                <td>Font Lab</td>
-              </tr>
-              <tr>
-                <td>project_ref / ref</td>
-                <td>{PROJECT.ref} (immutable release tag)</td>
-                <td>fixed by the release</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="hint">
-          Home Assistant entities are named after the device, e.g. <code>{ids.font}</code> — the full map is in the{" "}
-          <a href="#assistant">Home Assistant section</a>.
-        </p>
-      </div>
-
-      <div className="panel">
-        <div className="yaml-bar">
-          <h3>
-            {slug}.yaml <span className="meta">· {lines} lines</span>
-          </h3>
-          <div className="btn-row">
-            <button type="button" className="btn ghost" disabled={!INSTALLER_READY} onClick={download}>
-              Download
-            </button>
-            <CopyButton text={yaml} id="yaml" label="Copy install YAML" copiedLabel="Copied" />
-          </div>
-        </div>
-        <pre>{yaml}</pre>
-      </div>
-    </Section>
-  );
+  return <Section id="install" title="Install YAML" lead={<>One file installs the complete modular firmware and only the fonts selected in Font Lab. Keep it beside your local secrets.yaml.</>}>
+    <div className="panel"><h3>Install in five steps</h3><ol className="install-steps">
+      <li>Adjust settings and fonts on Configure.</li>
+      <li>Wait for the newest published release to be verified. Copy the installer below into <code>{slug}.yaml</code>.</li>
+      <li>Keep these keys in your own <code>secrets.yaml</code>: {Object.values(FIRMWARE.secrets).map((key, index) => <span key={key}>{index ? ", " : ""}<code>{key}</code></span>)}. No credential is entered into, stored by, or sent from this page.</li>
+      <li>Use ESPHome <strong>{FIRMWARE.esphomeVersion}</strong>. Run <code>esphome config {slug}.yaml</code> and require “Configuration is valid!”.</li>
+      <li>Flash over USB once with <code>{installCommand(cfg)}</code>, adopt in Home Assistant, then use encrypted native OTA. ESP8266 may need a physical reset after the initial serial flash before OTA works.</li>
+    </ol><CopyButton text={installCommand(cfg)} id="run" label="Copy install command" className="ghost" />
+      <pre className="code">{installCommand(cfg)}</pre></div>
+    <div className="panel"><h3>Current package contract</h3>
+      <p>Published release: <strong>{releaseTag ?? "checking"}</strong>. All packages and font assets use that same immutable tag, never main. Downloads stay disabled while the release or matching source contract is unverified.</p>
+      <div className="table-scroll"><table className="pin-table"><thead><tr><th>Substitution / entity</th><th>Current value</th><th>Configure group</th></tr></thead><tbody>
+        {FIRMWARE.settings.map((item) => <tr key={item.key}><td>{item.target}</td><td>{String(cfg[item.key])}</td><td>{item.group}</td></tr>)}
+      </tbody></table></div>
+      <p>Preferences are first-boot defaults. Previously restored Home Assistant values take priority. After changing the compiled font subset, reselect Clock font once: ESPHome restores an option index, not its label. Compact 5×7 is always available.</p>
+    </div>
+    <div className="panel"><div className="yaml-bar"><h3>{slug}.yaml</h3><CopyButton text={yaml} id="yaml" label="Copy install YAML" disabled={!ready} getText={getInstaller} /></div>
+      <pre className="code">{ready ? yaml : "Installer unavailable until a matching published release and valid hardware configuration are verified."}</pre></div>
+  </Section>;
 }
-
-function geoLabel(cfg: Config): string {
-  const geo = geometry(cfg.chips, cfg.rows);
-  return geo.valid ? `${geo.width}×${geo.height} px` : "invalid layout";
-}
-
-/* ------------------------------------------------------------------ *
- * Home Assistant
- * ------------------------------------------------------------------ */
 
 export function AssistantSection({ cfg }: { cfg: Config }) {
   const ids = entityMap(cfg);
-  const action = sampleAction(cfg, cfg.message || "DOOR", cfg.messageHold);
-  return (
-    <Section
-      id="assistant"
-      title="Home Assistant entities and actions"
-      lead={
-        <>
-          After the first flash, adopt the device in Home Assistant and every entity below appears through the ESPHome
-          integration. IDs derive from the device name — <code>{ids.node}</code> — so the examples match your install.
-        </>
-      }
-    >
-      <div className="panel">
-        <h3>Actions (Developer tools → Actions)</h3>
-        <div className="action-bar">
-          <span className="meta">Show a message with the current hold of {cfg.messageHold} s</span>
-          <CopyButton text={action} id="action" label="Copy action" copiedLabel="Copied" />
-        </div>
-        <pre className="code">{action}</pre>
-        <pre className="code">{`# Clear a message
-action: ${ids.clearAction}
-
-# Start a five-minute countdown
-action: ${ids.countdownAction}
-data:
-  seconds: 300
-
-# Short static status note
-action: esphome.${ids.node}_show_status
-data:
-  note: "WASHING DONE"
-  duration: 20`}</pre>
-        <p className="hint">A duration of 0 keeps a message until it is cleared. Confirm generated IDs after adoption; Home Assistant may adjust duplicates.</p>
-      </div>
-
-      <div className="panel">
-        <h3>Example automations</h3>
-        <pre className="code">{`alias: Matrix clock doorbell
-triggers:
-  - trigger: state
-    entity_id: binary_sensor.front_door
-    to: "on"
-actions:
-  - action: ${ids.showAction}
-    data:
-      message: "DOOR"
-      duration: 15`}</pre>
-      </div>
-
-      <div className="panel">
-        <h3>Selects</h3>
-        <div className="table-scroll">
-          <table className="pin-table">
-            <tbody>
-              <tr><td>Screen</td><td>Clock, Date, Message, Module grid test, Pixel checkerboard</td></tr>
-              <tr><td>Clock alignment</td><td>Left, Center, Right</td></tr>
-              <tr><td>Time format</td><td>24 hour, 12 hour</td></tr>
-              <tr><td>Seconds display</td><td>Off, Digits, Bar</td></tr>
-              <tr><td>Date format</td><td>DD.MM, MM/DD, DD/MM</td></tr>
-              <tr><td>Clock font</td><td>the faces you included in Font Lab, plus Compact 5x7</td></tr>
-              <tr><td>Message scroll</td><td>Scroll, Static</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <h3>Numbers, switches and buttons</h3>
-        <p>
-          Brightness and night brightness (0–15), animation duration (0–2000 ms), scroll speed (20–200 ms/px), message
-          duration (0–3600 s), countdown (10–3599 s), cycle interval (5–300 s), night start/end hour. Switches: display
-          power, blinking colon, digit animation, automatic cycling, night mode and schedule, display inversion.
-          Buttons: restart, return to clock, clear message, start/cancel countdown, both test patterns, restore display
-          defaults.
-        </p>
-        <h3>Diagnostics</h3>
-        <p>
-          Display mode (<code>{ids.mode}</code>), OTA state (<code>{ids.ota}</code>), countdown remaining, Wi-Fi signal,
-          IP address, uptime, heap statistics, reset reason. Key IDs for automations:
-        </p>
-        <ul className="entity-list">
-          <li>Screen <code>{ids.screen}</code></li>
-          <li>Clock font <code>{ids.font}</code></li>
-          <li>Brightness <code>{ids.brightness}</code></li>
-          <li>Show message <code>{ids.showAction}</code></li>
-        </ul>
-        <p className="hint">
-          ESPHome restores the Clock font <em>index</em>, not its name: after flashing a different font subset,
-          re-select the face once. The renderer always keeps the Compact fallback.
-        </p>
-      </div>
-    </Section>
-  );
+  return <Section id="assistant" title="Home Assistant entities and actions" lead={<>The following reference is generated from the actual firmware packages. Example entity IDs use {ids.node}; Home Assistant may adjust duplicates.</>}>
+    <div className="panel"><h3>Actions</h3><CopyButton text={sampleAction(cfg, cfg.message || "DOOR")} id="action" label="Copy message action" />
+      <pre className="code">{sampleAction(cfg, cfg.message || "DOOR")}</pre>
+      <div className="table-scroll"><table className="pin-table"><tbody>{FIRMWARE.actions.map((action) => <tr key={action.action}>
+        <td><code>esphome.{ids.node}_{action.action}</code></td><td>{action.description}</td><td>{Object.entries(action.variables).map(([key, type]) => `${key}: ${type}`).join(", ")}</td>
+      </tr>)}</tbody></table></div><p>A configured default duration of 0 persists until cleared; action durations at or below 0 select that default. Messages preserve spaces and ASCII case is uppercased, truncated at a valid UTF-8 boundary to {FIRMWARE.renderer.messageMaxBytes} bytes. Unsupported text uses the built-in fallback.</p></div>
+    <div className="panel"><h3>Entity reference</h3><div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
+      {FIRMWARE.entities.map((entity, index) => <tr key={`${entity.domain}-${entity.id ?? entity.name}-${index}`}>
+        <td><strong>{entity.name}</strong><br /><code>{entityId(cfg, entity.domain, entity.name)}</code></td>
+        <td>{entity.id === "clock_font" ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
+          (entity.min_value !== undefined ? `${entity.min_value}–${entity.max_value}, step ${entity.step} ${entity.unit_of_measurement ?? ""}` : entity.domain)}
+          {entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
+      </tr>)}
+    </tbody></table></div></div>
+  </Section>;
 }
 
-/* ------------------------------------------------------------------ *
- * Troubleshooting
- * ------------------------------------------------------------------ */
+export function FontReferenceSection() {
+  return <Section id="font-reference" title="Fonts and preview behaviour">
+    <div className="panel"><h3>Default and optional fonts</h3><p>The default pair is {FIRMWARE.defaultFonts.map((key) => fontSpec(key).label).join(" + ")}. All compatible extras may be selected together, without a cap. The built-in Compact 5×7 fallback needs no external font data.</p>
+      <table className="pin-table"><tbody>{FIRMWARE.fonts.map((font) => <tr key={font.id}><td>{font.label}</td><td>{font.license}</td><td><a href={`${PROJECT.repo}/blob/${PROJECT.ref}/${font.source}`} target="_blank" rel="noreferrer">Source / licence</a></td></tr>)}</tbody></table></div>
+    <div className="panel"><h3>How the display chooses a layout</h3><p>Full HH:MM:SS → HH:MM plus seconds bar → Compact 5×7. A glyph never wraps into the next chip. Free text falls back to Compact if the selected face lacks even one character; wide messages scroll or clip according to Message scroll.</p>
+      <p>Digit animation slides only changed numeric cells upward in their own ink-height window. Unchanged digits and colons remain stationary. Duration and blank-row gap are real Home Assistant controls; setting duration to 0 or disabling Digit animation cancels any active slide. Browser reduced-motion preferences suppress preview animation only.</p>
+      <p>The preview uses the exact FreeType monochrome glyphs, advances and bearings and the C++ built-in bitmap. It displays the logical front-facing buffer; wiring guides mark chain order. Per-chip rotation and flip reflect the selected driver transforms. Frozen preview time, message demo, colour and module boundaries are preview-only and do not enter installer YAML.</p></div>
+    <div className="panel"><h3>Boot and secure OTA</h3><p>The installed project version appears briefly after boot, then the restored screen and power state return. OTA has higher priority: start, percentage/bar, 100% for one second and error/code screens are synchronously flushed while ESPHome blocks its normal loop. OTA overrides off, inversion and zero/night brightness without persisting changed preferences. Errors return to current settings after eight seconds. Never share secrets.yaml.</p></div>
+  </Section>;
+}
+
+export function ReleaseNotesSection({ releaseTag }: { releaseTag?: string | null }) {
+  return <Section id="release-notes" title="Firmware version and release notes">
+    <div className="panel"><p>Newest published release: <strong>{releaseTag ?? "checking"}</strong>. Configurator firmware contract: <strong>{FIRMWARE.releaseVersion}</strong>; target: <strong>ESPHome {FIRMWARE.esphomeVersion}</strong>.</p>
+      <pre className="release-notes">{FIRMWARE.releaseNotes}</pre><p className="meta">Source contract SHA-256: <code>{FIRMWARE.sourceHash}</code></p></div>
+  </Section>;
+}
 
 const TROUBLE: { term: string; lines: string[] }[] = [
   {
@@ -772,7 +225,7 @@ const TROUBLE: { term: string; lines: string[] }[] = [
   {
     term: "Wrong time",
     lines: [
-      "The clock follows Home Assistant time and falls back to SNTP (--:-- means no time at all yet). Check that Home Assistant's time is correct, that the device is connected, and that the timezone substitution matches yours. The preview clock on this page always uses your browser's clock.",
+      "The clock follows Home Assistant time and falls back to SNTP (--:-- means no time at all yet). Check that Home Assistant's time is correct, that the device is connected, and that the timezone substitution matches yours. The live preview uses your browser clock converted to the configured timezone.",
     ],
   },
   {
@@ -788,7 +241,7 @@ const TROUBLE: { term: string; lines: string[] }[] = [
     ],
   },
   {
-    term: "couldn't find remote ref 0.4.0",
+    term: "Could not find the pinned remote ref",
     lines: [
       "The ref pins a release tag that does not exist in the repository you point at — publish the tag first, or point ref at an existing one. If ESPHome cached the failed attempt, run once with refresh: 0s.",
     ],
@@ -928,11 +381,11 @@ export function DocsSection() {
             ESP8266 flash.
           </li>
           <li>
-            <a href={`${PROJECT.repo}/tree/main/packages`} target="_blank" rel="noreferrer">
+            <a href={`${PROJECT.repo}/tree/${PROJECT.ref}/packages`} target="_blank" rel="noreferrer">
               packages/
             </a>{" "}
             and{" "}
-            <a href={`${PROJECT.repo}/tree/main/web-configurator`} target="_blank" rel="noreferrer">
+            <a href={`${PROJECT.repo}/tree/${PROJECT.ref}/web-configurator`} target="_blank" rel="noreferrer">
               web-configurator/
             </a>{" "}
             — the firmware modules the installer downloads, and this app's source.
@@ -947,9 +400,9 @@ export function DocsSection() {
             sandro-defender.github.io/Esphome-Max7219-Matrix-Clock
           </a>{" "}
           builds automatically: a GitHub Actions workflow tests, type-checks and builds <code>web-configurator/</code>{" "}
-          on every change to <code>main</code> and publishes the static bundle to GitHub Pages. To run it yourself, fork
+          on every push to <code>main</code>, compiles the firmware, publishes an immutable release first, then deploys the matching static bundle to GitHub Pages. Installer access fails closed on a source/version mismatch. To run it yourself, fork
           the repository and enable the same workflow — see{" "}
-          <a href={`${PROJECT.repo}/tree/main/web-configurator`} target="_blank" rel="noreferrer">
+          <a href={`${PROJECT.repo}/tree/${PROJECT.ref}/web-configurator`} target="_blank" rel="noreferrer">
             web-configurator/README.md
           </a>
           .

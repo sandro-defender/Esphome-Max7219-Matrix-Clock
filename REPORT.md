@@ -1,4 +1,77 @@
-# Final report - modular MAX7219 clock (ESPHome 2026.9.0)
+# Implementation checkpoint report
+
+## Current draft — 2026-10-02
+
+- **Candidate:** `0.7.0`, unreleased; exact target ESPHome **2026.9.1**.
+- **Branch:** `arena/01a0f913-esphome-max7219-matrix-clock`.
+- **Base commit:** `e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
+- **Disposition:** checkpoint this work and open a draft PR. This is not a
+  completed implementation, firmware release or Pages deployment. The final
+  checkpoint SHA and PR URL are recorded in the PR hand-off, not guessed here.
+
+### Delivered source changes
+
+1. Default Pixel Clock 6×8 + Matrix 2px packages, separate all-font measurement
+   catalogue, unlimited optional extra selection and built-in Compact 5×7.
+   Matrix zero's missing upper-left 2×2 stroke is repaired.
+2. Per-cell clipped changed-digit slides, 20 ms sampling, duration/gap controls,
+   font/layout/disable cancellation and overlay lifecycle reset.
+3. Installed-version boot screen; secure native OTA callbacks with actual
+   percentage, progress bar, synchronous MAX7219 transmission and temporary
+   visibility overrides. Real boot/OTA confirmation remains hardware-only.
+4. Firmware-derived contract for 44 settings, 48 entities and 6 actions, defaults,
+   packages, fonts, reset actions, release notes, examples and web metadata.
+5. Controls/live-preview Configure page and separate Info & Help; schema-driven
+   installer YAML with local `!secret` references only. No production secrets
+   were read/copied; no credentials are stored in links/preferences or sent to
+   GitHub by the release lookup.
+6. Bounded anonymous newest-published-release verification, immutable tagged
+   source/commit/notes checks, staleness gate and recheck before installer export.
+   This candidate UI deliberately fails closed against older releases without
+   the generated contract; publication/deployment remains follow-up work.
+7. Tagged ESPHome packed-glyph, API, MAX7219 writer and SPI oracle, 1,044 pixel
+   comparisons, updated regression tests and isolated five-variant validator.
+8. Preparatory installer CLI and release publisher. The publisher has not been
+   run to publish anything and still needs audit/tests/CI wiring.
+
+### Current validation
+
+| Check | Result |
+| --- | --- |
+| C++ renderer | **315 checks, 0 failures** |
+| Python source contracts | **36 tests, OK, no skips** |
+| Web tests | **103 passed**; 1,044 oracle frames in 9 parity tests |
+| TypeScript and production Vite build | **PASS** |
+| Generated firmware/glyph freshness | **PASS** |
+| Exact ESPHome 2026.9.1 config + code generation | **PASS** for default, all-font, built-in-only and two browser-installer profiles |
+| Full ESP8266 compile | **BLOCKED**: PlatformIO registry/toolchain TLS EOF/HTTPClientError |
+| Current flash/RAM, physical boot/OTA, live release/Pages | **NOT VERIFIED** |
+
+See [VALIDATION.md](VALIDATION.md) for commands. No current linked firmware
+exists, so the archived binary sizes below must not be attributed to this
+candidate or ESPHome 2026.9.1.
+
+### Remaining work / merge gates
+
+[ROADMAP.md](ROADMAP.md) is the authoritative ordered checklist: migrate
+all-main/PR CI; test/audit/wire immutable release publication; sequence matching
+Pages deployment; obtain full default/all-font builds and size evidence;
+complete stateful timeline parity; perform manual accessibility and real-panel
+boot/animation/encrypted-OTA checks. Existing release/Pages workflows are legacy
+and are not ready for this generator pipeline. Do not merge this checkpoint as
+though release automation or hardware sign-off were complete.
+
+No new tag, published GitHub release or Pages deployment is part of this
+checkpoint. Work is pushed only to the Arena branch, through a draft PR.
+
+## Historical reports — unchanged evidence from the base commit
+
+The archived report below refers to older 0.2.0/0.4.0 releases and their original
+ESPHome 2026.9.0 validation. It preserves prior measurements and completion
+claims, not current verification. Its old fonts, installer gate and release
+references are historical, superseded by the current draft above.
+
+## Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
 Validated historical baseline: **0.2.0** (sections 1–10 below preserve that
 initial modularization report). Release **0.4.0** (later releases keep the same
@@ -19,7 +92,7 @@ countdown and OTA screens, expose the full Home Assistant surface, and add the
 validation tooling. Every claim below refers to an artifact in this repository
 or to a command that was actually executed.
 
-## 1. Features
+### 1. Features
 
 * **Screens and modes**: clock, date, message, countdown, OTA, module-grid test,
   pixel-checkerboard test. Priority: OTA > alert/message > countdown > selected
@@ -47,7 +120,7 @@ or to a command that was actually executed.
   (disabled by default), Wi-Fi signal, IP, SSID, uptime, heap stats, version,
   reset reason, status.
 
-## 2. Home Assistant entities
+### 2. Home Assistant entities
 
 | Platform | Count | Names |
 |---|---|---|
@@ -61,7 +134,7 @@ All controls are `entity_category: config`, all diagnostics are
 `entity_category: diagnostic` and publish on change or once a minute, enforced
 by `tests/test_config.py`.
 
-## 3. API actions
+### 3. API actions
 
 | Action | Variables | Notes |
 |---|---|---|
@@ -75,7 +148,7 @@ by `tests/test_config.py`.
 Action metadata is kept short on purpose: ESP8266 allows at most 384 bytes of
 name/variable/description/example text per action, checked by the test suite.
 
-## 4. Compatibility migrations (from firmware v2.0)
+### 4. Compatibility migrations (from firmware v2.0)
 
 | v2.0 | Now |
 |---|---|
@@ -92,7 +165,7 @@ name/variable/description/example text per action, checked by the test suite.
 No OTA password existed in v2.0, so the two-step OTA password migration does not
 apply; the documented ESPHome migration still applies to older setups.
 
-## 5. Test and validation results
+### 5. Test and validation results
 
 | Check | Command | Result |
 |---|---|---|
@@ -107,7 +180,7 @@ apply; the documented ESPHome migration still applies to older setups.
 | Configurator | `cd web-configurator && npm test && npm run typecheck && npm run build` | 43 tests, type-check clean, single-file build 347.79 kB (102.93 kB gzip) |
 | **Full firmware compile** | `scripts/validate.ps1` with ESPHome 2026.9.0 | **PASS** - firmware linked successfully |
 
-## 6. Build size
+### 6. Build size
 
 The validated ESPHome 2026.9.0 default build uses **529709 of 1044464 bytes of
 flash (50.7%)** and **63200 of 81920 bytes of RAM (77.1%)**. That leaves 49.3%
@@ -115,7 +188,7 @@ flash and 22.9% RAM headroom with all 33 repository fonts compiled. The
 roadmap still leaves per-font differential measurement as optional follow-up;
 the aggregate production configuration is measured and safe.
 
-## 7. Files changed
+### 7. Files changed
 
 Added: `packages/` (11 modules + 2 C++ headers + README),
 `examples/release.yaml`, `examples/development.yaml`, `dev.yaml`,
@@ -132,7 +205,7 @@ Updated: `README.md` (complete rewrite for the package layout),
 Removed: `esphome_Max7219-Matrix-Clock/max7219-clock.yaml` and its
 `secrets.yaml.example` (superseded; the history keeps the v2.0 firmware).
 
-## 8. Commit and push status
+### 8. Commit and push status
 
 The expanded font catalogue is prepared for `main` and release tag `0.2.0`.
 The tests, ESPHome 2026.9.0 configuration validation, full ESP8266 compile and
@@ -142,7 +215,7 @@ configurator pin the same version, enforced by the contract tests.
 
 No force-push was used at any point.
 
-## 9. Remaining hardware-only verification
+### 9. Remaining hardware-only verification
 
 1. On-panel readability of Silkscreen Bold (size 7), Tiny5 (size 10) and Press
    Start 2P (size 6).
@@ -152,7 +225,7 @@ No force-push was used at any point.
 4. Behaviour of the physical controls (display power, inversion, night
    brightness, 12/24-hour and date formats).
 
-## 10. Deviations and open items
+### 10. Deviations and open items
 
 * Two roadmap checkboxes remain unchecked: optional per-font size deltas and
   the real-device OTA upload test.

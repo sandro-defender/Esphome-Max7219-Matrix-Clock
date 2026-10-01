@@ -1,4 +1,130 @@
-# ESPHome 2026.9 MAX7219 Clock Roadmap
+# ESPHome MAX7219 Matrix Clock — current roadmap
+
+## Checkpoint — 2026-10-02
+
+**Status: implementation checkpoint for a draft PR, not a completed release.**
+The current candidate is `0.7.0` (unreleased), targeting **ESPHome 2026.9.1
+exactly**, on `arena/01a0f913-esphome-max7219-matrix-clock`, based on
+`e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
+
+The latest instruction is to finish this step, record the current work and
+remaining steps, and push a PR. Do not expand the implementation or publish a
+release/Pages deployment during this checkpoint. The sections below are the
+current acceptance checklist; older checked phases are preserved separately
+as history and are **not evidence that this candidate is ready to merge**.
+
+### 1. Implemented and locally verified in this increment
+
+- [x] Keep focused firmware modules under `packages/` and small entry YAMLs.
+- [x] Pin firmware and validation tooling to ESPHome **2026.9.1**; inspect its
+  official tagged font, MAX7219, package merge, StringRef and OTA behavior.
+- [x] Compile exactly **Pixel Clock 6×8 + Matrix 2px** in default local/remote
+  builds and the configurator. Compact 5×7 is built in; extra compatible faces
+  are opt-in without an artificial selection cap. All-font builds are separate.
+- [x] Repair Matrix 2px zero's upper-left 2×2 stroke without redesigning the face.
+- [x] Implement 20 ms changed-digit-only slides with per-cell ink clipping,
+  duration/row-gap controls, cancellation on font/layout/disable changes and
+  history reset after overlays. Keep unchanged digits and separators stationary.
+- [x] Add the installed version boot screen and native OTA start/progress/bar,
+  success/error rendering, with synchronous driver flush during the blocked
+  loop, actual 0–100% progress and temporary brightness/power overrides.
+  **Physical-device verification is still required.**
+- [x] Generate defaults, controls/ranges/options, 48 entities, 6 actions, modules,
+  font metadata, reset actions, example YAMLs and web metadata from firmware.
+  Metadata bindings supply labels/hints, not duplicate defaults or options.
+- [x] Keep Configure limited to controls/live preview; move documentation,
+  hardware, font details, installation, entity reference and notes to Info & Help.
+- [x] Implement anonymous, bounded newest-published-release resolution with
+  immutable-tag/commit/contract/notes checks and fail-closed installer gating.
+  Recheck immediately before copying/downloading; never export an unpinned ref.
+- [x] Add independent browser masks and an official tagged packed-glyph/writer/
+  SPI host oracle; compare 1,044 frames plus stationary-cell assertions.
+- [x] Migrate Python source-contract expectations to the current default pair,
+  generated package/ref/reset ownership and explicit verified installer tags.
+- [x] Exercise the new isolated validator on default/all/built-in firmware and
+  default/custom-all-font browser installer YAML, using only fake secrets.
+- [x] Record accurate current results and separate historical size/build evidence.
+
+### 2. Checkpoint validation evidence
+
+| Gate | Result for this increment |
+| --- | --- |
+| Pure C++ renderer | **315 checks, 0 failures** |
+| Python contracts | **36 tests, OK, no skips**; exact tagged merge over all 32 font subsets |
+| Configurator | **103 tests passed**, including 9 oracle/parity tests |
+| Pixel oracle | **1,044 C++/browser frames compared** |
+| TypeScript | **PASS**, `tsc --noEmit` |
+| Production web build | **PASS**, single-file Vite output |
+| Generated contract/glyph freshness | **PASS**, checked artifacts match sources |
+| ESPHome 2026.9.1 YAML + C++ generation | **PASS**, five isolated variants |
+| Full ESP8266 link | **BLOCKED** by PlatformIO registry/toolchain TLS EOF/HTTPClientError; no current binary/size result |
+| Physical device / deployment | **NOT RUN** |
+
+Commands and scope are in [VALIDATION.md](VALIDATION.md). The full compile
+failure happened during toolchain acquisition, not a firmware compiler diagnostic.
+Code generation and host tests do **not** substitute for a full ESP8266 build.
+
+### 3. Next increment — automated immutable release and matching Pages
+
+These steps remain open. Preparatory scripts exist, but the existing workflows
+are still legacy and incompatible with the new generator dependencies.
+
+- [ ] Install exact SDK/font-generation dependencies in CI and check generated
+  freshness; do not regenerate silently to hide stale committed artifacts.
+- [ ] Replace path-filtered/tag-only legacy workflows with validation on **every
+  main push**, and PR validation without release/deployment permissions.
+- [ ] Wire C++/Python/web/typecheck/build/parity and five-variant YAML/codegen
+  checks into CI; require successful full default/all-font ESP8266 builds.
+- [ ] Audit and unit-test `scripts/publish_release.py`: main-only provenance,
+  permissions, tag reservation/collisions, draft asset upload, retries,
+  idempotency, immutable publication and publication-order latest selection.
+  It has not been executed to create a tag or release in this checkpoint.
+- [ ] After validation, publish an appropriate immutable versioned release
+  (`VERSION`, or `VERSION+12hexSHA` for later commits at that version), with
+  matching notes, commit and installer asset. Never move existing tags.
+- [ ] Deploy Pages from the same validated commit **after** successful release
+  publication, including injected build SHA and least-privilege permissions.
+- [ ] Verify the live installer resolves the newest published immutable tag and
+  the tagged contract/assets actually fetch; test annotated tags, pagination,
+  malformed/offline/rate-limited responses, deployment lag and repeat runs.
+- [ ] Migrate the legacy PowerShell/offline release validators safely. In
+  particular, the legacy offline shell validator copies the whole checkout;
+  do not use it with a production `secrets.yaml` present.
+
+### 4. Build, parity edge cases and hardware sign-off
+
+- [ ] Re-run full default/all-font ESP8266 compilation where the PlatformIO
+  toolchain can be downloaded; record exact commit, toolchain and flash/RAM
+  deltas/headroom. Historical 0.4.0 measurements are not candidate measurements.
+- [ ] Complete stateful timeline parity for auto-cycle, countdown/alert/message
+  interactions and interrupted overlays, beyond the checked static/frame oracle.
+- [ ] Verify a physical 48×8 panel: default font readability, repaired zero,
+  changed-digit-only motion, midnight/hour rollover, speed/gap extremes and
+  narrow/multi-row/rotation/flip mappings.
+- [ ] Verify installed tag splash then preference restoration on a real boot.
+- [ ] Exercise encrypted OTA while the normal loop is blocked: visible start,
+  percentage/bar, 100% completion, error/code and restoration; also test
+  display-off, inversion, zero brightness and night/alarm settings.
+- [ ] Manually check keyboard labels/access, reduced motion and small-screen
+  layout. No browser automation is requested or used.
+- [ ] Record final live release tag, commit, deployment status and hardware
+  results; only then mark the PR ready to merge/release.
+
+### 5. This checkpoint hand-off
+
+- [x] Finish available local checks and document blockers honestly.
+- [x] Update this roadmap, report, validation notes and current task list.
+- [ ] Commit/push the existing Arena branch and open a **draft PR** to `main`.
+  Do not push `main`, publish tags/releases or claim Pages deployment.
+
+## Archived roadmap — earlier releases and prior backlog
+
+The following is the original roadmap at base commit `e693db4`, including
+historical ESPHome 2026.9.0 evidence and old font policies. It is retained for
+traceability; current targeting/defaults/results are defined above. In particular,
+its checked definition-of-done/build/push items apply to earlier releases only.
+
+## ESPHome 2026.9 MAX7219 Clock Roadmap
 
 This is the implementation contract for turning the existing YAML into a
 polished, secure, resource-conscious MAX7219 clock with extensive Home
@@ -17,7 +143,7 @@ Official starting points:
 - [Substitutions](https://esphome.io/components/substitutions/)
 - [Font Renderer](https://esphome.io/components/font/)
 
-## Phase 0 — Protect existing work
+### Phase 0 — Protect existing work
 
 - [x] Read `AGENTS.md`, this roadmap, the README, YAML, tests, scripts, and
       current Git diff.
@@ -29,7 +155,7 @@ Official starting points:
 - [x] Scan tracked and staged content for embedded credentials.
 - [x] Keep `secrets.yaml`, build output, and validation environments ignored.
 
-## Phase 1 — Establish tests and compatibility rules
+### Phase 1 — Establish tests and compatibility rules
 
 - [x] Pin validation tooling to `esphome==2026.9.0`.
 - [x] Add or update a regression test before each behavioral change.
@@ -42,7 +168,7 @@ Official starting points:
       the required Home Assistant entities.
 - [x] Make test names describe user-visible behavior.
 
-## Phase 2 — Migrate cleanly to ESPHome 2026.9.0
+### Phase 2 — Migrate cleanly to ESPHome 2026.9.0
 
 - [x] Review all 2026.9.0 breaking changes relevant to ESP8266, API actions,
       OTA, web server, display lambdas, and template entities.
@@ -60,7 +186,7 @@ Official starting points:
 - [x] Disable regular web-server OTA when it would leave a plaintext firmware
       upload endpoint.
 
-## Phase 3 — Split the configuration into remote packages
+### Phase 3 — Split the configuration into remote packages
 
 The repository must distribute a small user-facing device file and a set of
 focused package files. Do not leave the complete implementation in one YAML
@@ -98,7 +224,7 @@ file.
       the public remote-package example.
 - [x] Document cache refresh behavior and how users pin or upgrade a release.
 
-## Phase 4 — Add repository-hosted fonts and font selection
+### Phase 4 — Add repository-hosted fonts and font selection
 
 Font source files and their license files belong in `fonts/`. Release builds
 must fetch font files directly from this public repository using ESPHome's web
@@ -148,7 +274,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Document font sources, licenses, raw download URLs, supported glyphs, and
       the steps for adding another font.
 
-### Phase 4a — Web configurator preview parity
+#### Phase 4a — Web configurator preview parity
 
 - [x] Rasterise the repository fonts for the browser instead of faking faces
       with bitmap stand-ins (`web-configurator/scripts/generate_glyphs.py` →
@@ -162,7 +288,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Test the configurator: 42 Vitest checks, including a cross-check that the
       font picker offers exactly the options `packages/controls.yaml` compiles.
 
-## Phase 5 — Make display state explicit
+### Phase 5 — Make display state explicit
 
 - [x] Define clear modes for Clock, Date, Message, Countdown, OTA, module-grid
       test, and pixel-checkerboard test.
@@ -175,7 +301,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Make expiration calculations safe across `millis()` rollover.
 - [x] Provide a readable fallback when Home Assistant time is unavailable.
 
-## Phase 6 — Build the clock renderer
+### Phase 6 — Build the clock renderer
 
 - [x] Render hours, minutes, and seconds with the same 5×7 font.
 - [x] Fit full `HH:MM:SS` inside the default 48×8 six-module display.
@@ -188,7 +314,7 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Avoid blocking delays and unnecessary dynamic allocation in the display
       lambda.
 
-## Phase 7 — Add per-digit slide-up animation
+### Phase 7 — Add per-digit slide-up animation
 
 - [x] Animate only digits whose value changed.
 - [x] Move the old digit upward while the new digit enters from below.
@@ -200,12 +326,12 @@ font source instead of requiring users to copy fonts beside their YAML.
 - [x] Verify transitions at second, minute, hour, day, and 12/24-hour
       boundaries.
 
-## Phase 8 — Expose useful Home Assistant controls
+### Phase 8 — Expose useful Home Assistant controls
 
 Expose real runtime capabilities only. Keep board type, pins, chip count, row
 count, and physical wiring as compile-time substitutions.
 
-### Select entities
+#### Select entities
 
 - [x] Display mode.
 - [x] 12/24-hour format.
@@ -217,7 +343,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Matrix test pattern.
 - [x] Clock font, selecting only from fonts compiled into the firmware.
 
-### Number entities
+#### Number entities
 
 - [x] Matrix brightness from 0 to 15.
 - [x] Animation duration or speed.
@@ -227,7 +353,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Automatic screen-cycle interval.
 - [x] Day and night brightness.
 
-### Switch entities
+#### Switch entities
 
 - [x] Display power.
 - [x] Blinking colon.
@@ -238,7 +364,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Automatic brightness only when a real light sensor is configured.
       ... not applicable: no light sensor is configured or assumed
 
-### Button entities
+#### Button entities
 
 - [x] Restart device.
 - [x] Return to clock.
@@ -247,7 +373,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Run module-grid and pixel tests.
 - [x] Restore safe display defaults.
 
-### Diagnostic entities
+#### Diagnostic entities
 
 - [x] Wi-Fi signal, uptime, IP address, connected SSID, ESPHome version, and
       reset reason where officially supported.
@@ -258,7 +384,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Correct `entity_category`, units, icons, device classes, update intervals,
       restore behavior, and safe defaults.
 
-## Phase 9 — Add parameterized API actions
+### Phase 9 — Add parameterized API actions
 
 - [x] Show a scrolling message with validated text and duration.
 - [x] Clear the current message.
@@ -269,7 +395,7 @@ count, and physical wiring as compile-time substitutions.
 - [x] Use `api.respond` only according to ESPHome 2026.9 documentation.
 - [x] Handle empty strings, invalid values, overflow, and excessive durations.
 
-## Phase 10 — Show firmware-upload status
+### Phase 10 — Show firmware-upload status
 
 Use the native OTA platform's documented `on_begin`, `on_progress`, `on_end`,
 and `on_error` automations.
@@ -299,7 +425,7 @@ and `on_error` automations.
 - [x] Keep every progress callback very short so display feedback cannot break
       the firmware transfer.
 
-## Phase 11 — Add useful clock functions
+### Phase 11 — Add useful clock functions
 
 - [x] Countdown completion message with safe timeout behavior.
 - [x] Temporary scrolling notifications from Home Assistant.
@@ -309,7 +435,7 @@ and `on_error` automations.
 - [x] Wiring, orientation, and pixel test modes.
 - [x] Do not add integrations for sensors or hardware that are not present.
 
-## Phase 12 — Security and resource review
+### Phase 12 — Security and resource review
 
 - [x] Keep every credential behind `!secret` and update
       `secrets.yaml.example` without real values.
@@ -325,7 +451,7 @@ and `on_error` automations.
 - [x] Confirm arrays, positions, digits, durations, and brightness values are
       bounded.
 
-## Phase 13 — Validation tooling
+### Phase 13 — Validation tooling
 
 - [x] Keep `tests/test_config.py`, `scripts/validate.ps1`,
       `requirements-validation.txt`, and `VALIDATION.md` current.
@@ -346,7 +472,7 @@ and `on_error` automations.
       ... no hardware available in the build environment
       whether progress was visible throughout the transfer.
 
-## Phase 14 — Documentation and release
+### Phase 14 — Documentation and release
 
 - [x] Update the README with hardware, wiring, secrets, installation, OTA
       migration, Home Assistant controls, actions, validation, and
@@ -364,7 +490,7 @@ and `on_error` automations.
       was pushed; no force-push was used
 - [x] Confirm local `HEAD` matches the remote `main` branch.
 
-## Definition of done
+### Definition of done
 
 - [x] All regression tests pass.
 - [x] ESPHome 2026.9.0 reports the configuration as valid.
@@ -383,7 +509,7 @@ and `on_error` automations.
       migrations, test results, build size, files changed, commit, push status,
       and remaining hardware-only verification.
 
-## Phase 16 — Reliability, configurator, and release improvements
+### Phase 16 — Reliability, configurator, and release improvements
 
 Work through [tasks/todo.md](tasks/todo.md) in order. The plan deliberately
 keeps Home Assistant time primary, treats remote update data as untrusted, and
@@ -410,7 +536,7 @@ defines “latest” as the newest immutable published release tag.
 - [ ] Update README documentation, contract tests, ESPHome validation, full
       ESP8266 compile, firmware-size evidence, and hardware verification.
 
-### Staged font-inclusion increment
+#### Staged font-inclusion increment
 
 - [x] Add per-face release packages and Tune selection (Matrix 2px + Dot Matrix,
       up to three extras), persistence and hostile-link clamping.

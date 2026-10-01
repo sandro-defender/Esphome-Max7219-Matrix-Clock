@@ -1,71 +1,105 @@
-# Planned work
+# Current checkpoint and next work
 
-## Phase 16: Renderer and configurator
+## 2026-10-02 — draft PR hand-off
 
-### Task 1: Repair digit slide-up animation
+The latest instruction is to finish this step, document the roadmap and push a
+PR. Candidate `0.7.0` targets **ESPHome 2026.9.1 exactly** and remains unreleased.
+The current acceptance checklist is [ROADMAP.md](../ROADMAP.md); historical
+checked tasks below do not certify this candidate.
+
+- [x] Checkpoint default Pixel Clock 6×8 + Matrix 2px, repaired zero, per-cell
+  slides, boot/secure OTA, firmware-derived controls/help/YAML and tagged pixel
+  parity. Extra compatible fonts are opt-in with no artificial cap.
+- [x] Migrate stale Python contracts and run current C++/Python/web checks,
+  typecheck/build, generated freshness and five exact-target YAML/codegen variants.
+- [x] Separate historical compile/size results from current evidence.
+- [ ] Commit/push only `arena/01a0f913-esphome-max7219-matrix-clock` and open a
+  **draft PR**. No main push, release/tag publication or Pages deployment.
+
+## Next increment, not part of this checkpoint
+
+1. Audit/test the publisher and migrate every-main/PR CI; wire immutable
+   publication before same-commit Pages deployment. Legacy workflows remain.
+2. Obtain full default/all-font ESP8266 builds and size/headroom evidence;
+   current toolchain download fails with TLS EOF/HTTPClientError.
+3. Extend stateful timeline parity and verify live immutable installer fetch.
+4. Perform manual accessibility and physical font/animation/boot/encrypted-OTA
+   checks, then record exact release/commit/deployment and request merge sign-off.
+
+## Archived tasks from base commit e693db4
+
+Original task states, ESPHome 2026.9.0 evidence and old font/default policies are
+preserved below for traceability only. Earlier SNTP/device update-check plans
+remain prior backlog, not newly implemented features in this checkpoint.
+
+## Planned work
+
+### Phase 16: Renderer and configurator
+
+#### Task 1: Repair digit slide-up animation
 
 - [x] Reproduce the faulty digit transition in `tests/test_renderer.cpp` — `test_slide_animation_uses_ink_height_not_canvas_height()` reproduces the bug.
 - [x] Correct clipping, timing, and changed-digit selection in the renderer — Fixed `draw_line` to use `font.ink_height()` instead of `c.height()` for slide distance.
 - [x] Verify second, minute, hour, and rollover transitions — Covered by existing tests (`test_only_changed_digits_animate`, `test_animation_survives_hour_rollover`, `test_millis_wrap_keeps_clock_stable`).
 
-### Task 2: Join matrix modules in the configurator preview
+#### Task 2: Join matrix modules in the configurator preview
 
 - [x] Remove visual gaps between adjacent 8×8 modules in the matrix canvas — `moduleGeometry()` joins boards edge to edge (`gap = 0`), so the canvas is exactly `modulesX × mod` wide and each board starts where the previous one ends.
 - [x] Retain optional module-boundary guidance without shifting pixels — the *Module boundary guides* switch draws dashed lines into the shared bezel after the LEDs; the overlay is read-only and a single-module panel is a complete no-op.
 - [x] Add boundary-focused configurator tests — `src/MatrixCanvas.test.ts` asserts seam geometry across 1×1…16×4 panels at four canvas widths, guide placement, dpr scaling and preview-only YAML isolation (60 Vitest checks, up from 45).
 
-### Task 3: Compact the configurator
+#### Task 3: Compact the configurator
 
 - [x] Group controls into compact collapsible sections without hiding required settings — native details/summary; Clock face, Hardware and Device initially expanded; static-render regression test.
 - [ ] Keep keyboard access, labels, and small-screen layout usable.
 - [x] Verify YAML generation and share links remain compatible — existing YAML/storage tests pass unchanged (61 configurator tests total).
 
-### Checkpoint: UI and renderer
+#### Checkpoint: UI and renderer
 
 - [x] Renderer and configurator test suites pass — `make -C tests test` reports 245 checks / 0 failures and `npm test` reports 60 passed in `web-configurator/`.
 - [ ] Visual hardware check confirms animation and seamless module preview — still open: it needs a physical panel and a downloaded firmware build.
 
-## Phase 17: Firmware identity and resilient time
+### Phase 17: Firmware identity and resilient time
 
-### Task 4: Show firmware version at boot
+#### Task 4: Show firmware version at boot
 
 - [ ] Add a short boot screen with the project firmware version.
 - [ ] Return to the selected screen without delaying networking or OTA.
 - [ ] Add renderer and configuration tests.
 
-### Task 5: Add configurable SNTP fallback servers
+#### Task 5: Add configurable SNTP fallback servers
 
 - [ ] Keep Home Assistant time as the primary source.
 - [ ] Expose bounded server substitutions with safe defaults, including a Google NTP endpoint.
 - [ ] Test fallback selection when Home Assistant time is unavailable.
 
-## Phase 18: Release awareness and latest channel
+### Phase 18: Release awareness and latest channel
 
-### Task 6: Define a signed-off release manifest
+#### Task 6: Define a signed-off release manifest
 
 - [ ] Add a small, versioned manifest generated only for published releases.
 - [ ] Define compatibility, URL, timeout, and failure behaviour.
 - [ ] Add parser and downgrade-protection tests.
 
-### Task 7: Add opt-in update checks
+#### Task 7: Add opt-in update checks
 
 - [ ] Check the manifest at a bounded interval and expose installed/latest/update-available diagnostics.
 - [ ] Never download firmware, change configuration, or expose secrets automatically.
 - [ ] Verify offline, malformed-response, and GitHub-unavailable behaviour.
 
-### Task 8: Make the configurator default to the latest published release
+#### Task 8: Make the configurator default to the latest published release
 
 - [ ] Resolve “latest” to the newest immutable release tag at configuration-generation time.
 - [ ] Keep an explicit advanced option to choose another supported tag.
 - [ ] Update the generated YAML, documentation, and release-path tests.
 
-### Checkpoint: Release safety
+#### Checkpoint: Release safety
 
 - [ ] `esphome config`, full ESP8266 compile, and all regression tests pass.
 - [ ] Firmware-size delta is recorded and retains safe ESP8266 headroom.
 - [ ] README documents update behaviour, privacy, and the latest-release policy.
 
-## Font-subset work — published in 0.4.0
+### Font-subset work — published in 0.4.0
 
 Latest user decision: Matrix 2px and Dot Matrix are included by default; add
 up to three extras. Compact 5×7 is always available.

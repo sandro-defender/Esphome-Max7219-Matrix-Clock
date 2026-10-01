@@ -23,6 +23,9 @@ display:
     scroll_enable: false
     update_interval: ${display_update_interval}
     lambda: |-
+      // No driver scrolling: avoid repeatedly flushing unchanged frames from
+      // MAX7219::loop(). This writer owns rendering AND synchronous flushing.
+      it.disable_loop();
       const uint32_t now_ms = millis();
 
       // ----- Frame: time source (Home Assistant, then SNTP) ---------------
@@ -53,6 +56,7 @@ display:
       frame.animation_row_gap = max7219_clock::clamp_u8((int) id(animation_row_gap).state, 0, 2);
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
+      frame.ota_brightness = ${ota_display_intensity};
       frame.night_manual = id(night_mode).state;
       frame.alarm_mode = id(alarm_mode).state;
       frame.night_schedule = id(night_schedule_enabled).state;
@@ -127,3 +131,19 @@ display:
             max7219_clock::screen_from_mode(max7219_clock::report.screen) == max7219_clock::SCREEN_DATE ? "Date"
                                                                                                         : "Clock");
       }
+
+      // Render -> hardware flush in the same call. MAX7219::update() only
+      // writes RAM; display() is required while OTA blocks the driver loop.
+      const bool overlay = max7219_clock::state.ota_state != max7219_clock::OTA_IDLE ||
+                           max7219_clock::state.boot_active;
+      const bool powered = overlay || id(matrix_display_power).state;
+      const bool inverted = !overlay && id(display_inversion).state;
+      if (max7219_clock::state.applied_power != (int) powered) {
+        it.turn_on_off(powered);
+        max7219_clock::state.applied_power = powered;
+      }
+      if (max7219_clock::state.applied_inversion != (int) inverted) {
+        it.invert_on_off(inverted);
+        max7219_clock::state.applied_inversion = inverted;
+      }
+      it.display();

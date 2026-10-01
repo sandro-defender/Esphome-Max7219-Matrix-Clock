@@ -95,7 +95,7 @@ Order follows the way a builder actually works:
    and one-line captions: running clock, back-side wiring, controller
    end-view, D1 Mini, module macro, workbench.
 9. **GitHub & documentation** (`#docs`) — README, VALIDATION, ROADMAP, Issues,
-   live configurator, packages/font docs, ESPHome 2026.9.0 references, and a
+   live configurator, packages/font docs, ESPHome 2026.9.1 references, and a
    short note on how Pages deploys this app.
 
 The old "GitHub" self-hosting tab (workflow YAML, git commands, standalone

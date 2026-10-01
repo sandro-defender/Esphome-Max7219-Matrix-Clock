@@ -1,0 +1,17 @@
+# GENERATED from the corresponding fonts/ release package; do not edit.
+font:
+- id: font_md_parola_numeric_7seg_source
+  file:
+    type: local
+    path: ../../fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - '0123456789:.-/%!?+ '
+esphome:
+  build_flags:
+  - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
+select:
+- id: !extend 'clock_font'
+  options:
+  - MD Parola Numeric 7-Segment

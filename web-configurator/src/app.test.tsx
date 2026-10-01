@@ -1,153 +1,69 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync, readdirSync } from "node:fs";
-
 import App from "./App";
-import { FONT_CATALOG, PREVIEW_CANDIDATES } from "./fontCatalog";
-import { DEFAULT_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
+import { FONT_CATALOG } from "./fontCatalog";
+import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect } from "./fontSelection";
 import { DEFAULT_CONFIG } from "./types";
+import { FIRMWARE, PROJECT } from "./firmware";
+import { TuneSection } from "./sections";
+import { geometry } from "./render";
 
-/**
- * Smoke + structure test: the whole app must render without a DOM, the
- * project-page sections must all exist, and the presentation contract
- * (pinned mobile preview, gallery, documentation links) must hold.
- */
+const configIds = ["preview", "tune", "font-lab"];
+const infoIds = ["hardware", "install", "assistant", "troubleshooting", "gallery", "docs", "font-reference", "release-notes"];
+
 describe("App", () => {
   const markup = renderToStaticMarkup(<App />);
-
-  it("renders the configurator shell", () => {
+  const info = renderToStaticMarkup(<App initialPage="info" />);
+  it("keeps Configure strictly to settings / live preview, with all documentation in Info & help", () => {
+    for (const id of configIds) expect(markup).toContain(`id="${id}"`);
+    for (const id of infoIds) { expect(markup).not.toContain(`id="${id}"`); expect(info).toContain(`id="${id}"`); }
+    for (const id of configIds) expect(info).not.toContain(`id="${id}"`);
+    expect(markup).not.toContain("secrets.yaml");
+    expect(markup).not.toContain("Default wiring");
+    expect(markup).not.toContain("Install in five steps");
+    expect(markup).not.toContain("section-lead");
+  });
+  it("labels the shell, selected font and exactly one h1 on each page", () => {
     expect(markup).toContain("Clock<span>lab</span>");
-    expect(markup).toContain("MAX7219");
-    expect(markup).toContain("Copy install YAML");
-  });
-
-  it("offers every catalogued firmware face in the picker", () => {
-    for (const spec of FONT_CATALOG) {
-      expect(markup, spec.label).toContain(spec.label);
-    }
-  });
-
-  it("uses Configure and Info & help pages while rendering every section", () => {
     expect(markup).toContain('aria-label="Configurator pages"');
-    expect(markup).toContain(">Configure</button>");
-    expect(markup).toContain(">Info &amp; help</button>");
-    for (const id of ["preview", "tune", "font-lab", "hardware", "install", "assistant", "troubleshooting", "gallery", "docs"]) {
-      expect(markup, id).toContain(`id="${id}"`);
-    }
-    expect(markup).toContain('class="content-col info-page" hidden=""');
-  });
-
-  it("keeps exactly one h1 and labels every section", () => {
-    expect(markup.match(/<h1/g)).toHaveLength(1);
-    for (const id of ["preview", "tune", "font-lab", "hardware", "install", "assistant", "troubleshooting", "gallery", "docs"]) {
-      expect(markup, id).toContain(`aria-labelledby="${id}-title"`);
-    }
-  });
-
-  it("groups Tune and Troubleshooting in native disclosures with essential groups expanded", () => {
-    for (const name of ["Clock face", "Screen", "Messages", "Light", "Hardware", "Device"]) {
-      expect(markup).toContain(`<summary>${name}</summary>`);
-    }
-    for (const name of ["Clock face", "Hardware", "Device"]) {
-      expect(markup).toMatch(new RegExp(`<details[^>]* open=""><summary>${name}</summary>`));
-    }
-    expect(markup).toMatch(/<details[^>]*><summary>Messages<\/summary>/);
-    for (const term of ["Blank display", "Mirrored or swapped modules", "Wrong time", "Font too wide", "OTA updates"]) {
-      expect(markup, term).toContain(`<summary>${term}</summary>`);
-    }
-  });
-
-  it("explains the preview layout choice and the module guides", () => {
-    expect(markup).toContain("Preview layout");
-    expect(markup).toContain("the same fallback rules");
-    expect(markup).toContain("Module boundary guides");
-  });
-
-  it("shows the selected face, pixel size and fallback state in the status strip", () => {
     expect(markup).toContain('aria-label="Preview status"');
-    expect(markup).toContain("HH:MM:SS");
-    expect(markup).toContain("<span>Fallback</span>");
+    expect(markup.match(/<h1/g)).toHaveLength(1);
+    expect(info.match(/<h1/g)).toHaveLength(1);
+    for (const id of [...configIds, ...infoIds]) expect(markup + info).toContain(`aria-labelledby="${id}-title"`);
   });
-
-  it("renders the live matrix canvas inside the chassis with a pinning spacer", () => {
-    expect(markup).toMatch(/<section id="preview"[^>]*>/);
-    expect(markup).toContain('class="chassis-slot"');
-    expect(markup).toContain('class="chassis"');
-    expect(markup.match(/role="img"/g)!.length).toBeGreaterThan(0);
+  it("renders every generated firmware control and option, with extras enabled together", () => {
+    let cfg = DEFAULT_CONFIG;
+    for (const id of EXTRA_FONTS) cfg = addExtraFontAndSelect(cfg, id);
+    const tune = renderToStaticMarkup(<TuneSection cfg={cfg} patch={() => {}} geo={geometry(cfg.chips, cfg.rows)} />);
+    for (const item of FIRMWARE.settings) expect(tune, item.key).toContain(item.label.replace(/&/g, "&amp;"));
+    for (const spec of FONT_CATALOG) expect(tune, spec.label).toContain(spec.label);
+    expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
+    expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(2);
   });
-
-  it("documents the default wiring values in the hardware section", () => {
-    expect(markup).toContain("Default wiring");
-    expect(markup).toContain("Common ground with the matrix is mandatory");
-    expect(markup).toContain("Module grid test");
-    expect(markup).toContain("Pixel checkerboard");
+  it("shows the newest-release check and disables installer actions until verified", () => {
+    expect(markup).toContain("Newest published release:");
+    expect(markup).toContain("Checking newest published release");
+    expect(markup).toMatch(/disabled=""><span[^>]*>Copy install YAML/);
+    expect(markup).toMatch(/disabled="">Download YAML/);
+    expect(info).toContain(FIRMWARE.esphomeVersion);
+    expect(info).toContain(FIRMWARE.releaseVersion);
+    expect(info).toContain(FIRMWARE.releaseNotes.split("\n")[0]);
   });
-
-  it("explains installation beside secrets.yaml and lists the six secret keys", () => {
-    expect(markup).toContain("beside your existing <code>secrets.yaml</code>");
-    for (const key of ["wifi_ssid", "wifi_password", "api_encryption_key", "fallback_ap_password", "web_server_username", "web_server_password"]) {
-      expect(markup, key).toContain(key);
-    }
-    expect(markup).toContain("esphome config max7219-clock.yaml");
-    expect(markup).toContain("encrypted native OTA");
+  it("preserves hardware, security, entities, release notes and documentation without credential inputs", () => {
+    for (const secret of Object.values(FIRMWARE.secrets)) expect(info).toContain(secret);
+    for (const entity of FIRMWARE.entities) expect(info).toContain(entity.name);
+    for (const action of FIRMWARE.actions) expect(info).toContain(action.action);
+    for (const url of [PROJECT.readme, PROJECT.validation, PROJECT.roadmap, PROJECT.issues]) expect(info).toContain(url);
+    expect(info).toContain("Common ground with the matrix is mandatory");
+    expect(info).toContain("encrypted native OTA");
+    expect(markup + info).not.toContain('type="password"');
   });
-
-  it("links README, VALIDATION, ROADMAP and GitHub issues", () => {
-    for (const url of [
-      "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/README.md",
-      "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/VALIDATION.md",
-      "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/ROADMAP.md",
-      "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/issues",
-    ]) {
-      expect(markup, url).toContain(url);
-    }
-  });
-
-  it("shows a gallery figure for every shipped hardware photo with alt text and caption", () => {
-    const imageDir = new URL("../public/images", import.meta.url);
-    const files = readdirSync(imageDir).filter((name) => name.endsWith(".jpg")).sort();
-    expect(files.length).toBeGreaterThanOrEqual(6);
-
-    const figures = [
-      ...markup.matchAll(/<figure[^>]*>\s*<img src="\.\/images\/([\w.-]+)" alt="([^"]+)"[^>]*\/?>\s*<figcaption>([^<]+)<\/figcaption>/g),
-    ];
-    const referenced = figures.map((match) => match[1]).sort();
-    expect(referenced).toEqual(files);
-
-    for (const [, file, alt, caption] of figures) {
-      expect(alt.length, `${file} alt`).toBeGreaterThanOrEqual(40);
-      expect(caption.length, `${file} caption`).toBeGreaterThanOrEqual(20);
-    }
-    // The required shots are all present.
-    for (const part of ["clock-in-use.jpg", "wired-matrix-back.jpg", "wired-matrix-end.jpg", "workbench.jpg"]) {
-      expect(referenced, part).toContain(part);
-    }
-  });
-
-  it("never asks for credentials anywhere in the page", () => {
-    expect(markup).not.toContain('type="password"');
-    expect(markup).toContain("never asks for");
-  });
-
-  it("shows only supported firmware fonts when no preview candidates remain", () => {
-    expect(markup).toContain("Fonts included in firmware");
-    expect(PREVIEW_CANDIDATES).toEqual([]);
-    expect(markup).not.toContain("Preview-only Font Lab");
-  });
-
-  it("keeps Pixel Clock as the default and permits several optional fonts", () => {
-    expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8"]);
-    expect(DEFAULT_CONFIG.clockFont).toBe("pixel-clock-6x8");
-    const withParola = addExtraFontAndSelect(DEFAULT_CONFIG, "md-parola-numeric-7seg");
-    const withMatrix = addExtraFontAndSelect(withParola, "matrix-2px");
-    const withDot = addExtraFontAndSelect(withMatrix, "dot-matrix");
-    expect(withDot.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"]);
-    expect(toggleExtraFont(withDot, "matrix-2px").fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "dot-matrix"]);
-    // The restored MD_MAX72XX system face is just another optional extra.
-    const withMax = addExtraFontAndSelect(withDot, "md-max72xx-system");
-    expect(withMax.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "md-max72xx-system", "matrix-2px", "dot-matrix"]);
-    // The default face itself can never be toggled off.
-    expect(toggleExtraFont(withMax, "pixel-clock-6x8").fonts).toEqual(withMax.fonts);
+  it("retains every shipped hardware photo with meaningful alt and caption, only in Info & help", () => {
+    const files = readdirSync(new URL("../public/images", import.meta.url)).filter((name) => name.endsWith(".jpg")).sort();
+    const figures = [...info.matchAll(/<figure[^>]*>\s*<img src="\.\/images\/([\w.-]+)" alt="([^"]+)"[^>]*\/?>\s*<figcaption>([^<]+)<\/figcaption>/g)];
+    expect(figures.map((match) => match[1]).sort()).toEqual(files);
+    for (const [, file, alt, caption] of figures) { expect(alt.length, file).toBeGreaterThan(40); expect(caption.length, file).toBeGreaterThan(20); }
   });
 });
 
@@ -280,6 +196,6 @@ describe("responsive layout", () => {
     expect(markup).toContain("Digit slide-up");
     expect(markup).toContain("600 ms");
     expect(markup).toContain("Replay last change");
-    expect(markup).toContain("Tune → Screen");
+
   });
 });

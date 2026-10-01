@@ -1,209 +1,164 @@
 #!/usr/bin/env python3
-"""Rasterise the repository fonts for the web configurator preview.
+"""Generate browser glyphs from the exact firmware fonts AND built-in C++ font.
 
-The configurator shows the *real* glyphs the firmware draws, so the bitmaps it
-paints have to come from the same font files and the same sizes the ESPHome
-configuration compiles. This script is therefore driven by
-``packages/fonts_local.yaml`` (ids, files, sizes, glyph sets) instead of a
-second list that could drift.
-
-    python3 scripts/generate_glyphs.py            # rewrite src/glyphs.generated.ts
-    python3 scripts/generate_glyphs.py --check    # fail if the file is stale
-
-The rasterisation matches ESPHome's ``font`` component as closely as Pillow
-allows: FreeType outlines, an 8 bit coverage bitmap and a hard 50 % threshold,
-which is what ESPHome stores for ``bpp: 1``. Advances are rounded up per glyph,
-matching the ``pt_to_px()`` measurement used by tests/test_config.py.
-
-Requires: pip install pyyaml pillow freetype-py
+Use FreeType's monochrome load flags, advances, bearings and ascender math,
+exactly like ESPHome bpp: 1. No Pillow/OS-dependent surrogate rasterisation.
+--check never rewrites stale data, so firmware and preview drift fails CI.
 """
-
 from __future__ import annotations
-
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
 
-import yaml
 import freetype
-from PIL import ImageFont
+from esphome.components.font import glyph_to_glyphinfo
+from esphome.components import font as esphome_font
 
-HERE = Path(__file__).resolve().parent
-APP = HERE.parent
-REPO = APP.parent
-FONT_PACKAGE = REPO / "packages" / "fonts_local.yaml"
-PREVIEW_CANDIDATES = HERE / "font_preview_candidates.yaml"
-OUTPUT = APP / "src" / "glyphs.generated.ts"
-
-CLOCK_TEXT = "88:88:88"
-DIGITS = "0123456789"
-PANEL_HEIGHT = 8
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / "web-configurator/src/glyphs.generated.ts"
+CPP_OUTPUT = ROOT / "tests/fonts.generated.h"
+sys.path.insert(0, str(ROOT / "scripts"))
+from generate_firmware_contract import load
 
 
-class ConfigError(SystemExit):
-    def __init__(self, message: str) -> None:
-        super().__init__(f"generate_glyphs: {message}")
-
-
-def glyph_records(
-    font: ImageFont.FreeTypeFont,
-    face: freetype.Face,
-    characters: str,
-) -> dict[str, dict]:
-    """Rasterise every character exactly like ESPHome stores it for bpp: 1."""
-    records: dict[str, dict] = {}
-    for char in characters:
-        mask = font.getmask(char, mode="1")
-        data = bytes(mask)
-        width, height = mask.size
-        rows = []
-        for row in range(height):
-            bits = 0
-            for col in range(width):
-                if data[row * width + col] > 127:
-                    bits |= 1 << (width - 1 - col)
-            rows.append(bits)
-        # getbbox() is relative to the ascender line, which is what ESPHome
-        # stores as glyph.offset_y: the distance from the text box top to ink.
-        top = font.getbbox(char)[1] if width and height else 0
+def font_records(entry):
+    source = (ROOT / "packages" / entry["file"]["path"]).resolve()
+    face = freetype.Face(str(source))
+    face.set_pixel_sizes(entry["size"], 0)
+    glyphs = {}
+    for char in "".join(entry["glyphs"]):
+        if face.get_char_index(ord(char)) == 0:
+            raise ValueError(f"{source}: missing compiled glyph {char!r}")
         face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
-        records[char] = {
-            "w": width,
-            "h": height,
-            "top": top,
-            # ESPHome derives the glyph advance from FreeType's 26.6 fixed-
-            # point horiAdvance. Pillow's getlength() varies between its
-            # Windows and Linux wheels, which made generated previews fail CI.
-            "advance": (face.glyph.metrics.horiAdvance + 63) // 64,
-            "rows": rows,
+        glyph, bitmap = face.glyph, face.glyph.bitmap
+        rows = []
+        for y in range(bitmap.rows):
+            row = 0
+            for x in range(bitmap.width):
+                if bitmap.buffer[y * bitmap.pitch + x // 8] & (0x80 >> (x % 8)):
+                    row |= 1 << (bitmap.width - 1 - x)
+            rows.append(row)
+        glyphs[char if char != " " else "space"] = {
+            "w": bitmap.width, "h": bitmap.rows, "left": glyph.bitmap_left,
+            "top": (face.size.ascender + 63) // 64 - glyph.bitmap_top,
+            "advance": (glyph.metrics.horiAdvance + 63) // 64, "rows": rows,
         }
-    return records
+    zero = glyphs["0"]
+    return {"file": source.relative_to(ROOT).as_posix(), "size": entry["size"], "inkHeight": zero["h"],
+            "inkTop": zero["top"], "clockWidth": sum(glyphs[c]["advance"] for c in "88:88:88"),
+            "maxDigitHeight": max(glyphs[c]["h"] for c in "0123456789"), "glyphs": glyphs}
 
 
-def build() -> str:
-    if not FONT_PACKAGE.is_file():
-        raise ConfigError(f"missing {FONT_PACKAGE}")
-    class FontLoader(yaml.SafeLoader):
-        pass
-    FontLoader.add_constructor("!extend", lambda loader, node: loader.construct_scalar(node))
-    entries = (yaml.load(FONT_PACKAGE.read_text(encoding="utf-8"), Loader=FontLoader) or {}).get("font") or []
-    preview_entries = (yaml.load(PREVIEW_CANDIDATES.read_text(encoding="utf-8"), Loader=FontLoader) or {}).get("font") or []
-    entries += preview_entries
-    if not entries:
-        raise ConfigError(f"no font entries in {FONT_PACKAGE}")
+def builtin_records():
+    text = (ROOT / "packages/max7219_clock_renderer.h").read_text()
+    section = text.split("namespace builtin {", 1)[1].split("}  // namespace builtin", 1)[0]
+    clean = re.sub(r"//[^\n]*", "", section)
+    def values(rows):
+        return [int(v.strip(), 0) for v in rows.split(",") if v.strip()]
+    tables = {}
+    for name in ("DIGITS", "LETTERS"):
+        body = re.search(r"static const uint8_t " + name + r"\[[^=]+?= \{(.*?)\n  \};", clean, re.S)[1]
+        tables[name] = [values(m) for m in re.findall(r"\{([^{}]+)\}", body)]
+    glyphs = {str(i): rows for i, rows in enumerate(tables["DIGITS"])}
+    glyphs.update({chr(65+i): rows for i, rows in enumerate(tables["LETTERS"])})
+    punctuation = {name: values(rows) for name, rows in re.findall(r"static const uint8_t (\w+)\[\d+\] = \{([^}]+)\};", clean)}
+    switch = clean.split("switch (c)", 1)[1].split("inline int advance", 1)[0]
+    for block, name in re.findall(r"((?:\s*case '.':\s*)+)return (\w+);", switch):
+        for char in re.findall(r"case '(.)':", block):
+            glyphs[char] = punctuation[name]
+    advance_source = section.split("inline int advance(char c)", 1)[1]
+    short = re.findall(r"case '(.)':", advance_source.split("return 3", 1)[0])
+    default_advance = int(re.search(r"default:\s*return (\d+)", advance_source)[1])
+    advances = {char: 3 if char in short else default_advance for char in glyphs}
+    font_class = text.split("class BuiltinFont", 1)[1].split("struct Frame", 1)[0]
+    ink_height = int(re.search(r"ink_height\(\) const override \{ return (\d+);", font_class)[1])
+    ink_top = int(re.search(r"ink_top\(\) const override \{ return (\d+);", font_class)[1])
+    return glyphs, advances, {"inkHeight": ink_height, "inkTop": ink_top,
+                              "maxDigitHeight": ink_height, "clockWidth": sum(advances[c] for c in "88:88:88"),
+                              "defaultAdvance": default_advance}
 
-    lines: list[str] = []
+
+def cpp_fixture(entries):
+    official_header = Path(esphome_font.__file__).with_name("font.h").read_text()
+    glyph_class = re.search(r"class Glyph final \{.*?\n\};", official_header, re.S)[0]
+    lines = ["// GENERATED test data: official ESPHome glyph API and packed bpp: 1 data.",
+             "// Regenerate with web-configurator/scripts/generate_glyphs.py.", "#pragma once",
+             "#include <stdint.h>", "namespace esphome { namespace font {", glyph_class]
+    records = []
     for entry in entries:
-        font_id = entry["id"]
-        size = int(entry["size"])
-        if int(entry.get("bpp", 1)) != 1:
-            raise ConfigError(f"{font_id}: only bpp: 1 fonts are supported by the preview")
-        source_root = HERE if entry in preview_entries else FONT_PACKAGE.parent
-        source = (source_root / entry["file"]["path"]).resolve()
-        if not source.is_file():
-            raise ConfigError(f"{font_id}: missing font file {source}")
-        characters = "".join(entry["glyphs"])
-        try:
-            font = ImageFont.truetype(str(source), size)
-            face = freetype.Face(str(source))
-            face.set_pixel_sizes(size, 0)
-        except OSError as error:  # pragma: no cover - broken font file
-            raise ConfigError(f"{font_id}: cannot open {source} ({error})") from error
-
-        glyphs = glyph_records(font, face, characters)
-        missing = [char for char in characters if char != " " and not glyphs[char]["h"]]
-        if missing:
-            raise ConfigError(f"{font_id}: no ink for {''.join(missing)!r}")
-        zero = glyphs["0"]
-        clock_width = sum(glyphs[char]["advance"] for char in CLOCK_TEXT)
-        max_digit_height = max(glyphs[char]["h"] for char in DIGITS)
-        print(
-            f"{font_id:28s} size {size:2d}  {CLOCK_TEXT} = {clock_width:2d}px  "
-            f"digit ink {max_digit_height}px  baseline offset {zero['top']}px"
-        )
-
-        lines.append(f"  {font_id}: {{")
-        lines.append(f"    file: {json_string(source.relative_to(REPO).as_posix())},")
-        lines.append(f"    size: {size},")
-        lines.append(f"    inkHeight: {zero['h']},")
-        lines.append(f"    inkTop: {zero['top']},")
-        lines.append(f"    clockWidth: {clock_width},")
-        lines.append(f"    maxDigitHeight: {max_digit_height},")
-        lines.append("    glyphs: {")
-        for char, glyph in glyphs.items():
-            name = char if char != " " else "space"
-            rows = ", ".join(str(value) for value in glyph["rows"])
-            lines.append(
-                f"      {json_string(name)}: {{ w: {glyph['w']}, h: {glyph['h']}, "
-                f"top: {glyph['top']}, advance: {glyph['advance']}, rows: [{rows}] }},"
-            )
-        lines.append("    },")
-        lines.append("  },")
-
-    return "\n".join(
-        [
-            "// GENERATED FILE - do not edit by hand.",
-            "//",
-            "// Source of truth: packages/fonts_local.yaml plus the TTF/OTF files in fonts/.",
-            "// Regenerate with:  python3 scripts/generate_glyphs.py",
-            "//",
-            "// Rows are bit masks, most significant bit = leftmost pixel. `top` is the",
-            "// distance from the text box top to the first ink row, which is the value",
-            "// ESPHome stores as glyph.offset_y and the renderer uses for centring.",
-            "",
-            "export interface GeneratedGlyph {",
-            "  w: number;",
-            "  h: number;",
-            "  top: number;",
-            "  advance: number;",
-            "  rows: number[];",
-            "}",
-            "",
-            "export interface GeneratedFont {",
-            "  file: string;",
-            "  size: number;",
-            "  /** Ink height of the digit 0; the renderer centres on it. */",
-            "  inkHeight: number;",
-            "  /** Offset of the digit 0 ink from the text box top. */",
-            "  inkTop: number;",
-            "  /** Width of worst-case \"88:88:88\" in pixels, the 48 px panel budget. */",
-            "  clockWidth: number;",
-            "  /** Tallest digit, in pixels. */",
-            "  maxDigitHeight: number;",
-            "  glyphs: Record<string, GeneratedGlyph>;",
-            "}",
-            "",
-            "export const GENERATED_FONTS: Record<string, GeneratedFont> = {",
-            *lines,
-            "};",
-            "",
-        ]
-    )
+        name = entry["id"]
+        source = (ROOT / "packages" / entry["file"]["path"]).resolve()
+        face = freetype.Face(str(source))
+        glyphs = []
+        for char in sorted("".join(entry["glyphs"])):
+            glyph = glyph_to_glyphinfo(char, face, entry["size"], entry["bpp"])
+            data_name = f"{name}_{ord(char)}_data"
+            lines.append("static const uint8_t " + data_name + "[] = {" + ",".join(map(str, glyph.bitmap_data or [0])) + "};")
+            glyphs.append(f"  Glyph({ord(char)}, {data_name}, {glyph.advance}, {glyph.offset_x}, {glyph.offset_y}, {glyph.width}, {glyph.height})")
+        lines += [f"static const Glyph {name}_glyphs[] = {{", ",\n".join(glyphs), "};"]
+        records.append(f'  {{"{name}", {name}_glyphs, {len(glyphs)}, {entry["size"]}}}')
+    lines += ["struct FixtureFont { const char *id; const Glyph *glyphs; int count; int height; };",
+              "static const FixtureFont FIXTURE_FONTS[] = {", ",\n".join(records), "};", "}}  // namespace esphome::font", ""]
+    return "\n".join(lines)
 
 
-def json_string(value: str) -> str:
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+def frame_fixture():
+    from generate_firmware_contract import build as contract_build
+    contract, _ = contract_build()
+    bindings = {item["target"]: item["key"] for item in contract["settings"]}
+    display = load(ROOT / "packages/display.yaml")["display"][0]["lambda"]
+    prefs = display.split("// ----- Frame: durable preferences", 1)[1].split("// ----- Draw", 1)[0].split("\n", 1)[1]
+    prefs = re.sub(r"id\((\w+)\)\.current_option\(\)", lambda m: 'S(values.at("' + bindings[m[1]] + '"))', prefs)
+    prefs = re.sub(r"id\((\w+)\)\.state", lambda m: 'N(values.at("' + bindings[m[1]] + '"))', prefs)
+    prefs = re.sub(r"\$\{(\w+)\}", lambda m: 'N(values.at("' + bindings[m[1]] + '"))', prefs)
+    return "// GENERATED from the actual display writer; tests must not duplicate its bindings/clamps.\n#pragma once\n" +         "inline void fixture_preferences(max7219_clock::Frame &frame, const std::map<std::string, std::string> &values) {\n" + prefs + "}\n"
 
 
-def main() -> int:
+def build():
+    entries = load(ROOT / "packages/fonts_local.yaml")["font"]
+    fonts = {entry["id"]: font_records(entry) for entry in entries}
+    glyphs, advances, metrics = builtin_records()
+    interface = '''// GENERATED from real firmware font packages, TTFs and C++ built-in glyphs.
+// Regenerate with scripts/generate_glyphs.py; do not edit by hand.
+export interface GeneratedGlyph {
+  w: number; h: number; left: number; top: number; advance: number; rows: number[];
+}
+export interface GeneratedFont {
+  file: string; size: number; inkHeight: number; inkTop: number;
+  clockWidth: number; maxDigitHeight: number; glyphs: Record<string, GeneratedGlyph>;
+}
+'''
+    text = interface + "export const GENERATED_FONTS: Record<string, GeneratedFont> = " + json.dumps(fonts, indent=2) + ";\n" + \
+        "export const BUILTIN_GLYPHS: Record<string, number[]> = " + json.dumps(glyphs, indent=2) + ";\n" + \
+        "export const BUILTIN_ADVANCES: Record<string, number> = " + json.dumps(advances, indent=2) + ";\n" + \
+        "export const BUILTIN_METRICS = " + json.dumps(metrics) + ";\n"
+    esphome_root = Path(esphome_font.__file__).parent.parent.parent
+    string_ref = (esphome_root / "core/string_ref.h").read_text().replace('#include "esphome/core/defines.h"', "")
+    driver_cpp = (esphome_root / "components/max7219digit/max7219digit.cpp").read_text()
+    driver_method = re.search(r"void MAX7219Component::send64pixels.*?\n}[^\n]*", driver_cpp, re.S)[0].replace("MAX7219Component::", "StockDriver::")
+    return {OUTPUT: text, CPP_OUTPUT: cpp_fixture(entries), ROOT / "tests/frame.generated.h": frame_fixture(),
+            ROOT / "tests/string_ref.generated.h": "// GENERATED exact ESPHome StringRef API (host, without platform defines).\n" + string_ref,
+            ROOT / "tests/driver.generated.h": "// GENERATED exact ESPHome MAX7219 transmission; do not duplicate transforms in tests.\n" + driver_method + "\n"}
+
+
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="only check that the file is current")
+    parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    from generate_firmware_contract import build as contract_build
+    contract_build()  # exact installed ESPHome and bpp/assets/versions checks
+    outputs = build()
+    for path, content in outputs.items():
+        if args.check:
+            if not path.is_file() or path.read_text() != content:
+                raise SystemExit(f"Firmware/preview glyph drift: regenerate {path.relative_to(ROOT)} in the same commit")
+        else:
+            path.write_text(content)
+    print(f"Firmware glyphs {'checked' if args.check else 'generated'} (browser rows and official ESPHome packed C++ fixtures)")
 
-    content = build()
-    if args.check:
-        if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != content:
-            print("glyphs.generated.ts is out of date; run scripts/generate_glyphs.py", file=sys.stderr)
-            return 1
-        print("glyphs.generated.ts is up to date")
-        return 0
-
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(content, encoding="utf-8")
-    print(f"wrote {OUTPUT.relative_to(REPO)} ({len(content.splitlines())} lines)")
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

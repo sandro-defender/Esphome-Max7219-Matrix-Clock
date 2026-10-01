@@ -1,6 +1,44 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 - Unreleased
+
+### Added
+- Installed immutable firmware version on the matrix for 2.5 seconds at boot,
+  without delaying networking, followed by the restored screen/power state.
+- A generated firmware contract for all configurator controls, defaults,
+  Home Assistant entities/actions, package files, fonts and release notes.
+  Stale generated data and pixel/YAML parity now fail automated checks.
+- An anonymous, fail-closed resolver for the newest published immutable release,
+  with tagged-contract, commit and release-note verification before installer
+  copy/download. Existing releases without the contract cannot yet be installed
+  through this candidate UI.
+- Preparatory installer/validation/release scripts. Automatic main-push release
+  publication and matching Pages deployment are **not wired or validated yet**;
+  they remain follow-up work in ROADMAP.md.
+
+### Changed
+- Target ESPHome **2026.9.1 exactly** in firmware and validation tooling; CI
+  migration remains open.
+- Default builds compile exactly **Pixel Clock 6×8 and Matrix 2px**. All other
+  compatible fonts are opt-in with no selection cap; Compact 5×7 stays built in.
+- Configure contains only adjustable settings and the live preview. Hardware,
+  installation, font details, entity reference and release notes are in Info & Help.
+
+### Fixed
+- Sample digit slides at 20 ms, clip each changed digit to its own ink window,
+  cancel when disabled or layout/font changes, and reset history after overlays.
+  Unchanged digits and separators remain stationary; duration and row gap stay
+  Home Assistant controls.
+- Restore the upper-left **two-pixel** stroke of Matrix 2px zero. The remaining
+  design, advance and intended two-pixel style are unchanged.
+- OTA callbacks consume ESPHome's **0–100 percentage** directly and synchronously
+  flush the MAX7219 buffer while the normal loop is blocked. Readable start,
+  percentage plus bar, completion and error/code screens override shutdown,
+  inversion and zero/night brightness. Success holds 100% for one second after
+  transfer; errors restore current preferences after eight seconds. Native OTA
+  remains encrypted with the existing API key; web upload stays disabled.
+
+### Previous unpublished fixes retained
 
 ### Fixed
 - **Alarm mode never flashed** - brightness was only recomputed once per
@@ -10,7 +48,7 @@
   panel flashes twice per second as documented. Covered by the new renderer
   test `test_alarm_mode_flashes_twice_per_second`.
 - **The web configurator pinned installer YAML to `main`** instead of the
-  published release tag; it now pins `0.5.5`, matching `examples/release.yaml`,
+  published release tag; it previously pinned `0.5.5`, matching `examples/release.yaml`,
   `packages/base.yaml` and the font packages. A new `src/yaml.test.ts` catalogue
   guard keeps the generated installer and the release example in sync (tag,
   package list, `!secret`-only credentials).
@@ -26,7 +64,7 @@
   expect them as future shortlist candidates.
 - **The configurator's Font Lab checkboxes now drive the generated installer** -
   Pixel Clock 6×8 ships in every build and cannot be removed (main's default
-  policy), while each ticked extra face (Matrix 2px, Dot Matrix, MD Parola
+  policy), while each ticked extra face (then Matrix 2px, Dot Matrix, MD Parola
   Numeric 7-Segment, MD MAX72XX System) adds exactly one font package; before,
   every face was forced into every build and the extra limit was ignored.
 - **The preview's night window matches the firmware again** - equal
@@ -154,7 +192,7 @@
   licenses (`packages/fonts_local.yaml`). Reset uses the always-present Compact
   face. Document saved numeric-index restoration semantics (`restore_value: true`)
   across subset changes.
-- Validate exact ESPHome 2026.9.0 (Python 3.12.7) config and full ESP8266
+- Validate exact ESPHome 2026.9.1 (Python 3.12.7) config and full ESP8266
   firmware builds for the default two-face configuration (`505,141 / 1,044,464 B`
   flash `48.4%`, `41,276 / 81,920 B` RAM `50.4%`, saving `5,448 B` flash and
   `4,688 B` RAM vs all 10 faces), built-in-only (`0` faces), single-face
@@ -215,7 +253,7 @@
 - Add real-glyph previews for every face to the web configurator.
 - Keep the complete catalogue within ESP8266 limits by compiling numeric/status
   glyphs in external faces and using the compact built-in font for Latin text.
-- Validate the full build with ESPHome 2026.9.0: 50.7% flash and 77.1% RAM.
+- Validate the full build with ESPHome 2026.9.1: 50.7% flash and 77.1% RAM.
 
 ## 0.1.2 - 2026-09-28
 

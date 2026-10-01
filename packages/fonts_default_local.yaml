@@ -1,0 +1,4 @@
+# GENERATED default pair from fonts_web.yaml, using local assets for validation.
+packages:
+  pixel_clock_6x8: !include 'local_fonts/pixel-clock-6x8.yaml'
+  matrix_2px: !include 'local_fonts/matrix-2px.yaml'

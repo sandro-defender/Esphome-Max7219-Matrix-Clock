@@ -15,15 +15,22 @@ export function previewDate(value: string, fallback: Date): Date {
   return date;
 }
 
-/** The preview clock: the frozen value, or the wall clock refreshed 20x/s. */
-export function usePreviewClock(previewTime: string): Date {
+/** Convert browser clock to the firmware timezone, including DST. */
+export function dateInZone(date: Date, timezone: string): Date {
+  try {
+    const values = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(date).map((part) => [part.type, part.value]));
+    return new Date(Number(values.year), Number(values.month)-1, Number(values.day), Number(values.hour), Number(values.minute), Number(values.second), date.getMilliseconds());
+  } catch { return date; }
+}
+
+export function usePreviewClock(previewTime: string, timezone: string, intervalMs: number): Date {
   const [tick, setTick] = useState(() => new Date());
   useEffect(() => {
-    if (previewTime) return undefined;
-    const id = window.setInterval(() => setTick(new Date()), 50);
+    // Even frozen digits need a live monotonic source for marquee/timeout.
+    const id = window.setInterval(() => setTick(new Date()), Math.max(1, intervalMs));
     return () => window.clearInterval(id);
-  }, [previewTime]);
-  return useMemo(() => previewDate(previewTime, tick), [previewTime, tick]);
+  }, [intervalMs]);
+  return useMemo(() => previewDate(previewTime, dateInZone(tick, timezone)), [previewTime, timezone, tick]);
 }
 
 /**
@@ -44,10 +51,6 @@ export function useMessageStamp(message: string): number {
 export function earlierContent(cfg: Config, now: Date, scene: Scene): string {
   const before = new Date(now.getTime() - 1000);
   if (scene.page === "date") return dateContent(new Date(now.getTime() - 86_400_000), cfg);
-  if (cfg.layoutPreview === "modules") {
-    const pad = (value: number) => String(value).padStart(2, "0");
-    return `${pad(before.getHours())}${pad(before.getMinutes())}${pad(before.getSeconds())}`.slice(0, 6);
-  }
   return clockContent(before, cfg, scene.withSeconds);
 }
 
@@ -67,20 +70,22 @@ export interface Preview {
  * the per-digit slide that the firmware's `animation_ms` controls.
  */
 export function usePreview(cfg: Config): Preview {
-  const now = usePreviewClock(cfg.previewTime);
+  const now = usePreviewClock(cfg.previewTime, cfg.timezone, cfg.displayUpdateMs);
+  const cycleStamp = useRef(Date.now());
+  useEffect(() => { cycleStamp.current = Date.now(); }, [cfg.autoCycle, cfg.screen, cfg.cycleInterval]);
   const messageAt = useMessageStamp(cfg.message);
+  const runtimeNowMs = Date.now();
   const reducedMotion = useReducedMotion();
+  const settled = useMemo(() => renderScene(cfg, now, messageAt, undefined, cycleStamp.current, runtimeNowMs), [cfg, now, messageAt, runtimeNowMs]);
   const options: SlideOptions = {
-    enabled: cfg.digitAnimation,
-    durationMs: cfg.animationMs,
-    reducedMotion,
+    enabled: cfg.digitAnimation, durationMs: cfg.animationMs, reducedMotion,
+    layoutKey: `${settled.usedFallback ? "compact" : cfg.clockFont}:${settled.geometry.width}:${settled.geometry.height}:${cfg.alignment}`,
   };
 
-  const settled = useMemo(() => renderScene(cfg, now, messageAt), [cfg, now, messageAt]);
-  const { frame, replay: startSlide } = useDigitSlide(settled.content, settled.page, settled.slide, options);
+  const { frame, replay: startSlide } = useDigitSlide(settled.content, settled.page, settled.slide + cfg.animationRowGap, options);
   const scene = useMemo(
-    () => (frame.from === null ? settled : renderScene(cfg, now, messageAt, frame)),
-    [cfg, frame, messageAt, now, settled],
+    () => (frame.from === null ? settled : renderScene(cfg, now, messageAt, frame, cycleStamp.current, runtimeNowMs)),
+    [cfg, frame, messageAt, now, settled, runtimeNowMs],
   );
 
   const replay = useCallback(() => {

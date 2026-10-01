@@ -1,9 +1,89 @@
 # Validation
 
+## Current candidate checkpoint — 2026-10-02
+
+Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.0` is
+unreleased. Use the isolated Python validator for current firmware and browser
+installer checks: it copies only selected source directories, excludes
+`secrets.yaml`, creates deterministic fake secrets and keeps build output out
+of the source tree. Production secrets were not opened or copied.
+
+### Reproduce the available checks
+
+```bash
+python3.12 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-validation.txt
+npm --prefix web-configurator ci
+python scripts/generate_firmware_contract.py --check
+python web-configurator/scripts/generate_glyphs.py --check
+make -C tests test
+python tests/test_config.py
+npm --prefix web-configurator test
+npm --prefix web-configurator run typecheck
+npm --prefix web-configurator run build
+python scripts/validate.py --workspace validation-tmp/checkpoint-yaml
+# On a build host with available PlatformIO/toolchain downloads:
+python scripts/validate.py --compile
+```
+
+`--check` fails on stale generated source; regeneration is an intentional source
+change, not a substitute for checking. The YAML validator runs real config and
+C++ code generation for default two-font, all-font and built-in-only firmware,
+plus default/custom-all-font YAML from the actual browser generator. It localizes
+remote endpoints for isolation; it does **not** prove the candidate is published
+or that remote release assets fetch. `--compile` also links default/all-font
+ESP8266 firmware; without it, a PASS is **not a firmware compile**.
+
+### Executed checks
+
+| Command / evidence | Current result |
+| --- | --- |
+| `make -C tests test` | **315 checks, 0 failures** |
+| `.venv/bin/python tests/test_config.py` | **36 tests, OK, no skips** |
+| `npm --prefix web-configurator test` | **103 passed** |
+| Browser/C++ tagged pixel oracle | **1,044 frame comparisons**, 9 parity tests |
+| `npm --prefix web-configurator run typecheck` | **PASS** |
+| `npm --prefix web-configurator run build` | **PASS** |
+| Both generated-source `--check` commands | **PASS** |
+| `scripts/validate.py --workspace validation-tmp/checkpoint-yaml` | **5 YAML configs + 5 C++ generations passed**, ESPHome 2026.9.1 |
+| Earlier full default ESP8266 compile attempt | **BLOCKED**, exit 1 during PlatformIO toolchain acquisition |
+
+Full-build log: ignored local `validation-tmp/local/compile.log`. The failure
+was `SSLEOFError(UNEXPECTED_EOF_WHILE_READING)` / `HTTPClientError` while
+installing `platformio/espressif8266@4.2.1`; there is no linked current firmware
+or flash/RAM measurement. Current recheck logs are ignored under
+`validation-tmp/checkpoint-logs/` and `validation-tmp/final-checkpoint-yaml/`.
+
+### Not yet verified
+
+- Default/all-font full ESP8266 builds and current flash/RAM headroom.
+- Safe CI migration and all-main validation → immutable release → matching
+  Pages deployment. `scripts/publish_release.py` is preparatory and not
+  publication-tested or workflow-wired.
+- Live release/tag/installer asset fetch and live Pages smoke checks.
+- Exhaustive stateful cycling/countdown/overlay timelines.
+- Physical font/animation/rotation, installed-version boot and encrypted OTA
+  visibility, including off/inverted/dim/night/alarm preferences.
+- Manual keyboard/reduced-motion/small-screen usability. No browser automation
+  was used.
+
+### Legacy validators and historical evidence
+
+The PowerShell/release-offline entry points and workflow commands below are
+archived, **not the recommended candidate pipeline**. In particular,
+`validate-release-offline.sh` copies the whole working tree: do not run it with
+production secrets present. Safe migration and remote release verification are
+open roadmap items. Prior release 0.2.0/0.3.0/0.4.0 binaries and measurements
+used the original ESPHome 2026.9.0 toolchain and must not be relabelled as current
+2026.9.1 results.
+
+## Validation
+
 Everything in this repository can be validated without hardware, and the
 validator never touches your real `secrets.yaml`.
 
-## Quick start
+### Quick start
 
 Windows PowerShell:
 
@@ -42,7 +122,7 @@ writes a fake `secrets.yaml` there (obvious placeholder values, valid key
 length), runs the steps and deletes only that directory again. Your real
 `secrets.yaml` is never read, printed or modified.
 
-## What each step covers
+### What each step covers
 
 | Step | Command | Covers |
 |---|---|---|
@@ -56,7 +136,7 @@ length), runs the steps and deletes only that directory again. Your real
 
 All steps return a non-zero exit code on failure, so they can be used in CI.
 
-## Offline and sandboxed validation
+### Offline and sandboxed validation
 
 Fonts are downloaded at build time. `scripts/validate-release-offline.sh` does
 this automatically; by hand it is:
@@ -76,7 +156,7 @@ This exercises the real code path - git clone at the pinned ref, the `files:`
 list, package-relative `includes:`, web-font download and caching - without
 touching GitHub.
 
-## Caching, pinning and upgrades
+### Caching, pinning and upgrades
 
 * Remote packages and downloaded fonts are cached under `.esphome/packages/`
   and `.esphome/font/` next to your YAML file.
@@ -95,7 +175,7 @@ touching GitHub.
 * Fonts are compiled into the firmware: the Home Assistant font selector
   switches between compiled font IDs and never touches the network at runtime.
 
-## Secrets
+### Secrets
 
 * Every credential lives behind `!secret` in *your* YAML and reaches the
   packages as a substitution (`wifi_ssid: !secret wifi_ssid`).
@@ -105,7 +185,7 @@ touching GitHub.
   only. The credential scan in the test suite fails if a literal secret shows up
   in a tracked file.
 
-## Evidence from the 0.2.0 sandboxed run
+### Evidence from the 0.2.0 sandboxed run
 
 The following was executed while building release 0.2.0 (ESPHome 2026.9.0).
 It is retained as historical evidence; the 0.3.0 five-font change still needs
@@ -127,7 +207,7 @@ the complete validation sequence above before publication.
 | Configurator build (`npm run build`) | single-file `dist/index.html`, 347.79 kB (102.93 kB gzip) |
 | **Full firmware compile** (`scripts/validate.ps1`) | **PASS** with ESPHome 2026.9.0: 529709/1044464 bytes flash (50.7%), 63200/81920 bytes RAM (77.1%) |
 
-## Evidence from the Matrix 2px change (2026-09-29)
+### Evidence from the Matrix 2px change (2026-09-29)
 
 Executed while adding the generated `fonts/matrix-2px` face and the renderer
 fixes shipped alongside it, in a Linux sandbox with ESPHome 2026.9.0 on
@@ -143,7 +223,7 @@ Python 3.12:
 | Configurator (`npm test`, `npm run typecheck`, `npm run build`) | **45 tests pass**, clean type-check, single-file build; `generate_glyphs.py --check` reports fresh previews |
 | Full firmware compile | **not runnable here**: the sandbox's network policy blocks `registry.platformio.org`, so the ESP8266 toolchain cannot be installed. Run `esphome compile dev.yaml` (or `scripts/validate.ps1`) on an unrestricted machine before release. |
 
-## Hardware-only checks that remain
+### Hardware-only checks that remain
 
 These cannot be verified without a real clock and are intentionally listed as
 open items in `ROADMAP.md`:
@@ -155,7 +235,7 @@ open items in `ROADMAP.md`:
 4. Button/switch behaviour on hardware (display power, inversion, night
    brightness).
 
-## Evidence for 0.4.0 (2026-09-30, Python 3.12.7 + ESPHome 2026.9.0)
+### Evidence for 0.4.0 (2026-09-30, Python 3.12.7 + ESPHome 2026.9.0)
 
 Executed in a Linux sandbox with Python 3.12.7, `esphome==2026.9.0`, and the
 ESP8266 Arduino 3.1.2 (`3.30102.0`) / `toolchain-xtensa` GCC 10.3.0
@@ -180,7 +260,7 @@ GitHub:
 | **Live remote `0.4.0` tag check** (`esphome config` cloning `https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`) | **`INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`**, **`INFO Configuration is valid!`**, `main.cpp` generated (3,018 lines) with both package headers (`max7219_clock_esphome.h`, `max7219_clock_renderer.h`) copied into the build `src/` directory and both tagged web fonts downloaded |
 | Full 10-face local catalogue (`esphome config dev.yaml` + `esphome compile dev.yaml`) | **`INFO Configuration is valid!`**, **`INFO Successfully compiled program.`** (`main.cpp` 3,182 lines) |
 
-### Measured ESP8266 flash and RAM usage (ESPHome 2026.9.0, `d1_mini`)
+#### Measured ESP8266 flash and RAM usage (ESPHome 2026.9.0, `d1_mini`)
 
 | Configuration | External faces | `Clock font` options | Flash used / 1,044,464 B | Flash delta vs 0 faces | RAM used / 81,920 B | RAM delta vs 0 faces |
 |---|---:|---|---:|---:|---:|---:|

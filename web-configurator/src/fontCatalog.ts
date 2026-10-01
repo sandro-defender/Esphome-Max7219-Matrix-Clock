@@ -1,3 +1,4 @@
+import { FIRMWARE } from "./firmware";
 import { BUILTIN_FONT, generatedFont, type PreviewFont } from "./fonts";
 import type { ClockFont } from "./types";
 
@@ -17,7 +18,8 @@ export interface FontSpec {
   /** License of the redistributed source file. */
   license: string;
   /** One line explaining when to pick this face. */
-  blurb: string;
+  blurb?: string;
+  source?: string;
 }
 
 /** Faces rendered for comparison only; they are never included in installer YAML. */
@@ -30,66 +32,7 @@ export interface PreviewCandidate {
 
 export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [];
 
-export const FONT_CATALOG: readonly FontSpec[] = [
-  {
-    id: "md-parola-numeric-7seg",
-    option: "MD Parola Numeric 7-Segment",
-    label: "MD Parola Numeric 7-Segment",
-    family: "MD Parola",
-    firmwareId: "font_md_parola_numeric_7seg_source",
-    size: 8,
-    license: "LGPL-2.1-or-later",
-    blurb: "Double-line seven-segment MAX7219 clock digits.",
-  },
-  {
-    id: "md-max72xx-system",
-    option: "MD MAX72XX System",
-    label: "MD MAX72XX System",
-    family: "MD_MAX72XX",
-    firmwareId: "font_md_max72xx_system_source",
-    size: 8,
-    license: "LGPL-2.1-or-later",
-    blurb: "The MD_MAX72XX library _sysfont numerals; slim classic matrix digits.",
-  },
-  {
-    id: "pixel-clock-6x8",
-    option: "Pixel Clock 6x8",
-    label: "Pixel Clock 6×8",
-    family: "Pixel Clock 6x8",
-    firmwareId: "font_pixel_clock_6x8_source",
-    size: 8,
-    license: "project source (scripts/generate_pixel_clock_6x8_font.py)",
-    blurb: "Rounded six-column matrix-clock digits with two-column edges; fits 48 px HH:MM:SS.",
-  },
-  {
-    id: "matrix-2px",
-    option: "Matrix 2px",
-    label: "Matrix 2px",
-    family: "Matrix 2px",
-    firmwareId: "font_matrix_2px_source",
-    size: 8,
-    license: "project source (scripts/generate_matrix_font.py)",
-    blurb: "Pixel-exact eight-row digits whose number strokes are two pixels thick.",
-  },
-  {
-    id: "dot-matrix",
-    option: "Dot Matrix",
-    label: "Dot Matrix",
-    family: "Dot Matrix",
-    firmwareId: "font_dot_matrix_source",
-    size: 8,
-    license: "project source (scripts/generate_dot_matrix_font.py)",
-    blurb: "Single-LED dot digits: 6x8 cells, with HH:MM fitting a 32x8 panel.",
-  },
-  {
-    id: "compact",
-    option: "Compact 5x7",
-    label: "Compact 5×7",
-    family: "built-in bitmap",
-    license: "project source (packages/max7219_clock_renderer.h)",
-    blurb: "Always compiled, never downloaded, and the firmware's fallback font.",
-  },
-];
+export const FONT_CATALOG: readonly FontSpec[] = FIRMWARE.fonts;
 
 const BY_ID = new Map(FONT_CATALOG.map((spec) => [spec.id, spec]));
 const BY_OPTION = new Map(FONT_CATALOG.map((spec) => [spec.option, spec]));

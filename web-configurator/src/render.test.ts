@@ -145,10 +145,10 @@ describe("renderScene", () => {
     expect(at(checker.frame, 1, 0)).toBe(0);
   });
 
-  it("mirrors the panel when flip X is on", () => {
+  it("mirrors each chip locally when flip X is on", () => {
     const normal = sceneWith({});
     const flipped = sceneWith({ flipX: true });
-    expect(at(flipped.frame, 0, 1)).toBe(at(normal.frame, 47, 1));
+    expect(at(flipped.frame, 0, 1)).toBe(at(normal.frame, 7, 1));
     expect(lit(flipped.frame)).toBe(lit(normal.frame));
   });
 
@@ -172,17 +172,19 @@ describe("renderScene", () => {
     expect(noon.effectiveBrightness).toBe(2);
   });
 
-  it("rotates between clock and date when auto cycling is on", () => {
-    const clock = sceneWith({ autoCycle: true, cycleInterval: 5 }, new Date(2026, 0, 2, 12, 0, 0));
-    const date = sceneWith({ autoCycle: true, cycleInterval: 5 }, new Date(2026, 0, 2, 12, 0, 5));
-    expect(clock.page).toBe("clock");
-    expect(date.page).toBe("date");
+  it("cycles from the configured screen and never replaces bitmap tests", () => {
+    const start = new Date(2026, 0, 2, 12, 0, 0).getTime();
+    const cfg = { ...DEFAULT_CONFIG, autoCycle: true, cycleInterval: 5 };
+    expect(renderScene(cfg, new Date(start), start, undefined, start).page).toBe("clock");
+    expect(renderScene(cfg, new Date(start + 5000), start, undefined, start).page).toBe("date");
+    expect(renderScene({ ...cfg, screen: "Date" }, new Date(start), start, undefined, start).page).toBe("date");
+    expect(renderScene({ ...cfg, screen: "Pixel checkerboard" }, new Date(start), start, undefined, start).page).toBe("checkerboard");
   });
 
-  it("keeps the one digit per module illustration inside its cells", () => {
-    const scene = sceneWith({ layoutPreview: "modules" });
-    expect(lit(scene.frame)).toBeGreaterThan(10);
-    const firmware = sceneWith({ layoutPreview: "firmware" });
-    expect(scene.frame.pixels).not.toEqual(firmware.frame.pixels);
+  it("uses real message timing even with frozen or timezone-shifted display time", () => {
+    const cfg = { ...DEFAULT_CONFIG, message: "HI", messageHold: 15 };
+    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, undefined, 14000).messageActive).toBe(true);
+    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, undefined, 16000).messageActive).toBe(false);
   });
+
 });

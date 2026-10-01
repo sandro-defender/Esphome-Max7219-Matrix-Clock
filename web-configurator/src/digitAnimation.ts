@@ -31,6 +31,8 @@ export interface SlideOptions {
   durationMs: number;
   /** `prefers-reduced-motion: reduce` — never animate. */
   reducedMotion: boolean;
+  /** Actual selected/fallback font, geometry and alignment identity. */
+  layoutKey?: string;
 }
 
 export const SETTLED: SlideFrame = { from: null, progress: 1 };
@@ -56,7 +58,7 @@ export function changedDigits(previous: string, next: string): number[] | null {
 
 /** Rows the outgoing digit has travelled at `progress` (the firmware `offset`). */
 export function slideOffset(progress: number, slide: number): number {
-  return Math.floor(Math.min(1, Math.max(0, progress)) * Math.max(0, slide));
+  return Math.trunc(Math.fround(Math.fround(Math.min(1, Math.max(0, progress))) * Math.max(0, slide)));
 }
 
 /**
@@ -84,6 +86,7 @@ export class DigitSlide {
   private started = 0;
   private duration = 0;
   private running = false;
+  private layoutKey = "";
 
   /** True while a slide is in flight, so the caller keeps repainting. */
   get active(): boolean {
@@ -98,7 +101,7 @@ export class DigitSlide {
   /** Progress at an arbitrary time, without changing the state. */
   progressAt(time: number): number {
     if (!this.running || this.duration <= 0) return 1;
-    return Math.min(1, Math.max(0, (time - this.started) / this.duration));
+    return Math.fround(Math.min(1, Math.max(0, Math.floor(time - this.started) / this.duration)));
   }
 
   /** Forget any slide and the captured history. */
@@ -122,14 +125,16 @@ export class DigitSlide {
   }
 
   update(content: string, page: Page, options: SlideOptions, time = slideClock()): SlideFrame {
-    const sameLayout = this.page === page && this.content.length === content.length;
+    const nextKey = options.layoutKey ?? "";
+    const sameLayout = this.page === page && this.content.length === content.length && nextKey === this.layoutKey;
+    this.layoutKey = nextKey;
     const changed = this.content !== content;
     const previous = this.content;
     this.page = page;
     this.content = content;
     this.duration = Math.max(0, options.durationMs);
 
-    if (!isAnimatedPage(page) || !sameLayout) {
+    if (!isAnimatedPage(page) || !sameLayout || !slideEnabled(options)) {
       // Screen change or a different content length: no slide (firmware
       // `same_layout`), and the history restarts from the new content.
       this.reset();
@@ -189,7 +194,7 @@ export function useReducedMotion(): boolean {
  * actually changes, because an eight-row panel cannot show sub-row positions.
  * Nothing blocks: the loop stops as soon as the slide settles.
  *
- * @param slideHeight the font's ink height, i.e. the slide distance in rows.
+ * @param slideHeight actual travel: ink height + configured blank-row gap.
  */
 export function useDigitSlide(
   content: string,

@@ -1,0 +1,18 @@
+# GENERATED from the corresponding fonts/ release package; do not edit.
+font:
+- id: font_pixel_clock_6x8_source
+  file:
+    type: local
+    path: ../../fonts/pixel-clock-6x8/PixelClock6x8.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - '0123456789:.-/%!?+ '
+esphome:
+  build_flags:
+  - -DMAX7219_FONT_PIXEL_CLOCK_6X8
+select:
+- id: !extend 'clock_font'
+  options:
+  - Pixel Clock 6x8
+  initial_option: Pixel Clock 6x8

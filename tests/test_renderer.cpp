@@ -152,6 +152,7 @@ static Frame base_frame(uint32_t now_ms = 0) {
   f.seconds_mode = SECONDS_DIGITS;
   f.blink_colon = false;
   f.animate = false;
+  f.animation_row_gap = 0;  // legacy no-gap fixtures; production default is tested separately
   return f;
 }
 
@@ -457,7 +458,7 @@ static void test_ota_screen_draws_percentage_and_bar() {
   state.ota_state = OTA_UPLOADING;
   state.ota_percent = 42;
 
-  render(canvas, font, compact, f, report);
+  render(canvas, compact, font, f, report);
   std::string seen;
   int min_top = 99;
   for (const auto &call : font.calls) {
@@ -479,7 +480,7 @@ static void test_ota_error_and_success_screens() {
   reset_state();
   state.ota_state = OTA_ERROR;
   state.ota_error = 3;
-  render(canvas, font, compact, f, report);
+  render(canvas, compact, font, f, report);
   std::string seen;
   for (const auto &call : font.calls) seen += call.ch;
   CHECK(seen.find("ERROR 3") != std::string::npos);
@@ -487,7 +488,7 @@ static void test_ota_error_and_success_screens() {
   canvas.clear();
   font.calls.clear();
   state.ota_state = OTA_SUCCESS;
-  render(canvas, font, compact, f, report);
+  render(canvas, compact, font, f, report);
   seen.clear();
   for (const auto &call : font.calls) seen += call.ch;
   CHECK(seen.find("100%") != std::string::npos);
@@ -500,11 +501,11 @@ static void test_ota_narrowed_on_small_display() {
   reset_state();
   state.ota_state = OTA_UPLOADING;
   state.ota_percent = 42;
-  render(canvas, font, compact, f, report);
+  render(canvas, compact, font, f, report);
   std::string seen;
   for (const auto &call : font.calls) seen += call.ch;
-  // "OTA 42%" is 42px wide and would not fit 32px; the detail is dropped.
-  CHECK(seen.find("OTA") != std::string::npos);
+  // "OTA 42%" is 42px wide and would not fit 32px; the numeric percentage is kept.
+  CHECK(seen.find("42%") != std::string::npos);
   CHECK(seen.find("OTA 42%") == std::string::npos);
 }
 
@@ -1251,8 +1252,8 @@ static void test_message_uses_selected_font_metrics() {
 }
 
 static void test_ota_text_falls_back_to_builtin_font() {
-  // "OTA"/"ERROR" contain letters the external faces do not compile; "100%"
-  // is all clock glyphs and stays on the selected face.
+  // Every OTA state deliberately uses the readable 7-row fallback; an 8-row
+  // selected face must never collide with the progress bar.
   FakeCanvas canvas;
   ClockOnlyFont font;
   Frame f = base_frame();
@@ -1268,9 +1269,7 @@ static void test_ota_text_falls_back_to_builtin_font() {
   state.ota_state = OTA_SUCCESS;
   f.now_ms = 1000;
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls_for('1'), 1);
-  CHECK_EQ(font.calls_for('0'), 2);
-  CHECK_EQ(font.calls_for('%'), 1);
+  CHECK_EQ(font.calls.size(), 0u);
   CHECK(canvas.on_count() > 0);
 }
 
@@ -1295,8 +1294,124 @@ static void test_default_layout_matches_readme() {
   CHECK(compact.text_width("23:59:59") <= 48);
 }
 
+static void test_slide_is_clipped_to_its_own_window() {
+  FakeCanvas canvas(48, 16);
+  FakeFont font(6, 7, 2);
+  const int top = font.centered_box_top(16);
+  draw_line(canvas, font, "12:35", "12:34", 0.5f, ALIGN_LEFT, top, false, 2);
+  // No ghost ink above or below the centred digit band, even with spare rows.
+  for (int y = 0; y < 16; y++) {
+    if (y < top + font.ink_top() || y >= top + font.ink_top() + font.ink_height()) CHECK_EQ(canvas.row_on(y), 0);
+  }
+  CHECK_EQ(font.calls_for('1'), 1);
+  CHECK_EQ(font.calls_for('2'), 1);
+  CHECK_EQ(font.calls_for(':'), 1);
+  CHECK_EQ(font.calls_for('3'), 1);
+  CHECK_EQ(font.calls_for('4'), 1);
+  CHECK_EQ(font.calls_for('5'), 1);
+}
+
+static void test_disabling_animation_cancels_mid_slide() {
+  FakeCanvas canvas;
+  FakeFont font(6);
+  Frame f = base_frame(); f.animate = true;
+  reset_state(); render(canvas, font, compact, f, report);
+  f.second++; f.now_ms = 1000;
+  render(canvas, font, compact, f, report); CHECK(state.anim_active);
+  f.animate = false; f.now_ms += 20;
+  render(canvas, font, compact, f, report); CHECK(!state.anim_active);
+  f.animate = true; f.second++; f.now_ms = 2000;
+  render(canvas, font, compact, f, report); CHECK(state.anim_active);
+  f.animation_ms = 0;
+  render(canvas, font, compact, f, report); CHECK(!state.anim_active);
+}
+
+static void test_font_alignment_geometry_changes_cancel_animation() {
+  FakeCanvas canvas;
+  FakeFont font(6), replacement(6);
+  Frame f = base_frame(); f.animate = true;
+  reset_state(); render(canvas, font, compact, f, report);
+  f.second++; f.now_ms = 1000;
+  render(canvas, font, compact, f, report); CHECK(state.anim_active);
+  render(canvas, replacement, compact, f, report); CHECK(!state.anim_active);
+  f.second++; f.now_ms = 2000;
+  render(canvas, replacement, compact, f, report); CHECK(state.anim_active);
+  f.alignment = ALIGN_LEFT;
+  render(canvas, replacement, compact, f, report); CHECK(!state.anim_active);
+  f.second++; f.now_ms = 3000;
+  render(canvas, replacement, compact, f, report); CHECK(state.anim_active);
+  FakeCanvas tall(48, 16);
+  render(tall, replacement, compact, f, report); CHECK(!state.anim_active);
+}
+
+static void test_progress_is_actual_percentage_and_deduplicated() {
+  reset_state();
+  CHECK_EQ(ota_progress_percent(-1), 0);
+  CHECK_EQ(ota_progress_percent(0.0f / 0.0f), 0);
+  CHECK_EQ(ota_progress_percent(0), 0);
+  CHECK_EQ(ota_progress_percent(1), 1);
+  CHECK_EQ(ota_progress_percent(42.9f), 42);
+  CHECK_EQ(ota_progress_percent(100), 100);
+  CHECK_EQ(ota_progress_percent(101), 100);
+  CHECK(set_ota_progress(42.1f));
+  CHECK(!set_ota_progress(42.9f));
+  CHECK(set_ota_progress(43));
+  CHECK_EQ(state.ota_percent, 43);
+  FakeCanvas canvas;
+  Frame f = base_frame();
+  render(canvas, compact, compact, f, report);
+  CHECK_EQ(canvas.row_on(7), 48 * 43 / 100);
+  state.ota_percent = 255;
+  canvas.clear(); render(canvas, compact, compact, f, report);
+  CHECK_EQ(canvas.row_on(7), 48);  // even a corrupted value cannot overflow bar
+}
+
+static void test_boot_installed_version_priority_expiry_and_wrap() {
+  reset_state();
+  FakeCanvas canvas;
+  FakeFont primary(6), fallback(6);
+  Frame f = base_frame(); f.now_ms = 1000;
+  state.begin_boot("0.7.0+abcdef012345", 2500, f.now_ms);
+  CHECK_EQ(effective_mode(f), MODE_BOOT);
+  CHECK(strcmp(state.boot_version, "V0.7.0+abcdef012345") == 0);
+  render(canvas, primary, fallback, f, report);
+  CHECK(primary.calls.empty()); CHECK(!fallback.calls.empty());
+  f.now_ms = 3499; render(canvas, primary, fallback, f, report); CHECK(state.boot_active);
+  f.now_ms = 3500; render(canvas, primary, fallback, f, report); CHECK(!state.boot_active);
+  CHECK_EQ(effective_mode(f), MODE_CLOCK); CHECK(!state.anim_active);
+  state.begin_boot("0.7.0", 100000, f.now_ms); CHECK_EQ(state.boot_duration_ms, 10000U);
+  state.begin_ota(false); CHECK(!state.boot_active); CHECK_EQ(effective_mode(f), MODE_OTA);
+  reset_state();
+  state.begin_boot("0.7.0", 2500, 0xffffff00U);
+  f.now_ms = 0xffffff00U + 2499U; render(canvas, primary, fallback, f, report); CHECK(state.boot_active);
+  f.now_ms++; render(canvas, primary, fallback, f, report); CHECK(!state.boot_active);
+  state.begin_boot("0.7.0", 0, f.now_ms); CHECK(!state.boot_active);
+}
+
+static void test_ota_overrides_alarm_and_zero_night_brightness() {
+  reset_state();
+  Frame f = base_frame(); f.alarm_mode = true; f.night_manual = true;
+  f.brightness_night = 0; f.ota_brightness = 0;
+  state.begin_ota(false);
+  FakeCanvas canvas;
+  render(canvas, compact, compact, f, report); CHECK_EQ(state.applied_brightness, 1);
+  f.ota_brightness = 4; f.now_ms = 500;
+  render(canvas, compact, compact, f, report); CHECK_EQ(state.applied_brightness, 4);
+  state.ota_state = OTA_ERROR;
+  f.now_ms = 600;
+  render(canvas, compact, compact, f, report); CHECK_EQ(state.applied_brightness, 4);
+  state.ota_state = OTA_IDLE; f.alarm_mode = false;
+  render(canvas, compact, compact, f, report); CHECK_EQ(state.applied_brightness, 0);
+}
+
 int main() {
   printf("running renderer tests\n");
+  test_slide_is_clipped_to_its_own_window();
+  test_disabling_animation_cancels_mid_slide();
+  test_font_alignment_geometry_changes_cancel_animation();
+  test_progress_is_actual_percentage_and_deduplicated();
+  test_boot_installed_version_priority_expiry_and_wrap();
+  test_ota_overrides_alarm_and_zero_night_brightness();
   test_builtin_font_is_compact_enough();
   test_message_text_helpers();
   test_unknown_glyphs_do_not_break_layout();

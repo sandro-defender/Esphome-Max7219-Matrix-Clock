@@ -1,4 +1,5 @@
-import { GENERATED_FONTS, type GeneratedFont } from "./glyphs.generated";
+import { FIRMWARE } from "./firmware";
+import { GENERATED_FONTS, BUILTIN_GLYPHS, BUILTIN_ADVANCES, BUILTIN_METRICS, type GeneratedFont } from "./glyphs.generated";
 
 /**
  * Font engine for the live preview.
@@ -13,11 +14,13 @@ export interface PixelTarget {
   width: number;
   height: number;
   pixels: Uint8Array;
+  clip?: { x: number; y: number; width: number; height: number };
 }
 
 export interface Glyph {
   /** Ink width in pixels. */
   w: number;
+  left?: number;
   /** Ink height in pixels. */
   h: number;
   /** Rows of ink, most significant bit = leftmost pixel. */
@@ -55,6 +58,7 @@ export function setPixel(target: PixelTarget, x: number, y: number, value = 1): 
   const px = Math.round(x);
   const py = Math.round(y);
   if (px < 0 || py < 0 || px >= target.width || py >= target.height) return;
+  if (target.clip && (px < target.clip.x || py < target.clip.y || px >= target.clip.x + target.clip.width || py >= target.clip.y + target.clip.height)) return;
   target.pixels[py * target.width + px] = value;
 }
 
@@ -72,91 +76,26 @@ export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: n
 // Built-in 5x7 font (packages/max7219_clock_renderer.h, namespace builtin)
 // -------------------------------------------------------------------------
 
-/** 7 rows, 5 columns, bit 4 = leftmost pixel. */
-export const BUILTIN_DIGITS: number[][] = [
-  [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
-  [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
-  [0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111],
-  [0b11110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b11110],
-  [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
-  [0b11111, 0b10000, 0b10000, 0b11110, 0b00001, 0b00001, 0b11110],
-  [0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
-  [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
-  [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
-  [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b11100],
-];
+/** The C++ source is authoritative, including fallback punctuation. */
+export const BUILTIN_DIGITS = Array.from({ length: 10 }, (_, i) => BUILTIN_GLYPHS[String(i)]);
+export const BUILTIN_LETTERS = Array.from({ length: 26 }, (_, i) => BUILTIN_GLYPHS[String.fromCharCode(65 + i)]);
 
-export const BUILTIN_LETTERS: number[][] = [
-  [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001], // A
-  [0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110], // B
-  [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110], // C
-  [0b11100, 0b10010, 0b10001, 0b10001, 0b10001, 0b10010, 0b11100], // D
-  [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111], // E
-  [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000], // F
-  [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110], // G
-  [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001], // H
-  [0b01110, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110], // I
-  [0b00111, 0b00010, 0b00010, 0b00010, 0b00010, 0b10010, 0b01100], // J
-  [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001], // K
-  [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111], // L
-  [0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001], // M
-  [0b10001, 0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001], // N
-  [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110], // O
-  [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000], // P
-  [0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101], // Q
-  [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001], // R
-  [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110], // S
-  [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100], // T
-  [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110], // U
-  [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100], // V
-  [0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001], // W
-  [0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001], // X
-  [0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100], // Y
-  [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111], // Z
-];
+function builtinRows(ch: string): number[] { return BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
+function builtinAdvance(ch: string): number { return BUILTIN_ADVANCES[ch] ?? BUILTIN_METRICS.defaultAdvance; }
 
-const BUILTIN_PUNCTUATION: Record<string, number[]> = {
-  " ": [0, 0, 0, 0, 0, 0, 0],
-  ":": [0b00000, 0b01100, 0b01100, 0b00000, 0b01100, 0b01100, 0b00000],
-  ".": [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b01100, 0b01100],
-  ",": [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00100, 0b01000],
-  "-": [0b00000, 0b00000, 0b00000, 0b01110, 0b00000, 0b00000, 0b00000],
-  _: [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
-  "/": [0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b00000, 0b00000],
-  "%": [0b01101, 0b01101, 0b00010, 0b00100, 0b01000, 0b10110, 0b10110],
-  "!": [0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00000, 0b00100],
-  "?": [0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b00000, 0b00100],
-  "+": [0b00000, 0b00100, 0b00100, 0b11111, 0b00100, 0b00100, 0b00000],
-};
-
-function builtinRows(ch: string): number[] {
-  const upper = ch.toUpperCase();
-  if (upper >= "0" && upper <= "9") return BUILTIN_DIGITS[Number(upper)];
-  if (upper >= "A" && upper <= "Z") return BUILTIN_LETTERS[upper.charCodeAt(0) - 65];
-  return BUILTIN_PUNCTUATION[upper] ?? BUILTIN_PUNCTUATION[" "];
-}
-
-function builtinAdvance(ch: string): number {
-  switch (ch) {
-    case ":":
-    case ".":
-    case ",":
-    case "!":
-    case " ":
-      return 3;
-    default:
-      return 6;
-  }
+/** C++ walks UTF-8 bytes, not JavaScript Unicode code points. */
+export function textCells(text: string): string[] {
+  return [...new TextEncoder().encode(text)].map((byte) => String.fromCharCode(byte));
 }
 
 class BuiltinPreviewFont implements PreviewFont {
   readonly id = "builtin";
   readonly label = "Compact 5x7";
   readonly builtin = true;
-  readonly inkHeight = 7;
-  readonly inkTop = 0;
-  readonly clockWidth = 42;
-  readonly maxDigitHeight = 7;
+  readonly inkHeight = BUILTIN_METRICS.inkHeight;
+  readonly inkTop = BUILTIN_METRICS.inkTop;
+  readonly clockWidth = BUILTIN_METRICS.clockWidth;
+  readonly maxDigitHeight = BUILTIN_METRICS.maxDigitHeight;
 
   glyph(ch: string): Glyph {
     return { w: 5, h: 7, rows: builtinRows(ch), top: 0, advance: builtinAdvance(ch) };
@@ -168,7 +107,7 @@ class BuiltinPreviewFont implements PreviewFont {
 
   measure(text: string): number {
     let width = 0;
-    for (const ch of text) width += builtinAdvance(ch);
+    for (const ch of textCells(text)) width += builtinAdvance(ch);
     return width;
   }
 
@@ -211,7 +150,7 @@ class GeneratedPreviewFont implements PreviewFont {
     const key = ch === " " ? "space" : ch;
     const entry = this.font.glyphs[key] ?? this.font.glyphs[key.toUpperCase()];
     if (!entry) return null;
-    return { w: entry.w, h: entry.h, rows: entry.rows, top: entry.top, advance: entry.advance };
+    return { w: entry.w, h: entry.h, rows: entry.rows, left: entry.left, top: entry.top, advance: entry.advance };
   }
 
   advance(ch: string): number {
@@ -235,7 +174,7 @@ class GeneratedPreviewFont implements PreviewFont {
   drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
     const glyph = this.glyph(ch);
     if (!glyph) return;
-    drawGlyphRows(target, glyph, x, boxTop + glyph.top);
+    drawGlyphRows(target, glyph, x + (glyph.left ?? 0), boxTop + glyph.top);
   }
 }
 
@@ -260,82 +199,13 @@ export function generatedFont(id: string, label: string): PreviewFont | null {
 // Message text normalisation (shared with the firmware's upper-case messages)
 // -------------------------------------------------------------------------
 
-export const GLYPH_ORDER = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:!?-+/#%'";
-
-/** 3x5 glyphs, bit 2 = left pixel. Index matches GLYPH_ORDER. */
-export const FONT_3X5: Record<string, number[]> = {
-  "0": [0b111, 0b101, 0b101, 0b101, 0b111],
-  "1": [0b010, 0b110, 0b010, 0b010, 0b111],
-  "2": [0b111, 0b001, 0b111, 0b100, 0b111],
-  "3": [0b111, 0b001, 0b111, 0b001, 0b111],
-  "4": [0b101, 0b101, 0b111, 0b001, 0b001],
-  "5": [0b111, 0b100, 0b111, 0b001, 0b111],
-  "6": [0b111, 0b100, 0b111, 0b101, 0b111],
-  "7": [0b111, 0b001, 0b010, 0b010, 0b010],
-  "8": [0b111, 0b101, 0b111, 0b101, 0b111],
-  "9": [0b111, 0b101, 0b111, 0b001, 0b111],
-  A: [0b010, 0b101, 0b111, 0b101, 0b101],
-  B: [0b110, 0b101, 0b110, 0b101, 0b110],
-  C: [0b111, 0b100, 0b100, 0b100, 0b111],
-  D: [0b110, 0b101, 0b101, 0b101, 0b110],
-  E: [0b111, 0b100, 0b110, 0b100, 0b111],
-  F: [0b111, 0b100, 0b110, 0b100, 0b100],
-  G: [0b111, 0b100, 0b101, 0b101, 0b111],
-  H: [0b101, 0b101, 0b111, 0b101, 0b101],
-  I: [0b111, 0b010, 0b010, 0b010, 0b111],
-  J: [0b001, 0b001, 0b001, 0b101, 0b111],
-  K: [0b101, 0b110, 0b100, 0b110, 0b101],
-  L: [0b100, 0b100, 0b100, 0b100, 0b111],
-  M: [0b101, 0b111, 0b111, 0b101, 0b101],
-  N: [0b110, 0b101, 0b101, 0b101, 0b101],
-  O: [0b111, 0b101, 0b101, 0b101, 0b111],
-  P: [0b111, 0b101, 0b111, 0b100, 0b100],
-  Q: [0b111, 0b101, 0b101, 0b111, 0b001],
-  R: [0b111, 0b101, 0b110, 0b101, 0b101],
-  S: [0b011, 0b100, 0b010, 0b001, 0b110],
-  T: [0b111, 0b010, 0b010, 0b010, 0b010],
-  U: [0b101, 0b101, 0b101, 0b101, 0b111],
-  V: [0b101, 0b101, 0b101, 0b101, 0b010],
-  W: [0b101, 0b101, 0b111, 0b111, 0b101],
-  X: [0b101, 0b101, 0b010, 0b101, 0b101],
-  Y: [0b101, 0b101, 0b010, 0b010, 0b010],
-  Z: [0b111, 0b001, 0b010, 0b100, 0b111],
-  " ": [0b000, 0b000, 0b000, 0b000, 0b000],
-  ".": [0b000, 0b000, 0b000, 0b000, 0b010],
-  ",": [0b000, 0b000, 0b000, 0b010, 0b100],
-  ":": [0b000, 0b010, 0b000, 0b010, 0b000],
-  "!": [0b010, 0b010, 0b010, 0b000, 0b010],
-  "?": [0b111, 0b001, 0b011, 0b000, 0b010],
-  "-": [0b000, 0b000, 0b111, 0b000, 0b000],
-  "+": [0b000, 0b010, 0b111, 0b010, 0b000],
-  "/": [0b001, 0b001, 0b010, 0b100, 0b100],
-  "#": [0b101, 0b111, 0b101, 0b111, 0b101],
-  "%": [0b101, 0b001, 0b010, 0b100, 0b101],
-  "'": [0b010, 0b010, 0b000, 0b000, 0b000],
-};
-
-export function glyphIndex(ch: string): number {
-  return GLYPH_ORDER.indexOf(ch >= "a" && ch <= "z" ? ch.toUpperCase() : ch);
-}
-
-/** Upper-case, collapse spaces and drop anything the firmware cannot print. */
-export function normalizeMessage(raw: string): string {
-  const upper = raw.toUpperCase().replace(/[\r\n\t]+/g, " ");
-  let out = "";
-  let space = false;
-  for (const ch of upper) {
-    if (ch === " ") {
-      if (space || out.length === 0) continue;
-      space = true;
-      out += ch;
-      continue;
-    }
-    if (glyphIndex(ch) >= 0) {
-      space = false;
-      out += ch;
-    }
-  }
-  return out.replace(/ $/, "");
+/** Match copy_utf8_truncated() and upper_ascii(): preserve spaces/unknowns. */
+export function normalizeMessage(raw: string, maxBytes = FIRMWARE.renderer.messageMaxBytes): string {
+  const bytes = new TextEncoder().encode(raw);
+  let end = Math.min(bytes.length, maxBytes);
+  if (bytes.length > end) while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--;
+  const text = new TextDecoder().decode(bytes.slice(0, end));
+  return text.replace(/[a-z]/g, (char) => char.toUpperCase());
 }
 
 // -------------------------------------------------------------------------
@@ -356,7 +226,7 @@ export function drawTextLine(
   boxTop: number,
 ): void {
   let cursor = x;
-  for (const ch of text) {
+  for (const ch of textCells(text)) {
     font.drawGlyph(target, ch, cursor, boxTop);
     cursor += font.advance(ch);
   }

@@ -1,8 +1,4 @@
 # Optional release face. Source license is preserved under fonts/.
-substitutions:
-  project_ref: 0.5.5
-  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
-  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
 font:
 - id: font_dot_matrix_source
   file:
@@ -21,4 +17,3 @@ select:
   - id: !extend clock_font
     options:
       - "Dot Matrix"
-    initial_option: "Dot Matrix"

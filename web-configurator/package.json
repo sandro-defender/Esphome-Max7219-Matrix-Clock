@@ -1,14 +1,15 @@
 {
   "name": "max7219-clock-configurator",
   "private": true,
-  "version": "0.5.5",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "installer": "esbuild scripts/installer.ts --bundle --platform=node --format=cjs --define:import.meta.env={} --outfile=../validation-tmp/installer.cjs && node ../validation-tmp/installer.cjs"
   },
   "dependencies": {
     "clsx": "2.1.1",

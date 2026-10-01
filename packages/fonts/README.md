@@ -1,87 +1,78 @@
-# Optional release fonts (0.4.0)
+# Optional release fonts
 
-Each YAML owns one web font declaration, one compiler feature flag, and one
-`!extend clock_font` option. Installers list these files explicitly, after the
-core packages. `fonts_web.yaml` is only a convenience wrapper for the
-Matrix 2px + Dot Matrix pair that `examples/release.yaml` bundles; it does not
-compile the full catalogue.
-`fonts_local.yaml` retains the full local catalogue (five faces) for
-development, metrics and glyph generation. Do not include both the wrapper and
-its individual faces.
+## Current candidate policy (0.7.0, unreleased)
 
-## Why this merge design
+Default firmware and configurator builds compile exactly **Pixel Clock 6×8 +
+Matrix 2px**; **Compact 5×7** is always built in. MD Parola Numeric 7-Segment,
+MD MAX72XX System and Dot Matrix are optional. There is no artificial selection
+cap on compatible extra faces. The five-face catalogue is not the default build.
 
-Official references (checked against the **2026.9.0** tag):
+| File | Purpose |
+| --- | --- |
+| `fonts_web.yaml` | Default two-font remote wrapper |
+| `fonts_default_local.yaml` | Generated default two-font local wrapper used by `dev.yaml` |
+| `fonts_local.yaml` | Generated five-font catalogue for metrics/all-font validation |
+| `fonts/*.yaml` | Individually selectable remote face packages |
+| `local_fonts/*.yaml` | Generated equivalents with local source paths |
+
+Do not include a wrapper and its individual faces together. Core module lists,
+local wrappers, browser font metadata and default installer examples are emitted
+by `scripts/generate_firmware_contract.py`. Only `base.yaml` owns the package/
+font ref and base asset URL; each face owns its glyphs, compiler flag and select
+option. Public installers use a verified immutable tag, not `main`.
+
+## Exact ESPHome 2026.9.1 behavior and checks
 
 - [Packages / Extend](https://esphome.io/components/packages/#extend)
-- [Core build_flags](https://esphome.io/components/esphome/#configuration-variables)
-- [merge_config](https://github.com/esphome/esphome/blob/2026.9.0/esphome/config_helpers.py)
-- [resolve_extend_remove](https://github.com/esphome/esphome/blob/2026.9.0/esphome/config.py)
-- [template select restoration](https://github.com/esphome/esphome/blob/2026.9.0/esphome/components/template/select/template_select.cpp)
+- [Tagged merge_config](https://github.com/esphome/esphome/blob/2026.9.1/esphome/config_helpers.py)
+- [Tagged resolve_extend_remove](https://github.com/esphome/esphome/blob/2026.9.1/esphome/config.py)
+- [Tagged template select restoration](https://github.com/esphome/esphome/blob/2026.9.1/esphome/components/template/select/template_select.cpp)
+- [Tagged font API](https://github.com/esphome/esphome/blob/2026.9.1/esphome/components/font/font.h)
 
-`!extend` **does append options**: string lists concatenate. Scalar lambdas
-**replace**, so packages must not try to append lambda text. Each face adds
-`-DMAX7219_FONT_*` via `esphome.build_flags`; the display's corresponding guarded
-block wraps the generated font pointer and selects it by name. Raw pointers,
-not `id()` expressions, are intentional: the preprocessor removes absent faces
-without ESPHome trying to resolve their IDs first. `SourceFont` is guarded by
-`USE_FONT`, so a built-in-only build needs no font namespace. The built-in
-fallback and reset option are always available.
+`!extend` string-list options append; scalar lambdas replace. Each face adds a
+`-DMAX7219_FONT_*` flag. Corresponding display blocks are feature-guarded and use
+raw pointers, so ESPHome does not resolve omitted font IDs. `SourceFont` is
+protected by `USE_FONT`; built-in-only firmware needs no external font namespace.
+The public packed 1bpp glyphs are drawn through the clipped Canvas rather than
+bypassing it with `Font.print`.
 
-The official tag's merge/extend resolver (`merge_config` and
-`resolve_extend_remove`) is exercised over every subset (2^N, N = number of
-faces) and the exact default release order by `test_exact_esphome_font_option_merge` when ESPHome
-2026.9.0 is installed. In addition, full ESPHome 2026.9.0 `esphome config` and
-`esphome compile` (ESP8266 `d1_mini`) have been executed for the default
-two-face configuration (`Matrix 2px` + `Dot Matrix` + built-in `Compact 5x7`),
-built-in-only (`0` external faces), single-face (`Matrix 2px` and `Dot Matrix`),
-and the full-catalogue configurations of the measured release (ten faces at
-0.4.0; the current catalogue is five faces), as
-well as the offline release path (`scripts/validate-release-offline.sh 0.4.0`),
-confirming codegen, include order, pointer visibility and compiler flag
-propagation.
+Current checks exercise the tagged resolver over all **32 subsets** of five
+faces and the exact Pixel/Matrix default order. Five isolated YAML/codegen
+variants pass. Independent browser rasterization is compared with official
+packed-glyph/MAX7219 writer/SPI fixtures. The Matrix zero's upper-left 2×2 stroke
+is repaired without changing its intended two-pixel style or advance.
 
-## Selection and restoration
+**No current full ESP8266 link or size result exists:** toolchain acquisition is
+blocked by TLS errors. Do not infer candidate size from the older results below.
 
-The web UI always includes Pixel Clock 6×8 and offers every other face as an
-optional extra, in catalogue order. Firmware modules support zero/one/all faces
-for manual development tests, independently of that UI policy. The base select is
-Compact 5x7; the Dot Matrix package changes its initial option to Dot Matrix.
-A generated install can override the initial option to any included face (the
-configurator defaults to Pixel Clock 6×8).
+## Selection and preference restoration
 
-## MD_MAX72XX System import
+Pixel Clock 6×8 is the default initial clock face. Manual package builds can
+still select zero/one/all external faces. Restore display defaults chooses Pixel
+when compiled, otherwise Compact, using generated firmware entity defaults.
 
-`fonts/md-max72xx-system/MDMax72xxSystem.ttf` is an optional ESPHome-ready
-conversion of the system font used by both the MD_MAX72XX and MD_Parola Arduino
-libraries. It is deliberately **not** in the default release pair: include
-`packages/fonts/md-max72xx-system.yaml` after the core package files to compile
-and select it. Its LGPL-2.1-or-later license and reproducible conversion script
-are retained alongside the font. The face compiles only
-`0123456789:.-/%!?+ `, exactly like the other clock faces.
+ESPHome persists a **numeric select index**, not the option label. Compact and
+the default pair precede extras; changing the compiled catalogue may remap an
+older saved index to another included face. Invalid indices use `initial_option`.
+Reselect the desired face after a font-subset change or migration. Unmatched
+strings fall back to Compact; omitted faces are never referenced by the renderer.
 
-## MD Parola Numeric 7-Segment import
+## Imported faces and licences
 
-`fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf` converts the
-`numeric7Seg` bitmap used by MD Parola's `Parola_Zone_TimeMsg` MAX7219 example.
-“Seven-segment” describes the digit design: it is an 8×8 LED-matrix font, not
-a separate display type. The 16-pixel `numeric7SegDouble` variant is excluded
-because this clock has one 8-pixel matrix row.
+`MDMax72xxSystem.ttf` converts the MD_MAX72XX/MD_Parola `_sysfont` numerals;
+`MDParolaNumeric7Seg.ttf` converts MD Parola's matrix `numeric7Seg` example.
+“Seven-segment” is a digit design on an LED matrix, not a separate display type.
+The double-height variant is not used. Both are opt-in and retain their
+LGPL-2.1-or-later source/conversion notices (`fonts/md-max72xx-system/LICENSE.txt`).
+Pixel Clock, Matrix 2px and Dot Matrix retain their project generation scripts.
+Each external face restricts compilation to the clock/status glyph set at
+`bpp: 1`; full licence/source information remains with its assets.
 
-ESPHome saves a **numeric index**. The web order keeps Compact 5×7 and
-Pixel Clock 6×8 stable, but changing extras may remap a saved extra index to
-another included face. Out-of-range indices use initial_option. Older all-font builds
-have a different order too: reselect your desired font after flashing.
-No restored option can reference an omitted font; the renderer still defaults
-to Compact for any unmatched string. Restore display defaults selects Compact.
+## Historical release 0.4.0 measurements — not current build evidence
 
-## Release 0.4.0 and measurements
-
-Release `0.4.0` is published and verified. `examples/release.yaml`, project
-version, web-configurator metadata and font asset refs are pinned to `0.4.0`.
-Release `0.4.0` shipped one default configuration (`Matrix 2px` + `Dot Matrix` +
-built-in `Compact 5x7`); users may optionally add further font packages in the
-web configurator, which now defaults to Pixel Clock 6×8 alone.
+The following original measurements belong to release 0.4.0 and its original
+ESPHome **2026.9.0** toolchain, old Matrix/Dot default pair and larger catalogue.
+They do not verify the current default pair, repaired font or 2026.9.1 build.
 
 Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM)
 at release 0.4.0, whose ten-face catalogue also included Jersey 15, Teko,
@@ -94,10 +85,3 @@ Rajdhani Bold, Kdam Thmor Pro, Rationale, Handjet, Oxanium and Share Tech Mono
 - **Default two-face pair (`Matrix 2px` + `Dot Matrix`):** **505,141 B flash (48.4%, +3,552 B vs 0 faces)**, **41,276 B RAM (50.4%, +1,188 B vs 0 faces)**
 - **Max configurator subset (default 2 + 3 extras):** 507,181 B flash (48.6%, +2,040 B vs default 2), 43,012 B RAM (52.5%, +1,736 B vs default 2)
 - **Full 10-face catalogue (`dev.yaml`, 0.4.0):** 510,589 B flash (48.9%, +5,448 B vs default 2), 45,964 B RAM (56.1%, +4,688 B vs default 2)
-
-After tag and GitHub release `0.4.0` were published and verified via a clean
-remote configuration check (`INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`,
-`INFO Configuration is valid!`), `INSTALLER_READY` is set to `true` and
-installer copy/download is enabled. No new font files were added; source
-notices remain in `fonts/*/OFL.txt`. Matrix 2px and Dot Matrix are
-project-generated faces.
