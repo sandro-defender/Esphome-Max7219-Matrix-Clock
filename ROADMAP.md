@@ -1,15 +1,50 @@
 # ESPHome MAX7219 Matrix Clock — current roadmap
 
-## Checkpoint — 2026-10-02
+## Active continuation — code-only, stepwise PR updates (2026-10-02)
+
+The user has resumed implementation: **work on code, do not try ESPHome builds
+or compilation, and update [draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)
+after each finished step**. Do not invoke the ESPHome CLI (including codegen)
+or retry PlatformIO downloads. Source/host/script/web checks remain allowed;
+full firmware and physical-device evidence stay unverified. Preserve the
+checkpoint below as earlier evidence, not a new build claim.
+
+### Finished step 1 — release publisher safety
+
+- [x] Add **40 offline publisher tests**, with all git/gh/npm commands mocked
+  and a subprocess blocker to prevent real publication/network commands.
+- [x] Enforce this repository's main push provenance, valid SHA, exact/clean
+  checkout, and safe repository/tag/installer identifiers before publishing.
+- [x] Verify atomic tag creation/race fallback, collision refusal, annotated
+  tags/cycles/depth, bounded pagination and publication-order latest selection.
+- [x] Never edit published notes or replace published assets even when GitHub's
+  optional immutable lock is off; verify notes/assets before and after publish.
+- [x] Resume partial drafts without clobber, re-read create/upload races, reject
+  mismatched drafts, use fresh downloads for digest-less assets, and avoid
+  mutable-latest promotion on old retries. Do not echo command stderr/secrets.
+- [x] Code checks: publisher **40 passed**; source contracts **36 run, 35 passed,
+  1 skipped** (exact SDK not installed here); renderer **315 checks passed**;
+  web **103 passed**, including 1,044 parity frames; TypeScript **PASS**.
+- [ ] Live publishing integration and CI wiring remain separate, unverified work.
+
+### Next finished-step target — code-only continuous validation
+
+- [ ] Add every-main/PR validation with read-only permissions, exact SDK import
+  dependencies, stale-generated-source checks and source/host/web test coverage.
+- [ ] Do not run ESPHome config/codegen/compile in the code-only workflow.
+- [ ] Validate workflow/security contracts and pin the installer CLI dependency.
+- [ ] Keep release/Pages sequencing explicitly pending until its own tested step.
+
+## Earlier checkpoint — 2026-10-02
 
 **Status: implementation checkpoint for a draft PR, not a completed release.**
 The current candidate is `0.7.0` (unreleased), targeting **ESPHome 2026.9.1
 exactly**, on `arena/01a0f913-esphome-max7219-matrix-clock`, based on
 `e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
 
-The latest instruction is to finish this step, record the current work and
-remaining steps, and push a PR. Do not expand the implementation or publish a
-release/Pages deployment during this checkpoint. The sections below are the
+The earlier instruction was to finish the checkpoint, record the work and
+remaining steps, and push a PR. That checkpoint was completed; the active
+code-only continuation above supersedes its pause in implementation. The sections below are the
 current acceptance checklist; older checked phases are preserved separately
 as history and are **not evidence that this candidate is ready to merge**.
 
@@ -73,12 +108,13 @@ are still legacy and incompatible with the new generator dependencies.
   freshness; do not regenerate silently to hide stale committed artifacts.
 - [ ] Replace path-filtered/tag-only legacy workflows with validation on **every
   main push**, and PR validation without release/deployment permissions.
-- [ ] Wire C++/Python/web/typecheck/build/parity and five-variant YAML/codegen
-  checks into CI; require successful full default/all-font ESP8266 builds.
-- [ ] Audit and unit-test `scripts/publish_release.py`: main-only provenance,
-  permissions, tag reservation/collisions, draft asset upload, retries,
-  idempotency, immutable publication and publication-order latest selection.
-  It has not been executed to create a tag or release in this checkpoint.
+- [ ] Wire C++/Python/web/typecheck/build/parity and generated freshness into
+  code-only CI. ESPHome CLI/codegen/full builds are deferred by the user and
+  must not be treated as prerequisites to each source-only PR update.
+- [x] Audit and unit-test `scripts/publish_release.py`: main-only provenance,
+  tag reservation/collisions, draft assets/retries, idempotency, immutable
+  publication and publication-order selection — 40 offline tests in step 1.
+  Actual publication and workflow permissions/wiring are still unverified.
 - [ ] After validation, publish an appropriate immutable versioned release
   (`VERSION`, or `VERSION+12hexSHA` for later commits at that version), with
   matching notes, commit and installer asset. Never move existing tags.

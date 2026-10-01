@@ -11,6 +11,11 @@ holds your credentials, a few substitutions and the package list.
 
 ## Current work: draft candidate 0.7.0
 
+Active work is **code-only**, with an update to draft PR #13 after each finished
+step. Do not run ESPHome build/compile/codegen commands during this work. The
+publisher now has 40 mocked safety tests; actual publishing/deployment and
+physical-device validation remain unverified.
+
 This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
 checkpoint**, not a ready-to-merge firmware release. The default external pair
 is **Pixel Clock 6×8 + Matrix 2px**, with Compact 5×7 built in and other compatible

@@ -1,6 +1,21 @@
 # Implementation checkpoint report
 
-## Current draft — 2026-10-02
+## Code-only continuation — 2026-10-02
+
+The user resumed work with **no ESPHome builds/compilation** and a PR update
+after every finished step. Step 1 hardens the publisher and adds **40 mocked
+unit tests**: main-push/clean-checkout provenance; atomic tag races/collisions;
+annotated-tag bounds; publication-order pagination; immutable published notes/
+assets even without server locking; non-clobbering draft recovery; pre/post
+publication verification and safe error reporting. No real release was created.
+
+Code checks: 40 publisher tests, 35 source-contract tests (1 SDK merge test
+skipped), 315 host renderer checks, 103 web tests / 1,044 oracle frames and
+TypeScript all pass. No ESPHome CLI was run; full firmware/device/live-release
+verification remains open. Code-only CI is the next step. See the current
+[ROADMAP.md](ROADMAP.md) and draft PR #13 for each pushed step and commit.
+
+## Earlier draft checkpoint — 2026-10-02
 
 - **Candidate:** `0.7.0`, unreleased; exact target ESPHome **2026.9.1**.
 - **Branch:** `arena/01a0f913-esphome-max7219-matrix-clock`.

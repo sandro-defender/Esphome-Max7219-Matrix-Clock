@@ -1,8 +1,24 @@
-# Current checkpoint and next work
+# Current code work and stepwise PR updates
+
+## Active instruction — 2026-10-02
+
+Continue on code only. **Do not run ESPHome config/build/compile/codegen or
+retry toolchain downloads. Update draft PR #13 after every finished step.**
+
+- [x] Step 1: audit/harden the publisher and add 40 mocked offline tests.
+  Main provenance/clean checkout, tag races/collisions, draft recovery,
+  non-destructive publication, asset verification and bounded latest selection
+  are covered. No real publisher execution/release/deployment occurred.
+- [ ] Step 2: code-only every-main/PR CI, workflow-contract tests and explicit
+  installer dependency pin. No ESPHome CLI in this workflow.
+- [ ] Later: guarded release→Pages wiring, live integration, stateful parity,
+  manual accessibility and hardware sign-off. Full builds remain deferred.
+
+## Historical checkpoint and next-work list
 
 ## 2026-10-02 — draft PR hand-off
 
-The latest instruction is to finish this step, document the roadmap and push a
+The earlier instruction was to finish the step, document the roadmap and push a
 PR. Candidate `0.7.0` targets **ESPHome 2026.9.1 exactly** and remains unreleased.
 The current acceptance checklist is [ROADMAP.md](../ROADMAP.md); historical
 checked tasks below do not certify this candidate.

@@ -1,6 +1,26 @@
 # Validation
 
-## Current candidate checkpoint — 2026-10-02
+## Active code-only continuation — 2026-10-02
+
+Per the user's latest instruction, **do not invoke ESPHome config, build,
+compile or code generation**, and do not retry toolchain downloads. Update the
+existing draft PR after each finished source-code step. The firmware/toolchain
+commands further below are historical/reproduction guidance, not commands to
+run during this continuation.
+
+Step 1 checks executed without ESPHome CLI:
+
+- `python3 tests/test_publish_release.py`: **40 passed**, every external command
+  mocked/blocked; no real GitHub publication or npm installer execution.
+- Source contracts: **36 run, 35 passed, 1 skipped** because exact SDK is not
+  installed in this environment. Do not claim that skipped merge check ran.
+- `make -C tests test`: **315 checks passed**, host renderer only.
+- Web suite: **103 passed** / **1,044 pixel-oracle frames**; typecheck **PASS**.
+
+Firmware config/codegen/full build measurements have not been rerun. Prior
+checkpoint results below retain their original scope/date.
+
+## Earlier candidate checkpoint — 2026-10-02
 
 Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.0` is
 unreleased. Use the isolated Python validator for current firmware and browser
