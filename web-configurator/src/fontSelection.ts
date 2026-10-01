@@ -1,6 +1,6 @@
 import { CLOCK_FONTS, type ClockFont, type Config } from "./types";
 
-export const DEFAULT_FONTS: readonly ClockFont[] = ["dot-matrix"];
+export const DEFAULT_FONTS: readonly ClockFont[] = ["pixel-clock-6x8", "matrix-2px", "dot-matrix"];
 export const MAX_EXTRA_FONTS = Infinity;
 export const EXTRA_FONTS = CLOCK_FONTS.filter((id) => id !== "compact" && !DEFAULT_FONTS.includes(id));
 

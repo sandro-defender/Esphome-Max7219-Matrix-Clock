@@ -41,8 +41,7 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       <fieldset className="font-group font-group-firmware">
         <legend id="fonts-included-title">Fonts included in firmware</legend>
         <p className="hint">
-          Dot Matrix ships in every build. Compact 5×7 is always compiled as the fallback. Add any remaining compatible
-          font — each one becomes a package in your installer and an option of the Home Assistant{" "}
+          Dot Matrix, Matrix 2px and Pixel Clock 6×8 ship in every build. Compact 5×7 is always compiled as the fallback.
           <code>Clock font</code> select.
         </p>
         <ul className="font-checklist">
