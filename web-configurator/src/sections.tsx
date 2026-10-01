@@ -48,7 +48,7 @@ export const PROJECT = {
   roadmap: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/blob/main/ROADMAP.md",
   issues: "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/issues",
   live: "https://sandro-defender.github.io/Esphome-Max7219-Matrix-Clock/",
-  ref: "0.4.0",
+  ref: "0.5.5",
   esphome: "2026.9.0",
 };
 

@@ -174,6 +174,9 @@ export default function App() {
       </main>
 
       <footer className="site-footer">
+        <p className="release-version" role="status">
+          Configurator package release: <strong>{PROJECT.ref}</strong>
+        </p>
         <p>
           <strong>Clocklab</strong> — the web configurator for the{" "}
           <a href={PROJECT.repo} target="_blank" rel="noreferrer">
