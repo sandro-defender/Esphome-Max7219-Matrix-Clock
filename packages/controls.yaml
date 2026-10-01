@@ -325,6 +325,17 @@ switch:
       - component.update: matrix
 
   - platform: template
+    name: "Alarm mode"
+    id: alarm_mode
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.update: matrix
+    turn_off_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Night schedule"
     id: night_schedule_enabled
     entity_category: config

@@ -54,6 +54,7 @@ display:
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
       frame.night_manual = id(night_mode).state;
+      frame.alarm_mode = id(alarm_mode).state;
       frame.night_schedule = id(night_schedule_enabled).state;
       frame.night_start_hour = (int) id(night_start_hour).state;
       frame.night_end_hour = (int) id(night_end_hour).state;

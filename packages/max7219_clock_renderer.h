@@ -287,6 +287,7 @@ struct Frame {
   int night_end_hour = 7;
   float brightness_day = 3.0f;
   float brightness_night = 1.0f;
+  bool alarm_mode = false;
 
   // Automatic screen cycling
   bool auto_cycle = false;
@@ -810,7 +811,9 @@ inline void housekeeping(const Frame &f, Report &report) {
     }
   }
   const bool night = f.night_manual || in_window;
-  const float target_brightness = night ? f.brightness_night : f.brightness_day;
+  // Alarm mode overrides normal/night brightness and flashes twice per second.
+  const float target_brightness = f.alarm_mode ? (((f.now_ms / 500UL) & 1U) ? 15.0f : 0.0f)
+                                               : (night ? f.brightness_night : f.brightness_day);
   // Report when the effective level changes: a night/day flip OR a Home
   // Assistant edit of the Matrix/Night brightness entities. Without the
   // second condition the sliders would never reach the panel until the next
