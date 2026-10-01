@@ -34,8 +34,8 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       title="Font Lab"
       lead={
         <>
-          Every card is rasterised from the very font file the firmware compiles, at the size it compiles. Pick an
-          installed face for the clock; compare candidates below without installing anything.
+          Every bundled face is available here. Pick an installed face for the clock; compare the preview-only faces
+          below without adding anything to firmware.
         </>
       }
     >

@@ -242,6 +242,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+.site-nav button { border: 0; background: transparent; color: var(--muted); padding: 8px 10px; font-weight: 650; }
+.site-nav button.on { color: var(--amber-2); border-bottom: 2px solid var(--amber); }
+.face-stepper { display: inline-flex; align-items: center; gap: 6px; }
+.face-stepper button { border: 1px solid var(--line); background: var(--bg-3); color: var(--amber-2); border-radius: var(--r-s); width: 24px; height: 24px; line-height: 1; font-size: 1.2rem; }
+.info-page { grid-column: 1 / -1; }
+
 .site-nav ul {
   display: flex;
   gap: 2px;

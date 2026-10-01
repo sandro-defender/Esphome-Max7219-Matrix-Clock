@@ -25,12 +25,14 @@ describe("App", () => {
     }
   });
 
-  it("lists every project section in the anchor nav and renders them", () => {
-    const sections = ["preview", "tune", "font-lab", "hardware", "install", "assistant", "troubleshooting", "gallery", "docs"];
-    for (const id of sections) {
+  it("uses Configure and Info & help pages while rendering every section", () => {
+    expect(markup).toContain('aria-label="Configurator pages"');
+    expect(markup).toContain(">Configure</button>");
+    expect(markup).toContain(">Info &amp; help</button>");
+    for (const id of ["preview", "tune", "font-lab", "hardware", "install", "assistant", "troubleshooting", "gallery", "docs"]) {
       expect(markup, id).toContain(`id="${id}"`);
-      expect(markup, id).toContain(`href="#${id}"`);
     }
+    expect(markup).toContain('class="content-col info-page" hidden=""');
   });
 
   it("keeps exactly one h1 and labels every section", () => {

@@ -45,7 +45,7 @@ function statusValue(container: HTMLElement, label: string): string {
   const cell = [...container.querySelectorAll(".status-strip li")].find((item) =>
     item.querySelector("span")?.textContent?.includes(label),
   );
-  return cell?.querySelector("b")?.textContent ?? "";
+  return cell?.querySelector("b .face-label")?.textContent ?? cell?.querySelector("b")?.textContent ?? "";
 }
 
 /** React tracks input values, so a test has to go through the native setter. */
@@ -243,6 +243,34 @@ describe("mounted configurator", () => {
     expect(mounted.querySelector(".font-counter")?.textContent).toContain("1 / 3");
     const yaml = [...mounted.querySelectorAll("pre")].map((pre) => pre.textContent ?? "").join("\n");
     expect(yaml).toContain("packages/fonts/handjet.yaml");
+  });
+
+  it("cycles through included clock fonts with the preview arrows", async () => {
+    const mounted = await mount();
+    const next = mounted.querySelector('button[aria-label="Next included clock font"]') as HTMLButtonElement;
+    const previous = mounted.querySelector('button[aria-label="Previous included clock font"]') as HTMLButtonElement;
+
+    await act(async () => {
+      next.click();
+    });
+    expect(statusValue(mounted, "Face")).toBe("Compact 5×7");
+    await act(async () => {
+      previous.click();
+    });
+    expect(statusValue(mounted, "Face")).toBe("Dot Matrix");
+  });
+
+  it("keeps configuration focused and shows help on its own page", async () => {
+    const mounted = await mount();
+    expect((mounted.querySelector(".info-page") as HTMLElement).hidden).toBe(true);
+    expect(mounted.querySelector("#preview")).not.toBeNull();
+
+    const info = [...mounted.querySelectorAll("button")].find((button) => button.textContent === "Info & help")!;
+    await act(async () => {
+      info.click();
+    });
+    expect((mounted.querySelector(".info-page") as HTMLElement).hidden).toBe(false);
+    expect(mounted.querySelector("#preview")).toBeNull();
   });
 
   it("offers the MD MAX72XX System face and installs its package", async () => {

@@ -29,6 +29,8 @@ interface LiveStageProps {
   cfg: Config;
   scene: Scene;
   now: Date;
+  onPreviousFont?: () => void;
+  onNextFont?: () => void;
 }
 
 /**
@@ -42,7 +44,7 @@ interface LiveStageProps {
  * matrix can never cover the header controls. A `.chassis-slot` spacer keeps
  * the document height honest by mirroring the chassis height.
  */
-export function LiveStage({ cfg, scene, now }: LiveStageProps) {
+export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveStageProps) {
   const chassisRef = useRef<HTMLDivElement>(null);
   const [chassisH, setChassisH] = useState(0);
 
@@ -141,7 +143,11 @@ export function LiveStage({ cfg, scene, now }: LiveStageProps) {
       <ul className="status-strip" aria-label="Preview status">
         <li>
           <span>Face</span>
-          <b>{spec.label}</b>
+          <b className="face-stepper">
+            <button type="button" aria-label="Previous included clock font" onClick={onPreviousFont}>‹</button>
+            <span className="face-label">{spec.label}</span>
+            <button type="button" aria-label="Next included clock font" onClick={onNextFont}>›</button>
+          </b>
         </li>
         <li>
           <span>Panel</span>

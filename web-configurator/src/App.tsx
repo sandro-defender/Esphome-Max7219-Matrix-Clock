@@ -20,17 +20,7 @@ import { usePinnedChrome } from "./usePinnedChrome";
 import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
 
-const NAV: { id: string; label: string }[] = [
-  { id: "preview", label: "Preview" },
-  { id: "tune", label: "Tune" },
-  { id: "font-lab", label: "Font Lab" },
-  { id: "hardware", label: "Hardware" },
-  { id: "install", label: "Install YAML" },
-  { id: "assistant", label: "Home Assistant" },
-  { id: "troubleshooting", label: "Troubleshooting" },
-  { id: "gallery", label: "Gallery" },
-  { id: "docs", label: "Docs" },
-];
+type Page = "configure" | "info";
 
 /**
  * Everything below the preview controls, memoised as one block. The preview
@@ -38,7 +28,7 @@ const NAV: { id: string; label: string }[] = [
  * glyph strips and the generated YAML — out of that work; they only re-render
  * when the configuration, the geometry or the YAML actually changes.
  */
-const SettingsColumn = memo(function SettingsColumn({
+const ConfigureColumn = memo(function ConfigureColumn({
   cfg,
   patch,
   setCfg,
@@ -57,6 +47,13 @@ const SettingsColumn = memo(function SettingsColumn({
       <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
       <HardwareSection cfg={cfg} geo={geo} />
       <InstallSection cfg={cfg} yaml={yaml} />
+    </>
+  );
+});
+
+const InfoColumn = memo(function InfoColumn({ cfg }: { cfg: Config }) {
+  return (
+    <>
       <AssistantSection cfg={cfg} />
       <TroubleshootingSection />
       <GallerySection />
@@ -69,6 +66,7 @@ export default function App() {
   const initial = useRef(loadConfig()).current;
   const [cfg, setCfg] = useState<Config>(initial.config);
   const [notice, setNotice] = useState<string | null>(initial.from === "link" ? "Settings loaded from the shared link." : null);
+  const [page, setPage] = useState<Page>("configure");
   const topbarRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
@@ -94,6 +92,13 @@ export default function App() {
 
   const yaml = useMemo(() => buildYaml(cfg), [cfg]);
   const geo = useMemo(() => geometry(cfg.chips, cfg.rows), [cfg.chips, cfg.rows]);
+  const cycleFont = useCallback((direction: -1 | 1) => {
+    setCfg((current) => {
+      const choices = ["compact", ...current.fonts];
+      const at = Math.max(0, choices.indexOf(current.clockFont));
+      return { ...current, clockFont: choices[(at + direction + choices.length) % choices.length] as Config["clockFont"] };
+    });
+  }, []);
 
   const share = useCallback(async () => {
     const url = shareUrl(cfg, window.location.href.split("#")[0]);
@@ -150,33 +155,22 @@ export default function App() {
         </div>
       ) : null}
 
-      <nav className="site-nav" aria-label="Page sections" ref={navRef}>
+      <nav className="site-nav" aria-label="Configurator pages" ref={navRef}>
         <ul>
-          {NAV.map((item) => (
-            <li key={item.id}>
-              <a href={`#${item.id}`}>{item.label}</a>
-            </li>
-          ))}
+          <li><button type="button" className={page === "configure" ? "on" : ""} aria-pressed={page === "configure"} onClick={() => setPage("configure")}>Configure</button></li>
+          <li><button type="button" className={page === "info" ? "on" : ""} aria-pressed={page === "info"} onClick={() => setPage("info")}>Info &amp; help</button></li>
         </ul>
       </nav>
 
       <main id="main" className="shell">
-        <div className="stage-col">
-          <LiveStage cfg={cfg} scene={scene} now={now} />
-        </div>
-
-        <div className="content-col">
-          <PreviewControls
-            cfg={cfg}
-            scene={scene}
-            sliding={sliding}
-            reducedMotion={reducedMotion}
-            onMessage={(value) => patch("message", value)}
-            onPreviewTime={(value) => patch("previewTime", value)}
-            onReplay={replay}
-          />
-          <SettingsColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} yaml={yaml} />
-        </div>
+        {page === "configure" ? <>
+          <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
+          <div className="content-col">
+            <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} onReplay={replay} />
+            <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} yaml={yaml} />
+          </div>
+        </> : null}
+        <div className="content-col info-page" hidden={page !== "info"}><InfoColumn cfg={cfg} /></div>
       </main>
 
       <footer className="site-footer">
