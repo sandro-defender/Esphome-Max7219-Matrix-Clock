@@ -4,10 +4,12 @@ import { deviceSlug, nodeId } from "./device";
 import { clampNumber, type Config } from "./types";
 
 const PROJECT_REPOSITORY = "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock";
-const PROJECT_REF = "main";
+// Must stay identical to examples/release.yaml and the released font packages
+// (checked by tests/test_config.py: test_release_example_pins_tag_and_fonts).
+const PROJECT_REF = "0.5.5";
 export const INSTALLER_READY = true;
 
-/** Must stay identical to examples/release.yaml (checked by yaml.test.ts). */
+/** Must stay identical to examples/release.yaml (checked by tests/test_config.py). */
 const PACKAGE_FILES = [
   "packages/base.yaml",
   "packages/network.yaml",

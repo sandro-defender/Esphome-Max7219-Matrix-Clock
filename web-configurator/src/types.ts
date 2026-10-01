@@ -9,6 +9,7 @@ export type MessageScroll = "Scroll" | "Static";
 export const CLOCK_FONTS = [
   "pixel-clock-6x8",
   "md-parola-numeric-7seg",
+  "md-max72xx-system",
   "matrix-2px",
   "dot-matrix",
   "compact",
@@ -53,7 +54,7 @@ export interface Config {
   animationMs: number;
   animationRowGap: number;
   clockFont: ClockFont;
-  /** Included external faces: the three remaining clock faces ship by default. */
+  /** Included external faces: the Matrix 2px + Dot Matrix release defaults plus ticked extras. */
   fonts: ClockFont[];
   layoutPreview: LayoutPreview;
 
@@ -108,7 +109,7 @@ export const DEFAULT_CONFIG: Config = {
   animationMs: 600,
   animationRowGap: 1,
   clockFont: "dot-matrix",
-  fonts: ["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"],
+  fonts: ["matrix-2px", "dot-matrix"],
   layoutPreview: "firmware",
 
   message: "",

@@ -1,7 +1,10 @@
 import { CLOCK_FONTS, type ClockFont, type Config } from "./types";
 
-export const DEFAULT_FONTS: readonly ClockFont[] = ["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"];
-export const MAX_EXTRA_FONTS = Infinity;
+/** Release defaults: every installer compiles these two faces. */
+export const DEFAULT_FONTS: readonly ClockFont[] = ["matrix-2px", "dot-matrix"];
+/** ESP8266 flash budget: at most three optional faces on top of the defaults. */
+export const MAX_EXTRA_FONTS = 3;
+/** Optional faces in firmware catalogue order. */
 export const EXTRA_FONTS = CLOCK_FONTS.filter((id) => id !== "compact" && !DEFAULT_FONTS.includes(id));
 
 /** Canonical order, unique known ids. Dot Matrix cannot be removed. */
@@ -20,6 +23,7 @@ export function toggleExtraFont(config: Config, font: ClockFont): Config {
   if (!EXTRA_FONTS.includes(font)) return config;
   const fonts = normalizeFonts(config.fonts);
   if (fonts.includes(font)) return withFonts(config, fonts.filter((id) => id !== font));
+  if (fonts.length - DEFAULT_FONTS.length >= MAX_EXTRA_FONTS) return config;
   return withFonts(config, [...fonts, font]);
 }
 

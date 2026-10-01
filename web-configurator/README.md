@@ -114,7 +114,7 @@ stored in JavaScript, browser storage, generated YAML or this repository.
 
 ```text
 npm install
-npm test          # vitest, including the jsdom mount in src/app.dom.test.tsx
+npm test          # vitest suite in src/*.test.ts / src/*.test.tsx
 npm run typecheck
 npm run dev
 ```

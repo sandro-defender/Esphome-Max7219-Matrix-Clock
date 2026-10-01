@@ -166,6 +166,12 @@ describe("renderScene", () => {
     expect(night.effectiveBrightness).toBe(1);
   });
 
+  it("treats equal night hours like the firmware: an all-day night window", () => {
+    const noon = sceneWith({ nightDim: true, nightStart: 22, nightEnd: 22, nightBrightness: 2 }, new Date(2026, 0, 2, 12, 0, 0));
+    expect(noon.nightNow).toBe(true);
+    expect(noon.effectiveBrightness).toBe(2);
+  });
+
   it("rotates between clock and date when auto cycling is on", () => {
     const clock = sceneWith({ autoCycle: true, cycleInterval: 5 }, new Date(2026, 0, 2, 12, 0, 0));
     const date = sceneWith({ autoCycle: true, cycleInterval: 5 }, new Date(2026, 0, 2, 12, 0, 5));

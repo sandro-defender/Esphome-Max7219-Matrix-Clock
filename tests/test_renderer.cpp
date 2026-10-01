@@ -911,6 +911,59 @@ static void test_brightness_entity_change_applies_without_flip() {
   CHECK_EQ((int) r.brightness, 5);
 }
 
+static void test_alarm_mode_flashes_twice_per_second() {
+  // The alarm flash toggles the panel level every 500 ms. Brightness is
+  // evaluated on every render call, so a 150 ms display cadence sees the
+  // toggle; sampling it once per second would freeze the parity and the
+  // panel would stay dark (or lit) instead of flashing.
+  Frame f = base_frame();
+  reset_state();
+  f.alarm_mode = true;
+  f.brightness_day = 3;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+
+  f.now_ms = 0;  // (0/500) parity 0 -> first alarm level is dark
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 0);
+
+  f.now_ms = 250;  // same 500 ms half: no change
+  render(canvas, font, compact, f, r);
+  CHECK(!r.brightness_changed);
+
+  f.now_ms = 600;  // parity flipped: full brightness
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 15);
+
+  f.now_ms = 750;
+  render(canvas, font, compact, f, r);
+  CHECK(!r.brightness_changed);
+
+  f.now_ms = 1150;  // back to dark, one full flash per second
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 0);
+
+  f.now_ms = 1600;
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 15);
+
+  // Leaving alarm mode restores the steady day level and then stays quiet.
+  f.alarm_mode = false;
+  f.now_ms = 2000;
+  render(canvas, font, compact, f, r);
+  CHECK(r.brightness_changed);
+  CHECK_EQ((int) r.brightness, 3);
+
+  f.now_ms = 2150;
+  render(canvas, font, compact, f, r);
+  CHECK(!r.brightness_changed);
+}
+
 static void test_auto_cycle_clock_date() {
   Frame f = base_frame();
   reset_state();
@@ -1272,6 +1325,7 @@ int main() {
   test_manual_night_switch();
   test_brightness_entity_change_applies_without_flip();
   test_auto_cycle_clock_date();
+  test_alarm_mode_flashes_twice_per_second();
   test_bitmap_test_screens();
   test_report_publishes_only_on_change();
   test_alignment();

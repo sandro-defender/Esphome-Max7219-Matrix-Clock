@@ -1,7 +1,7 @@
 import { GlyphStrip } from "./GlyphStrip";
 import { FONT_CATALOG, PREVIEW_CANDIDATES, fitForPanel, fontSpec, previewFont, widthWarning } from "./fontCatalog";
 import { generatedFont } from "./fonts";
-import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
+import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
 import type { Config } from "./types";
 import { cn } from "./utils/cn";
 import { Section } from "./ui";
@@ -41,19 +41,22 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       <fieldset className="font-group font-group-firmware">
         <legend id="fonts-included-title">Fonts included in firmware</legend>
         <p className="hint">
-          Dot Matrix, Matrix 2px and Pixel Clock 6×8 ship in every build. Compact 5×7 is always compiled as the fallback.
+          Dot Matrix and Matrix 2px ship in every build; Compact 5×7 is always compiled as the fallback. Tick up to{" "}
+          {MAX_EXTRA_FONTS} more faces — each adds a package to your installer and an option to the{" "}
           <code>Clock font</code> select.
         </p>
         <ul className="font-checklist">
           {EXTRA_FONTS.map((id) => {
             const spec = fontSpec(id);
             const included = cfg.fonts.includes(id);
+            const atCap = !included && cfg.fonts.filter((fid) => !DEFAULT_FONTS.includes(fid)).length >= MAX_EXTRA_FONTS;
             return (
               <li key={id}>
                 <label className="font-choice">
                   <input
                     type="checkbox"
                     checked={included}
+                    disabled={atCap}
                     onChange={(event) =>
                       setCfg((current) =>
                         event.target.checked ? addExtraFontAndSelect(current, id) : toggleExtraFont(current, id),

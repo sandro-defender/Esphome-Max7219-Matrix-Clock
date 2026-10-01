@@ -1,5 +1,41 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **Alarm mode never flashed** - brightness was only recomputed once per
+  second, so the 500 ms alarm toggle was sampled at a cadence where its parity
+  never changes and the panel froze at one level (dark or lit, depending on
+  boot alignment). Brightness is now evaluated on every display refresh and the
+  panel flashes twice per second as documented. Covered by the new renderer
+  test `test_alarm_mode_flashes_twice_per_second`.
+- **The web configurator pinned installer YAML to `main`** instead of the
+  published release tag; it now pins `0.5.5`, matching `examples/release.yaml`,
+  `packages/base.yaml` and the font packages. A new `src/yaml.test.ts` catalogue
+  guard keeps the generated installer and the release example in sync (tag,
+  package list, `!secret`-only credentials).
+- **Restored the MD MAX72XX System face** - the font (regenerated
+  byte-identically by `scripts/generate_md_max72xx_system_font.py`), its
+  LGPL-2.1-or-later notice, the `packages/fonts/md-max72xx-system.yaml` release
+  package, the firmware wiring and the Font Lab entry were missing even though
+  the README and `packages/fonts/README.md` documented them. The MD Parola face
+  also links its LGPL notice to `md-max72xx-system/LICENSE.txt`, which exists
+  again.
+- **Restored the Noto Sans/Serif Georgian source candidates** in `fonts/`
+  (with their OFL licenses); `tests/test_config.py` and `fonts/README.md`
+  expect them as future shortlist candidates.
+- **The configurator again ships the documented default pair** - Matrix 2px +
+  Dot Matrix by default with up to three optional extras (Pixel Clock 6×8,
+  MD Parola Numeric 7-Segment, MD MAX72XX System) via Font Lab checkboxes,
+  instead of forcing every face into every build and ignoring the extra limit.
+- **The preview's night window matches the firmware again** - equal
+  start/end hours are an all-day night window (`housekeeping()`), not "never
+  dim".
+- Updated the font contract tests for the five-face catalogue and corrected
+  stale documentation that still described unbundled faces (Jersey 15, Teko,
+  Rajdhani Bold, Kdam Thmor Pro, Rationale, Handjet, Oxanium, Share Tech Mono)
+  and the retired 33-face catalogue.
+
 ## 0.5.5 - 2026-10-01
 
 ### Added

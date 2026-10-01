@@ -129,13 +129,15 @@ REQUIRED_ACTIONS = {
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
     "font_pixel_clock_6x8_source": "Pixel Clock 6x8",
+    "font_md_parola_numeric_7seg_source": "MD Parola Numeric 7-Segment",
+    "font_md_max72xx_system_source": "MD MAX72XX System",
     "font_matrix_2px_source": "Matrix 2px",
     "font_dot_matrix_source": "Dot Matrix",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
 # in every face, while the renderer's compact built-in font remains the Latin
-# message fallback. Limiting the default build to seven faces preserves
+# message fallback. Compiling a bounded face catalogue (five faces) preserves
 # ESP8266 RAM headroom while the other licensed source files stay in fonts/.
 FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
 
@@ -486,6 +488,16 @@ class ConfigContractTests(unittest.TestCase):
             Path(f"packages/{name}") for name in local_names
         } - {Path("packages/fonts_local.yaml")} | {Path("packages/fonts/matrix-2px.yaml"), Path("packages/fonts/dot-matrix.yaml")}
         self.assertEqual(sorted(p.as_posix() for p in expected), sorted(files))
+        # The configurator's installer lists the same non-font package files.
+        yaml_ts = read(REPO / "web-configurator/src/yaml.ts")
+        match = re.search(r"const PACKAGE_FILES = \[(.*?)\] as const;", yaml_ts, re.S)
+        self.assertIsNotNone(match, "web-configurator PACKAGE_FILES not found")
+        configurator_files = re.findall(r'"([^"]+)"', match.group(1))
+        self.assertEqual(
+            configurator_files,
+            [f for f in files if not f.startswith("packages/fonts/")],
+            "the configurator must install the same modules as examples/release.yaml",
+        )
         release_fonts = [f for f in files if f.startswith("packages/fonts/")]
         offline_script = read(REPO / "scripts/validate-release-offline.sh")
         expected_offline_fonts = int(re.search(r'\[\[\s*"\$FONTS"\s*-eq\s*(\d+)\s*\]\]', offline_script).group(1))
@@ -800,10 +812,10 @@ class ConfigContractTests(unittest.TestCase):
         end = display.index("      max7219_clock::render(", start)
         block = display[start:end].replace("id(clock_font)", "clock_font")
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        # Zero, every single face, public default, default + three, full catalogue.
+        # Zero, every single face, the public default pair, and the full catalogue.
         cases = [[], *[[f] for f in faces],
                  [f for f in faces if f["font"][0]["id"] in
-                  ("font_matrix_2px_source", "font_dot_matrix_source")], faces[:5], faces]
+                  ("font_matrix_2px_source", "font_dot_matrix_source")], faces]
         with tempfile.TemporaryDirectory(prefix="clock-font-syntax-") as temp:
             path = Path(temp) / "selection.cpp"
             for chosen in cases:
@@ -826,9 +838,9 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_every_compiled_font_is_selectable_and_wired(self):
-        """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
+        """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 3)
+        self.assertEqual(len(faces), 5)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))

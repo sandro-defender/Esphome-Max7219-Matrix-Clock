@@ -120,7 +120,9 @@ export function geometry(chips: number, rows: number): Geometry {
 }
 
 export function isNight(hour: number, start: number, end: number): boolean {
-  if (start === end) return false;
+  // The firmware treats equal start/end hours as an all-day night window
+  // (housekeeping(): night_start_hour == night_end_hour -> in_window = true).
+  if (start === end) return true;
   if (start < end) return hour >= start && hour < end;
   return hour >= start || hour < end;
 }
