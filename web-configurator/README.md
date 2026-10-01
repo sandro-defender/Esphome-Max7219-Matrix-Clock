@@ -155,12 +155,13 @@ GitHub Pages.
 ## Generated firmware contract
 
 The generator pins package YAML and web-font assets to the same release tag. It
-includes the same module list as `../examples/release.yaml`:
+includes the same framework module list as `../examples/release.yaml`:
 
 * base device and network/API configuration;
 * renderer and MAX7219 display bridge;
-* Matrix 2px and Dot Matrix included by default, up to three chosen extras,
-  plus the always-available built-in Compact 5×7 fallback;
+* Pixel Clock 6×8 included by default plus any chosen extras (the release
+  example itself bundles the Matrix 2px + Dot Matrix pair), alongside the
+  always-available built-in Compact 5×7 fallback;
 * Home Assistant controls and API actions;
 * diagnostics and on-matrix OTA progress;
 * authenticated web server with browser-based OTA disabled.
@@ -179,23 +180,24 @@ Troubleshooting uses the same native disclosures.
 The **Font Lab** section separates the two tiers visibly:
 
 * **Fonts included in firmware** — labelled checkboxes over every optional
-  face, a live `0 / 3` … `3 / 3` counter, and cards rasterised from the exact
-  compiled files. Checking an optional face adds the package *and immediately
-  selects it in the live preview*; at the limit, unchecked extras are disabled;
-  uncheck one before adding another. Matrix 2px and Dot Matrix are fixed
-  defaults; removing the active extra returns to Dot Matrix without resetting
-  other settings. A plain-language warning fires whenever the selected face is
+  face and cards rasterised from the exact compiled files. Checking an optional
+  face adds the package *and immediately selects it in the live preview*.
+  Pixel Clock 6×8 is a fixed default that cannot be unchecked; removing the
+  active extra returns to Pixel Clock 6×8 without resetting other settings.
+  A plain-language warning fires whenever the selected face is
   wider than the panel (seconds dropped → HH:MM + bar → built-in 5×7).
-* **Preview-only Font Lab** — candidate faces (Georgian families, Audiowide,
-  Bitcount …) for side-by-side comparison. They are labelled *preview only*,
-  never compiled into the ESP8266 firmware and never written into the
-  generated installer YAML; the YAML tests assert both.
+* **Preview-only Font Lab** — rendered only while `PREVIEW_CANDIDATES` is
+  non-empty (currently empty: every catalogued face is compilable). Candidate
+  faces would be labelled *preview only*, never compiled into the ESP8266
+  firmware and never written into the generated installer YAML;
+  `src/app.test.tsx` asserts the section stays hidden.
 
-The inclusion array is normalized into catalogue order, deduplicated, restricted
-to known external faces and clamped to three extras. Defaults are restored even
-from hostile links. Old links without a font array retain their active face as
-one extra. Reset returns to the two defaults; localStorage and share links retain
-extras otherwise. `src/fontSelection.test.tsx` covers these contracts.
+The inclusion array is normalized into catalogue order, deduplicated and
+restricted to known external faces. Pixel Clock 6×8 is always kept. Defaults
+are restored even from hostile links. Old links without a font array retain
+their active face as one extra. Reset returns to the default font; localStorage
+and share links retain extras otherwise. `src/app.test.tsx` and
+`src/yaml.test.ts` cover these contracts.
 
 `packages/fonts_local.yaml` remains the complete measurement/preview catalogue,
 not the default release font set. Per-face release declarations are tested for

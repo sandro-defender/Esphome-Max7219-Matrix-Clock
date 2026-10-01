@@ -4,6 +4,8 @@ import { readFileSync, readdirSync } from "node:fs";
 
 import App from "./App";
 import { FONT_CATALOG, PREVIEW_CANDIDATES } from "./fontCatalog";
+import { DEFAULT_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
+import { DEFAULT_CONFIG } from "./types";
 
 /**
  * Smoke + structure test: the whole app must render without a DOM, the
@@ -127,13 +129,25 @@ describe("App", () => {
     expect(markup).toContain("never asks for");
   });
 
-  it("separates firmware fonts from the preview-only Font Lab", () => {
+  it("shows only supported firmware fonts when no preview candidates remain", () => {
     expect(markup).toContain("Fonts included in firmware");
-    expect(markup).toContain("Preview-only Font Lab");
-    expect(markup).toContain("preview only");
-    for (const candidate of PREVIEW_CANDIDATES) {
-      expect(markup, candidate.label).toContain(candidate.label);
-    }
+    expect(PREVIEW_CANDIDATES).toEqual([]);
+    expect(markup).not.toContain("Preview-only Font Lab");
+  });
+
+  it("keeps Pixel Clock as the default and permits several optional fonts", () => {
+    expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8"]);
+    expect(DEFAULT_CONFIG.clockFont).toBe("pixel-clock-6x8");
+    const withParola = addExtraFontAndSelect(DEFAULT_CONFIG, "md-parola-numeric-7seg");
+    const withMatrix = addExtraFontAndSelect(withParola, "matrix-2px");
+    const withDot = addExtraFontAndSelect(withMatrix, "dot-matrix");
+    expect(withDot.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"]);
+    expect(toggleExtraFont(withDot, "matrix-2px").fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "dot-matrix"]);
+    // The restored MD_MAX72XX system face is just another optional extra.
+    const withMax = addExtraFontAndSelect(withDot, "md-max72xx-system");
+    expect(withMax.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "md-max72xx-system", "matrix-2px", "dot-matrix"]);
+    // The default face itself can never be toggled off.
+    expect(toggleExtraFont(withMax, "pixel-clock-6x8").fonts).toEqual(withMax.fonts);
   });
 });
 

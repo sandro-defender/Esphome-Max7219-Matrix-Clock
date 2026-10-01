@@ -2,8 +2,9 @@
 
 Each YAML owns one web font declaration, one compiler feature flag, and one
 `!extend clock_font` option. Installers list these files explicitly, after the
-core packages. `fonts_web.yaml` is only a convenience wrapper for the default
-Matrix 2px + Dot Matrix pair; it does not compile the full catalogue.
+core packages. `fonts_web.yaml` is only a convenience wrapper for the
+Matrix 2px + Dot Matrix pair that `examples/release.yaml` bundles; it does not
+compile the full catalogue.
 `fonts_local.yaml` retains the full local catalogue (five faces) for
 development, metrics and glyph generation. Do not include both the wrapper and
 its individual faces.
@@ -42,11 +43,12 @@ propagation.
 
 ## Selection and restoration
 
-The web UI always includes Matrix 2px + Dot Matrix and permits up to three
-extras in catalogue order. Firmware modules support zero/one/all faces for
-manual development tests, independently of that UI limit. The base select is
+The web UI always includes Pixel Clock 6×8 and offers every other face as an
+optional extra, in catalogue order. Firmware modules support zero/one/all faces
+for manual development tests, independently of that UI policy. The base select is
 Compact 5x7; the Dot Matrix package changes its initial option to Dot Matrix.
-A generated install can override the initial option to any included face.
+A generated install can override the initial option to any included face (the
+configurator defaults to Pixel Clock 6×8).
 
 ## MD_MAX72XX System import
 
@@ -66,9 +68,9 @@ are retained alongside the font. The face compiles only
 a separate display type. The 16-pixel `numeric7SegDouble` variant is excluded
 because this clock has one 8-pixel matrix row.
 
-ESPHome saves a **numeric index**. The web order keeps Compact, Matrix 2px and
-Dot Matrix stable, but changing extras may remap a saved extra index to another
-included face. Out-of-range indices use initial_option. Older all-font builds
+ESPHome saves a **numeric index**. The web order keeps Compact 5×7 and
+Pixel Clock 6×8 stable, but changing extras may remap a saved extra index to
+another included face. Out-of-range indices use initial_option. Older all-font builds
 have a different order too: reselect your desired font after flashing.
 No restored option can reference an omitted font; the renderer still defaults
 to Compact for any unmatched string. Restore display defaults selects Compact.
@@ -77,9 +79,9 @@ to Compact for any unmatched string. Restore display defaults selects Compact.
 
 Release `0.4.0` is published and verified. `examples/release.yaml`, project
 version, web-configurator metadata and font asset refs are pinned to `0.4.0`.
-There is **one** default release configuration (`Matrix 2px` + `Dot Matrix` +
-built-in `Compact 5x7`); users may optionally add up to three extra font
-packages in the web configurator.
+Release `0.4.0` shipped one default configuration (`Matrix 2px` + `Dot Matrix` +
+built-in `Compact 5x7`); users may optionally add further font packages in the
+web configurator, which now defaults to Pixel Clock 6×8 alone.
 
 Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM)
 at release 0.4.0, whose ten-face catalogue also included Jersey 15, Teko,

@@ -24,10 +24,11 @@
 - **Restored the Noto Sans/Serif Georgian source candidates** in `fonts/`
   (with their OFL licenses); `tests/test_config.py` and `fonts/README.md`
   expect them as future shortlist candidates.
-- **The configurator again ships the documented default pair** - Matrix 2px +
-  Dot Matrix by default with up to three optional extras (Pixel Clock 6×8,
-  MD Parola Numeric 7-Segment, MD MAX72XX System) via Font Lab checkboxes,
-  instead of forcing every face into every build and ignoring the extra limit.
+- **The configurator's Font Lab checkboxes now drive the generated installer** -
+  Pixel Clock 6×8 ships in every build and cannot be removed (main's default
+  policy), while each ticked extra face (Matrix 2px, Dot Matrix, MD Parola
+  Numeric 7-Segment, MD MAX72XX System) adds exactly one font package; before,
+  every face was forced into every build and the extra limit was ignored.
 - **The preview's night window matches the firmware again** - equal
   start/end hours are an all-day night window (`housekeeping()`), not "never
   dim".

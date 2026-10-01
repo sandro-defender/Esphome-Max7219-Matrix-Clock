@@ -24,11 +24,12 @@ from the official [Google Fonts repository](https://github.com/google/fonts)
 under the SIL Open Font License 1.1 and remain uncompiled source candidates.
 
 Five validated 8-row choices are packaged under `packages/fonts/*.yaml` (and in
-`packages/fonts_local.yaml` for offline builds and metrics). Release installers
-include **Matrix 2px** and **Dot Matrix** by default (with **Dot Matrix** as
-the initial active face, plus up to three optional extras selected in the web
-configurator), keeping the other source files available without consuming
-ESP8266 RAM unnecessarily.
+`packages/fonts_local.yaml` for offline builds and metrics). The web configurator
+ships **Pixel Clock 6×8** by default (as the initial active face, with every
+other face an optional extra); the pinned release example
+(`examples/release.yaml`) bundles the **Matrix 2px** + **Dot Matrix** pair. This
+keeps the remaining source files available without consuming ESP8266 RAM
+unnecessarily.
 
 ## How the firmware uses them
 

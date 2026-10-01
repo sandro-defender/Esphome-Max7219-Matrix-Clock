@@ -19,11 +19,11 @@ holds your credentials, a few substitutions and the package list.
   MD Parola Numeric 7-Segment (a MAX7219-matrix bitmap face) and
   MD MAX72XX System (the MD_MAX72XX `_sysfont` numerals) are available, next to
   the compact 5×7 bitmap font, which always fits and needs no download.
-  The configurator includes **Matrix 2px and
-  Dot Matrix** by default and lets you add **up to three other faces**.
-  Dot Matrix is the initial clock face and
-  fits `HH:MM` in 31 pixels on a 32x8 panel; Matrix 2px and Pixel Clock 6×8
-  fill the 48-pixel clock width. Matrix 2px is
+  The configurator ships **Pixel Clock 6×8**
+  by default and lets you add any of the other faces. Pixel Clock 6×8 is the
+  initial clock face and
+  fills the 48-pixel clock width; Dot Matrix fits `HH:MM` in 31 pixels on a
+  32x8 panel. Matrix 2px is
   generated pixel-for-pixel for the panel: digits use all eight rows and every
   number stroke is exactly two pixels thick. More licensed source faces,
   including two Georgian families, remain in `fonts/` for future testing.
@@ -383,10 +383,10 @@ covered by host tests; the following still needs a real device (see
 ### Included fonts and upgrades
 
 Font Lab → **Fonts included in firmware** controls compile-time inclusion.
-The two default faces cannot be unchecked; select zero to three extras. Only
+Pixel Clock 6×8 cannot be unchecked; tick any of the other faces as extras. Only
 included faces (and Compact 5×7) appear in the preview/first-boot face picker.
-Removing the active extra returns it to Dot Matrix. Reset restores the two
-fonts and clears extras. Preferences and share links preserve the selected set;
+Removing the active extra returns it to Pixel Clock 6×8. Reset restores the
+default font and clears extras. Preferences and share links preserve the selected set;
 old links retain their active face as an extra where necessary.
 
 ESPHome restores the Clock font **index**, not its name. Changing extra packages

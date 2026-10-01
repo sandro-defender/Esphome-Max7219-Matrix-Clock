@@ -54,7 +54,7 @@ export interface Config {
   animationMs: number;
   animationRowGap: number;
   clockFont: ClockFont;
-  /** Included external faces: the Matrix 2px + Dot Matrix release defaults plus ticked extras. */
+  /** Included external faces: Pixel Clock 6x8 ships by default; other faces are optional. */
   fonts: ClockFont[];
   layoutPreview: LayoutPreview;
 
@@ -108,8 +108,8 @@ export const DEFAULT_CONFIG: Config = {
   digitAnimation: true,
   animationMs: 600,
   animationRowGap: 1,
-  clockFont: "dot-matrix",
-  fonts: ["matrix-2px", "dot-matrix"],
+  clockFont: "pixel-clock-6x8",
+  fonts: ["pixel-clock-6x8"],
   layoutPreview: "firmware",
 
   message: "",
