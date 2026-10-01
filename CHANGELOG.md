@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.5 - 2026-10-01
+
+### Added
+- Show all bundled font sources in the web Font Lab; unmeasured faces remain preview-only.
+- Add previous/next controls beside the live-preview face name.
+
+### Changed
+- Split the configurator into focused Configure and Info & help pages.
+- Make ESPHome firmware compilation an opt-in build-server check.
+
 ## 0.5.4 - 2026-10-01
 
 - Correct the animation separation control: **Animation row gap** (0–2 rows,
