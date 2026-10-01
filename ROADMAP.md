@@ -114,8 +114,9 @@ are still legacy and incompatible with the new generator dependencies.
 
 - [x] Finish available local checks and document blockers honestly.
 - [x] Update this roadmap, report, validation notes and current task list.
-- [ ] Commit/push the existing Arena branch and open a **draft PR** to `main`.
-  Do not push `main`, publish tags/releases or claim Pages deployment.
+- [x] Commit/push the existing Arena branch and open **[draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)**
+  to `main`. Implementation checkpoint: `bac63dc462f54b9b4ff0118eeac80c1c34aaae75`.
+  No `main` push, tag/release publication or Pages deployment was performed.
 
 ## Archived roadmap — earlier releases and prior backlog
 

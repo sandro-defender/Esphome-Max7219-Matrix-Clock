@@ -13,8 +13,8 @@ checked tasks below do not certify this candidate.
 - [x] Migrate stale Python contracts and run current C++/Python/web checks,
   typecheck/build, generated freshness and five exact-target YAML/codegen variants.
 - [x] Separate historical compile/size results from current evidence.
-- [ ] Commit/push only `arena/01a0f913-esphome-max7219-matrix-clock` and open a
-  **draft PR**. No main push, release/tag publication or Pages deployment.
+- [x] Commit/push only `arena/01a0f913-esphome-max7219-matrix-clock` and open
+  **[draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)**. No main push, release/tag publication or Pages deployment.
 
 ## Next increment, not part of this checkpoint
 

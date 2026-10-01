@@ -7,7 +7,9 @@
 - **Base commit:** `e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
 - **Disposition:** checkpoint this work and open a draft PR. This is not a
   completed implementation, firmware release or Pages deployment. The final
-  checkpoint SHA and PR URL are recorded in the PR hand-off, not guessed here.
+  implementation checkpoint is `bac63dc462f54b9b4ff0118eeac80c1c34aaae75`;
+  **[draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)** is open. Its current head (including this hand-off
+  documentation) is recorded in the PR description.
 
 ### Delivered source changes
 
