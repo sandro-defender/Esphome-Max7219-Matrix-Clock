@@ -47,8 +47,8 @@ OUTPUT = REPO / "fonts" / "matrix-2px" / "Matrix2px.ttf"
 # Digits: 6 columns wide, 8 rows tall. Cell advances to 7 columns (1 px gap).
 DIGITS: dict[str, tuple[str, ...]] = {
     "0": (
-        "######",
-        "######",
+        "....##",
+        "....##",
         "##..##",
         "##..##",
         "##..##",
@@ -63,8 +63,8 @@ DIGITS: dict[str, tuple[str, ...]] = {
         "....##",
         "....##",
         "....##",
-        "######",
-        "######",
+        "....##",
+        "....##",
     ),
     "2": (
         "######",

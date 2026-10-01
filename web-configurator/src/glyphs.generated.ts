@@ -67,8 +67,8 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
     clockWidth: 48,
     maxDigitHeight: 8,
     glyphs: {
-      "0": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 102, 102, 102, 102, 126, 126] },
-      "1": { w: 7, h: 8, top: 0, advance: 7, rows: [30, 30, 6, 6, 6, 6, 126, 126] },
+      "0": { w: 7, h: 8, top: 0, advance: 7, rows: [6, 6, 102, 102, 102, 102, 126, 126] },
+      "1": { w: 7, h: 8, top: 0, advance: 7, rows: [30, 30, 6, 6, 6, 6, 6, 6] },
       "2": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 126, 126, 96, 126, 126] },
       "3": { w: 7, h: 8, top: 0, advance: 7, rows: [126, 126, 6, 126, 126, 6, 126, 126] },
       "4": { w: 7, h: 8, top: 0, advance: 7, rows: [102, 102, 102, 126, 126, 6, 6, 6] },
