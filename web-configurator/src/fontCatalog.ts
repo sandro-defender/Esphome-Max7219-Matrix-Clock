@@ -28,37 +28,7 @@ export interface PreviewCandidate {
   license: string;
 }
 
-export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
-  { id: "bitcount-single", label: "Bitcount Single", generatedId: "font_bitcount_single_preview", license: "SIL Open Font License 1.1" },
-  { id: "bytesized", label: "Bytesized", generatedId: "font_bytesized_preview", license: "SIL Open Font License 1.1" },
-  { id: "dotgothic16", label: "DotGothic16", generatedId: "font_dotgothic16_preview", license: "SIL Open Font License 1.1" },
-  { id: "doto", label: "Doto", generatedId: "font_doto_preview", license: "SIL Open Font License 1.1" },
-  { id: "electrolize", label: "Electrolize", generatedId: "font_electrolize_preview", license: "SIL Open Font License 1.1" },
-  { id: "iceland", label: "Iceland", generatedId: "font_iceland_preview", license: "SIL Open Font License 1.1" },
-  { id: "jersey-10", label: "Jersey 10", generatedId: "font_jersey_10_preview", license: "SIL Open Font License 1.1" },
-  { id: "jersey-20", label: "Jersey 20", generatedId: "font_jersey_20_preview", license: "SIL Open Font License 1.1" },
-  { id: "jersey-25", label: "Jersey 25", generatedId: "font_jersey_25_preview", license: "SIL Open Font License 1.1" },
-  { id: "major-mono-display", label: "Major Mono Display", generatedId: "font_major_mono_display_preview", license: "SIL Open Font License 1.1" },
-  { id: "micro-5", label: "Micro 5", generatedId: "font_micro_5_preview", license: "SIL Open Font License 1.1" },
-  { id: "noto-sans-georgian", label: "Noto Sans Georgian", generatedId: "font_noto_sans_georgian_preview", license: "SIL Open Font License 1.1" },
-  { id: "noto-serif-georgian", label: "Noto Serif Georgian", generatedId: "font_noto_serif_georgian_preview", license: "SIL Open Font License 1.1" },
-  { id: "nova-mono", label: "Nova Mono", generatedId: "font_nova_mono_preview", license: "SIL Open Font License 1.1" },
-  { id: "orbitron", label: "Orbitron", generatedId: "font_orbitron_preview", license: "SIL Open Font License 1.1" },
-  { id: "pixelify-sans", label: "Pixelify Sans", generatedId: "font_pixelify_sans_preview", license: "SIL Open Font License 1.1" },
-  { id: "press-start-2p", label: "Press Start 2P", generatedId: "font_press_start_2p_preview", license: "SIL Open Font License 1.1" },
-  { id: "quantico", label: "Quantico", generatedId: "font_quantico_preview", license: "SIL Open Font License 1.1" },
-  { id: "rubik-pixels", label: "Rubik Pixels", generatedId: "font_rubik_pixels_preview", license: "SIL Open Font License 1.1" },
-  { id: "silkscreen", label: "Silkscreen", generatedId: "font_silkscreen_preview", license: "SIL Open Font License 1.1" },
-  { id: "sixtyfour", label: "Sixtyfour", generatedId: "font_sixtyfour_preview", license: "SIL Open Font License 1.1" },
-  { id: "tiny5", label: "Tiny5", generatedId: "font_tiny5_preview", license: "SIL Open Font License 1.1" },
-  { id: "vt323", label: "VT323", generatedId: "font_vt323_preview", license: "SIL Open Font License 1.1" },
-  { id: "wallpoet", label: "Wallpoet", generatedId: "font_wallpoet_preview", license: "SIL Open Font License 1.1" },
-  { id: "audiowide", label: "Audiowide", generatedId: "font_audiowide_preview", license: "SIL Open Font License 1.1" },
-  { id: "bitcount-grid-double", label: "Bitcount Grid Double", generatedId: "font_bitcount_grid_double_preview", license: "SIL Open Font License 1.1" },
-  { id: "bitcount-grid-single", label: "Bitcount Grid Single", generatedId: "font_bitcount_grid_single_preview", license: "SIL Open Font License 1.1" },
-  { id: "bitcount-prop-double", label: "Bitcount Prop Double", generatedId: "font_bitcount_prop_double_preview", license: "SIL Open Font License 1.1" },
-  { id: "bitcount-prop-single", label: "Bitcount Prop Single", generatedId: "font_bitcount_prop_single_preview", license: "SIL Open Font License 1.1" },
-];
+export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [];
 
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
