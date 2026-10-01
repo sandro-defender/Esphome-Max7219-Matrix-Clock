@@ -14,12 +14,8 @@ interface FontLabProps {
 }
 
 /**
- * The two-tier font workbench.
- *
- * Group one compiles: every checkbox maps to a package file in the generated
- * installer and checking it immediately selects the face in the live preview.
- * Group two is measurement only: those faces are never compiled and never
- * written into the installer YAML.
+ * Bundled firmware font workbench. Every checkbox maps to a package file in
+ * the generated installer and checking it immediately selects that face.
  */
 export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) {
   const selected = fontSpec(cfg.clockFont);
@@ -33,15 +29,14 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       title="Font Lab"
       lead={
         <>
-          Every bundled face is available here. Pick an installed face for the clock; compare the preview-only faces
-          below without adding anything to firmware.
+          Pixel Clock 6×8 is the default. Add the other compatible faces, then choose any installed face for the clock.
         </>
       }
     >
       <fieldset className="font-group font-group-firmware">
         <legend id="fonts-included-title">Fonts included in firmware</legend>
         <p className="hint">
-          Dot Matrix, Matrix 2px and Pixel Clock 6×8 ship in every build. Compact 5×7 is always compiled as the fallback.
+          Pixel Clock 6×8 ships in every build. Add any of the other compatible faces; Compact 5×7 is always compiled as the fallback.
           <code>Clock font</code> select.
         </p>
         <ul className="font-checklist">
@@ -112,36 +107,28 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
         )}
       </fieldset>
 
-      <div className="font-group font-group-preview">
-        <h3 id="preview-only-title">Preview-only Font Lab</h3>
-        <p className="hint">
-          Bundled candidates for a future release, rendered for side-by-side comparison. <strong>Preview only</strong>{" "}
-          means exactly that: these faces are never compiled into the ESP8266 firmware and never appear in your installer
-          YAML. Adding a face to real firmware needs a flash-size measurement first — see the roadmap.
-        </p>
-        <div className="font-grid">
-          {PREVIEW_CANDIDATES.map((item) => {
-            const itemFont = generatedFont(item.generatedId, item.label);
-            if (!itemFont) return null;
-            const itemFit = fitForPanel(itemFont, panelWidth, panelHeight);
-            const itemWarning = widthWarning(item.label, itemFit, panelWidth);
-            return (
-              <div key={item.id} className="font-card font-card-static">
-                <span className="font-name">
-                  {item.label}
-                  <em className="font-preview-tag">preview only</em>
-                </span>
-                <GlyphStrip font={itemFont} text="0123456789" scale={2} />
-                <span className="font-meta">
-                  HH:MM:SS {itemFit.width}px · digits {itemFit.digitHeight}px tall
-                </span>
-                <span className="font-blurb">{item.license}. Never compiled, never in the installer YAML.</span>
-                {itemWarning ? <span className="font-warn">⚠ {itemWarning}</span> : null}
-              </div>
-            );
-          })}
+      {PREVIEW_CANDIDATES.length > 0 ? (
+        <div className="font-group font-group-preview">
+          <h3 id="preview-only-title">Preview-only Font Lab</h3>
+          <div className="font-grid">
+            {PREVIEW_CANDIDATES.map((item) => {
+              const itemFont = generatedFont(item.generatedId, item.label);
+              if (!itemFont) return null;
+              const itemFit = fitForPanel(itemFont, panelWidth, panelHeight);
+              const itemWarning = widthWarning(item.label, itemFit, panelWidth);
+              return (
+                <div key={item.id} className="font-card font-card-static">
+                  <span className="font-name">{item.label}<em className="font-preview-tag">preview only</em></span>
+                  <GlyphStrip font={itemFont} text="0123456789" scale={2} />
+                  <span className="font-meta">HH:MM:SS {itemFit.width}px · digits {itemFit.digitHeight}px tall</span>
+                  <span className="font-blurb">{item.license}. Never compiled, never in the installer YAML.</span>
+                  {itemWarning ? <span className="font-warn">⚠ {itemWarning}</span> : null}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : null}
     </Section>
   );
 }
