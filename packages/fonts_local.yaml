@@ -6,6 +6,11 @@ font:
     size: 8
     bpp: 1
     glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_md_parola_numeric_7seg_source
+    file: { type: local, path: ../fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf }
+    size: 8
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
   - id: font_matrix_2px_source
     file: { type: local, path: ../fonts/matrix-2px/Matrix2px.ttf }
     size: 8
@@ -19,9 +24,10 @@ font:
 esphome:
   build_flags:
     - -DMAX7219_FONT_PIXEL_CLOCK_6X8
+    - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
     - -DMAX7219_FONT_MATRIX_2PX
     - -DMAX7219_FONT_DOT_MATRIX
 select:
   - id: !extend clock_font
     initial_option: "Dot Matrix"
-    options: ["Pixel Clock 6x8", "Matrix 2px", "Dot Matrix"]
+    options: ["Pixel Clock 6x8", "MD Parola Numeric 7-Segment", "Matrix 2px", "Dot Matrix"]

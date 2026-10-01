@@ -62,6 +62,16 @@ export const PREVIEW_CANDIDATES: readonly PreviewCandidate[] = [
 
 export const FONT_CATALOG: readonly FontSpec[] = [
   {
+    id: "md-parola-numeric-7seg",
+    option: "MD Parola Numeric 7-Segment",
+    label: "MD Parola Numeric 7-Segment",
+    family: "MD Parola",
+    firmwareId: "font_md_parola_numeric_7seg_source",
+    size: 8,
+    license: "LGPL-2.1-or-later",
+    blurb: "Double-line seven-segment MAX7219 clock digits.",
+  },
+  {
     id: "pixel-clock-6x8",
     option: "Pixel Clock 6x8",
     label: "Pixel Clock 6×8",

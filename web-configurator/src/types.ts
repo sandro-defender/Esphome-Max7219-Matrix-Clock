@@ -8,6 +8,7 @@ export type MessageScroll = "Scroll" | "Static";
 /** Home Assistant "Clock font" options compiled by the firmware. */
 export const CLOCK_FONTS = [
   "pixel-clock-6x8",
+  "md-parola-numeric-7seg",
   "matrix-2px",
   "dot-matrix",
   "compact",
@@ -107,7 +108,7 @@ export const DEFAULT_CONFIG: Config = {
   animationMs: 600,
   animationRowGap: 1,
   clockFont: "dot-matrix",
-  fonts: ["pixel-clock-6x8", "matrix-2px", "dot-matrix"],
+  fonts: ["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"],
   layoutPreview: "firmware",
 
   message: "",

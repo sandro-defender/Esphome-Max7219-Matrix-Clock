@@ -73,6 +73,10 @@ display:
       max7219_clock::SourceFont pixel_clock_6x8_font(font_pixel_clock_6x8_source, &it);
       if (font_option == "Pixel Clock 6x8") selected = &pixel_clock_6x8_font;
       #endif
+      #ifdef MAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
+      max7219_clock::SourceFont md_parola_numeric_7seg_font(font_md_parola_numeric_7seg_source, &it);
+      if (font_option == "MD Parola Numeric 7-Segment") selected = &md_parola_numeric_7seg_font;
+      #endif
       #ifdef MAX7219_FONT_MATRIX_2PX
       max7219_clock::SourceFont matrix_2px_font(font_matrix_2px_source, &it);
       if (font_option == "Matrix 2px") selected = &matrix_2px_font;

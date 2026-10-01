@@ -1,0 +1,24 @@
+# Optional MD Parola Numeric 7-Segment face. LGPL notice is retained in fonts/.
+substitutions:
+  project_ref: 0.5.5
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
+
+font:
+  - id: font_md_parola_numeric_7seg_source
+    file:
+      type: web
+      url: ${fonts_base_url}/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - '0123456789:.-/%!?+ '
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
+
+select:
+  - id: !extend clock_font
+    options:
+      - "MD Parola Numeric 7-Segment"
