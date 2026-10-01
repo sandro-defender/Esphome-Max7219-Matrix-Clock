@@ -12,7 +12,7 @@ retry toolchain downloads. Update draft PR #13 after every finished step.**
 - [x] Step 2: code-only every-main/PR CI, 15 workflow/code-gate contract tests
   and explicit esbuild pin. No ESPHome/PlatformIO CLI in this workflow.
   Reduced local gate: 91 Python tests run (90 pass, 1 SDK skip), 315 host checks,
-  103 web tests, typecheck/web bundle pass. Full hosted SDK freshness is pending.
+  103 web tests, typecheck/web bundle pass. Full hosted code-only CI/SDK freshness passed for source commit `2753a67`.
 - [ ] Step 3: replace legacy workflows with guarded main-only code validation →
   immutable release → matching Pages; test permissions, sequencing and SHA.
 - [ ] Later: live integration, stateful parity, manual accessibility/hardware

@@ -41,8 +41,9 @@ checkpoint below as earlier evidence, not a new build claim.
   1 SDK merge test skipped**; **315 host checks**, **103 web tests**, TypeScript,
   production web bundle and diff checks passed. Exact SDK/generated freshness
   were **not rerun locally**; the full CI gate requires the pinned SDK imports.
-- [ ] Observe GitHub Actions execution; workflow source/contracts are tested,
-  but a successful hosted run is not yet claimed.
+- [x] Hosted [code-only CI passed](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) for source commit `2753a67`:
+  full pinned-SDK import/freshness and code gates succeeded. No firmware CLI
+  or compilation was run. Local reduced-coverage results remain separately scoped.
 
 ### Next finished-step target — release/Pages sequencing
 
@@ -122,7 +123,7 @@ These steps remain open. Preparatory scripts exist, but the existing workflows
 are still legacy and incompatible with the new generator dependencies.
 
 - [x] Define exact SDK/font-generation dependency installation and non-mutating
-  generated freshness checks in code-only CI (step 2). Hosted run is pending.
+  generated freshness checks in code-only CI (step 2); hosted code-only run passed for `2753a67`.
 - [ ] Replace path-filtered/tag-only legacy workflows with validation on **every
   main push**, and PR validation without release/deployment permissions.
 - [x] Wire C++/Python/web/typecheck/web-build/parity and generated freshness

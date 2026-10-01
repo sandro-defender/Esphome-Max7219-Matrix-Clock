@@ -16,8 +16,9 @@ verification remains open. Step 2 adds read-only every-main/PR code-only CI with
 runner and 15 workflow/code-gate tests, plus an explicit esbuild dependency.
 Reduced local checks pass 91 Python tests run (90 pass, 1 SDK skip), 315 host
 checks, 103 web tests, typecheck/web bundle. Exact SDK/generated freshness and
-hosted CI were not rerun/verified locally. Legacy release/Pages workflow
-replacement is the next code step; actual deployment remains unverified. See the current
+were not rerun locally. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) subsequently passed
+for source commit `2753a67`, including full SDK-import/freshness gates and no
+firmware CLI invocation. Legacy release/Pages workflow replacement is the next code step; actual deployment remains unverified. See the current
 [ROADMAP.md](ROADMAP.md) and draft PR #13 for each pushed step and commit.
 
 ## Earlier draft checkpoint — 2026-10-02

@@ -36,7 +36,8 @@ python scripts/check_code.py --skip-sdk-checks
 The runner cannot call ESPHome/PlatformIO CLI or the firmware validator. A
 local reduced PASS does not claim SDK freshness, config/codegen or compilation.
 The CI workflow runs the full code gate with read-only permissions on all main
-pushes and PRs; it never publishes/deploys. Hosted execution is not yet verified.
+pushes and PRs; it never publishes/deploys. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) **passed** for source commit `2753a67`,
+including the full pinned-SDK import/freshness gate. No firmware CLI was run.
 
 Firmware config/codegen/full build measurements have not been rerun. Prior
 checkpoint results below retain their original scope/date.
