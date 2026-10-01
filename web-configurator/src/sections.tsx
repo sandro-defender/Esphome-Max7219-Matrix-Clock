@@ -101,8 +101,9 @@ export function TuneSection({ cfg, patch, setCfg, geo }: { cfg: Config; patch: P
         <p className="hint">
           The installed faces live in <a href="#font-lab">Font Lab</a>: {cfg.fonts.length} external{" "}
           {cfg.fonts.length === 1 ? "face" : "faces"} compiled plus the built-in Compact 5×7 fallback. Font Lab lists{" "}
-          {EXTRA_FONTS.length} optional faces and takes up to {MAX_EXTRA_FONTS} of them; checking one there switches
-          this preview to it immediately.
+          {EXTRA_FONTS.length} optional faces and{" "}
+          {Number.isFinite(MAX_EXTRA_FONTS) ? `takes up to ${MAX_EXTRA_FONTS} of them` : "takes any of them"}; checking one
+          there switches this preview to it immediately.
         </p>
         <ul className="entity-list font-facts">
           <li>

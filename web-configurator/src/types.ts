@@ -9,6 +9,7 @@ export type MessageScroll = "Scroll" | "Static";
 export const CLOCK_FONTS = [
   "pixel-clock-6x8",
   "md-parola-numeric-7seg",
+  "md-max72xx-system",
   "matrix-2px",
   "dot-matrix",
   "compact",

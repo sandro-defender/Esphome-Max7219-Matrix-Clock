@@ -660,9 +660,6 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
     }
     cursor += step;
   }
-
-  // Seconds progress bar (bottom row), drawn after the digits so it wins.
-  return;
 }
 
 inline void draw_seconds_bar(Canvas &c, int second) {
@@ -771,29 +768,35 @@ inline uint8_t effective_mode(const Frame &f) {
 }
 
 // Housekeeping that only needs to run about once per second: countdown
-// completion, night brightness and automatic clock/date cycling.
+// completion and automatic clock/date cycling. Brightness is evaluated on
+// every call because the alarm flash toggles every 500 ms: sampling that
+// toggle once per second would never see the parity change and the panel
+// would freeze at one level instead of flashing.
 inline void housekeeping(const Frame &f, Report &report) {
-  if (state.last_tick_ms != 0 && (uint32_t)(f.now_ms - state.last_tick_ms) < 1000UL) return;
-  state.last_tick_ms = f.now_ms == 0 ? 1 : f.now_ms;
+  const bool once_per_second =
+      state.last_tick_ms == 0 || (uint32_t)(f.now_ms - state.last_tick_ms) >= 1000UL;
+  if (once_per_second) state.last_tick_ms = f.now_ms == 0 ? 1 : f.now_ms;
 
-  // Expired temporary screens stop being visible (and free the cycle timer).
-  if (state.message_active && state.message_deadline_ms != 0 &&
-      deadline_reached(f.now_ms, state.message_deadline_ms)) {
-    state.message_active = false;
-    state.clear_message();
-  }
-  if (state.alert_active && state.alert_deadline_ms != 0 && deadline_reached(f.now_ms, state.alert_deadline_ms)) {
-    state.clear_alert();
-  }
+  if (once_per_second) {
+    // Expired temporary screens stop being visible (and free the cycle timer).
+    if (state.message_active && state.message_deadline_ms != 0 &&
+        deadline_reached(f.now_ms, state.message_deadline_ms)) {
+      state.message_active = false;
+      state.clear_message();
+    }
+    if (state.alert_active && state.alert_deadline_ms != 0 && deadline_reached(f.now_ms, state.alert_deadline_ms)) {
+      state.clear_alert();
+    }
 
-  // Countdown finished: replace it with a short completion alert.
-  if (state.countdown_deadline_ms != 0 && deadline_reached(f.now_ms, state.countdown_deadline_ms)) {
-    state.countdown_deadline_ms = 0;
-    state.countdown_total_ms = 0;
-    if (!state.countdown_finished) {
-      state.countdown_finished = true;
-      report.countdown_finished = true;
-      state.set_alert("DONE", 5000UL, f.now_ms);
+    // Countdown finished: replace it with a short completion alert.
+    if (state.countdown_deadline_ms != 0 && deadline_reached(f.now_ms, state.countdown_deadline_ms)) {
+      state.countdown_deadline_ms = 0;
+      state.countdown_total_ms = 0;
+      if (!state.countdown_finished) {
+        state.countdown_finished = true;
+        report.countdown_finished = true;
+        state.set_alert("DONE", 5000UL, f.now_ms);
+      }
     }
   }
 
@@ -829,20 +832,22 @@ inline void housekeeping(const Frame &f, Report &report) {
 
   // Automatic clock/date cycling only while a normal screen is selected and no
   // temporary screen (message, countdown, OTA) is active.
-  if (f.auto_cycle && !state.alert_active && !state.message_active &&
-      state.countdown_deadline_ms == 0 && state.ota_state == OTA_IDLE &&
-      (f.screen == SCREEN_CLOCK || f.screen == SCREEN_DATE)) {
-    const uint32_t interval = (f.cycle_interval_s < 5 ? 5 : f.cycle_interval_s) * 1000UL;
-    const uint32_t now = f.now_ms == 0 ? 1 : f.now_ms;
-    if (state.cycle_last_ms == 0) {
-      state.cycle_last_ms = now;  // arm the timer on the first second
-    } else if ((uint32_t)(now - state.cycle_last_ms) >= interval) {
-      state.cycle_last_ms = now;
-      report.screen_changed = true;
-      report.screen = f.screen == SCREEN_CLOCK ? SCREEN_DATE : SCREEN_CLOCK;
+  if (once_per_second) {
+    if (f.auto_cycle && !state.alert_active && !state.message_active &&
+        state.countdown_deadline_ms == 0 && state.ota_state == OTA_IDLE &&
+        (f.screen == SCREEN_CLOCK || f.screen == SCREEN_DATE)) {
+      const uint32_t interval = (f.cycle_interval_s < 5 ? 5 : f.cycle_interval_s) * 1000UL;
+      const uint32_t now = f.now_ms == 0 ? 1 : f.now_ms;
+      if (state.cycle_last_ms == 0) {
+        state.cycle_last_ms = now;  // arm the timer on the first second
+      } else if ((uint32_t)(now - state.cycle_last_ms) >= interval) {
+        state.cycle_last_ms = now;
+        report.screen_changed = true;
+        report.screen = f.screen == SCREEN_CLOCK ? SCREEN_DATE : SCREEN_CLOCK;
+      }
+    } else if (!f.auto_cycle) {
+      state.cycle_last_ms = 0;
     }
-  } else if (!f.auto_cycle) {
-    state.cycle_last_ms = 0;
   }
 }
 

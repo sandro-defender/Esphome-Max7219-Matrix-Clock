@@ -1,7 +1,8 @@
 # Final report - modular MAX7219 clock (ESPHome 2026.9.0)
 
 Validated historical baseline: **0.2.0** (sections 1–10 below preserve that
-initial modularization report). The repository now ships **0.4.0**, whose
+initial modularization report). Release **0.4.0** (later releases keep the same
+package layout; the current version is in `packages/base.yaml`), whose
 default two-face configuration (`Matrix 2px` + `Dot Matrix` + built-in
 `Compact 5x7`) and optional subsets have been validated and compiled with
 ESPHome `2026.9.0` on Python 3.12.7 (`505,141 / 1,044,464 B` flash `48.4%`,

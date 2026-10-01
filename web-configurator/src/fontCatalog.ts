@@ -42,6 +42,16 @@ export const FONT_CATALOG: readonly FontSpec[] = [
     blurb: "Double-line seven-segment MAX7219 clock digits.",
   },
   {
+    id: "md-max72xx-system",
+    option: "MD MAX72XX System",
+    label: "MD MAX72XX System",
+    family: "MD_MAX72XX",
+    firmwareId: "font_md_max72xx_system_source",
+    size: 8,
+    license: "LGPL-2.1-or-later",
+    blurb: "The MD_MAX72XX library _sysfont numerals; slim classic matrix digits.",
+  },
+  {
     id: "pixel-clock-6x8",
     option: "Pixel Clock 6x8",
     label: "Pixel Clock 6×8",

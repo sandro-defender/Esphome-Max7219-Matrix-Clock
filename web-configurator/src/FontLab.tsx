@@ -36,7 +36,8 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       <fieldset className="font-group font-group-firmware">
         <legend id="fonts-included-title">Fonts included in firmware</legend>
         <p className="hint">
-          Pixel Clock 6×8 ships in every build. Add any of the other compatible faces; Compact 5×7 is always compiled as the fallback.
+          Pixel Clock 6×8 ships in every build and cannot be removed; Compact 5×7 is always compiled as the fallback.
+          Add any of the other compatible faces — each one adds a package to your installer and an option to the{" "}
           <code>Clock font</code> select.
         </p>
         <ul className="font-checklist">

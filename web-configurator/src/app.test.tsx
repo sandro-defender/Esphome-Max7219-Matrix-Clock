@@ -143,6 +143,11 @@ describe("App", () => {
     const withDot = addExtraFontAndSelect(withMatrix, "dot-matrix");
     expect(withDot.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "matrix-2px", "dot-matrix"]);
     expect(toggleExtraFont(withDot, "matrix-2px").fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "dot-matrix"]);
+    // The restored MD_MAX72XX system face is just another optional extra.
+    const withMax = addExtraFontAndSelect(withDot, "md-max72xx-system");
+    expect(withMax.fonts).toEqual(["pixel-clock-6x8", "md-parola-numeric-7seg", "md-max72xx-system", "matrix-2px", "dot-matrix"]);
+    // The default face itself can never be toggled off.
+    expect(toggleExtraFont(withMax, "pixel-clock-6x8").fonts).toEqual(withMax.fonts);
   });
 });
 

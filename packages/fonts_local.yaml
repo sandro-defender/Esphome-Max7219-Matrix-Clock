@@ -1,5 +1,7 @@
-# Local development/measurement catalogue. Dot Matrix is the only default;
-# Pixel Clock 6x8 and Matrix 2px are optional.
+# Local development/measurement catalogue: every optional face is compiled
+# (Pixel Clock 6x8, MD Parola Numeric 7-Segment, MD MAX72XX System, Matrix 2px,
+# Dot Matrix); the release examples ship only the default Matrix 2px + Dot
+# Matrix pair.
 font:
   - id: font_pixel_clock_6x8_source
     file: { type: local, path: ../fonts/pixel-clock-6x8/PixelClock6x8.ttf }
@@ -8,6 +10,11 @@ font:
     glyphs: ["0123456789:.-/%!?+ "]
   - id: font_md_parola_numeric_7seg_source
     file: { type: local, path: ../fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf }
+    size: 8
+    bpp: 1
+    glyphs: ["0123456789:.-/%!?+ "]
+  - id: font_md_max72xx_system_source
+    file: { type: local, path: ../fonts/md-max72xx-system/MDMax72xxSystem.ttf }
     size: 8
     bpp: 1
     glyphs: ["0123456789:.-/%!?+ "]
@@ -25,9 +32,10 @@ esphome:
   build_flags:
     - -DMAX7219_FONT_PIXEL_CLOCK_6X8
     - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
+    - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
     - -DMAX7219_FONT_MATRIX_2PX
     - -DMAX7219_FONT_DOT_MATRIX
 select:
   - id: !extend clock_font
     initial_option: "Dot Matrix"
-    options: ["Pixel Clock 6x8", "MD Parola Numeric 7-Segment", "Matrix 2px", "Dot Matrix"]
+    options: ["Pixel Clock 6x8", "MD Parola Numeric 7-Segment", "MD MAX72XX System", "Matrix 2px", "Dot Matrix"]
