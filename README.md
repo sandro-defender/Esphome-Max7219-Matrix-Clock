@@ -284,11 +284,12 @@ there is no plaintext firmware upload endpoint next to the encrypted native OTA.
 python tests/test_config.py      # offline contract tests + font measurements
 make -C tests test               # pure C++ renderer tests
 esphome config dev.yaml          # ESPHome 2026.9.0 validation
-esphome compile dev.yaml         # full ESP8266 firmware compile
+# The build server additionally runs: esphome compile dev.yaml
 ```
 
-* `./scripts/validate.ps1` (Windows) runs the same steps in a temporary
-  directory with fake secrets - your real `secrets.yaml` is never read.
+* `./scripts/validate.ps1` (Windows) runs regression tests and ESPHome YAML
+  validation in a temporary directory with fake secrets - your real
+  `secrets.yaml` is never read. The build server adds `-Compile`.
 * `scripts/validate-release-offline.sh` validates the released example without
   network access by emulating GitHub with a tagged local clone and the font host
   with a local HTTP server.

@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Validate the MAX7219 matrix clock packages: tests, ESPHome config
-    validation and (by default) a full ESP8266 firmware compile.
+    validation. Firmware compilation is an optional server-side check.
 
 .DESCRIPTION
     Everything runs in a temporary directory that contains a copy of the
@@ -13,7 +13,7 @@
       1. regression tests            (tests/test_config.py, C++ renderer tests)
       2. virtual environment         (esphome==2026.9.0, requirements-validation.txt)
       3. ESPHome config validation   (dev.yaml, local packages)
-      4. full firmware compile       (dev.yaml -> ESP8266, skipped with -SkipCompile)
+      4. optional firmware compile  (dev.yaml -> ESP8266, enabled with -Compile)
       5. optional remote validation  (examples/release.yaml, needs network, -Remote)
 
 .PARAMETER Python
@@ -25,8 +25,9 @@
 .PARAMETER SkipInstall
     Reuse the virtual environment of a previous run instead of installing.
 
-.PARAMETER SkipCompile
-    Skip the full firmware compile (config validation only).
+.PARAMETER Compile
+    Also perform the full ESP8266 firmware compile. Use this on the build
+    server; local validation stops after ESPHome YAML validation.
 
 .PARAMETER Remote
     Also validate examples/release.yaml, which downloads the pinned packages
@@ -38,7 +39,7 @@
 .EXAMPLE
     ./scripts/validate.ps1
 .EXAMPLE
-    ./scripts/validate.ps1 -SkipCompile -SkipInstall
+    ./scripts/validate.ps1 -Compile
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
@@ -46,7 +47,7 @@ param(
     [string]$Python = "python",
     [string]$EspHome = "",
     [switch]$SkipInstall,
-    [switch]$SkipCompile,
+    [switch]$Compile,
     [switch]$Remote,
     [switch]$KeepWorkingDirectory
 )
@@ -131,14 +132,14 @@ try {
         try { & $esphome config dev.yaml } finally { Pop-Location }
     }
 
-    if (-not $SkipCompile) {
+    if ($Compile) {
         Invoke-ValidationStep "Full ESP8266 firmware compile (dev.yaml)" {
             Push-Location $workDir
             try { & $esphome compile dev.yaml } finally { Pop-Location }
         }
     }
     else {
-        $script:results.Add("SKIP  Full ESP8266 firmware compile (-SkipCompile)")
+        $script:results.Add("SKIP  Full ESP8266 firmware compile (server-side -Compile check)")
     }
 
     if ($Remote) {

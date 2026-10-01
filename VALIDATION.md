@@ -8,8 +8,8 @@ validator never touches your real `secrets.yaml`.
 Windows PowerShell:
 
 ```powershell
-./scripts/validate.ps1                 # tests + config + full ESP8266 compile
-./scripts/validate.ps1 -SkipCompile    # faster: tests + config validation only
+./scripts/validate.ps1                 # tests + ESPHome YAML config validation
+./scripts/validate.ps1 -Compile         # server only: also compile the ESP8266 firmware
 ./scripts/validate.ps1 -SkipInstall    # reuse the virtual environment of the last run
 ./scripts/validate.ps1 -Remote         # additionally validate examples/release.yaml
 ```
@@ -49,7 +49,7 @@ length), runs the steps and deletes only that directory again. Your real
 | Contract tests | `python tests/test_config.py` | `min_version`, modular layout, modern `api.actions`, encrypted OTA, complete entity set, 384-byte ESP8266 action strings, credential scan, release/font pinning, font widths |
 | Renderer tests | `make -C tests test` | display state machine, OTA priority, layout, slide-up animation, scrolling, countdown, night brightness, `millis()` rollover |
 | Config validation | `esphome config dev.yaml` | full ESPHome 2026.9.0 schema validation, package merge, local fonts, lambdas, actions |
-| Firmware compile | `esphome compile dev.yaml` | generated C++ compiles and links for ESP8266 (PlatformIO toolchain) |
+| Firmware compile (server only) | `esphome compile dev.yaml` | generated C++ compiles and links for ESP8266 (PlatformIO toolchain) |
 | Release path (offline) | `scripts/validate-release-offline.sh` | the released example fetches its packages from a tagged git repository and all fonts over HTTP, config valid, C++ generated with the package headers |
 | Configurator preview build | `python web-configurator/scripts/generate_glyphs.py --check` | the committed preview bitmaps still match the fonts and sizes the firmware compiles |
 | Remote example | `./scripts/validate.ps1 -Remote` | the published example fetches its packages and fonts from GitHub (needs network) |

@@ -23,8 +23,9 @@ Before changing any project file:
 - [ ] Verify ESPHome-specific decisions against official documentation.
 - [ ] Never ask for or expose Wi-Fi credentials, API keys, SSH keys, OTA keys,
       or web passwords. Use `!secret` and keep `secrets.yaml` untracked.
-- [ ] Do not claim completion or push firmware changes until regression tests,
-      `esphome config`, and a complete firmware compile pass.
+- [ ] Do not claim completion or push firmware changes until regression tests
+      and `esphome config` pass. The build server runs the optional complete
+      firmware compile with `scripts/validate.ps1 -Compile`.
 - [ ] Do not force-push, discard unrelated changes, or commit generated build
       output.
 
