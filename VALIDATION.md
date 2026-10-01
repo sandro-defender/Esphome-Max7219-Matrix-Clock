@@ -17,6 +17,27 @@ Step 1 checks executed without ESPHome CLI:
 - `make -C tests test`: **315 checks passed**, host renderer only.
 - Web suite: **103 passed** / **1,044 pixel-oracle frames**; typecheck **PASS**.
 
+Step 2 adds **15 workflow/code-gate tests**, `validate-code.yml` and the
+code-only runner. Local execution with `--skip-sdk-checks` passes **91 Python
+tests run / 90 passed / 1 SDK skip**, **315 host checks**, **103 web tests**,
+typecheck, production **web** bundle and diff checks. SDK/generated freshness
+were not rerun locally; the new full CI runner requires exact pinned imports.
+
+### Current code-only commands
+
+With Python 3.12 and `requirements-validation.txt` installed, plus `npm ci`:
+
+```bash
+python scripts/check_code.py              # SDK imports/freshness only; no firmware CLI
+# Explicit reduced local coverage when the exact SDK is not installed:
+python scripts/check_code.py --skip-sdk-checks
+```
+
+The runner cannot call ESPHome/PlatformIO CLI or the firmware validator. A
+local reduced PASS does not claim SDK freshness, config/codegen or compilation.
+The CI workflow runs the full code gate with read-only permissions on all main
+pushes and PRs; it never publishes/deploys. Hosted execution is not yet verified.
+
 Firmware config/codegen/full build measurements have not been rerun. Prior
 checkpoint results below retain their original scope/date.
 

@@ -13,8 +13,11 @@ holds your credentials, a few substitutions and the package list.
 
 Active work is **code-only**, with an update to draft PR #13 after each finished
 step. Do not run ESPHome build/compile/codegen commands during this work. The
-publisher now has 40 mocked safety tests; actual publishing/deployment and
-physical-device validation remain unverified.
+publisher now has 40 mocked safety tests, and code-only CI adds 15 workflow/
+runner tests with read-only every-main/PR checks. `scripts/check_code.py` runs
+source/host/web validation without firmware CLI commands; its reduced local
+mode explicitly skips SDK freshness. Actual publishing/deployment and physical
+verification remain unverified; legacy release/Pages replacement is pending.
 
 This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
 checkpoint**, not a ready-to-merge firmware release. The default external pair

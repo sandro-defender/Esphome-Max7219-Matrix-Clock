@@ -27,13 +27,30 @@ checkpoint below as earlier evidence, not a new build claim.
   web **103 passed**, including 1,044 parity frames; TypeScript **PASS**.
 - [ ] Live publishing integration and CI wiring remain separate, unverified work.
 
-### Next finished-step target — code-only continuous validation
+### Finished step 2 — code-only continuous validation
 
-- [ ] Add every-main/PR validation with read-only permissions, exact SDK import
-  dependencies, stale-generated-source checks and source/host/web test coverage.
-- [ ] Do not run ESPHome config/codegen/compile in the code-only workflow.
-- [ ] Validate workflow/security contracts and pin the installer CLI dependency.
-- [ ] Keep release/Pages sequencing explicitly pending until its own tested step.
+- [x] Add `validate-code.yml` on every main push and PR with no path filters,
+  read-only permissions, commit-pinned Actions and no persisted checkout token.
+- [x] Add `scripts/check_code.py`: exact SDK import dependency/freshness checks,
+  host/Python/web/parity/typecheck/web-bundle gates and fail-fast execution.
+  It rejects ESPHome/PlatformIO CLI commands; it does not validate/link firmware.
+- [x] Add **15 workflow/code-gate contract tests**, including fork safety,
+  triggers/permissions, immutable Action refs, full CI coverage and banned CLIs.
+- [x] Pin installer `esbuild==0.28.2` explicitly instead of a transitive import.
+- [x] Local reduced-coverage code gate passed: **91 Python tests run, 90 passed,
+  1 SDK merge test skipped**; **315 host checks**, **103 web tests**, TypeScript,
+  production web bundle and diff checks passed. Exact SDK/generated freshness
+  were **not rerun locally**; the full CI gate requires the pinned SDK imports.
+- [ ] Observe GitHub Actions execution; workflow source/contracts are tested,
+  but a successful hosted run is not yet claimed.
+
+### Next finished-step target — release/Pages sequencing
+
+- [ ] Replace the legacy release/deploy workflows with guarded main-only
+  code-validation → immutable installer release → same-commit Pages sequencing.
+- [ ] Test job permissions/dependencies/retries and build-SHA injection; do not
+  publish anything or invoke ESPHome CLI while implementing this code.
+- [ ] Live publication/deployment and physical-device sign-off remain unverified.
 
 ## Earlier checkpoint — 2026-10-02
 
@@ -104,13 +121,13 @@ Code generation and host tests do **not** substitute for a full ESP8266 build.
 These steps remain open. Preparatory scripts exist, but the existing workflows
 are still legacy and incompatible with the new generator dependencies.
 
-- [ ] Install exact SDK/font-generation dependencies in CI and check generated
-  freshness; do not regenerate silently to hide stale committed artifacts.
+- [x] Define exact SDK/font-generation dependency installation and non-mutating
+  generated freshness checks in code-only CI (step 2). Hosted run is pending.
 - [ ] Replace path-filtered/tag-only legacy workflows with validation on **every
   main push**, and PR validation without release/deployment permissions.
-- [ ] Wire C++/Python/web/typecheck/build/parity and generated freshness into
-  code-only CI. ESPHome CLI/codegen/full builds are deferred by the user and
-  must not be treated as prerequisites to each source-only PR update.
+- [x] Wire C++/Python/web/typecheck/web-build/parity and generated freshness
+  into code-only CI (step 2). ESPHome CLI/codegen/full builds are deferred by
+  the user and are not prerequisites to each source-only PR update.
 - [x] Audit and unit-test `scripts/publish_release.py`: main-only provenance,
   tag reservation/collisions, draft assets/retries, idempotency, immutable
   publication and publication-order selection — 40 offline tests in step 1.

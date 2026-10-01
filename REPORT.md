@@ -12,7 +12,12 @@ publication verification and safe error reporting. No real release was created.
 Code checks: 40 publisher tests, 35 source-contract tests (1 SDK merge test
 skipped), 315 host renderer checks, 103 web tests / 1,044 oracle frames and
 TypeScript all pass. No ESPHome CLI was run; full firmware/device/live-release
-verification remains open. Code-only CI is the next step. See the current
+verification remains open. Step 2 adds read-only every-main/PR code-only CI with pinned Actions, a fail-fast
+runner and 15 workflow/code-gate tests, plus an explicit esbuild dependency.
+Reduced local checks pass 91 Python tests run (90 pass, 1 SDK skip), 315 host
+checks, 103 web tests, typecheck/web bundle. Exact SDK/generated freshness and
+hosted CI were not rerun/verified locally. Legacy release/Pages workflow
+replacement is the next code step; actual deployment remains unverified. See the current
 [ROADMAP.md](ROADMAP.md) and draft PR #13 for each pushed step and commit.
 
 ## Earlier draft checkpoint — 2026-10-02

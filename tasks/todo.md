@@ -9,10 +9,14 @@ retry toolchain downloads. Update draft PR #13 after every finished step.**
   Main provenance/clean checkout, tag races/collisions, draft recovery,
   non-destructive publication, asset verification and bounded latest selection
   are covered. No real publisher execution/release/deployment occurred.
-- [ ] Step 2: code-only every-main/PR CI, workflow-contract tests and explicit
-  installer dependency pin. No ESPHome CLI in this workflow.
-- [ ] Later: guarded release→Pages wiring, live integration, stateful parity,
-  manual accessibility and hardware sign-off. Full builds remain deferred.
+- [x] Step 2: code-only every-main/PR CI, 15 workflow/code-gate contract tests
+  and explicit esbuild pin. No ESPHome/PlatformIO CLI in this workflow.
+  Reduced local gate: 91 Python tests run (90 pass, 1 SDK skip), 315 host checks,
+  103 web tests, typecheck/web bundle pass. Full hosted SDK freshness is pending.
+- [ ] Step 3: replace legacy workflows with guarded main-only code validation →
+  immutable release → matching Pages; test permissions, sequencing and SHA.
+- [ ] Later: live integration, stateful parity, manual accessibility/hardware
+  sign-off. Full ESPHome builds remain deferred by the user.
 
 ## Historical checkpoint and next-work list
 
