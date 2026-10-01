@@ -1,7 +1,7 @@
 import { GlyphStrip } from "./GlyphStrip";
 import { FONT_CATALOG, PREVIEW_CANDIDATES, fitForPanel, fontSpec, previewFont, widthWarning } from "./fontCatalog";
 import { generatedFont } from "./fonts";
-import { DEFAULT_FONTS, EXTRA_FONTS, MAX_EXTRA_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
+import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect, toggleExtraFont } from "./fontSelection";
 import type { Config } from "./types";
 import { cn } from "./utils/cn";
 import { Section } from "./ui";
@@ -26,7 +26,6 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
   const selectedFont = previewFont(cfg.clockFont);
   const selectedFit = fitForPanel(selectedFont, panelWidth, panelHeight);
   const warning = widthWarning(selected.label, selectedFit, panelWidth);
-  const extras = cfg.fonts.length - DEFAULT_FONTS.length;
 
   return (
     <Section
@@ -42,25 +41,20 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
       <fieldset className="font-group font-group-firmware">
         <legend id="fonts-included-title">Fonts included in firmware</legend>
         <p className="hint">
-          Matrix 2px and Dot Matrix ship in every build. Compact 5×7 is always compiled as the fallback. Add up to three
-          other fonts — each one becomes a package in your installer and an option of the Home Assistant{" "}
+          Dot Matrix ships in every build. Compact 5×7 is always compiled as the fallback. Add any remaining compatible
+          font — each one becomes a package in your installer and an option of the Home Assistant{" "}
           <code>Clock font</code> select.
-        </p>
-        <p className="font-counter" role="status">
-          {extras} / {MAX_EXTRA_FONTS} extra fonts added
         </p>
         <ul className="font-checklist">
           {EXTRA_FONTS.map((id) => {
             const spec = fontSpec(id);
             const included = cfg.fonts.includes(id);
-            const disabled = !included && cfg.fonts.length >= DEFAULT_FONTS.length + MAX_EXTRA_FONTS;
             return (
               <li key={id}>
                 <label className="font-choice">
                   <input
                     type="checkbox"
                     checked={included}
-                    disabled={disabled}
                     onChange={(event) =>
                       setCfg((current) =>
                         event.target.checked ? addExtraFontAndSelect(current, id) : toggleExtraFont(current, id),

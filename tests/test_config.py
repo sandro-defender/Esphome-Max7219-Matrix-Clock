@@ -129,18 +129,8 @@ REQUIRED_ACTIONS = {
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
     "font_pixel_clock_6x8_source": "Pixel Clock 6x8",
-    "font_md_parola_numeric_7seg_source": "MD Parola Numeric 7-Segment",
-    "font_md_max72xx_system_source": "MD MAX72XX System",
-    "font_jersey_15_source": "Jersey 15",
-    "font_teko_source": "Teko",
-    "font_rajdhani_bold_source": "Rajdhani Bold",
-    "font_kdam_thmor_pro_source": "Kdam Thmor Pro",
-    "font_rationale_source": "Rationale",
     "font_matrix_2px_source": "Matrix 2px",
     "font_dot_matrix_source": "Dot Matrix",
-    "font_handjet_source": "Handjet",
-    "font_oxanium_source": "Oxanium",
-    "font_share_tech_mono_source": "Share Tech Mono",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
@@ -838,7 +828,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """All 1024 subsets, including zero/one/all: options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 13)
+        self.assertEqual(len(faces), 3)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))

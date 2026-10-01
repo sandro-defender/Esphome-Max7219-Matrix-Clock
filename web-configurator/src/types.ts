@@ -8,18 +8,8 @@ export type MessageScroll = "Scroll" | "Static";
 /** Home Assistant "Clock font" options compiled by the firmware. */
 export const CLOCK_FONTS = [
   "pixel-clock-6x8",
-  "md-parola-numeric-7seg",
-  "md-max72xx-system",
-  "jersey-15",
-  "teko",
-  "rajdhani-bold",
-  "kdam-thmor-pro",
-  "rationale",
   "matrix-2px",
   "dot-matrix",
-  "handjet",
-  "oxanium",
-  "share-tech-mono",
   "compact",
 ] as const;
 export type ClockFont = (typeof CLOCK_FONTS)[number];
@@ -62,7 +52,7 @@ export interface Config {
   animationMs: number;
   animationRowGap: number;
   clockFont: ClockFont;
-  /** Included external faces: two defaults plus at most three extras. */
+  /** Included external faces: Dot Matrix is always present; every other face is optional. */
   fonts: ClockFont[];
   layoutPreview: LayoutPreview;
 
@@ -117,7 +107,7 @@ export const DEFAULT_CONFIG: Config = {
   animationMs: 600,
   animationRowGap: 1,
   clockFont: "dot-matrix",
-  fonts: ["matrix-2px", "dot-matrix"],
+  fonts: ["dot-matrix"],
   layoutPreview: "firmware",
 
   message: "",
