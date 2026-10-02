@@ -1,0 +1,60 @@
+# ESP-WROOM-32 DevKit base module.
+#
+# This is the ESP32 counterpart to base.yaml. Keep credentials in the small
+# user YAML; this package contains only safe defaults and hardware settings.
+
+substitutions:
+  device_name: max7219-clock
+  friendly_name: MAX7219 Matrix Clock
+  device_comment: "ESP-WROOM-32 MAX7219 matrix clock (packages release)"
+  project_ref: "0.7.3"
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  project_version: ${project_ref}
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
+
+  # Generic ESP-WROOM-32 development board. Change only if your board labels
+  # a different ESPHome target.
+  board: esp32dev
+  log_level: INFO
+  timezone: Europe/Berlin
+  ota_port: "3232"
+
+  # Standard VSPI wiring for an ESP-WROOM-32 DevKit.
+  matrix_clk_pin: GPIO18
+  matrix_mosi_pin: GPIO23
+  matrix_cs_pin: GPIO5
+  matrix_chips: "6"
+  matrix_rows: "1"
+  matrix_wiring: snake
+  matrix_rotate_chip: "0"
+  matrix_flip_x: "false"
+  matrix_intensity: "3"
+  matrix_night_intensity: "1"
+
+  display_update_interval: 20ms
+  animation_ms: "600"
+  animation_row_gap: "1"
+  message_ms_per_px: "60"
+  screen_cycle_interval: "10"
+  date_screen_duration: "10"
+  boot_version_duration: "2500"
+  ota_display_intensity: "3"
+  default_message_duration: "15"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: ${device_comment}
+  min_version: "2026.9.1"
+  project:
+    name: sandro-defender.max7219-matrix-clock
+    version: ${project_version}
+  name_add_mac_suffix: false
+
+esp32:
+  board: ${board}
+  framework:
+    type: arduino
+
+logger:
+  level: ${log_level}

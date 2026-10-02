@@ -499,6 +499,18 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn("export const INSTALL_FRESH_MS = 30 * 1000;", release_ts)
         self.assertIn("if (result.ready || result.retryAt !== undefined) storage?.setItem", release_ts)
 
+    def test_esp_wroom_32_example_uses_safe_devkit_defaults(self):
+        esp32 = load_yaml(REPO / "examples/esp-wroom-32.yaml", base_dir=REPO)
+        remote = esp32["packages"]["clock"]
+        self.assertEqual("packages/base-esp32.yaml", remote["files"][0])
+        self.assertEqual("0.7.3", remote["ref"])
+        base = load_yaml(PACKAGES / "base-esp32.yaml")
+        self.assertEqual("esp32dev", base["substitutions"]["board"])
+        self.assertEqual("GPIO18", base["substitutions"]["matrix_clk_pin"])
+        self.assertEqual("GPIO23", base["substitutions"]["matrix_mosi_pin"])
+        self.assertEqual("GPIO5", base["substitutions"]["matrix_cs_pin"])
+        self.assertEqual("3232", base["substitutions"]["ota_port"])
+
     def test_remote_file_list_matches_local_modules(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)
         files = release["packages"]["clock"]["files"]
