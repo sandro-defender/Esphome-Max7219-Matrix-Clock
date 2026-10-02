@@ -989,6 +989,51 @@ static void test_auto_cycle_clock_date() {
   CHECK(!r.screen_changed);
 }
 
+static void test_date_screen_duration_is_independent() {
+  Frame f = base_frame();
+  reset_state();
+  f.auto_cycle = true;
+  f.cycle_interval_s = 10;
+  f.date_cycle_interval_s = 20;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+
+  render(canvas, font, compact, f, r);  // arm while Clock is visible
+  f.now_ms = 11000;
+  render(canvas, font, compact, f, r);
+  CHECK(r.screen_changed);
+  CHECK_EQ(r.screen, SCREEN_DATE);
+
+  // The caller publishes the reported Date selection before the next frame.
+  f.screen = SCREEN_DATE;
+  f.now_ms = 12000;
+  render(canvas, font, compact, f, r);
+  CHECK(!r.screen_changed);
+  f.now_ms = 31000;
+  render(canvas, font, compact, f, r);
+  CHECK(r.screen_changed);
+  CHECK_EQ(r.screen, SCREEN_CLOCK);
+}
+
+static void test_selected_screen_change_starts_slide_transition() {
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 250;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+  reset_state();
+
+  render(canvas, font, compact, f, r);  // Clock baseline
+  canvas.clear();
+  f.screen = SCREEN_DATE;
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, r);
+  CHECK(state.screen_transition_active);
+}
+
 static void test_bitmap_test_screens() {
   FakeCanvas grid;
   FakeFont font(6);
@@ -1440,6 +1485,8 @@ int main() {
   test_manual_night_switch();
   test_brightness_entity_change_applies_without_flip();
   test_auto_cycle_clock_date();
+  test_date_screen_duration_is_independent();
+  test_selected_screen_change_starts_slide_transition();
   test_alarm_mode_flashes_twice_per_second();
   test_bitmap_test_screens();
   test_report_publishes_only_on_change();

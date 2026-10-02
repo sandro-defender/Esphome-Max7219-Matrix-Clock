@@ -70,7 +70,9 @@ export class PreviewTimeline {
 
   update(cfg: Config, time: number): TimelineFrame {
     const now = millis(time);
-    const key = JSON.stringify([now, cfg.screen, cfg.message, cfg.messageHold, cfg.autoCycle, cfg.cycleInterval]);
+    const key = JSON.stringify([
+      now, cfg.screen, cfg.message, cfg.messageHold, cfg.autoCycle, cfg.cycleInterval, cfg.dateScreenDuration,
+    ]);
     if (key === this.lastInputKey && this.lastFrame !== null) return this.lastFrame;
 
     // Screen selection is an event in firmware: selecting a normal screen
@@ -116,7 +118,8 @@ export class PreviewTimeline {
       const frameScreen = displayScreen(this.selected);
       if (cfg.autoCycle && !this.messageActive && (frameScreen === "Clock" || frameScreen === "Date")) {
         const stamp = now === 0 ? 1 : now;
-        const interval = Math.max(5, cfg.cycleInterval) * 1000;
+        const duration = Number(frameScreen === "Date" ? (cfg.dateScreenDuration ?? cfg.cycleInterval) : cfg.cycleInterval);
+        const interval = Math.max(5, duration) * 1000;
         if (this.cycleLast === 0) {
           this.cycleLast = stamp;
         } else if (elapsedMillis(stamp, this.cycleLast) >= interval) {

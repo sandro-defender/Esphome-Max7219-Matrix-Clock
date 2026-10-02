@@ -66,6 +66,7 @@ display:
       frame.brightness_night = id(night_brightness).state;
       frame.auto_cycle = id(auto_cycle).state;
       frame.cycle_interval_s = (uint32_t) id(screen_cycle_interval).state;
+      frame.date_cycle_interval_s = (uint32_t) id(date_screen_duration).state;
 
       // ----- Draw ----------------------------------------------------------
       max7219_clock::DisplayCanvas canvas(it);

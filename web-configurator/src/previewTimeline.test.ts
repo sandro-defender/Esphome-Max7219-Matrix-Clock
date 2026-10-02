@@ -11,7 +11,15 @@ import { monotonicNow } from "./usePreview";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const binary = `${root}tests/renderer_fixture`;
 const civil = new Date(2026, 9, 1, 12, 34, 56);
-const config = (values: Partial<Config>): Config => ({ ...DEFAULT_CONFIG, ...values });
+// Timeline tests assert state progression, not the separately tested visual
+// animations. Keeping the native and browser render paths settled isolates the
+// timer contract from the screen-slide pixels.
+const config = (values: Partial<Config>): Config => ({
+  ...DEFAULT_CONFIG,
+  digitAnimation: false,
+  dateScreenDuration: 5,
+  ...values,
+});
 beforeAll(() => { execFileSync("make", ["-C", "tests", "fixture"], { cwd: root, stdio: "pipe" }); });
 
 type Step = { at: number; changes?: Partial<Config> };
