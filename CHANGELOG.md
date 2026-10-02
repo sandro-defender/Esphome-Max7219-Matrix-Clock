@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.7 - 2026-10-02
+
+### Fixed
+- Selecting **180°** rotation in the configurator now also reverses the
+  MAX7219 chip chain, so digits move to the correct module positions instead
+  of only rotating within each 8×8 module.
+
 ## 0.7.6 - 2026-10-02
 
 ### Added

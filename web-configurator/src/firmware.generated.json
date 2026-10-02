@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "9839ab6ad1d6af520d2be026fc6e91621daf3dc03e5c3c2649797559ce260a73",
+  "sourceHash": "8587d9bb133c45beb1369b6c55b2e7b4a34a15bfb23210ab91bf644e66e03c9b",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.6",
+  "releaseVersion": "0.7.7",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- The configurator now starts with a **hardware target** selector. Keep the\n  **ESP8266 Wemos D1 mini** defaults, or switch to the **ESP-WROOM-32 DevKit**:\n  the ESP32 installer uses `packages/base-esp32.yaml`, board `esp32dev`, CLK\n  `GPIO18`, DIN `GPIO23`, CS `GPIO5` and OTA port `3232`. Board and pin choices\n  follow the target, so ESP8266 aliases such as `D8` can never appear in an\n  ESP32 installer. The ESP8266 configuration is unchanged.",
+  "releaseNotes": "### Fixed\n- Selecting **180°** rotation in the configurator now also reverses the\n  MAX7219 chip chain, so digits move to the correct module positions instead\n  of only rotating within each 8×8 module.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
