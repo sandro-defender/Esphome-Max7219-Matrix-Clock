@@ -3,10 +3,12 @@
 ## Active code-only continuation — 2026-10-02
 
 Per the user's latest instruction, **do not invoke ESPHome config, build,
-compile or code generation**, and do not retry toolchain downloads. Update the
-existing draft PR after each finished source-code step. The firmware/toolchain
-commands further below are historical/reproduction guidance, not commands to
-run during this continuation.
+compile or code generation**, and do not retry toolchain downloads. The firmware/
+toolchain commands further below are historical/reproduction guidance, not
+commands to run during this continuation. Arena fixes this session to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`; PR #13 still points to
+`arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. The assigned branch
+restriction is preserved; no step-5 code is claimed as present in PR #13.
 
 Step 1 checks executed without ESPHome CLI:
 
@@ -69,11 +71,44 @@ split/invalid Unicode, fetch/body deadlines, malformed publication/contracts/tag
 objects, SDK/repository identity, incompatible newest versions, timezone/ID
 ordering and cyclic tags. All HTTP responses are mocks; no browser automation.
 
-Reduced `check_code.py --skip-sdk-checks`: **113 Python tests run / 112 passed /
-1 exact-SDK skip**, **315 host checks**, **116 web tests**, TypeScript, production
-**web** bundle and whitespace checks pass. Exact SDK imports/freshness were not
-rerun locally; hosted CI for step 4 is pending. No ESPHome/PlatformIO CLI,
-firmware build, live release, Pages deployment or production secrets were used.
+Step-4 reduced `check_code.py --skip-sdk-checks`: **113 Python tests run / 112
+passed / 1 exact-SDK skip**, **315 host checks**, **116 web tests**, TypeScript,
+production **web** bundle and whitespace checks passed. Exact SDK imports/
+freshness were not rerun locally. Hosted [run 36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848)
+passed source/preview checks for `dd1037f`; publish/site/deploy jobs were skipped.
+No ESPHome/PlatformIO CLI, firmware build, live release, Pages deployment or
+production secrets were used.
+
+### Step 5 — retained normal-screen/message preview timeline
+
+`tests/renderer_fixture.cpp` now supports sequences in one process, retaining
+real `Runtime` state and applying the actual `Report` screen changes after each
+draw. Browser `PreviewTimeline` uses `performance.now()` (with civil clock and
+timezone separate), uint32 deadline/cycle arithmetic, one-second housekeeping,
+one toggle on late frames, and post-render screen feedback. `usePreview` advances
+one immutable timeline snapshot per sampled frame; settled/animated drawing does
+not advance runtime twice.
+
+The new `src/previewTimeline.test.ts` has **9 tests**. Six scenarios compare
+**47 sequential C++/browser frames** for actual visible pixels, mode/page,
+brightness, screen-before/after-Report, message queue/visibility, cycle timer and
+housekeeping timer. Scenarios cover delayed frames, Clock/Date transitions,
+message expiry between housekeeping ticks, screen-change interruption, interval/
+auto-cycle/brightness edits and uint32 rollover. Editing the default message
+duration does not rewrite an already active message deadline. Countdown, alert,
+boot and OTA timeline interactions remain explicitly pending; existing status
+pixel snapshots do not verify those stateful paths.
+
+Reduced local `scripts/check_code.py --skip-sdk-checks` passed **6 code-only
+gates**: **113 Python tests run / 112 passed / 1 exact-SDK skip**, **315 host
+checks**, **125 web tests**, TypeScript, production web bundle and diff checks.
+The lightweight local Python dependencies were installed under ignored
+`.cache/code-test-deps`; ESPHome is not installed here. No exact SDK import or
+generated-freshness check was performed locally. Step-5 hosted validation is
+pending until the assigned branch is pushed and its read-only code gate
+completes. Authentication was restored after failures in the prior turn; no
+firmware CLI/config/codegen/build, hardware, browser automation, production
+secrets, publication or deployment was used.
 
 ## Earlier candidate checkpoint — 2026-10-02
 
@@ -110,9 +145,12 @@ remote endpoints for isolation; it does **not** prove the candidate is published
 or that remote release assets fetch. `--compile` also links default/all-font
 ESP8266 firmware; without it, a PASS is **not a firmware compile**.
 
-### Executed checks
+### Executed checks from the earlier candidate checkpoint
 
-| Command / evidence | Current result |
+These results predate the step-5 code-only continuation below and are preserved
+for scope/history; they were not rerun here.
+
+| Command / evidence | Earlier checkpoint result |
 | --- | --- |
 | `make -C tests test` | **315 checks, 0 failures** |
 | `.venv/bin/python tests/test_config.py` | **36 tests, OK, no skips** |
@@ -133,11 +171,12 @@ or flash/RAM measurement. Current recheck logs are ignored under
 ### Not yet verified
 
 - Default/all-font full ESP8266 builds and current flash/RAM headroom.
-- Safe CI migration and all-main validation → immutable release → matching
-  Pages deployment. `scripts/publish_release.py` is preparatory and not
-  publication-tested or workflow-wired.
-- Live release/tag/installer asset fetch and live Pages smoke checks.
-- Exhaustive stateful cycling/countdown/overlay timelines.
+- Live main-push release publication, matching Pages deployment, live
+  immutable installer fetch and Pages smoke checks. Workflow wiring and mocked
+  guards are tested; no publication/deployment was run.
+- Stateful countdown, alert, boot and OTA timelines. Normal screen/message
+  cycle, expiry/interruption, preference and rollover paths are covered; other
+  modes remain pending.
 - Physical font/animation/rotation, installed-version boot and encrypted OTA
   visibility, including off/inverted/dim/night/alarm preferences.
 - Manual keyboard/reduced-motion/small-screen usability. No browser automation

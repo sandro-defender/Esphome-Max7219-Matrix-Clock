@@ -2,24 +2,28 @@
 
 ## Code-only continuation — 2026-10-02
 
-The user resumed work with **no ESPHome builds/compilation** and a PR update
-after every finished step. Step 1 hardens the publisher and adds **40 mocked
-unit tests**: main-push/clean-checkout provenance; atomic tag races/collisions;
-annotated-tag bounds; publication-order pagination; immutable published notes/
-assets even without server locking; non-clobbering draft recovery; pre/post
-publication verification and safe error reporting. No real release was created.
+This continuation stayed **code-only**: no ESPHome/PlatformIO CLI, firmware
+config/codegen/build, live release/deployment, browser automation or production
+secrets access. Arena fixes the current session to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`; existing draft PR #13 still has
+head `arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. This checkout
+was recreated from base in the new turn; the preserved staged tree was verified
+to equal that checkpoint plus the step-5 delta before restoring history. Git/
+`gh` authentication had failed in the prior turn but is now restored. The user
+has requested a PR from the assigned branch; PR #13 remains untouched and must
+not be described as containing step 5.
 
-Code checks: 40 publisher tests, 35 source-contract tests (1 SDK merge test
-skipped), 315 host renderer checks, 103 web tests / 1,044 oracle frames and
-TypeScript all pass. No ESPHome CLI was run; full firmware/device/live-release
-verification remains open. Step 2 adds read-only every-main/PR code-only CI with pinned Actions, a fail-fast
-runner and 15 workflow/code-gate tests, plus an explicit esbuild dependency.
-Reduced local checks pass 91 Python tests run (90 pass, 1 SDK skip), 315 host
-checks, 103 web tests, typecheck/web bundle. Exact SDK/generated freshness
-were not rerun locally. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) subsequently passed
-for source commit `2753a67`, including full SDK-import/freshness gates and no
-firmware CLI invocation. Step 3 replaces legacy release/Pages source wiring; actual deployment remains unverified. See the current
-[ROADMAP.md](ROADMAP.md) and draft PR #13 for each pushed step and commit.
+Step 1 hardens the publisher and adds **40 mocked unit tests**: main-push/clean-
+checkout provenance; atomic tag races/collisions; annotated-tag bounds;
+publication-order pagination; immutable published notes/assets; non-clobbering
+draft recovery; pre/post publication verification and safe error reporting. No
+real release was created. Step 2 adds read-only every-main/PR code-only CI with
+pinned Actions, a fail-fast runner, 15 workflow/code-gate tests and an explicit
+esbuild dependency. Step 3 wires guarded main-only release → same-SHA Pages;
+actual publication/deployment remains unverified. Step 4 hardens installer
+release lookup with streamed byte limits, deadlines, strict identity/version
+checks and tag-cycle detection. Hosted [run 36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848)
+passed source/preview checks for `dd1037f`; publish/site/deploy were skipped.
 
 ### Step 3: main-only release → matching Pages source wiring
 
@@ -40,10 +44,34 @@ Stream responses with a UTF-8 byte cap and deadline/cancellation, including a
 fetcher/body that ignores AbortSignal. Validate publication records, version,
 repository/SDK identity and tag-object shapes; reject cycles and malformed input
 without installing an older supported tag. Add 13 mocked release regressions
-(22 resolver / 116 web tests total). Reduced code-only gate passes 113 Python
-tests (112 pass, 1 SDK skip), 315 host checks, typecheck/web bundle and diff checks.
-Hosted step-4 CI is pending. No ESPHome CLI/build/codegen, live publishing,
-Pages deployment, browser automation or production-secret access was performed.
+(22 resolver tests). The hosted `dd1037f` run above passed checks; privileged
+publication/site/deployment jobs were skipped.
+
+### Step 5: stateful native/browser preview parity (normal screens + messages)
+
+The host fixture now accepts sequential frames/events while retaining the actual
+C++ `Runtime`. It applies `Report.mode`/`Report.screen_changed` after drawing,
+so an automatic screen update first appears on the next frame. Screen and other
+writer preferences are still mapped through generated `tests/frame.generated.h`.
+The browser `usePreview` owns one `PreviewTimeline`, samples `performance.now()`
+for runtime state, keeps civil clock/timezone separate, and passes the same
+immutable timeline snapshot through settled and animated draws. The timeline is
+idempotent for a repeated logical frame.
+
+The stateful contract matches the actual renderer's one-second housekeeping,
+uint32 rollover/deadlines, single toggle on a late frame, cycle-timer retention
+while messages block cycling, post-render report feedback, immediate visual
+message expiry, and housekeeping-only queue clearing. It does not restart an
+active message deadline when only the default-duration setting changes.
+
+Local reduced code-only gate passed **113 Python tests run / 112 passed / 1
+exact-SDK skip**, **315 host checks**, **125 web tests**, TypeScript, production
+web bundle and diff checks. Nine timeline tests compare **47 sequential native
+and browser frames**, including visible pixels, page/mode, brightness, report
+screens and runtime timers. Exact SDK imports/generated freshness were not run
+locally; hosted step-5 validation will be checked after the assigned-branch
+push. Countdown/alert/boot/OTA retained timelines, firmware compilation,
+physical-device checks and live publication/deployment remain unverified.
 
 ## Earlier draft checkpoint — 2026-10-02
 
@@ -100,16 +128,16 @@ candidate or ESPHome 2026.9.1.
 
 ### Remaining work / merge gates
 
-[ROADMAP.md](ROADMAP.md) is the authoritative ordered checklist: migrate
-all-main/PR CI; test/audit/wire immutable release publication; sequence matching
-Pages deployment; obtain full default/all-font builds and size evidence;
-complete stateful timeline parity; perform manual accessibility and real-panel
-boot/animation/encrypted-OTA checks. Existing release/Pages workflows are legacy
-and are not ready for this generator pipeline. Do not merge this checkpoint as
-though release automation or hardware sign-off were complete.
+[ROADMAP.md](ROADMAP.md) is authoritative. Remaining: hosted code-only check for
+step 5; retained countdown/alert/boot/OTA timeline coverage; safe legacy
+validator migration; live immutable release/installer/Pages integration when
+approved; current firmware builds/size evidence; and manual accessibility and
+real-panel boot/animation/encrypted-OTA checks. The release/Pages workflow source
+is implemented and code-tested, but no publication or deployment occurred.
 
-No new tag, published GitHub release or Pages deployment is part of this
-checkpoint. Work is pushed only to the Arena branch, through a draft PR.
+This session's branch restriction prevents step 5 from being attached to PR #13,
+whose source branch remains the prior handoff branch. No new PR, tag, release or
+Pages deployment was created.
 
 ## Historical reports — unchanged evidence from the base commit
 

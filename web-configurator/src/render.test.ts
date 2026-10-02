@@ -172,19 +172,19 @@ describe("renderScene", () => {
     expect(noon.effectiveBrightness).toBe(2);
   });
 
-  it("cycles from the configured screen and never replaces bitmap tests", () => {
+  it("leaves retained screen cycling to the stateful timeline, not elapsed-slot rendering", () => {
     const start = new Date(2026, 0, 2, 12, 0, 0).getTime();
     const cfg = { ...DEFAULT_CONFIG, autoCycle: true, cycleInterval: 5 };
-    expect(renderScene(cfg, new Date(start), start, undefined, start).page).toBe("clock");
-    expect(renderScene(cfg, new Date(start + 5000), start, undefined, start).page).toBe("date");
-    expect(renderScene({ ...cfg, screen: "Date" }, new Date(start), start, undefined, start).page).toBe("date");
-    expect(renderScene({ ...cfg, screen: "Pixel checkerboard" }, new Date(start), start, undefined, start).page).toBe("checkerboard");
+    expect(renderScene(cfg, new Date(start), start, undefined, 1_000).page).toBe("clock");
+    expect(renderScene(cfg, new Date(start + 35_000), start, undefined, 36_000).page).toBe("clock");
+    expect(renderScene({ ...cfg, screen: "Date" }, new Date(start), start, undefined, 1_000).page).toBe("date");
+    expect(renderScene({ ...cfg, screen: "Pixel checkerboard" }, new Date(start), start, undefined, 1_000).page).toBe("checkerboard");
   });
 
   it("uses real message timing even with frozen or timezone-shifted display time", () => {
     const cfg = { ...DEFAULT_CONFIG, message: "HI", messageHold: 15 };
-    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, undefined, 14000).messageActive).toBe(true);
-    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, undefined, 16000).messageActive).toBe(false);
+    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, 14000).messageActive).toBe(true);
+    expect(renderScene(cfg, new Date(2026, 0, 2, 0), 1000, undefined, 16000).messageActive).toBe(false);
   });
 
 });

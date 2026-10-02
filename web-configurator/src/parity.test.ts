@@ -30,7 +30,7 @@ function visible(frame: Frame, cfg: Config): string {
 }
 function compare(cfg: Config, now = date, slide: SlideFrame = { from: null, progress: 1 }, elapsed = 0) {
   const cpp = oracle(cfg, now, slide.from ?? "", elapsed);
-  const scene = renderScene(cfg, now, 1000, slide, undefined, 1000+elapsed);
+  const scene = renderScene(cfg, now, 1000, slide, 1000 + elapsed);
   expect(visible(scene.frame, cfg), `${cfg.clockFont}/${cfg.screen} gap=${cfg.animationRowGap} elapsed=${elapsed}`).toBe(cpp.pixels);
   expect(scene.effectiveBrightness).toBe(cpp.brightness);
   expect(cpp.badWrites).toBe(0);

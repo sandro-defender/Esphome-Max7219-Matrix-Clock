@@ -71,7 +71,7 @@ export function slidePair(progress: number, slide: number, boxTop: number): { fr
 }
 
 export function slideClock(): number {
-  return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+  return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : 0;
 }
 
 /**

@@ -3,7 +3,10 @@
 ## Active instruction — 2026-10-02
 
 Continue on code only. **Do not run ESPHome config/build/compile/codegen or
-retry toolchain downloads. Update draft PR #13 after every finished step.**
+retry toolchain downloads.** Arena fixes this session to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`; PR #13 still points to
+`arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. Do not push the
+other branch or imply this step is present in PR #13.
 
 - [x] Step 1: audit/harden the publisher and add 40 mocked offline tests.
   Main provenance/clean checkout, tag races/collisions, draft recovery,
@@ -21,11 +24,22 @@ retry toolchain downloads. Update draft PR #13 after every finished step.**
   for `8418b49`; actual main publication/deployment remains unverified.
 - [x] Step 4: harden installer release lookup with streamed UTF-8 byte limits,
   timeout/cancellation, strict response/identity/version checks and tag-cycle
-  detection. Add 13 regressions (22 resolver / 116 web tests total). Reduced
-  local gate passes 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
-  typecheck/web bundle. Hosted step-4 CI is pending; no firmware CLI was run.
-- [ ] Later: live integration, stateful parity, manual accessibility/hardware
-  sign-off. Full ESPHome builds remain deferred by the user.
+  detection. Add 13 regressions (22 resolver tests). Hosted run
+  [36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848)
+  passed source/preview checks at `dd1037f`; publication/site/deploy were skipped.
+- [x] Step 5: stateful Clock/Date/message parity. A retained C++ `Runtime`
+  sequence fixture applies `Report` updates after drawing; the browser uses a
+  monotonic, uint32 timeline and advances once for settled/animated frame paths.
+  **9 timeline tests compare 47 sequential native/browser frames** across late
+  cycles, message expiry/interruption, preference edits and rollover.
+  Reduced local gate: 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
+  125 web tests, typecheck, web bundle and diff pass. Exact SDK freshness was
+  not checked locally. PR #13 still has the other head branch; the latest user
+  request is to open a PR from this assigned branch. Hosted code validation
+  remains pending until the branch is pushed.
+- [ ] Remaining: hosted validation of step 5 on the assigned branch, stateful
+  countdown/alert/boot/OTA coverage, live integration, manual
+  accessibility/hardware sign-off. Full ESPHome builds remain deferred.
 
 ## Historical checkpoint and next-work list
 
@@ -45,15 +59,17 @@ checked tasks below do not certify this candidate.
 - [x] Commit/push only `arena/01a0f913-esphome-max7219-matrix-clock` and open
   **[draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)**. No main push, release/tag publication or Pages deployment.
 
-## Next increment, not part of this checkpoint
+## Remaining work after the step-5 preview increment
 
-1. Audit/test the publisher and migrate every-main/PR CI; wire immutable
-   publication before same-commit Pages deployment. Legacy workflows remain.
-2. Obtain full default/all-font ESP8266 builds and size/headroom evidence;
-   current toolchain download fails with TLS EOF/HTTPClientError.
-3. Extend stateful timeline parity and verify live immutable installer fetch.
+1. Run hosted code-only validation on the Arena-assigned branch. PR #13's
+   source branch differs and cannot be used in this session.
+2. Extend stateful native/browser timelines to countdown, alert, boot and OTA;
+   current tests establish normal/message behavior only.
+3. Migrate legacy validators safely, refresh release-note metadata, and verify
+   immutable installer/release/Pages integration only when publication is
+   explicitly approved.
 4. Perform manual accessibility and physical font/animation/boot/encrypted-OTA
-   checks, then record exact release/commit/deployment and request merge sign-off.
+   checks. Firmware builds remain deferred by the current instruction.
 
 ## Archived tasks from base commit e693db4
 

@@ -2,12 +2,18 @@
 
 ## Active continuation — code-only, stepwise PR updates (2026-10-02)
 
-The user has resumed implementation: **work on code, do not try ESPHome builds
-or compilation, and update [draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)
-after each finished step**. Do not invoke the ESPHome CLI (including codegen)
-or retry PlatformIO downloads. Source/host/script/web checks remain allowed;
-full firmware and physical-device evidence stay unverified. Preserve the
-checkpoint below as earlier evidence, not a new build claim.
+The user has resumed implementation: **work on code only**. Do not invoke the
+ESPHome CLI (including codegen), compile firmware or retry PlatformIO downloads.
+Source/host/script/web checks remain allowed; full firmware and physical-device
+evidence stay unverified. This Arena session is fixed to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`, while existing draft PR #13 still
+points to `arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. The code
+must stay on the assigned branch; PR #13 cannot receive those commits without
+violating that restriction, so its code status must not be misrepresented. Git
+and `gh` authentication failed in the prior turn; access is now restored after
+reconnection. The user has requested a pull request from the assigned branch;
+PR #13 remains on its original head. Preserve the checkpoint below as earlier
+evidence, not a new build claim.
 
 ### Finished step 1 — release publisher safety
 
@@ -80,16 +86,46 @@ checkpoint below as earlier evidence, not a new build claim.
 - [x] Add **13 release-response regressions** (22 resolver tests total). Local
   reduced gate: **116 web tests**, **315 host checks**, **113 Python tests run /
   112 pass / 1 SDK skip**, typecheck, web bundle and diff checks pass.
-- [ ] Observe hosted CI for step 4. No ESPHome CLI, release publication, Pages
-  deployment, browser automation or production-secret access was performed.
+- [x] Hosted [code-only run 36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848) passed for `dd1037f`: Source and preview checks succeeded; publish, site-build and deployment jobs were skipped. No ESPHome CLI, release publication, Pages deployment, browser automation or production-secret access was performed.
 
-### Next finished-step targets
+### Finished step 5 — stateful normal-screen/message preview parity
 
-- [ ] Extend stateful preview parity beyond the current 1,044-frame oracle.
+- [x] Extend `tests/renderer_fixture.cpp` with a sequential mode that retains
+  the real `Runtime`, applies event/preference changes, renders every frame and
+  applies `Report` screen updates only after capturing the rendered frame.
+  Writer preferences continue to come from `tests/frame.generated.h`.
+- [x] Integrate the retained browser `PreviewTimeline` into the live hook.
+  Runtime deadlines/cycling use monotonic `performance.now()` and uint32
+  arithmetic; civil clock/timezone remain separate. The settled and animated
+  scene paths share one immutable timeline frame, with same-frame idempotence.
+- [x] Match firmware's one-second housekeeping, single toggle on delayed frames,
+  cycle timer retention during messages/screen changes and reset only when
+  auto-cycle is off on a housekeeping tick. Message visibility expires on any
+  render; its runtime queue is cleared on housekeeping.
+- [x] Add **9 timeline tests**; **47 sequential frames** compare browser pixels,
+  mode/page, brightness, screen-before/after-Report, message state and timers
+  against the retained native renderer. Coverage: delayed cycling, transitions,
+  message expiry/interruption, cycle/brightness preference edits and uint32
+  rollover. Message-hold edits do not rewrite an active action's deadline.
+- [x] Reduced local code-only gate passed: **113 Python tests run / 112 passed /
+  1 exact-SDK skip**, **315 host checks**, **125 web tests**, TypeScript,
+  production web bundle and diff checks. Exact-SDK imports/generated freshness
+  were not run locally. Step 5 hosted validation is pending until the assigned
+  branch is pushed and the read-only hosted gate completes. Keep PR #13's
+  existing source branch unchanged.
+- [ ] Stateful countdown, alert, boot and OTA event timelines remain unverified;
+  renderer snapshot tests do not establish their retained interactions.
+- No firmware CLI/build, hardware test, browser automation, production-secret
+  access, live publication or deployment was performed for step 5.
+
+### Remaining targets
+
 - [ ] Safely migrate legacy validator entry points without running firmware CLI.
-- [ ] Refresh current release-note metadata and validate live release/installer/
-  Pages behavior when publication is explicitly approved. Firmware/hardware
-  verification remains deferred; do not mark source wiring as live deployment.
+- [ ] Refresh release-note metadata; validate live release/installer/Pages only
+  when publication is explicitly approved. Workflow wiring is not live
+  deployment evidence.
+- [ ] Extend stateful timelines for countdown/alert/boot/OTA, then obtain
+  hardware/accessibility evidence; keep firmware and physical verification open.
 
 ## Earlier checkpoint — 2026-10-02
 
@@ -189,8 +225,12 @@ The automation publishes source/YAML installers, not compiled firmware binaries.
 - [ ] Re-run full default/all-font ESP8266 compilation where the PlatformIO
   toolchain can be downloaded; record exact commit, toolchain and flash/RAM
   deltas/headroom. Historical 0.4.0 measurements are not candidate measurements.
-- [ ] Complete stateful timeline parity for auto-cycle, countdown/alert/message
-  interactions and interrupted overlays, beyond the checked static/frame oracle.
+- [x] Verify stateful Clock/Date cycling and message expiry/interruption
+      against the retained native renderer over 47 sequential frames, including
+      late frames, preference edits, post-render Report feedback and uint32 wrap.
+- [ ] Verify retained countdown/alert/boot/OTA interactions; the current stateful
+      preview explicitly leaves these modes pending, despite static renderer
+      pixel coverage.
 - [ ] Verify a physical 48×8 panel: default font readability, repaired zero,
   changed-digit-only motion, midnight/hour rollover, speed/gap extremes and
   narrow/multi-row/rotation/flip mappings.

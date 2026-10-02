@@ -9,6 +9,7 @@ import {
   type PreviewFont,
 } from "./fonts";
 import type { Config } from "./types";
+import type { TimelineFrame } from "./previewTimeline";
 
 export { deviceSlug, nodeId } from "./device";
 
@@ -283,13 +284,9 @@ function paintChecker(frame: Frame): void {
   }
 }
 
-function choosePage(cfg: Config, messageActive: boolean, runtimeNowMs: number, cycleStartedMs?: number): Page {
+function choosePage(screen: Config["screen"], messageActive: boolean): Page {
   if (messageActive) return "message";
-  if (cfg.autoCycle && (cfg.screen === "Clock" || cfg.screen === "Date") && cycleStartedMs !== undefined) {
-    const slot = Math.floor(Math.max(0, runtimeNowMs - cycleStartedMs) / 1000 / Math.max(5, cfg.cycleInterval));
-    return (slot + (cfg.screen === "Date" ? 1 : 0)) % 2 === 0 ? "clock" : "date";
-  }
-  switch (cfg.screen) {
+  switch (screen) {
     case "Date":
       return "date";
     case "Message":
@@ -331,21 +328,25 @@ export function renderScene(
   now: Date,
   messageAt: number,
   slide: SlideFrame = { from: null, progress: 1 },
-  cycleStartedMs?: number,
   runtimeNowMs = now.getTime(),
+  timeline?: TimelineFrame,
 ): Scene {
   const geo = geometry(cfg.chips, cfg.rows);
   const frame: Frame = { width: geo.width, height: geo.height, pixels: new Uint8Array(geo.width * geo.height) };
   const notices: Notice[] = [];
-  const text = normalizeMessage(cfg.message);
-  const age = Math.max(0, runtimeNowMs - messageAt);
-  const messageActive = text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000);
-  const messageHoldLeft = cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
+  const text = timeline?.message ?? normalizeMessage(cfg.message);
+  const age = timeline?.messageAgeMs ?? Math.max(0, runtimeNowMs - messageAt);
+  const messageActive = timeline?.messageActive ??
+    (text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000));
+  const messageHoldLeft = timeline
+    ? timeline.messageHoldLeft
+    : cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
+  const selectedScreen = timeline?.screen ?? cfg.screen;
 
   const selected = previewFont(cfg.clockFont);
   const spec = fontSpec(cfg.clockFont);
   const fit = fitForPanel(selected, frame.width, Math.min(8, frame.height));
-  const page = choosePage(cfg, messageActive, runtimeNowMs, cycleStartedMs);
+  const page = choosePage(selectedScreen, messageActive);
 
   if (!geo.valid) {
     notices.push({
@@ -418,7 +419,8 @@ export function renderScene(
   if (layout !== null) content = layout.content;
 
   const nightNow = cfg.nightManual || (cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd));
-  const effectiveBrightness = cfg.alarmMode ? (Math.floor((runtimeNowMs >>> 0) / FIRMWARE.renderer.alarmPeriodMs) % 2 === 1 ? limitsFor("brightness").max : limitsFor("brightness").min) : nightNow ? cfg.nightBrightness : cfg.brightness;
+  const brightnessClock = timeline?.nowMs ?? (runtimeNowMs >>> 0);
+  const effectiveBrightness = cfg.alarmMode ? (Math.floor(brightnessClock / FIRMWARE.renderer.alarmPeriodMs) % 2 === 1 ? limitsFor("brightness").max : limitsFor("brightness").min) : nightNow ? cfg.nightBrightness : cfg.brightness;
 
   let summary = "Display power is off.";
   let detail = "The MAX7219 is held in shutdown, so no pixels are driven.";

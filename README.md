@@ -11,29 +11,36 @@ holds your credentials, a few substitutions and the package list.
 
 ## Current work: draft candidate 0.7.0
 
-Active work is **code-only**, with an update to draft PR #13 after each finished
-step. Do not run ESPHome build/compile/codegen commands during this work. The
-publisher now has 40 mocked safety tests, and code-only CI adds 15 workflow/
-runner tests with read-only every-main/PR checks. `scripts/check_code.py` runs
-source/host/web validation without firmware CLI commands; its reduced local
-mode explicitly skips SDK freshness. Actual publishing/deployment and physical
-verification remain unverified. Main-only release/Pages source wiring now has
-22 deployment/workflow tests; its live integration remains unverified. Installer
-release lookup now has 22 tests covering streamed byte limits, deadlines,
-malformed responses, source identity and no fallback to older releases. The
-current reduced code gate passes 116 web tests; SDK freshness is scoped separately.
+Active work is **code-only**. Do not run ESPHome build/compile/codegen commands
+during this work. The publisher has 40 mocked safety tests; code-only CI adds 15
+workflow/runner tests; main-only release/Pages wiring has 22 deployment/workflow
+tests; and installer lookup has 22 tests for response bounds, deadlines,
+identity checks and fail-closed selection. Step 5 now adds a retained browser
+runtime driven by monotonic `performance.now()` and uint32 millis arithmetic.
+The native C++ fixture retains `Runtime` across sequential frames/events and
+applies `Report` screen updates after rendering. Its normal-screen/message
+preview matches the browser over 47 sequential native-oracle frames, including
+delayed cycles, message expiry/interruption, preference edits and rollover.
+
+The local reduced code gate passes **113 Python tests run / 112 passed / 1 SDK
+skip**, **315 host checks**, **125 web tests**, TypeScript, production web bundle
+and diff checks. Exact SDK imports/generated freshness are not checked by that
+reduced local gate. Hosted code-only CI through step 4 passed for `dd1037f`; the
+new step 5 has not yet had a hosted run. Actual release publication, Pages
+deployment, and physical verification remain unverified.
 
 This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
 checkpoint**, not a ready-to-merge firmware release. The default external pair
 is **Pixel Clock 6×8 + Matrix 2px**, with Compact 5×7 built in and other compatible
 faces optional without an artificial selection cap.
 
-Current code-only C++/Python/web regressions and TypeScript/web bundle pass;
-hosted pinned-SDK freshness passed through step 3. Five YAML/code-generation
-variants passed at the **earlier checkpoint**, not during this continuation.
-Full ESP8266 compilation remains deferred by the user after historical toolchain
-TLS errors; current flash/RAM and real boot/OTA behavior are not verified. Automatic main-push source/YAML-release
-and matching Pages workflow wiring is implemented, but not live-publication-tested. See [ROADMAP.md](ROADMAP.md),
+Hosted pinned-SDK freshness passed through step 4; the reduced local result above
+is not exact-SDK freshness. Five YAML/code-generation variants passed at the
+**earlier checkpoint**, not during this continuation. Full ESP8266 compilation
+remains deferred by the user after historical toolchain TLS errors; current
+flash/RAM and real boot/OTA behavior are not verified. Automatic main-push
+source/YAML-release and matching Pages workflow wiring is implemented and
+code-tested, but live publication/deployment is not. See [ROADMAP.md](ROADMAP.md),
 [REPORT.md](REPORT.md) and [VALIDATION.md](VALIDATION.md).
 
 The candidate installer verifies the newest published immutable release before
@@ -96,10 +103,15 @@ YAML with:
 * the complete, version-pinned remote package list;
 * first-boot Home Assistant preferences.
 
-The preview is drawn with the same glyph bitmaps, centring, text formats and
-font-fallback rules as `packages/max7219_clock_renderer.h`, so what you tune is
-what the panel shows — including the per-digit slide-up: only the digits whose
-value changed move, the old one leaves upwards while the new one arrives from
+The preview uses the firmware glyph bitmaps, centring, text formats and
+font-fallback rules. Its persistent normal-screen/message timeline uses
+`performance.now()` for runtime and uint32 millis arithmetic for cycle/message
+timing; civil clock time and timezone remain separate. The retained native C++
+fixture and browser are compared over sequential frames for delayed Clock/Date
+cycles, report-after-render screen updates, message expiry/interruption,
+preference edits and rollover (47 stateful frames). Countdown, alert, boot and
+OTA event timelines are not yet verified. The per-digit slide-up remains
+changed-digit-only: the old digit leaves upwards while the new one arrives from
 below, colons and unchanged digits stay still, and the *Animation duration*
 slider (600 ms default), the *Digit slide-up animation* switch and
 `prefers-reduced-motion` all drive it. Adjacent 8×8 modules are previewed as one
@@ -396,11 +408,13 @@ ROADMAP.md      implementation contract and remaining work
 
 ## Remaining hardware-only verification
 
-The current candidate passes ESPHome **2026.9.1** YAML validation and C++
-code generation for five isolated variants, plus host renderer/web tests.
-Full ESP8266 compilation and fresh size measurements still require a build
-host with working PlatformIO downloads. Release/Pages automation and live
-installer fetch remain roadmap work, not completed deployment.
+The earlier checkpoint passed ESPHome **2026.9.1** YAML validation and C++
+code generation for five isolated variants; these were not rerun in this
+code-only continuation. Host renderer, Python and web tests pass as recorded
+above. Full ESP8266 compilation and fresh size measurements still require a
+build host with working PlatformIO downloads. Release/Pages workflow wiring is
+implemented and tested offline, but live publication, deployment and installer
+fetch remain unverified.
 
 The following also needs a real device (see `VALIDATION.md` and `ROADMAP.md`):
 
