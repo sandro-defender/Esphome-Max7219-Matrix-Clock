@@ -42,6 +42,23 @@ including the full pinned-SDK import/freshness gate. No firmware CLI was run.
 Firmware config/codegen/full build measurements have not been rerun. Prior
 checkpoint results below retain their original scope/date.
 
+### Step 3 — pipeline wiring and read-only deployment guard
+
+`tests/test_deployment.py`: **22 passed**, every remote operation mocked and real
+subprocesses blocked. Covers main-only job dependencies/permissions, immutable
+Action refs, same-SHA checkout/build injection, tag/notes/installer integrity,
+superseded-publication skips, retry artifacts and locked Pages rechecks.
+
+The reduced local runner passes **113 Python tests run / 112 passed / 1 SDK
+skip**, **315 host checks**, **103 web tests**, typecheck, web bundle and diff
+checks. Exact-SDK freshness is not rerun locally. Hosted CI/live main publishing
+and Pages behavior remain unverified for this step. No ESPHome/PlatformIO CLI,
+new tag, published release or deployment was executed during implementation.
+
+The main pipeline publishes **source/YAML installer releases**, not firmware
+binaries. It uses only Actions' built-in token, keeps PR checks read-only, and
+checks publication again immediately before Pages. See [RELEASING.md](RELEASING.md).
+
 ## Earlier candidate checkpoint — 2026-10-02
 
 Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.0` is

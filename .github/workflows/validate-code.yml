@@ -51,3 +51,163 @@ jobs:
         # Imports the exact SDK to inspect source/schema/glyph APIs. Never runs
         # esphome config/compile/codegen or downloads the PlatformIO toolchain.
         run: python scripts/check_code.py
+
+  publish:
+    name: Publish immutable installer (main push only)
+    needs: checks
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.repository == 'sandro-defender/Esphome-Max7219-Matrix-Clock'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit }}
+    steps:
+      - name: Checkout the validated triggering commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-configurator/package-lock.json
+
+      - name: Install locked installer dependencies
+        run: npm --prefix web-configurator ci --ignore-scripts
+
+      - name: Reserve tag, verify draft asset, publish and verify again
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_release.py
+
+  site:
+    name: Build Pages from the validated published commit
+    needs: [checks, publish]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.repository == 'sandro-defender/Esphome-Max7219-Matrix-Clock' &&
+      needs.publish.outputs.commit == github.sha
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      ready: ${{ steps.verify.outputs.ready }}
+    steps:
+      - name: Checkout exactly the published validated commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.publish.outputs.commit }}
+          persist-credentials: false
+
+      - name: Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-configurator/package-lock.json
+
+      - name: Install locked web dependencies
+        run: npm --prefix web-configurator ci --ignore-scripts
+
+      - name: Verify newest publication and installer before building
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.publish.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.publish.outputs.commit }}
+        run: python scripts/verify_deployment.py --tag "$RELEASE_TAG" --commit "$RELEASE_COMMIT"
+
+      - name: Build matching static configurator with publishing SHA
+        if: steps.verify.outputs.ready == 'true'
+        env:
+          VITE_RELEASE_COMMIT: ${{ needs.publish.outputs.commit }}
+        run: npm --prefix web-configurator run build
+
+      - name: Read Pages settings (never auto-enable or reconfigure)
+        if: steps.verify.outputs.ready == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+        with:
+          enablement: false
+
+      - name: Upload matching site artifact
+        if: steps.verify.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: web-configurator/dist
+
+  deploy:
+    name: Deploy only the still-newest verified publication
+    needs: [publish, site]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.repository == 'sandro-defender/Esphome-Max7219-Matrix-Clock' &&
+      needs.publish.outputs.commit == github.sha && needs.site.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout exactly the published validated commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.publish.outputs.commit }}
+          persist-credentials: false
+
+      - name: Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-configurator/package-lock.json
+
+      - name: Install locked verification dependencies
+        run: npm --prefix web-configurator ci --ignore-scripts
+
+      - name: Recheck newest publication while holding the Pages lock
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.publish.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.publish.outputs.commit }}
+        run: python scripts/verify_deployment.py --tag "$RELEASE_TAG" --commit "$RELEASE_COMMIT"
+
+      - name: Deploy the matching artifact, never a stale retry
+        id: deployment
+        if: steps.verify.outputs.ready == 'true'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}

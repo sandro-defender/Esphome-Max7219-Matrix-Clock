@@ -15,11 +15,23 @@ TypeScript all pass. No ESPHome CLI was run; full firmware/device/live-release
 verification remains open. Step 2 adds read-only every-main/PR code-only CI with pinned Actions, a fail-fast
 runner and 15 workflow/code-gate tests, plus an explicit esbuild dependency.
 Reduced local checks pass 91 Python tests run (90 pass, 1 SDK skip), 315 host
-checks, 103 web tests, typecheck/web bundle. Exact SDK/generated freshness and
+checks, 103 web tests, typecheck/web bundle. Exact SDK/generated freshness
 were not rerun locally. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) subsequently passed
 for source commit `2753a67`, including full SDK-import/freshness gates and no
-firmware CLI invocation. Legacy release/Pages workflow replacement is the next code step; actual deployment remains unverified. See the current
+firmware CLI invocation. Step 3 replaces legacy release/Pages source wiring; actual deployment remains unverified. See the current
 [ROADMAP.md](ROADMAP.md) and draft PR #13 for each pushed step and commit.
+
+### Step 3: main-only release → matching Pages source wiring
+
+One workflow now gates publication after code checks, builds from the validated
+publishing commit, injects that SHA, and deploys only after release/notes/installer
+verification. A read-only guard skips superseded publications and rechecks while
+holding the Pages lock. Permissions, Actions, artifact retries and main/fork/PR
+boundaries are covered by 22 new mocked tests. No live publishing/deployment or
+ESPHome CLI was executed. Reduced checks: 113 Python tests (112 pass, 1 SDK skip),
+315 host checks, 103 web tests, typecheck/web bundle passed. Hosted step-3 CI and
+actual main integration remain pending. [RELEASING.md](RELEASING.md) documents
+this source/YAML release pipeline and the still-deferred firmware/device gates.
 
 ## Earlier draft checkpoint — 2026-10-02
 

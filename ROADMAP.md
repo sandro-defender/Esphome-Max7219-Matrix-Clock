@@ -45,13 +45,32 @@ checkpoint below as earlier evidence, not a new build claim.
   full pinned-SDK import/freshness and code gates succeeded. No firmware CLI
   or compilation was run. Local reduced-coverage results remain separately scoped.
 
-### Next finished-step target — release/Pages sequencing
+### Finished step 3 — guarded release/Pages sequencing in code
 
-- [ ] Replace the legacy release/deploy workflows with guarded main-only
-  code-validation → immutable installer release → same-commit Pages sequencing.
-- [ ] Test job permissions/dependencies/retries and build-SHA injection; do not
-  publish anything or invoke ESPHome CLI while implementing this code.
-- [ ] Live publication/deployment and physical-device sign-off remain unverified.
+- [x] Remove legacy tag-only auto-notes and path-filtered Pages workflows;
+  use one dependency chain: checks → publish → matching site → deploy.
+- [x] Keep PR/manual/fork runs read-only; only this repository's main push may
+  reach publish/site/deploy. Scope write/OIDC permissions to the required job.
+- [x] Check out the validated publishing SHA, propagate publisher tag/commit
+  outputs and embed `VITE_RELEASE_COMMIT` in the matching static web bundle.
+- [x] Add read-only `verify_deployment.py`: verify newest published tag, SHA,
+  notes and freshly generated installer bytes; skip superseded publications.
+  Recheck immediately before Pages while holding the deployment concurrency lock.
+- [x] Pin all Pages Actions to commit SHAs, avoid persisted checkout tokens or
+  custom credentials, use retry-specific artifacts and never auto-enable Pages.
+- [x] Add **22 deployment/workflow tests** with mocked remote operations. Local
+  reduced gate: **113 Python tests run / 112 pass / 1 SDK skip**, **315 host
+  checks**, **103 web tests**, typecheck/web bundle/diff checks pass.
+- [ ] Observe hosted CI for this step; real main release/Pages integration and
+  physical-device sign-off remain unverified. No ESPHome CLI was run.
+
+### Next finished-step targets
+
+- [ ] Improve release-response/error edge cases and stateful preview parity.
+- [ ] Safely migrate legacy validator entry points without running firmware CLI.
+- [ ] Refresh current release-note metadata and validate live release/installer/
+  Pages behavior when publication is explicitly approved. Firmware/hardware
+  verification remains deferred; do not mark source wiring as live deployment.
 
 ## Earlier checkpoint — 2026-10-02
 
@@ -119,20 +138,21 @@ Code generation and host tests do **not** substitute for a full ESP8266 build.
 
 ### 3. Next increment — automated immutable release and matching Pages
 
-These steps remain open. Preparatory scripts exist, but the existing workflows
-are still legacy and incompatible with the new generator dependencies.
+Source wiring is implemented in steps 1–3. Actual main publication, Pages
+integration and live installer checks below are not claimed or executed yet.
+The automation publishes source/YAML installers, not compiled firmware binaries.
 
 - [x] Define exact SDK/font-generation dependency installation and non-mutating
   generated freshness checks in code-only CI (step 2); hosted code-only run passed for `2753a67`.
-- [ ] Replace path-filtered/tag-only legacy workflows with validation on **every
-  main push**, and PR validation without release/deployment permissions.
+- [x] Replace path-filtered/tag-only legacy workflows with every-main/PR
+  code-only validation and strictly main-only publication/deployment jobs (step 3).
 - [x] Wire C++/Python/web/typecheck/web-build/parity and generated freshness
   into code-only CI (step 2). ESPHome CLI/codegen/full builds are deferred by
   the user and are not prerequisites to each source-only PR update.
 - [x] Audit and unit-test `scripts/publish_release.py`: main-only provenance,
   tag reservation/collisions, draft assets/retries, idempotency, immutable
   publication and publication-order selection — 40 offline tests in step 1.
-  Actual publication and workflow permissions/wiring are still unverified.
+  Workflow permissions/wiring are tested in step 3; actual publication is unverified.
 - [ ] After validation, publish an appropriate immutable versioned release
   (`VERSION`, or `VERSION+12hexSHA` for later commits at that version), with
   matching notes, commit and installer asset. Never move existing tags.

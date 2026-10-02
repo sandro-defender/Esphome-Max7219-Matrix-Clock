@@ -17,7 +17,8 @@ publisher now has 40 mocked safety tests, and code-only CI adds 15 workflow/
 runner tests with read-only every-main/PR checks. `scripts/check_code.py` runs
 source/host/web validation without firmware CLI commands; its reduced local
 mode explicitly skips SDK freshness. Actual publishing/deployment and physical
-verification remain unverified; legacy release/Pages replacement is pending.
+verification remain unverified. Main-only release/Pages source wiring now has
+22 deployment/workflow tests; its live integration remains unverified.
 
 This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
 checkpoint**, not a ready-to-merge firmware release. The default external pair
@@ -27,8 +28,8 @@ faces optional without an artificial selection cap.
 Current C++/Python/web regressions, generated-source freshness, TypeScript/build
 and five isolated YAML/code-generation variants pass. Full ESP8266 compilation
 is blocked by PlatformIO toolchain-download TLS errors; current flash/RAM and
-real boot/OTA behavior are not verified. Automatic main-push release/Pages
-workflows are still unfinished. See [ROADMAP.md](ROADMAP.md),
+real boot/OTA behavior are not verified. Automatic main-push source/YAML-release
+and matching Pages workflow wiring is implemented, but not live-publication-tested. See [ROADMAP.md](ROADMAP.md),
 [REPORT.md](REPORT.md) and [VALIDATION.md](VALIDATION.md).
 
 The candidate installer verifies the newest published immutable release before
@@ -124,8 +125,11 @@ npm install
 npm run dev
 ```
 
-The root GitHub Pages workflow tests, type-checks and builds the configurator
-before deployment.
+The root workflow validates code on every main push/PR. Only a canonical main
+push may publish a versioned source/YAML-installer release and then build/deploy
+Pages from the same validated SHA. PRs cannot publish or deploy. Newest release/
+asset verification prevents stale retries from overwriting Pages. No firmware
+binary is built by this code-only pipeline; see [RELEASING.md](RELEASING.md).
 
 ## Hardware
 

@@ -41,9 +41,9 @@ class WorkflowTests(unittest.TestCase):
 
     def test_read_only_permissions_and_no_secret_or_publisher_access(self):
         self.assertEqual(self.workflow["permissions"], {"contents": "read"})
-        for job in self.workflow["jobs"].values():
-            self.assertNotIn("environment", job)
-            self.assertNotIn("permissions", job)
+        checks = self.workflow["jobs"]["checks"]
+        self.assertNotIn("environment", checks)
+        self.assertNotIn("permissions", checks)
         runs = "\n".join(step.get("run", "") for step in self.steps)
         self.assertNotIn("secrets.", WORKFLOW.read_text())
         for forbidden in ("gh ", "publish_release", "validate.py", "esphome ", "platformio ", "pio "):
