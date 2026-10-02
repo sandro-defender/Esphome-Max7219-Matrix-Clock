@@ -54,6 +54,11 @@ def dump(value) -> str:
     return yaml.dump(value, Dumper=Dumper, sort_keys=False, allow_unicode=True, width=1000)
 
 
+def source_hash_bytes(path: Path) -> bytes:
+    """Make Git's CRLF working-tree conversion irrelevant to the contract."""
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
 def resolve(value, substitutions):
     if not isinstance(value, str):
         return value
@@ -267,7 +272,7 @@ def build():
     all_paths += [ROOT / f["source"] for f in font_specs]
     digest = hashlib.sha256()
     for path in sorted(set(all_paths)):
-        digest.update(path.relative_to(ROOT).as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
+        digest.update(path.relative_to(ROOT).as_posix().encode() + b"\0" + source_hash_bytes(path) + b"\0")
     secrets = {key: str(value) for key, value in dev["substitutions"].items() if isinstance(value, Tag) and value.tag == "!secret"}
     actions = [{key: action.get(key, {}) for key in ("action", "description", "variables")} for module in modules for action in module.get("api", {}).get("actions", [])]
     ota_enum = re.search(r"enum OtaState[^\{]+\{(.*?)\};", renderer, re.S)[1]
