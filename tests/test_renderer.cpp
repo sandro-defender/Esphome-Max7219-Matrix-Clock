@@ -1044,7 +1044,7 @@ static void test_scrolling_date_starts_after_screen_slide_transition() {
   reset_state();
   FakeCanvas canvas;
   BuiltinFont compact;
-  SparseFont font;
+  FakeFont font(6);
   Report r;
   render(canvas, font, compact, f, r);  // Establish Clock as the selected screen.
 
