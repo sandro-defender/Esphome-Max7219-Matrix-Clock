@@ -267,6 +267,7 @@ def build():
     # Check all compiled source fonts, not just the default pair.
     all_paths = [ROOT / "dev.yaml", ROOT / "CHANGELOG.md", ROOT / "packages/configurator.json", ROOT / "requirements-validation.txt", Path(__file__), ROOT / "web-configurator/scripts/generate_glyphs.py"]
     all_paths += [ROOT / file for file in core_files if file != reset_path]
+    all_paths += [ROOT / "packages/base-esp32.yaml"]
     all_paths += list((ROOT / "packages").glob("*.h")) + list((ROOT / "packages/fonts").glob("*.yaml")) + [ROOT / "packages/fonts_web.yaml"]
     all_paths += [ROOT / f["file"] for f in font_specs if "file" in f]
     all_paths += [ROOT / f["source"] for f in font_specs]
@@ -316,6 +317,12 @@ def build():
     example = {"substitutions": {key: Tag(value, "!secret") for key, value in secrets.items()}, "packages": {"clock": {"url": "https://github.com/" + subs["project_repo"], "ref": tag, "refresh": "1d", "files": core_files + [f"packages/fonts/{key}.yaml" for key in default_fonts]}}}
     example["substitutions"]["project_ref"] = tag
     outputs[ROOT / "examples/release.yaml"] = "# GENERATED pinned release example. Copy beside your local secrets.yaml.\n# ESPHome downloads all modules and the two default external fonts.\n" + dump(example)
+    esp32_example = copy.deepcopy(example)
+    esp32_example["packages"]["clock"]["files"][0] = "packages/base-esp32.yaml"
+    outputs[ROOT / "examples/esp-wroom-32.yaml"] = (
+        "# GENERATED ESP-WROOM-32 DevKit installer. Copy beside your local secrets.yaml.\n"
+        "# Defaults: esp32dev; MAX7219 CLK GPIO18, DIN GPIO23, CS GPIO5.\n" + dump(esp32_example)
+    )
     development = copy.deepcopy(example)
     development["substitutions"]["project_ref"] = "main"
     development["packages"]["clock"]["ref"] = "main"
