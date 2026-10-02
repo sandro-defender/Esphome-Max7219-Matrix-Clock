@@ -775,7 +775,8 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content) active = &font_for_text(*active, fallback, content);
+  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+    active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
       with_seconds = false;
@@ -1147,7 +1148,8 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content) active = &font_for_text(*active, fallback, content);
+  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+    active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
