@@ -1115,6 +1115,7 @@ static void test_date_formats() {
   Frame f = base_frame();
   f.day = 5;
   f.month = 3;
+  f.year = 2026;
   char out[24];
   f.date_format = DATE_DD_MM;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
@@ -1125,6 +1126,30 @@ static void test_date_formats() {
   f.date_format = DATE_DD_MM_SLASH;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "05/03") == 0);
+  f.date_format = DATE_DD_MM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "05.03.26") == 0);
+  f.date_format = DATE_WEEKDAY_DD_MM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "THU 05.03.26") == 0);
+  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "THU 05. MAR 26") == 0);
+}
+
+static void test_temperature_content() {
+  Frame f = base_frame();
+  char out[24];
+  f.temperature_valid = false;
+  CHECK(build_content(f, MODE_TEMPERATURE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "--.-") == 0);
+  f.temperature_valid = true;
+  f.temperature_c = 23.4f;
+  CHECK(build_content(f, MODE_TEMPERATURE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "23.4") == 0);
+  f.temperature_c = -2.1f;
+  CHECK(build_content(f, MODE_TEMPERATURE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "-2.1") == 0);
 }
 
 static void test_12_hour_clock_blanks_leading_zero() {
@@ -1492,6 +1517,7 @@ int main() {
   test_report_publishes_only_on_change();
   test_alignment();
   test_date_formats();
+  test_temperature_content();
   test_12_hour_clock_blanks_leading_zero();
   test_deadline_rollover();
   test_millis_wrap_keeps_clock_stable();

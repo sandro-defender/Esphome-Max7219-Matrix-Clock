@@ -18,6 +18,7 @@ select:
     options:
       - "Clock"
       - "Date"
+      - "Temperature"
       - "Message"
       - "Module grid test"
       - "Pixel checkerboard"
@@ -94,6 +95,9 @@ select:
       - "DD.MM"
       - "MM/DD"
       - "DD/MM"
+      - "DD.MM.YY"
+      - "Weekday DD.MM.YY"
+      - "Weekday DD. MMM YY"
     set_action:
       - component.update: matrix
 

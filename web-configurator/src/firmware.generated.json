@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "b916c077361769406237403580d6ced6764d1736b918ae45c169b9f2b7fdbd20",
+  "sourceHash": "ef91374b9f11aec499ac1fd5879b71de99e8e130bb201a50de8e6c9861d0e8f1",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.3",
+  "releaseVersion": "0.7.4",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- **Date screen duration** is a Home Assistant setting (5–300 seconds). When\n  automatic screen cycling is enabled, it controls how long Date remains\n  visible independently of the Clock screen interval.\n\n### Changed\n- Switching between Clock, Date, Module grid test and Pixel checkerboard now\n  uses the configured animation duration for a short horizontal slide. Boot,\n  OTA, alerts and messages still appear immediately.\n\n### Fixed\n- Matrix 2px digit **0** now has its missing two-pixel top stroke.",
+  "releaseNotes": "### Added\n- Date format choices now include **DD.MM.YY**, **Weekday DD.MM.YY**, and\n  **Weekday DD. MMM YY**. The longer weekday formats scroll across a 48×8\n  matrix instead of being cut off.\n- A **Temperature** screen can show a Home Assistant numeric sensor. Choose\n  its entity in the configurator's new **Temperature sensor entity** field.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -135,6 +135,7 @@
       "options": [
         "Clock",
         "Date",
+        "Temperature",
         "Message",
         "Module grid test",
         "Pixel checkerboard"
@@ -196,7 +197,10 @@
       "options": [
         "DD.MM",
         "MM/DD",
-        "DD/MM"
+        "DD/MM",
+        "DD.MM.YY",
+        "Weekday DD.MM.YY",
+        "Weekday DD. MMM YY"
       ],
       "default": "DD.MM",
       "input": "select"
@@ -474,6 +478,15 @@
       "default": "Europe/Berlin"
     },
     {
+      "key": "temperatureEntity",
+      "kind": "substitution",
+      "target": "temperature_entity",
+      "group": "Screen",
+      "label": "Temperature sensor entity",
+      "input": "text",
+      "default": "sensor.outdoor_temperature"
+    },
+    {
       "key": "board",
       "kind": "substitution",
       "target": "board",
@@ -725,6 +738,7 @@
     "friendlyName": "MAX7219 Matrix Clock",
     "deviceComment": "ESP8266 MAX7219 matrix clock (packages release)",
     "timezone": "Europe/Berlin",
+    "temperatureEntity": "sensor.outdoor_temperature",
     "board": "d1_mini",
     "clkPin": "D8",
     "mosiPin": "D6",
@@ -749,6 +763,7 @@
       "options": [
         "Clock",
         "Date",
+        "Temperature",
         "Message",
         "Module grid test",
         "Pixel checkerboard"
@@ -802,7 +817,10 @@
       "options": [
         "DD.MM",
         "MM/DD",
-        "DD/MM"
+        "DD/MM",
+        "DD.MM.YY",
+        "Weekday DD.MM.YY",
+        "Weekday DD. MMM YY"
       ],
       "initial_option": "DD.MM",
       "domain": "select",

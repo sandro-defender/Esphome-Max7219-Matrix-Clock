@@ -32,6 +32,12 @@
       "label": "Timezone",
       "input": "text"
     },
+    "temperatureEntity": {
+      "target": "temperature_entity",
+      "group": "Screen",
+      "label": "Temperature sensor entity",
+      "input": "text"
+    },
     "board": {
       "target": "board",
       "group": "Hardware",

@@ -31,7 +31,7 @@ export interface TimelineFrame {
   screenChange: "Clock" | "Date" | null;
   /** Current screen option after applying the report, for the next frame only. */
   selectedAfterReport: ScreenMode;
-  mode: "Clock" | "Date" | "Message" | "Module grid test" | "Pixel checkerboard";
+  mode: "Clock" | "Date" | "Temperature" | "Message" | "Module grid test" | "Pixel checkerboard";
   lastTickMs: number;
   cycleLastMs: number;
 }
@@ -200,7 +200,7 @@ export class PreviewTimeline {
   }
 }
 
-function displayScreen(option: ScreenMode): "Clock" | "Date" | "Module grid test" | "Pixel checkerboard" {
+function displayScreen(option: ScreenMode): "Clock" | "Date" | "Temperature" | "Module grid test" | "Pixel checkerboard" {
   // The actual writer's screen_from_option("Message") falls through to Clock.
   if (option === "Message") return "Clock";
   return option;
@@ -208,6 +208,7 @@ function displayScreen(option: ScreenMode): "Clock" | "Date" | "Module grid test
 
 function modeForScreen(screen: ReturnType<typeof displayScreen>): TimelineFrame["mode"] {
   if (screen === "Date") return "Date";
+  if (screen === "Temperature") return "Temperature";
   if (screen === "Module grid test") return "Module grid test";
   if (screen === "Pixel checkerboard") return "Pixel checkerboard";
   return "Clock";

@@ -83,6 +83,8 @@ class SourceFont : public GlyphFont {
 template<typename Option> inline uint8_t screen_from_option(const Option &option) {
   if (option == "Date")
     return SCREEN_DATE;
+  if (option == "Temperature")
+    return SCREEN_TEMPERATURE;
   if (option == "Module grid test")
     return SCREEN_GRID_TEST;
   if (option == "Pixel checkerboard")
@@ -111,6 +113,12 @@ template<typename Option> inline uint8_t date_format_from_option(const Option &o
     return DATE_MM_DD;
   if (option == "DD/MM")
     return DATE_DD_MM_SLASH;
+  if (option == "DD.MM.YY")
+    return DATE_DD_MM_YY;
+  if (option == "Weekday DD.MM.YY")
+    return DATE_WEEKDAY_DD_MM_YY;
+  if (option == "Weekday DD. MMM YY")
+    return DATE_WEEKDAY_DD_MMM_YY;
   return DATE_DD_MM;
 }
 
@@ -118,6 +126,8 @@ inline const char *option_for_screen(uint8_t screen) {
   switch (screen) {
     case SCREEN_DATE:
       return "Date";
+    case SCREEN_TEMPERATURE:
+      return "Temperature";
     case SCREEN_GRID_TEST:
       return "Module grid test";
     case SCREEN_PIXEL_TEST:
@@ -131,6 +141,8 @@ inline uint8_t screen_from_mode(uint8_t mode) {
   switch (mode) {
     case MODE_DATE:
       return SCREEN_DATE;
+    case MODE_TEMPERATURE:
+      return SCREEN_TEMPERATURE;
     case MODE_GRID_TEST:
       return SCREEN_GRID_TEST;
     case MODE_PIXEL_TEST:

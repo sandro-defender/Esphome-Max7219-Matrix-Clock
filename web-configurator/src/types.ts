@@ -3,7 +3,7 @@ import { FIRMWARE, limitsFor, optionsFor } from "./firmware";
 export type Wiring = "snake" | "zigzag";
 export type Alignment = "Left" | "Center" | "Right";
 export type HourFormat = "24-hour" | "12-hour";
-export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM";
+export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM" | "DD.MM.YY" | "Weekday DD.MM.YY" | "Weekday DD. MMM YY";
 export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 
@@ -14,7 +14,7 @@ export type ClockFont = string;
 /** Legacy share links are migrated to the real firmware layout. */
 export type LayoutPreview = "firmware";
 
-export type ScreenMode = "Clock" | "Date" | "Message" | "Module grid test" | "Pixel checkerboard";
+export type ScreenMode = "Clock" | "Date" | "Temperature" | "Message" | "Module grid test" | "Pixel checkerboard";
 export type LedName = "Blood" | "Amber" | "Red" | "Green" | "Ice" | "White";
 
 export type ConfigValue = string | number | boolean | string[];
@@ -24,6 +24,7 @@ export interface Config {
   deviceName: string;
   friendlyName: string;
   timezone: string;
+  temperatureEntity: string;
   board: string;
   deviceComment: string;
   logLevel: string;

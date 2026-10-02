@@ -21,6 +21,8 @@ substitutions:
   log_level: INFO
   # Local time zone used by both time sources. Change this to your zone.
   timezone: Europe/Berlin
+  # Home Assistant entity shown by the optional Temperature screen.
+  temperature_entity: sensor.outdoor_temperature
   # Native OTA port (8266 is the ESP8266 default).
   ota_port: "8266"
 

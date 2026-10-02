@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.4 - 2026-10-02
+
+### Added
+- Date format choices now include **DD.MM.YY**, **Weekday DD.MM.YY**, and
+  **Weekday DD. MMM YY**. The longer weekday formats scroll across a 48×8
+  matrix instead of being cut off.
+- A **Temperature** screen can show a Home Assistant numeric sensor. Choose
+  its entity in the configurator's new **Temperature sensor entity** field.
+
 ## 0.7.3 - 2026-10-02
 
 ### Added

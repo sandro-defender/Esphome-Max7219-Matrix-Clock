@@ -348,7 +348,9 @@ def main():
                 stale.append(str(path.relative_to(ROOT)))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding="utf8")
+            # Generated YAML and JSON are consumed by the web parity tests;
+            # keep their bytes stable across Windows and POSIX hosts.
+            path.write_text(text, encoding="utf8", newline="\n")
     if stale:
         raise SystemExit("Firmware/configurator drift. Regenerate in the SAME commit:\n" + "\n".join(stale))
     print(f"Firmware contract {'checked' if args.check else 'generated'}: {len(outputs)} files")

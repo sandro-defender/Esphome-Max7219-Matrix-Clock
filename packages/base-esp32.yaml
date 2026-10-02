@@ -7,7 +7,7 @@ substitutions:
   device_name: max7219-clock
   friendly_name: MAX7219 Matrix Clock
   device_comment: "ESP-WROOM-32 MAX7219 matrix clock (packages release)"
-  project_ref: "0.7.3"
+  project_ref: "0.7.4"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   project_version: ${project_ref}
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
@@ -17,6 +17,7 @@ substitutions:
   board: esp32dev
   log_level: INFO
   timezone: Europe/Berlin
+  temperature_entity: sensor.outdoor_temperature
   ota_port: "3232"
 
   # Standard VSPI wiring for an ESP-WROOM-32 DevKit.
