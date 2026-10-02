@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { addExtraFontAndSelect, DEFAULT_FONTS, EXTRA_FONTS, toggleExtraFont, withFonts } from "./fontSelection";
 import { DEFAULT_CONFIG, PREVIEW_DEFAULTS } from "./types";
 import { FIRMWARE, firmwareOption, releaseBody } from "./firmware";
+import { boardsFor, pinNamesFor, switchTarget, targetDefault } from "./hardware";
 import { sanitizeConfig } from "./storage";
 import { buildYaml } from "./yaml";
 
@@ -91,5 +92,72 @@ describe("single-source firmware / UI / installer parity", () => {
     expect(() => buildYaml({ ...DEFAULT_CONFIG, mosiPin: "GPIO15" }, FIRMWARE.releaseVersion)).toThrow(/different GPIO/);
     expect(() => buildYaml({ ...DEFAULT_CONFIG, clkPin: "GPIO6" }, FIRMWARE.releaseVersion)).toThrow(/valid output/);
     expect(() => buildYaml({ ...DEFAULT_CONFIG, timezone: "Not/AZone" }, FIRMWARE.releaseVersion)).toThrow(/timezone/);
+  });
+
+  it("installs the D1 mini package with its own board and D-aliases by default", () => {
+    expect(DEFAULT_CONFIG.target).toBe("esp8266");
+    expect(packageFiles(yaml)[0]).toBe("packages/base.yaml");
+    expect(yaml).toContain('  board: "d1_mini"');
+    expect(yaml).toContain('  matrix_clk_pin: "D8"');
+    expect(yaml).toContain('  matrix_mosi_pin: "D6"');
+    expect(yaml).toContain('  matrix_cs_pin: "D7"');
+    expect(yaml).toContain('  ota_port: "8266"');
+  });
+
+  it("switches to the ESP-WROOM-32 installer without a single ESP8266 alias", () => {
+    const esp32 = buildYaml(switchTarget(DEFAULT_CONFIG, "esp32"), FIRMWARE.releaseVersion);
+    expect(packageFiles(esp32)[0]).toBe("packages/base-esp32.yaml");
+    expect(packageFiles(esp32).slice(1)).toEqual(packageFiles(yaml).slice(1));
+    expect(esp32).toContain('  board: "esp32dev"');
+    expect(esp32).toContain('  matrix_clk_pin: "GPIO18"');
+    expect(esp32).toContain('  matrix_mosi_pin: "GPIO23"');
+    expect(esp32).toContain('  matrix_cs_pin: "GPIO5"');
+    expect(esp32).toContain('  ota_port: "3232"');
+    // Every pin and board name in an ESP32 installer must exist on the ESP32.
+    for (const alias of ["D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"]) expect(esp32).not.toContain(alias);
+    expect(esp32).not.toContain("d1_mini");
+    // The same contract still generates the ESP8266 installer unchanged.
+    expect(packageFiles(yaml)[0]).toBe("packages/base.yaml");
+  });
+
+  it("changes the valid board and pin choices with the target and switches back", () => {
+    const esp8266Boards = boardsFor("esp8266");
+    const esp32Boards = boardsFor("esp32");
+    expect(esp8266Boards).toContain("d1_mini");
+    expect(esp8266Boards).not.toContain("esp32dev");
+    expect(esp32Boards).toContain("esp32dev");
+    expect(esp32Boards).not.toContain("d1_mini");
+    expect(pinNamesFor("esp8266", "d1_mini")).toContain("D8");
+    expect(pinNamesFor("esp8266", "d1_mini")).not.toContain("GPIO18");
+    expect(pinNamesFor("esp32", "esp32dev")).toContain("GPIO18");
+    expect(pinNamesFor("esp32", "esp32dev")).not.toContain("D8");
+
+    const esp32 = switchTarget(DEFAULT_CONFIG, "esp32");
+    expect(esp32.board).toBe("esp32dev");
+    expect(esp32.clkPin).toBe("GPIO18");
+    expect(esp32.mosiPin).toBe("GPIO23");
+    expect(esp32.csPin).toBe("GPIO5");
+    expect(esp32.otaPort).toBe(3232);
+    // Preview and layout preferences survive a target change.
+    expect(esp32.chips).toBe(DEFAULT_CONFIG.chips);
+    expect(esp32.wiring).toBe(DEFAULT_CONFIG.wiring);
+    const back = switchTarget(esp32, "esp8266");
+    expect(back.board).toBe("d1_mini");
+    expect(back.clkPin).toBe("D8");
+    expect(back.otaPort).toBe(8266);
+    expect(targetDefault("esp32", "board")).toBe("esp32dev");
+    expect(targetDefault("esp8266", "clkPin")).toBe("D8");
+
+    // A saved or shared link that names the other platform's board or alias
+    // must fail the installer instead of emitting an invalid pin.
+    const shared = sanitizeConfig({ ...DEFAULT_CONFIG, target: "esp32", board: "d1_mini" });
+    expect(shared.board).toBe("esp32dev");
+    expect(shared.target).toBe("esp32");
+    // A foreign board id can never reach the installer: it falls back to the
+    // target's own board, and a foreign pin alias fails validation loudly.
+    expect(buildYaml({ ...esp32, board: "d1_mini" }, FIRMWARE.releaseVersion)).toContain('  board: "esp32dev"');
+    expect(buildYaml({ ...esp32, board: "d1_mini" }, FIRMWARE.releaseVersion)).not.toContain("d1_mini");
+    expect(() => buildYaml({ ...esp32, clkPin: "D8" }, FIRMWARE.releaseVersion)).toThrow(/valid output/);
+    expect(() => buildYaml({ ...esp32, mosiPin: "GPIO18" }, FIRMWARE.releaseVersion)).toThrow(/different GPIO/);
   });
 });

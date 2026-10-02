@@ -1,6 +1,21 @@
 {
   "schemaVersion": 1,
-  "description": "UI bindings only. Defaults, entity names/options/ranges, fonts, package files, version and release notes are extracted from the actual firmware, never repeated here.",
+  "description": "UI bindings only. Defaults, entity names/options/ranges, fonts, package files, version and release notes are extracted from the actual firmware, never repeated here. A hardware target binds one real base package; its board, pin, package and version data is read from that package and the installed ESPHome board tables.",
+  "defaultTarget": "esp8266",
+  "hardwareTargets": [
+    {
+      "id": "esp8266",
+      "label": "ESP8266 Wemos D1 mini",
+      "platform": "esp8266",
+      "base": "packages/base.yaml"
+    },
+    {
+      "id": "esp32",
+      "label": "ESP-WROOM-32 DevKit",
+      "platform": "esp32",
+      "base": "packages/base-esp32.yaml"
+    }
+  ],
   "internalSubstitutions": [
     "project_ref",
     "project_repo",

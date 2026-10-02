@@ -12,6 +12,7 @@ import argparse
 import copy
 import hashlib
 import json
+import logging
 import re
 from importlib.metadata import version
 from pathlib import Path
@@ -221,53 +222,167 @@ def build():
     limits = {"matrix_chips": range_of(driver_schema["num_chips"]), "matrix_rows": range_of(driver_schema["num_chip_lines"]),
               "ota_display_intensity": range_of(driver_schema["intensity"]), "ota_port": range_of(cv.port)}
     renderer = (ROOT / "packages/max7219_clock_renderer.h").read_text()
-    pin_mappings = {}
-    allowed_numbers = [number for number in range(17) if number not in gpio._ESP_SDIO_PINS]
-    for board in boards.BOARDS:
-        aliases = boards.ESP8266_BOARD_PINS.get(board, {})
-        while isinstance(aliases, str):
-            aliases = boards.ESP8266_BOARD_PINS[aliases]
-        mapping = {**boards.ESP8266_BASE_PINS, **aliases}
-        pin_mappings[board] = {key: value for key, value in mapping.items() if value in allowed_numbers}
-        pin_mappings[board].update({f"GPIO{number}": number for number in allowed_numbers})
+    # Pin catalogues keep ESPHome's own board tables instead of one expanded
+    # map per board: per-board aliases (including the SDK's string references),
+    # the shared alias base and the output-capable GPIO numbers per variant.
+    # The web app expands exactly one board on demand; see web-configurator/src/hardware.ts.
+    esp8266_catalog = {
+        "variants": {"esp8266": [number for number in range(17) if number not in gpio._ESP_SDIO_PINS]},
+        "boardVariants": {board: "esp8266" for board in boards.BOARDS},
+        "boardAliases": dict(boards.ESP8266_BOARD_PINS),
+        "baseAliases": dict(boards.ESP8266_BASE_PINS),
+    }
     boot_max = int(re.search(r"boot_duration_ms = std::min<uint32_t>\(duration_ms, (\d+)UL\)", renderer)[1])
     limits["boot_version_duration"] = {"min": 0, "max": boot_max, "step": 1}
-    for key, binding in bindings["substitutions"].items():
-        sub = binding["target"]
-        value = resolve(subs[sub], subs)
-        record = {"key": key, "kind": "substitution", **binding, "default": value}
-        input_type = binding["input"]
-        if input_type == "integer":
-            record["default"] = int(value)
-            record.update(limits[sub])
-            record["input"] = "integer"
-        elif input_type == "milliseconds":
-            record["default"] = cv.positive_time_period_milliseconds(value).total_milliseconds
-            record["input"] = "integer"
-            record["timeSuffix"] = "ms"
-            record["min"] = 1
-        elif input_type == "boolean":
-            record["default"] = bool(cv.boolean(value))
-        elif input_type == "driver-option":
-            options = list(driver.CHIP_LINES_STYLE) if binding["driverKey"] == "chip_lines_style" else list(driver.CHIP_MODES)
-            record["options"] = [s.lower() for s in options] if binding["driverKey"] == "chip_lines_style" else [int(s) for s in options]
-            record["default"] = str(value).lower() if binding["driverKey"] == "chip_lines_style" else int(value)
-            record["input"] = "select"
-        elif sub == "board":
-            record["options"] = list(boards.BOARDS)
-            record["input"] = "select"
-        elif input_type == "logger-option":
-            record["options"] = list(logger.LOG_LEVELS)
-            record["input"] = "select"
-        settings.append(record)
-        consumed_subs.add(sub)
+    board_binding_key = next(key for key, binding in bindings["substitutions"].items() if binding["target"] == "board")
+
+    def substitution_records(subs_map, board_options):
+        """One UI record per substitution binding, resolved from a base package."""
+        records = []
+        for key, binding in bindings["substitutions"].items():
+            sub = binding["target"]
+            value = resolve(subs_map[sub], subs_map)
+            record = {"key": key, "kind": "substitution", **binding, "default": value}
+            input_type = binding["input"]
+            if input_type == "integer":
+                record["default"] = int(value)
+                record.update(limits[sub])
+                record["input"] = "integer"
+            elif input_type == "milliseconds":
+                record["default"] = cv.positive_time_period_milliseconds(value).total_milliseconds
+                record["input"] = "integer"
+                record["timeSuffix"] = "ms"
+                record["min"] = 1
+            elif input_type == "boolean":
+                record["default"] = bool(cv.boolean(value))
+            elif input_type == "driver-option":
+                options = list(driver.CHIP_LINES_STYLE) if binding["driverKey"] == "chip_lines_style" else list(driver.CHIP_MODES)
+                record["options"] = [s.lower() for s in options] if binding["driverKey"] == "chip_lines_style" else [int(s) for s in options]
+                record["default"] = str(value).lower() if binding["driverKey"] == "chip_lines_style" else int(value)
+                record["input"] = "select"
+            elif sub == "board":
+                record["options"] = list(board_options)
+                record["input"] = "select"
+            elif input_type == "logger-option":
+                record["options"] = list(logger.LOG_LEVELS)
+                record["input"] = "select"
+            records.append(record)
+        return records
+
+    def esp32_pin_catalog(board_ids):
+        """Ask the ESPHome variant validators instead of copying a pin list.
+
+        A pin is offered when the variant's own validation accepts it as an
+        output, which keeps flash/PSRAM pins, unusable numbers and input-only
+        pins out of the configurator.
+        """
+        from esphome.components.esp32 import boards as esp32_boards
+        from esphome.components.esp32 import gpio as esp32_gpio
+        from esphome.components.esp32.const import KEY_BOARD, KEY_ESP32, KEY_VARIANT
+        from esphome.const import CONF_INPUT, CONF_MODE, CONF_NUMBER, CONF_OPEN_DRAIN, CONF_OUTPUT, CONF_PULLDOWN, CONF_PULLUP
+        from esphome.core import CORE
+
+        variants = {}
+        board_variants = {}
+        # Strapping-pin warnings are expected here and would flood the log.
+        logging.disable(logging.CRITICAL)
+        try:
+            for board in board_ids:
+                variant = esp32_boards.BOARDS[board]["variant"]
+                board_variants[board] = variant
+                if variant in variants:
+                    continue
+                CORE.data[KEY_ESP32] = {KEY_BOARD: board, KEY_VARIANT: variant}
+                validation = esp32_gpio._esp32_validations[variant]
+                mode = {CONF_INPUT: False, CONF_OUTPUT: True, CONF_PULLUP: False, CONF_PULLDOWN: False, CONF_OPEN_DRAIN: False}
+                numbers = []
+                for number in range(55):
+                    try:
+                        validation.pin_validation(number)
+                        validation.usage_validation({CONF_NUMBER: number, CONF_MODE: mode})
+                    except cv.Invalid:
+                        continue
+                    numbers.append(number)
+                variants[variant] = numbers
+        finally:
+            logging.disable(logging.NOTSET)
+        return {"variants": variants, "boardVariants": board_variants,
+                "boardAliases": {board: esp32_boards.ESP32_BOARD_PINS[board] for board in board_ids if board in esp32_boards.ESP32_BOARD_PINS},
+                "baseAliases": dict(esp32_boards.ESP32_BASE_PINS)}
+
+    def flat_pins(catalog, board):
+        """The expansion the web app performs for one board (name -> number)."""
+        aliases = catalog["boardAliases"].get(board, {})
+        while isinstance(aliases, str):
+            aliases = catalog["boardAliases"].get(aliases, {})
+        numbers = catalog["variants"].get(catalog["boardVariants"].get(board), [])
+        mapping = {key: value for key, value in {**catalog["baseAliases"], **aliases}.items() if value in numbers}
+        mapping.update({f"GPIO{number}": number for number in numbers})
+        return mapping
+
+    settings += substitution_records(subs, list(boards.BOARDS))
+    consumed_subs |= {record["target"] for record in settings if record["kind"] == "substitution"}
     if consumed_subs != set(subs):
         raise ValueError("Substitution bindings drifted: " + str(set(subs) ^ consumed_subs))
+
+    # ----- Hardware targets -------------------------------------------------
+    # Each target keeps the data that differs from the default target: option
+    # lists, defaults, module files and pins. `pinMappings`/`packageFiles` stay
+    # null when they equal the top-level (default target) data, so no fact is
+    # stored twice.
+    target_specs = bindings["hardwareTargets"]
+    default_id = bindings["defaultTarget"]
+    default_spec = next((spec for spec in target_specs if spec["id"] == default_id), None)
+    if default_spec is None or len({spec["id"] for spec in target_specs}) != len(target_specs):
+        raise ValueError("Hardware targets need unique ids and a known defaultTarget")
+    if default_spec["platform"] != "esp8266":
+        raise ValueError("The default hardware target must be the dev.yaml (ESP8266) platform")
+    if default_spec["base"] not in core_files:
+        raise ValueError("The default hardware target must use a dev.yaml base package")
+    base_records = {record["key"]: record for record in settings if record["kind"] == "substitution"}
+    hardware_targets = []
+    target_files = {}
+    for spec in target_specs:
+        if spec["platform"] not in ("esp8266", "esp32"):
+            raise ValueError("Unknown hardware platform " + spec["platform"])
+        base_path = ROOT / spec["base"]
+        if not base_path.is_file():
+            raise ValueError("Missing hardware target package " + spec["base"])
+        target_subs = {**subs, **load(base_path).get("substitutions", {})}
+        if resolve(target_subs["project_ref"], target_subs) != tag:
+            raise ValueError("Hardware target " + spec["id"] + " pins a different project_ref")
+        if spec["platform"] == "esp8266":
+            board_options = list(boards.BOARDS)
+            catalog = esp8266_catalog
+        else:
+            from esphome.components.esp32 import boards as esp32_boards
+            board_options = list(esp32_boards.BOARDS)
+            catalog = esp32_pin_catalog(board_options)
+        files = [spec["base"], *(file for file in core_files if file != default_spec["base"])]
+        target_files[spec["id"]] = files
+        records = substitution_records(target_subs, board_options)
+        if {record["key"] for record in records} != set(base_records):
+            raise ValueError("Every hardware target package must expose the same substitutions")
+        defaults = {record["key"]: record["default"] for record in records if record["default"] != base_records[record["key"]]["default"]}
+        board = defaults.get(board_binding_key, base_records[board_binding_key]["default"])
+        if board not in board_options:
+            raise ValueError(f"Hardware target {spec['id']} default board {board} is not in its board list")
+        pins = flat_pins(catalog, board)
+        for key, record in base_records.items():
+            if record["input"] == "pin" and defaults.get(key, record["default"]) not in pins:
+                raise ValueError(f"Hardware target {spec['id']} default {key} is not a valid pin for {board}")
+        hardware_targets.append({
+            "id": spec["id"], "label": spec["label"], "platform": spec["platform"], "basePackage": spec["base"],
+            "boardKey": board_binding_key, "defaults": defaults, "packageFiles": files, "pins": catalog,
+        })
+    esp32_target = next((target for target in hardware_targets if target["platform"] == "esp32"), None)
+    if esp32_target is None:
+        raise ValueError("The ESP-WROOM-32 example and installer need an ESP32 hardware target")
 
     # Check all compiled source fonts, not just the default pair.
     all_paths = [ROOT / "dev.yaml", ROOT / "CHANGELOG.md", ROOT / "packages/configurator.json", ROOT / "requirements-validation.txt", Path(__file__), ROOT / "web-configurator/scripts/generate_glyphs.py"]
     all_paths += [ROOT / file for file in core_files if file != reset_path]
-    all_paths += [ROOT / "packages/base-esp32.yaml"]
+    all_paths += [ROOT / spec["base"] for spec in target_specs]
     all_paths += list((ROOT / "packages").glob("*.h")) + list((ROOT / "packages/fonts").glob("*.yaml")) + [ROOT / "packages/fonts_web.yaml"]
     all_paths += [ROOT / f["file"] for f in font_specs if "file" in f]
     all_paths += [ROOT / f["source"] for f in font_specs]
@@ -283,9 +398,9 @@ def build():
     bar_states = re.findall(r"ota_state == (OTA_\w+)", re.search(r"const bool show_bar = ([^;]+)", ota_function)[1])
     contract = {"schemaVersion": bindings["schemaVersion"], "sourceHash": digest.hexdigest(), "repository": subs["project_repo"], "releaseVersion": tag,
                 "esphomeVersion": target, "releaseNotes": source_notes(tag), "packageFiles": core_files,
+                "defaultTarget": default_id, "hardwareTargets": hardware_targets,
                 "secrets": secrets, "defaultFonts": default_fonts, "fonts": font_specs, "settings": settings,
-                "defaults": {s["key"]: s["default"] for s in settings}, "entities": entities, "actions": actions,
-                "pinMappings": pin_mappings,
+                "defaults": {**{s["key"]: s["default"] for s in settings}, "target": default_id}, "entities": entities, "actions": actions,
                 "renderer": {"messageMaxBytes": int(re.search(r"char message_text\[(\d+)\]", renderer)[1]) - 1,
                              "alertMaxBytes": int(re.search(r"char alert_text\[(\d+)\]", renderer)[1]) - 1,
                              "otaStates": ota_ids, "otaTemplates": ota_templates, "otaBarStates": bar_states,
@@ -318,10 +433,14 @@ def build():
     example["substitutions"]["project_ref"] = tag
     outputs[ROOT / "examples/release.yaml"] = "# GENERATED pinned release example. Copy beside your local secrets.yaml.\n# ESPHome downloads all modules and the two default external fonts.\n" + dump(example)
     esp32_example = copy.deepcopy(example)
-    esp32_example["packages"]["clock"]["files"][0] = "packages/base-esp32.yaml"
+    esp32_defaults = {**{s["key"]: s["default"] for s in settings}, **esp32_target["defaults"]}
+    esp32_example["packages"]["clock"]["files"] = [
+        *target_files[esp32_target["id"]], *(f"packages/fonts/{key}.yaml" for key in default_fonts),
+    ]
     outputs[ROOT / "examples/esp-wroom-32.yaml"] = (
         "# GENERATED ESP-WROOM-32 DevKit installer. Copy beside your local secrets.yaml.\n"
-        "# Defaults: esp32dev; MAX7219 CLK GPIO18, DIN GPIO23, CS GPIO5.\n" + dump(esp32_example)
+        f"# Defaults: {esp32_defaults['board']}; MAX7219 CLK {esp32_defaults['clkPin']}, "
+        f"DIN {esp32_defaults['mosiPin']}, CS {esp32_defaults['csPin']}.\n" + dump(esp32_example)
     )
     development = copy.deepcopy(example)
     development["substitutions"]["project_ref"] = "main"

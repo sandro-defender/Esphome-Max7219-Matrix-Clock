@@ -532,7 +532,14 @@ class ConfigContractTests(unittest.TestCase):
             [f for f in files if not f.startswith("packages/fonts/")],
             "the configurator must install the same modules as examples/release.yaml",
         )
-        self.assertIn("...FIRMWARE.packageFiles", read(REPO / "web-configurator/src/yaml.ts"))
+        # The installer's module list follows the selected hardware target; the
+        # contract lists each target's own base package in its real order.
+        self.assertIn("...packageFilesFor(cfg.target)", read(REPO / "web-configurator/src/yaml.ts"))
+        targets = {target["id"]: target for target in FIRMWARE["hardwareTargets"]}
+        self.assertEqual("esp8266", FIRMWARE["defaultTarget"])
+        self.assertEqual(FIRMWARE["packageFiles"], targets["esp8266"]["packageFiles"])
+        self.assertEqual("packages/base-esp32.yaml", targets["esp32"]["packageFiles"][0])
+        self.assertEqual(targets["esp32"]["packageFiles"][1:], targets["esp8266"]["packageFiles"][1:])
         release_fonts = [f for f in files if f.startswith("packages/fonts/")]
         offline_script = read(REPO / "scripts/validate-release-offline.sh")
         expected_offline_fonts = int(re.search(r'\[\[\s*"\$FONTS"\s*-eq\s*(\d+)\s*\]\]', offline_script).group(1))

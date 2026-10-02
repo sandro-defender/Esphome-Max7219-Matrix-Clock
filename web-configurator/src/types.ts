@@ -20,6 +20,8 @@ export type LedName = "Blood" | "Amber" | "Red" | "Green" | "Ice" | "White";
 export type ConfigValue = string | number | boolean | string[];
 export interface Config {
   [key: string]: ConfigValue | undefined;
+  /** Selected hardware target (see src/hardware.ts); the generated contract supplies the ids. */
+  target: string;
   // Identity
   deviceName: string;
   friendlyName: string;

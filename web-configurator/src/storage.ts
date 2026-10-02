@@ -1,6 +1,7 @@
 import { FIRMWARE } from "./firmware";
 import { LEDS as LED_PALETTE } from "./leds";
 import { withFonts } from "./fontSelection";
+import { DEFAULT_TARGET, isHardwareTarget, settingOptions, targetIds, targetSpec } from "./hardware";
 import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, clampNumber, isConfigKey, type Config } from "./types";
 
 /**
@@ -15,24 +16,32 @@ import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, clampNumber, isConfigKey, type Con
 const STORAGE_KEY = "max7219-clock.config.v1";
 export const HASH_KEY = "cfg";
 
-const ENUMS: Partial<Record<keyof Config, readonly unknown[]>> = Object.fromEntries(
-  FIRMWARE.settings.filter((item) => item.options).map((item) => [item.key, item.options!]),
-);
-ENUMS.clockFont = CLOCK_FONTS;
-ENUMS.led = Object.keys(LED_PALETTE);
-// Retired illustration links must not change the actual firmware preview.
-ENUMS.layoutPreview = ["firmware"];
+/** Option lists follow the hardware target (board ids, pin names). */
+function enumsFor(target: string): Partial<Record<keyof Config, readonly unknown[]>> {
+  const options: Partial<Record<keyof Config, readonly unknown[]>> = Object.fromEntries(
+    FIRMWARE.settings.filter((item) => item.options).map((item) => [item.key, settingOptions(item, target)!]),
+  );
+  options.clockFont = CLOCK_FONTS;
+  options.led = Object.keys(LED_PALETTE);
+  // Retired illustration links must not change the actual firmware preview.
+  options.layoutPreview = ["firmware"];
+  options.target = targetIds();
+  return options;
+}
 const RANGES = LIMITS;
 
 /** Merge arbitrary input over the defaults, dropping anything unusable. */
 export function sanitizeConfig(input: unknown): Config {
-  const config: Config = { ...DEFAULT_CONFIG, fonts: [...DEFAULT_CONFIG.fonts] };
-  if (!input || typeof input !== "object") return config;
-  const source = input as Record<string, unknown>;
+  const source: Record<string, unknown> = input && typeof input === "object" ? input as Record<string, unknown> : {};
+  // The target is validated first: it decides the board, pin and port defaults
+  // and which board ids and pin names are acceptable at all.
+  const target = isHardwareTarget(source.target) ? source.target : DEFAULT_TARGET;
+  const enums = enumsFor(target);
+  const config: Config = { ...DEFAULT_CONFIG, ...targetSpec(target).defaults, target, fonts: [...DEFAULT_CONFIG.fonts] };
   for (const key of Object.keys(source)) {
     if (!isConfigKey(key)) continue;
     const value = source[key];
-    const fallback = DEFAULT_CONFIG[key];
+    const fallback = config[key];
     if (key === "fonts") {
       config.fonts = withFonts(config, value).fonts;
       continue;
@@ -48,11 +57,14 @@ export function sanitizeConfig(input: unknown): Config {
       continue;
     }
     if (typeof value !== "string") continue;
-    const allowed = ENUMS[key];
+    const allowed = enums[key];
     if (allowed && !allowed.includes(value)) continue;
     config[key] = (typeof fallback === "string" ? value.slice(0, 64) : value) as never;
   }
   // Old links have no inclusion list: retain their selected face as one extra.
+  // Values that are absent come from the target's own base package; a value
+  // that is present but invalid for this target stays visible and fails the
+  // installer loudly in buildYaml instead of being silently rewritten.
   return withFonts(config, Object.prototype.hasOwnProperty.call(source, "fonts") ? config.fonts : [config.clockFont]);
 }
 
