@@ -157,10 +157,30 @@ def asset_matches(repo, tag, asset, path, temp):
         return downloaded.is_file() and downloaded.read_bytes() == content
 
 
+def listed_release(repo, tag):
+    """Find a release in the authenticated list when tag lookup hides a draft."""
+    matches = []
+    for page in range(1, MAX_RELEASE_PAGES + 1):
+        entries = api(repo, f"releases?per_page=100&page={page}")
+        if not isinstance(entries, list) or len(entries) > 100:
+            raise ValueError("Invalid release history response")
+        matches.extend(item for item in entries if isinstance(item, dict) and item.get("tag_name") == tag)
+        if len(matches) > 1:
+            raise ValueError("Duplicate release tag")
+        if len(entries) < 100:
+            return matches[0] if matches else None
+    raise ValueError("Release history exceeds the verification limit")
+
+
 def release_state(repo, tag, sha, allow_missing=False):
     if tag_commit(repo, tag) != sha:
         raise ValueError("Release tag commit mismatch")
-    release = api(repo, "releases/tags/" + quote(tag, safe=""), allow_missing=allow_missing)
+    # GitHub can return 404 for a just-created draft through its tag endpoint.
+    # The authenticated release list still exposes that draft, allowing us to
+    # verify it before publication without accepting an expected absence.
+    release = api(repo, "releases/tags/" + quote(tag, safe=""), allow_missing=True)
+    if release is None:
+        release = listed_release(repo, tag)
     if release is None and allow_missing:
         return None
     if not isinstance(release, dict) or release.get("tag_name") != tag or type(release.get("draft")) is not bool:
