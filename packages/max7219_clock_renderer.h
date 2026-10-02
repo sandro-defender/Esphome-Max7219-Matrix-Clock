@@ -804,6 +804,16 @@ inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont 
   return primary;
 }
 
+// A weekday date is its own marquee. Do not combine that continuous movement
+// with the one-off whole-screen slide used by short fixed screens.
+inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
+                                      const GlyphFont &fallback, int width) {
+  char content[24] = {0};
+  if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
+  const GlyphFont &text_font = font_for_text(primary, fallback, content);
+  return text_font.text_width(content) > width;
+}
+
 // Draw one text line. `animate_from` (may be nullptr) holds the previous
 // content of the same length; only changed digits are animated. With
 // `blank_colons` the ':' glyphs keep their advance but draw no ink, which is
@@ -1122,8 +1132,10 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
+      const bool scrolling_date = (f.screen == SCREEN_DATE || previous == SCREEN_DATE) &&
+                                  date_content_needs_scroll(f, font, fallback, width);
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
-                                       f.animate && f.animation_ms > 0;
+                                       f.animate && f.animation_ms > 0 && !scrolling_date;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
     }
