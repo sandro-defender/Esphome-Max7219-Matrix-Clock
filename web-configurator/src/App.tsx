@@ -21,7 +21,7 @@ import { CopyButton, copyText, type Patch } from "./ui";
 import { usePinnedChrome } from "./usePinnedChrome";
 import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
-import { usePublishedRelease, type ReleaseState } from "./release";
+import { INSTALL_FRESH_MS, usePublishedRelease, type ReleaseState } from "./release";
 import { deviceSlug } from "./device";
 
 type Page = "configure" | "info";
@@ -104,7 +104,7 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
   currentConfig.current = cfg;
   const getInstaller = useCallback(async () => {
     const atClick = currentConfig.current;
-    const result = await release.verify();
+    const result = await release.verify({ maxAgeMs: INSTALL_FRESH_MS });
     if (!result.ready || !result.tag) { setNotice("Installer disabled: published release could not be verified."); return null; }
     if (currentConfig.current !== atClick) { setNotice("Settings changed during verification. Review them and try again."); return null; }
     try { return buildYaml(atClick, result.tag); }
@@ -193,7 +193,7 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
           <li><button type="button" className={page === "configure" ? "on" : ""} aria-pressed={page === "configure"} onClick={() => setPage("configure")}>Configure</button></li>
           <li><button type="button" className={page === "info" ? "on" : ""} aria-pressed={page === "info"} onClick={() => setPage("info")}>Info &amp; help</button></li>
         </ul>
-      <div className="release-status" role="status"><span>Newest published release: <strong>{release.tag ?? "checking…"}</strong> · {release.message}</span>
+      <div className="release-status" role="status"><span>Newest published release: <strong>{release.tag ?? (release.checking ? "checking…" : "not verified")}</strong> · {release.message}</span>
         {!release.ready ? <button type="button" className="btn ghost" onClick={release.retry} disabled={release.checking}>Retry</button> : null}
         {install.error ? <strong className="warn-text">{install.error}</strong> : null}
       </div>

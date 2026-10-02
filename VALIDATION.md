@@ -112,8 +112,8 @@ deployment was used.
 
 ## Earlier candidate checkpoint — 2026-10-02
 
-Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.0` is
-unreleased. Use the isolated Python validator for current firmware and browser
+Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.1` is
+published by the main-push workflow after merge. Use the isolated Python validator for current firmware and browser
 installer checks: it copies only selected source directories, excludes
 `secrets.yaml`, creates deterministic fake secrets and keeps build output out
 of the source tree. Production secrets were not opened or copied.

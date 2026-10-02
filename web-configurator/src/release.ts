@@ -7,6 +7,8 @@ export interface ReleaseState {
   ready: boolean;
   checking: boolean;
   message: string;
+  /** Set when GitHub throttled the anonymous lookup: epoch ms of the next automatic attempt. */
+  retryAt?: number;
 }
 interface PublishedRelease {
   tag_name: string;
@@ -18,9 +20,45 @@ interface PublishedRelease {
 }
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
+/** Fallback pause when GitHub throttles without a usable reset header. */
+const DEFAULT_THROTTLE_MS = 5 * 60 * 1000;
+/** Longest pause honoured from response headers (a clock skew guard). */
+const MAX_THROTTLE_MS = 65 * 60 * 1000;
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * GitHub's anonymous REST quota is 60 requests per hour **per IP address**,
+ * shared by everyone behind the same NAT/VPN. Exhausting it yields HTTP 403
+ * (or 429) with `x-ratelimit-remaining: 0`; `x-ratelimit-reset` says when the
+ * window reopens. Report that as a pause, not an opaque "failed (403)".
+ */
+export class RateLimitError extends Error {
+  constructor(readonly retryAt: number) {
+    super(`GitHub API rate limit reached for this network (shared anonymous quota). Automatic retry at ${clockTime(retryAt)}.`);
+    this.name = "RateLimitError";
+  }
+}
+
+export function clockTime(epochMs: number): string {
+  try { return new Date(epochMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  catch { return new Date(epochMs).toISOString().slice(11, 16) + " UTC"; }
+}
+
+/** Translate a throttled GitHub response into a bounded retry time, or null. */
+export function throttledUntil(status: number, headers: Headers, url: string, now = Date.now()): number | null {
+  const api = /^https:\/\/api\.github\.com\//.test(url);
+  const remaining = headers.get("x-ratelimit-remaining");
+  if (status !== 429 && !(status === 403 && (remaining === "0" || api))) return null;
+  const retryAfter = Number(headers.get("retry-after"));
+  const reset = Number(headers.get("x-ratelimit-reset"));
+  let wait = DEFAULT_THROTTLE_MS;
+  if (Number.isFinite(retryAfter) && retryAfter > 0) wait = retryAfter * 1000;
+  else if (Number.isFinite(reset) && reset * 1000 > now) wait = reset * 1000 - now;
+  // Add a few seconds so the first retry lands after GitHub's window reopens.
+  return now + Math.min(Math.max(wait, 1000), MAX_THROTTLE_MS) + 5000;
 }
 
 /** Bound even a fetch/body promise that ignores the supplied AbortSignal. */
@@ -45,7 +83,11 @@ function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
 /** Anonymous GETs only. Enforce UTF-8 byte limits while reading, not afterwards. */
 async function getJson(fetcher: Fetcher, url: string, signal: AbortSignal): Promise<unknown> {
   const response = await abortable(fetcher(url, { signal, cache: "no-store", credentials: "omit", headers: { Accept: "application/json" } }), signal);
-  if (!response.ok) throw new Error(`Release lookup failed (${response.status})`);
+  if (!response.ok) {
+    void response.body?.cancel().catch(() => {});
+    const retryAt = throttledUntil(response.status, response.headers, url);
+    throw retryAt === null ? new Error(`Release lookup failed (${response.status})`) : new RateLimitError(retryAt);
+  }
   const length = response.headers.get("content-length");
   if (length && /^\d+$/.test(length) && Number(length) > MAX_RESPONSE_BYTES) {
     void response.body?.cancel().catch(() => {});
@@ -148,32 +190,135 @@ export async function resolvePublishedRelease(fetcher: Fetcher = fetch, timeoutM
     if (builtSha && builtSha !== object.sha) return { tag, ready: false, checking: false, message: "A newer configurator has been published. Refresh this page." };
     return { tag, ready: true, checking: false, message: "Newest published firmware release verified" };
   } catch (error) {
-    return { tag, ready: false, checking: false, message: error instanceof Error ? error.message : "Release verification failed" };
+    const message = error instanceof Error ? error.message : "Release verification failed";
+    if (error instanceof RateLimitError) return { tag, ready: false, checking: false, message, retryAt: error.retryAt };
+    return { tag, ready: false, checking: false, message };
   } finally {
     clearTimeout(timer);
   }
 }
 
-export function usePublishedRelease(): ReleaseState & { retry: () => void; verify: () => Promise<ReleaseState> } {
-  const [state, setState] = useState<ReleaseState>({ tag: null, ready: false, checking: true, message: "Checking newest published release…" });
+/**
+ * Request budget. Every verification costs two anonymous GitHub API requests
+ * (release list, tag object) out of a 60/hour allowance shared by the whole
+ * IP address, so re-checks are deliberately sparse and results are reused.
+ */
+export const RECHECK_MS = 15 * 60 * 1000;
+/** Tab focus and page reloads reuse a verification this recent. */
+export const FRESH_MS = 5 * 60 * 1000;
+/** Consecutive copy/download clicks share one pre-export verification. */
+export const INSTALL_FRESH_MS = 30 * 1000;
+
+export interface CachedRelease {
+  at: number;
+  result: ReleaseState;
+}
+
+/**
+ * Decide whether a finished check can answer instead of a new network round
+ * trip. A throttle pause always answers (another request cannot succeed and
+ * only prolongs GitHub's block); otherwise only a result newer than `maxAgeMs`.
+ */
+export function reusable(cached: CachedRelease | null, now: number, maxAgeMs: number): boolean {
+  if (!cached) return false;
+  if (cached.result.retryAt !== undefined && now < cached.result.retryAt) return true;
+  return maxAgeMs > 0 && now - cached.at >= 0 && now - cached.at < maxAgeMs;
+}
+
+const SESSION_KEY = "max7219-clock.release.v1";
+/** A cached verification only applies to the exact bundle that produced it. */
+const BUILD_ID = `${FIRMWARE.schemaVersion}:${FIRMWARE.sourceHash}:${FIRMWARE.releaseVersion}:${import.meta.env.VITE_RELEASE_COMMIT ?? ""}`;
+
+/**
+ * Restore a verified result or throttle pause from this tab's session, so a
+ * reload storm does not spend the shared quota. Failures are never restored:
+ * after a fix on GitHub a reload must look again. Nothing user-specific is
+ * stored and nothing is sent anywhere.
+ */
+export function restoreSession(storage: Pick<Storage, "getItem"> | null, build = BUILD_ID, now = Date.now()): CachedRelease | null {
+  try {
+    const raw = storage?.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const data: unknown = JSON.parse(raw);
+    if (!record(data) || data.build !== build || typeof data.at !== "number" || !record(data.result)) return null;
+    const result = data.result;
+    if (typeof result.message !== "string" || typeof result.ready !== "boolean" ||
+        (result.tag !== null && (typeof result.tag !== "string" || !validReleaseTag(result.tag)))) return null;
+    const retryAt = typeof result.retryAt === "number" && Number.isFinite(result.retryAt) ? result.retryAt : undefined;
+    const cached: CachedRelease = { at: data.at, result: { tag: result.tag, ready: result.ready, checking: false, message: result.message, retryAt } };
+    if (retryAt !== undefined && now < retryAt) return cached;
+    if (result.ready && reusable(cached, now, FRESH_MS)) return cached;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function persistSession(storage: Pick<Storage, "setItem" | "removeItem"> | null, cached: CachedRelease, build = BUILD_ID): void {
+  try {
+    const { result } = cached;
+    if (result.ready || result.retryAt !== undefined) storage?.setItem(SESSION_KEY, JSON.stringify({ build, at: cached.at, result }));
+    else storage?.removeItem(SESSION_KEY);
+  } catch { /* Private mode or a full quota only loses the optimisation. */ }
+}
+
+function sessionStore(): Storage | null {
+  try { return typeof window === "undefined" ? null : window.sessionStorage; } catch { return null; }
+}
+
+export interface VerifyOptions {
+  /** Reuse a finished check newer than this instead of a new round trip. */
+  maxAgeMs?: number;
+  /** User-initiated: ignore an active throttle pause and ask GitHub again. */
+  force?: boolean;
+}
+
+export function usePublishedRelease(): ReleaseState & { retry: () => void; verify: (options?: VerifyOptions) => Promise<ReleaseState> } {
+  const restored = useRef<CachedRelease | null | undefined>(undefined);
+  if (restored.current === undefined) restored.current = restoreSession(sessionStore());
+  const [state, setState] = useState<ReleaseState>(restored.current?.result ??
+    { tag: null, ready: false, checking: true, message: "Checking newest published release…" });
   const mounted = useRef(false);
   const requestId = useRef(0);
-  const verify = useCallback(async () => {
+  const last = useRef<CachedRelease | null>(restored.current);
+  const inflight = useRef<Promise<ReleaseState> | null>(null);
+  const verify = useCallback(async ({ maxAgeMs = 0, force = false }: VerifyOptions = {}) => {
+    const cached = last.current;
+    if (!force && reusable(cached, Date.now(), maxAgeMs)) return cached!.result;
+    if (inflight.current) return inflight.current;
     const id = ++requestId.current;
-    setState((current) => ({ ...current, ready: false, checking: true, message: "Checking newest published release…" }));
-    const result = await resolvePublishedRelease();
-    if (mounted.current && id === requestId.current) setState(result);
-    if (id !== requestId.current) return { ...result, ready: false, message: "Release check superseded; retry" };
-    return result;
+    setState((current) => ({ ...current, ready: false, checking: true, retryAt: undefined, message: "Checking newest published release…" }));
+    const run = (async () => {
+      try {
+        const result = await resolvePublishedRelease();
+        if (id === requestId.current) {
+          last.current = { at: Date.now(), result };
+          persistSession(sessionStore(), last.current);
+          if (mounted.current) setState(result);
+          return result;
+        }
+        return { ...result, ready: false, message: "Release check superseded; retry" };
+      } finally {
+        inflight.current = null;
+      }
+    })();
+    inflight.current = run;
+    return run;
   }, []);
   useEffect(() => {
     mounted.current = true;
-    void verify();
-    const interval = window.setInterval(() => void verify(), 5 * 60 * 1000);
-    const refresh = () => { if (document.visibilityState === "visible") void verify(); };
+    if (!restored.current) void verify();
+    const interval = window.setInterval(() => void verify(), RECHECK_MS);
+    const refresh = () => { if (document.visibilityState === "visible") void verify({ maxAgeMs: FRESH_MS }); };
     document.addEventListener("visibilitychange", refresh);
     return () => { mounted.current = false; clearInterval(interval); document.removeEventListener("visibilitychange", refresh); };
   }, [verify]);
-  const retry = useCallback(() => { void verify(); }, [verify]);
+  // Try again automatically once GitHub's quota window reopens.
+  useEffect(() => {
+    if (state.retryAt === undefined) return;
+    const timer = window.setTimeout(() => void verify({ force: true }), Math.max(0, state.retryAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [state.retryAt, verify]);
+  const retry = useCallback(() => { void verify({ force: true }); }, [verify]);
   return useMemo(() => ({ ...state, retry, verify }), [state, retry, verify]);
 }

@@ -491,7 +491,13 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn("validReleaseTag(releaseTag)", yaml_ts)
         self.assertNotIn("const PROJECT_REF", yaml_ts)
         self.assertNotIn("INSTALLER_READY", yaml_ts)
-        self.assertIn("await release.verify()", read(REPO / "web-configurator/src/App.tsx"))
+        # Export re-verifies the published release; consecutive clicks may share
+        # one check that is seconds old, never one from a previous visit.
+        app_tsx = read(REPO / "web-configurator/src/App.tsx")
+        self.assertIn("await release.verify({ maxAgeMs: INSTALL_FRESH_MS })", app_tsx)
+        release_ts = read(REPO / "web-configurator/src/release.ts")
+        self.assertIn("export const INSTALL_FRESH_MS = 30 * 1000;", release_ts)
+        self.assertIn("if (result.ready || result.retryAt !== undefined) storage?.setItem", release_ts)
 
     def test_remote_file_list_matches_local_modules(self):
         release = load_yaml(REPO / "examples/release.yaml", base_dir=REPO)

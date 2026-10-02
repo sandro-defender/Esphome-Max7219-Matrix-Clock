@@ -1,6 +1,6 @@
 # Optional release fonts
 
-## Current candidate policy (0.7.0, unreleased)
+## Current candidate policy (0.7.1)
 
 Default firmware and configurator builds compile exactly **Pixel Clock 6×8 +
 Matrix 2px**; **Compact 5×7** is always built in. MD Parola Numeric 7-Segment,

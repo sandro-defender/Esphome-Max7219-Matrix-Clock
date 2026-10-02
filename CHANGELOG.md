@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.7.1 - 2026-10-02
+
+### Fixed
+- **Web configurator showed "Release lookup failed (403)"** - GitHub allows
+  anonymous REST calls only 60 times per hour **per IP address**, shared by
+  everyone behind the same router/VPN. The page re-verified the newest release
+  on every tab switch and every reload with no reuse, so the quota ran out and
+  GitHub answered 403. The configurator now reads GitHub's rate-limit headers
+  and shows a timed pause ("Automatic retry at HH:MM") instead of an opaque
+  failure, retries by itself when the window reopens, re-checks in the
+  background every 15 minutes instead of 5, reuses a verification younger than
+  5 minutes on tab focus and reload (per tab, per exact bundle) and lets
+  consecutive copy/download clicks share one pre-export check. Installer
+  export still fails closed: a paused or unverified release never enables it.
+- The release status reads "not verified" rather than "checking…" next to an
+  error, so a stalled check is no longer mistaken for one in progress.
+
+### Changed
+- Version **0.7.1** supersedes the hand-made `0.7.0` GitHub release, which
+  points at a commit whose validation failed, has no installer asset and whose
+  notes differ from the firmware contract, so the configurator could never
+  verify it. Releases must be published by the main-push workflow
+  (`scripts/publish_release.py`), not drafted in the GitHub UI.
+
 ## 0.7.0 - Unreleased
 
 ### Added

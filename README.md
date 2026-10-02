@@ -9,7 +9,7 @@ slide-up animation and on-screen OTA progress.
 The firmware is distributed as small package modules. Your YAML stays tiny: it
 holds your credentials, a few substitutions and the package list.
 
-## Current work: draft candidate 0.7.0
+## Current work: candidate 0.7.1
 
 Active work is **code-only**. Do not run ESPHome build/compile/codegen commands
 during this work. The publisher has 40 mocked safety tests; code-only CI adds 15
@@ -46,8 +46,10 @@ code-tested, but live publication/deployment is not. See [ROADMAP.md](ROADMAP.md
 The candidate installer verifies the newest published immutable release before
 export and fails closed when its tagged contract is unavailable or mismatched.
 Older published releases without that contract cannot be installed through this
-candidate UI yet. The generated `0.7.0` example is not a published installation
-pin until a matching immutable release exists. Do not use `main` as a public
+candidate UI yet. The generated `0.7.1` example becomes a published installation
+pin only once the main-push workflow publishes the matching immutable release;
+releases drafted by hand in the GitHub UI (no installer asset, generated notes)
+are rejected by the configurator. Do not use `main` as a public
 installation reference or treat historical build measurements as current ones.
 
 ## Features
