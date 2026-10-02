@@ -17,9 +17,9 @@ generated `examples/release.yaml` (pinned install). There is no
       (`packages/base.yaml` `min_version`, `requirements-validation.txt`).
 - [ ] Read [packages/README.md](packages/README.md) (module map) and
       [packages/fonts/README.md](packages/fonts/README.md) (font policy).
-- [ ] Decide if the change is release-worthy. If yes, bump `project_ref` in
-      `packages/base.yaml` **and** add the matching `CHANGELOG.md` section in the
-      same PR. If it is docs-only, keep it to one PR.
+- [ ] Bump `project_ref` in `packages/base.yaml` to the next patch version
+      **and** add the matching `CHANGELOG.md` section in the same PR — every
+      merge to `main` publishes that version, so the version must be new.
 - [ ] If you touch any path in the generator's `all_paths` (below), regenerate
       the contract in the same commit: `python scripts/generate_firmware_contract.py`,
       then `python web-configurator/scripts/generate_glyphs.py` if fonts changed.
@@ -40,12 +40,13 @@ generated `examples/release.yaml` (pinned install). There is no
   section), the generated installer asset and tag → commit. A release built in
   the GitHub UI can never pass and silently breaks the public installer. Only
   the main-push workflow publishes ([RELEASING.md](RELEASING.md)).
-- **Never delete workflow releases or tags "to clean up".** `X.Y.Z` is the first
-  commit at a version; later commits at that version get `X.Y.Z+<12-hex-sha>`.
-  These tags are the immutable publication scheme, not junk. Deleting them
-  leaves the deployed site with no matching release.
+- **Never delete workflow releases or tags "to clean up", and never move one.**
+  The tag is the plain version `X.Y.Z`, it belongs to exactly one commit and it
+  is the publication scheme, not junk. Deleting it leaves the deployed site with
+  no matching release; an existing version is never reused for another commit.
 - **Never assume a docs-only merge is harmless: every merge to `main` publishes
-  a release and redeploys Pages.** Batch documentation into one PR.
+  a release and redeploys Pages**, so every merge needs the `project_ref` and
+  `CHANGELOG.md` bump above. Batch documentation into one PR.
 - **Never hand-edit a generated file.** `web-configurator/src/firmware.generated.json`,
   `web-configurator/src/glyphs.generated.ts`, `packages/restore_defaults.generated.yaml`,
   `packages/local_fonts/*.yaml`, `packages/fonts_default_local.yaml`,

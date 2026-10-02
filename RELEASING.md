@@ -17,15 +17,19 @@ it publishes source/YAML installers, never firmware binaries.
 PRs, forks and manual runs execute `checks` only; they can never publish or
 deploy. All Actions are SHA-pinned and checkouts do not persist credentials.
 
-## Tag scheme (immutable)
+## Version and tag scheme (immutable)
 
-* First commit at a version: `X.Y.Z` (for example `0.7.1` at
-  `455edc5f463ce75fb32f7fc7937af4a5895bf866`).
-* Later commits at the same version: `X.Y.Z+<12-hex-sha>` (for example
-  `0.7.0+3c26328002e0`). A `+`-tag must resolve to a commit starting with that
-  12-hex prefix.
-* Tags are never moved. A repeated run for the same commit re-verifies the
-  existing tag and never edits published notes or assets.
+* One version, one tag, one commit: the tag is the plain version, `X.Y.Z`
+  (for example `0.7.1` at `455edc5f463ce75fb32f7fc7937af4a5895bf866`).
+* **Every release-worthy merge bumps the patch version**: update `project_ref`
+  in `packages/base.yaml` and add the matching `CHANGELOG.md` section in the same
+  PR, then regenerate the contract.
+* Tags are never moved and never reused for another commit. A repeated run for
+  the same commit re-verifies the existing tag and never edits published notes or
+  assets.
+* If the version in `project_ref` was already published from a different commit,
+  publication fails before creating anything. The fix is the next patch bump,
+  never a longer tag name and never deleting the existing tag.
 * Tags and releases are **only** created by the publisher. Deleting them by hand
   leaves the deployed site with no matching release — that has already happened
   once ([docs/HISTORY.md](docs/HISTORY.md)).
@@ -46,8 +50,8 @@ newer by creation time but older by publication and cannot verify.
    repository, ESPHome version, schema version, `sourceHash` and release
    version;
 4. the release body equals `## <tag>` plus the CHANGELOG section;
-5. the tag resolves to a commit within 4 annotated-tag levels, with no cycle,
-   and `X.Y.Z+sha12` matches the commit prefix;
+5. the tag is a plain `X.Y.Z`, resolves to a commit within 4 annotated-tag
+   levels and has no cycle;
 6. the page's own `VITE_RELEASE_COMMIT` equals that commit, so a stale open page
    says "A newer configurator has been published. Refresh this page." instead of
    installing a different source tree.
@@ -80,7 +84,8 @@ configurator was quota exhaustion, not a broken repository.
 | --- | --- |
 | Main-push run failed before publishing | Re-run the failed jobs of that run. Re-runs keep the original push event, and the publisher is idempotent for the same commit. |
 | Publisher failed halfway (draft exists) | Re-run the same run: the draft is re-verified, missing assets are uploaded, then it is published. A mismatched draft fails instead of being overwritten. |
-| A workflow tag is missing after a manual deletion | Re-run the publisher for that commit; it recreates the same immutable tag name and verifies the content. Never create it by hand. |
+| A workflow tag is missing after a manual deletion | Re-run the publisher for that commit; it recreates the same version tag and verifies the content. Never create it by hand. |
+| The publish job failed with "already published from another commit" | Bump `project_ref` in `packages/base.yaml` (next patch) with its `CHANGELOG.md` section, regenerate the contract, and merge; the failed commit simply has no release. |
 | A hand-made release is newest | Publish the next workflow version (bump `project_ref` + CHANGELOG section). The hand-made release is then ignored, exactly as `0.7.1` superseded `0.7.0`. Never edit or delete it. |
 | Pages is stale or the deploy job failed | Re-run the failed jobs of the newest main-push run, or push a new commit (every push publishes). Do not touch releases, tags or the Pages artifact. |
 | Release notes or the installer asset look wrong | Fix the source (`CHANGELOG.md` section, package or generator), bump `project_ref`, and publish a new release. Published notes/assets are immutable. |
@@ -98,5 +103,6 @@ A firmware change that users should be able to install needs, in one PR:
 4. a regenerated contract (`python scripts/generate_firmware_contract.py`) when
    a hashed file changed ([AGENTS.md](AGENTS.md)).
 
-Merging then publishes `X.Y.Z` if that version is new, otherwise
-`X.Y.Z+<12-hex-sha>`, and redeploys Pages from the same commit.
+Merging then publishes that plain `X.Y.Z` tag and redeploys Pages from the same
+commit. If the version was already published from another commit the publish job
+fails closed (no release, no deploy); bump the patch version and merge again.

@@ -70,9 +70,9 @@ geolocation API, no IP lookup, no permission prompt, no network request.
 GitHub's "Latest" marker or the version number), checks its tagged
 `firmware.generated.json` against the page's own contract (repository, ESPHome
 version, schema version, `sourceHash`, release version), requires the release
-body to equal `## <tag>` plus the CHANGELOG section, resolves the tag to a commit
-(annotated tags bounded, cycles rejected, `X.Y.Z+sha12` must match the commit),
-and compares that commit with the `VITE_RELEASE_COMMIT` embedded in the bundle.
+body to equal `## <tag>` plus the CHANGELOG section, resolves the plain `X.Y.Z`
+tag to a commit (annotated tags bounded, cycles rejected), and compares that
+commit with the `VITE_RELEASE_COMMIT` embedded in the bundle.
 Installer export stays disabled until all of that passes, and re-verifies before
 each export.
 

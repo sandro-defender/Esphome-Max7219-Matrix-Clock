@@ -25,8 +25,8 @@ def deployment_ready(contract, tag, sha):
     if not isinstance(tag, str) or not releases.TAG_PATTERN.fullmatch(tag):
         raise ValueError("Invalid deployment tag")
     releases.choose_tag(base, sha, {})
-    if tag.split("+")[0] != base or ("+" in tag and not sha.startswith(tag.split("+")[1])):
-        raise ValueError("Deployment tag/version/commit differ")
+    if tag != base:
+        raise ValueError("Deployment tag and firmware version differ")
     name = contract["defaults"]["deviceName"]
     if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,30}", name):
         raise ValueError("Unsafe installer asset name")

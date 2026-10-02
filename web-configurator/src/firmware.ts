@@ -92,7 +92,7 @@ export function releaseBody(tag: string): string {
 }
 
 const builtRef = import.meta.env.VITE_PACKAGE_REF;
-const reference = builtRef && /^\d+\.\d+\.\d+(?:\+[a-f0-9]{12})?$/.test(builtRef) ? builtRef : FIRMWARE.releaseVersion;
+const reference = builtRef && /^\d+\.\d+\.\d+$/.test(builtRef) ? builtRef : FIRMWARE.releaseVersion;
 export const PROJECT = {
   repo: `https://github.com/${FIRMWARE.repository}`,
   readme: `https://github.com/${FIRMWARE.repository}/blob/${reference}/README.md`,

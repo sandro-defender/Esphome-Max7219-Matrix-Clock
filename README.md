@@ -5,8 +5,7 @@ ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, five
 optional 8-row clock faces plus a built-in fallback, per-digit slide-up
 animation, and OTA progress shown on the panel.
 
-The firmware is distributed as small package modules. Your YAML stays small: it
-holds your credentials, a few substitutions and the package list.
+Small package modules keep your YAML short: credentials, substitutions, packages.
 
 ## Install with the web configurator
 
@@ -18,15 +17,12 @@ newest published release (tag, release notes, tagged firmware contract and
 commit) before enabling the download, and fails closed when verification is
 unavailable — a paused or unverified release never enables the installer.
 Nothing but anonymous GitHub release lookups leaves the page: no credential, no
-telemetry, no IP lookup. See
-[web-configurator/README.md](web-configurator/README.md).
+telemetry, no IP lookup — see [web-configurator/README.md](web-configurator/README.md).
 
 On a first visit the **Timezone** field is pre-filled with your browser's IANA
-zone (read locally from `Intl.DateTimeFormat`, validated, never sent anywhere),
-so the generated clock and the live preview show your local time; the **Use my
-timezone** button re-applies it at any time. A saved configuration or a shared
-link always keeps its own timezone, and if detection fails the firmware default
-(`Europe/Berlin`) is kept.
+zone (read locally, never sent); **Use my timezone** re-applies it. A saved
+configuration, a shared link or a failed detection keeps its own timezone
+(firmware default `Europe/Berlin`).
 
 ### Manual installation
 
@@ -34,8 +30,8 @@ link always keeps its own timezone, and if detection fails the firmware default
 2. Copy `secrets.yaml.example` to `secrets.yaml` and fill in your values
    (keep the existing API key if the device is already paired).
 3. Copy `examples/release.yaml` next to it and adjust the substitutions for your
-   hardware. Its `ref:` and `project_ref:` are generated to one published tag
-   (`0.7.1` in this repository) and must stay identical.
+   hardware. Its `ref:` and `project_ref:` are generated from `project_ref` in
+   `packages/base.yaml`, pin one published version tag and must stay identical.
 4. `esphome config <your-file>.yaml` — must report `Configuration is valid!`.
 5. `esphome run <your-file>.yaml` — first flash over USB, later updates over
    the air.
@@ -249,8 +245,6 @@ dev.yaml        local development entry point
 
 ### Unverified
 
-CI neither compiles nor flashes firmware. ESP8266 flash/RAM figures, on-device
-readability, animation feel and encrypted-OTA progress on the panel are
-**Unverified** for the current source; the only build measurements on record are
-dated historical ones ([VALIDATION.md](VALIDATION.md),
-[packages/fonts/README.md](packages/fonts/README.md)).
+CI neither compiles nor flashes firmware. ESP8266 flash/RAM figures, on-device readability, animation feel and
+encrypted-OTA progress are **Unverified** for the current source; only dated historical measurements exist
+([VALIDATION.md](VALIDATION.md), [packages/fonts/README.md](packages/fonts/README.md)).

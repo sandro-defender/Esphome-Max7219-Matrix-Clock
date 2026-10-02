@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { FIRMWARE, releaseBody } from "./firmware";
 import { FRESH_MS, persistSession, restoreSession, resolvePublishedRelease, reusable, throttledUntil } from "./release";
 const sha = "abcdef012345" + "0".repeat(28);
-const tag = `${FIRMWARE.releaseVersion}+${sha.slice(0, 12)}`;
+const tag = FIRMWARE.releaseVersion;
 const release = (name = tag, published = "2026-10-01T12:00:00Z", id = 1) => ({
   tag_name: name, published_at: published, id, draft: false, prerelease: false, body: releaseBody(name),
 });
@@ -34,7 +34,8 @@ describe("newest published immutable firmware", () => {
       expect(await resolvePublishedRelease(server([release()], changed))).toMatchObject({ tag, ready: false });
     }
     expect((await resolvePublishedRelease(server([{ ...release(), body: "Different notes" }]))).ready).toBe(false);
-    expect((await resolvePublishedRelease(server([release()], FIRMWARE, "b".repeat(40)))).ready).toBe(false);
+    // Releases are plain versions now: a commit-suffixed tag is not a release.
+    expect((await resolvePublishedRelease(server([release(`${tag}+abcdef012345`)]))).ready).toBe(false);
   });
   it("rejects stale deployed source commits and accepts the matching build", async () => {
     vi.stubEnv("VITE_RELEASE_COMMIT", "b".repeat(40));

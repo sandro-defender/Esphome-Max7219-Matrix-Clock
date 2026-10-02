@@ -31,14 +31,14 @@ Generated files: `restore_defaults.generated.yaml`, `fonts_default_local.yaml`,
 
 ## How a user YAML loads them
 
-`examples/release.yaml` (generated, pinned to one published tag — `0.7.1` in
-this repository):
+`examples/release.yaml` (generated, pinned to the version tag in
+`base.yaml` — the plain `X.Y.Z` that the last main-push run published):
 
 ```yaml
 packages:
   clock:
     url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
-    ref: "0.7.1"
+    ref: "0.7.2"
     refresh: 1d
     files:
       - packages/base.yaml

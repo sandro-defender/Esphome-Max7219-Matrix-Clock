@@ -157,7 +157,7 @@ export async function resolvePublishedRelease(fetcher: Fetcher = fetch, timeoutM
     if (!releases.length) throw new Error("No published versioned release is available");
     const newest = releases[0];
     tag = newest.tag_name;
-    if (tag.split("+")[0] !== FIRMWARE.releaseVersion) throw new Error("Newest release version differs from this configurator");
+    if (tag !== FIRMWARE.releaseVersion) throw new Error("Newest release version differs from this configurator");
     // The tagged source contract proves the UI was built from this firmware,
     // not a current main branch or an unrelated older package catalogue.
     const contract = await getJson(fetcher,
@@ -182,8 +182,6 @@ export async function resolvePublishedRelease(fetcher: Fetcher = fetch, timeoutM
     if (!record(object) || object.type !== "commit" || typeof object.sha !== "string" || !/^[a-f0-9]{40}$/.test(object.sha)) {
       throw new Error("Release is not an immutable commit tag");
     }
-    const commitSuffix = tag.split("+")[1];
-    if (commitSuffix && !object.sha.startsWith(commitSuffix)) throw new Error("Versioned tag does not match its commit");
     // Main builds embed the exact publishing commit. A stale open page cannot
     // silently install a release using a different source tree.
     const builtSha = import.meta.env.VITE_RELEASE_COMMIT;

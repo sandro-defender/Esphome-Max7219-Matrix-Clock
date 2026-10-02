@@ -21,7 +21,7 @@ from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-TAG_PATTERN = re.compile(VERSION + r"(?:\+[a-f0-9]{12})?\Z")
+TAG_PATTERN = re.compile(VERSION + r"\Z")
 SHA_PATTERN = re.compile(r"[a-f0-9]{40}\Z")
 REPO_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*/[A-Za-z0-9_.-]+\Z")
 MAX_RELEASE_PAGES = 10
@@ -55,12 +55,17 @@ def api(repo, endpoint, *args, allow_missing=False):
 
 
 def choose_tag(base, sha, refs):
+    """One version, one tag, one commit: an existing tag is never moved or reused.
+
+    A version already published from a different commit is a release-time error,
+    not a reason to invent a longer tag name: the fix is to bump `project_ref` in
+    `packages/base.yaml` (with its CHANGELOG section) and merge again.
+    """
     if not isinstance(base, str) or not re.fullmatch(VERSION, base) or not isinstance(sha, str) or not SHA_PATTERN.fullmatch(sha):
         raise ValueError("Invalid canonical version/commit")
-    candidate = base if base not in refs or refs[base] == sha else base + "+" + sha[:12]
-    if candidate in refs and refs[candidate] != sha:
-        raise ValueError("Immutable tag collision: refusing to move " + candidate)
-    return candidate
+    if base not in refs or refs[base] == sha:
+        return base
+    raise ValueError("Version " + base + " is already published from another commit; bump project_ref in packages/base.yaml and add its CHANGELOG section")
 
 
 def tag_commit(repo, tag):
@@ -85,26 +90,25 @@ def tag_commit(repo, tag):
 
 
 def reserve_tag(repo, base, sha):
+    """Create the version tag once; an existing tag is verified, never moved."""
     for _ in range(3):
         current = tag_commit(repo, base)
-        candidate = choose_tag(base, sha, {} if current is None else {base: current})
-        target = tag_commit(repo, candidate)
-        if target is not None:
-            if target != sha:
-                raise ValueError("Refusing to move existing immutable tag")
-            return candidate
+        if current is not None:
+            if current != sha:
+                raise ValueError("Version " + base + " is already published from another commit; bump project_ref in packages/base.yaml and add its CHANGELOG section")
+            return base
         try:
-            api(repo, "git/refs", "--method", "POST", "-f", "ref=refs/tags/" + candidate, "-f", "sha=" + sha)
+            api(repo, "git/refs", "--method", "POST", "-f", "ref=refs/tags/" + base, "-f", "sha=" + sha)
         except CommandError as error:
             if error.http_status != 422:
                 raise
             # Another publisher may have reserved the ref. Re-read it; never
             # force-update and never mistake a permission/network failure for a race.
             continue
-        if tag_commit(repo, candidate) != sha:
+        if tag_commit(repo, base) != sha:
             raise ValueError("Created tag commit mismatch")
-        return candidate
-    raise RuntimeError("Could not reserve an immutable tag after concurrent updates")
+        return base
+    raise RuntimeError("Could not reserve the version tag after concurrent updates")
 
 
 def newest_published(releases):
@@ -291,8 +295,8 @@ def main(argv=None):
     if args.latest:
         tag = latest(repo)["tag_name"]
         sha = tag_commit(repo, tag)
-        if not sha or ("+" in tag and not sha.startswith(tag.split("+")[1])):
-            raise ValueError("Published release has no matching immutable commit tag")
+        if not sha:
+            raise ValueError("Published release has no matching commit tag")
     else:
         sha = publishing_sha(repo, os.environ)
         tag = publish(repo, contract, sha)

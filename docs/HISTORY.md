@@ -81,9 +81,14 @@ In the same period the per-commit tags from the immutable scheme — for example
 `3c26328002e0bd001c07623ae5dbeb46538fa28a` to Pages at 2026-10-02T08:13:34Z —
 were deleted by hand "to clean up". The deployed site was
 then left without a release matching the scheme, and the tag is now gone
-(GitHub returns 404). Lesson: `X.Y.Z+<12-hex-sha>` tags are the publication
-scheme, not junk. They are immutable and only the main-push workflow may create
-them.
+(GitHub returns 404). Lesson: release tags are the publication scheme, not junk.
+They are immutable, only the main-push workflow may create them, and deleting
+one leaves the deployed site without a matching release.
+
+That incident also ended the `X.Y.Z+<12-hex-sha>` scheme: per-commit tags
+multiplied look-alike releases, and a deleted one could not be told apart from a
+version that had never been published. Releases now always bump the patch
+version, so every tag is a plain `X.Y.Z` that belongs to exactly one commit.
 
 ## 2026-10-02 — documentation consolidation
 
