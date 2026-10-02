@@ -1,5 +1,7 @@
+import { FIRMWARE } from "./firmware";
+import { LEDS as LED_PALETTE } from "./leds";
 import { withFonts } from "./fontSelection";
-import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, SCREENS, clampNumber, isConfigKey, type Config } from "./types";
+import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, clampNumber, isConfigKey, type Config } from "./types";
 
 /**
  * Settings persistence.
@@ -13,43 +15,14 @@ import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, SCREENS, clampNumber, isConfigKey,
 const STORAGE_KEY = "max7219-clock.config.v1";
 export const HASH_KEY = "cfg";
 
-const ALIGNMENTS = ["Left", "Center", "Right"];
-const HOUR_FORMATS = ["24-hour", "12-hour"];
-const DATE_FORMATS = ["DD.MM", "MM/DD", "DD/MM"];
-const SECONDS_MODES = ["Off", "Digits", "Bar"];
-const SCROLL_MODES = ["Scroll", "Static"];
-const WIRINGS = ["snake", "zigzag"];
-const LEDS = ["Blood", "Amber", "Red", "Green", "Ice", "White"];
-const LAYOUTS = ["firmware", "modules"];
-const ROTATIONS = [0, 90, 180, 270];
-
-const ENUMS: Partial<Record<keyof Config, readonly unknown[]>> = {
-  screen: SCREENS,
-  alignment: ALIGNMENTS,
-  hourFormat: HOUR_FORMATS,
-  dateFormat: DATE_FORMATS,
-  secondsMode: SECONDS_MODES,
-  scrollMode: SCROLL_MODES,
-  clockFont: CLOCK_FONTS,
-  layoutPreview: LAYOUTS,
-  wiring: WIRINGS,
-  led: LEDS,
-  rotateChip: ROTATIONS,
-};
-
-const RANGES: Partial<Record<keyof Config, { min: number; max: number }>> = {
-  chips: LIMITS.chips,
-  rows: LIMITS.rows,
-  brightness: LIMITS.brightness,
-  nightBrightness: LIMITS.brightness,
-  animationMs: LIMITS.animationMs,
-  animationRowGap: LIMITS.animationRowGap,
-  scrollSpeed: LIMITS.scrollSpeed,
-  cycleInterval: LIMITS.cycleInterval,
-  messageHold: LIMITS.messageHold,
-  nightStart: { min: 0, max: 23 },
-  nightEnd: { min: 0, max: 23 },
-};
+const ENUMS: Partial<Record<keyof Config, readonly unknown[]>> = Object.fromEntries(
+  FIRMWARE.settings.filter((item) => item.options).map((item) => [item.key, item.options!]),
+);
+ENUMS.clockFont = CLOCK_FONTS;
+ENUMS.led = Object.keys(LED_PALETTE);
+// Retired illustration links must not change the actual firmware preview.
+ENUMS.layoutPreview = ["firmware"];
+const RANGES = LIMITS;
 
 /** Merge arbitrary input over the defaults, dropping anything unusable. */
 export function sanitizeConfig(input: unknown): Config {

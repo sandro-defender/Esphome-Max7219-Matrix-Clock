@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DigitSlide, useDigitSlide, useReducedMotion, type SlideOptions } from "./digitAnimation";
 import { clockContent, dateContent, renderScene, type Scene } from "./render";
+import { PreviewTimeline } from "./previewTimeline";
 import type { Config } from "./types";
 
-/** "HH:MM[:SS]" freezes the preview; an empty value follows the real clock. */
+/** "HH:MM[:SS]" freezes the preview; an empty value follows civil time. */
 export function previewDate(value: string, fallback: Date): Date {
   const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value.trim());
   if (!match) return fallback;
@@ -15,39 +16,42 @@ export function previewDate(value: string, fallback: Date): Date {
   return date;
 }
 
-/** The preview clock: the frozen value, or the wall clock refreshed 20x/s. */
-export function usePreviewClock(previewTime: string): Date {
-  const [tick, setTick] = useState(() => new Date());
-  useEffect(() => {
-    if (previewTime) return undefined;
-    const id = window.setInterval(() => setTick(new Date()), 50);
-    return () => window.clearInterval(id);
-  }, [previewTime]);
-  return useMemo(() => previewDate(previewTime, tick), [previewTime, tick]);
+/** Convert browser civil time to the firmware timezone, including DST. */
+export function dateInZone(date: Date, timezone: string): Date {
+  try {
+    const values = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(date).map((part) => [part.type, part.value]));
+    return new Date(Number(values.year), Number(values.month)-1, Number(values.day), Number(values.hour), Number(values.minute), Number(values.second), date.getMilliseconds());
+  } catch { return date; }
 }
 
-/**
- * When the composed message last changed. The marquee offset and the message
- * hold both measure from it, exactly like the firmware's `message_started_ms`.
- */
-export function useMessageStamp(message: string): number {
-  const stamp = useRef(Date.now());
-  const previous = useRef(message);
-  if (previous.current !== message) {
-    previous.current = message;
-    stamp.current = Date.now();
-  }
-  return stamp.current;
+/** Runtime state uses performance time, never civil Date.now() or DST edits. */
+export function monotonicNow(): number {
+  return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : 0;
+}
+
+export interface PreviewClock {
+  /** Civil time for clock/date/night-schedule rendering. */
+  now: Date;
+  /** Monotonic runtime milliseconds, later reduced to firmware uint32 millis. */
+  runtimeMs: number;
+}
+
+export function usePreviewClock(previewTime: string, timezone: string, intervalMs: number): PreviewClock {
+  const [tick, setTick] = useState(() => ({ wall: new Date(), runtimeMs: monotonicNow() }));
+  useEffect(() => {
+    // Civil time supplies digits/timezone; performance.now supplies only
+    // runtime deadlines, cycle timers, animation/alarm phases and message age.
+    const id = window.setInterval(() => setTick({ wall: new Date(), runtimeMs: monotonicNow() }), Math.max(1, intervalMs));
+    return () => window.clearInterval(id);
+  }, [intervalMs]);
+  const now = useMemo(() => previewDate(previewTime, dateInZone(tick.wall, timezone)), [previewTime, timezone, tick.wall]);
+  return useMemo(() => ({ now, runtimeMs: tick.runtimeMs }), [now, tick.runtimeMs]);
 }
 
 /** The content the panel showed a second ago — the "replay slide" starting point. */
 export function earlierContent(cfg: Config, now: Date, scene: Scene): string {
   const before = new Date(now.getTime() - 1000);
   if (scene.page === "date") return dateContent(new Date(now.getTime() - 86_400_000), cfg);
-  if (cfg.layoutPreview === "modules") {
-    const pad = (value: number) => String(value).padStart(2, "0");
-    return `${pad(before.getHours())}${pad(before.getMinutes())}${pad(before.getSeconds())}`.slice(0, 6);
-  }
   return clockContent(before, cfg, scene.withSeconds);
 }
 
@@ -63,32 +67,43 @@ export interface Preview {
 }
 
 /**
- * The whole live preview in one place: the clock source, the rendered scene and
- * the per-digit slide that the firmware's `animation_ms` controls.
+ * The whole live preview in one place: civil time, one retained runtime frame,
+ * the rendered scene and the per-digit slide controlled by firmware settings.
  */
 export function usePreview(cfg: Config): Preview {
-  const now = usePreviewClock(cfg.previewTime);
-  const messageAt = useMessageStamp(cfg.message);
+  const clock = usePreviewClock(cfg.previewTime, cfg.timezone, cfg.displayUpdateMs);
+  const timelineRef = useRef<PreviewTimeline | null>(null);
+  if (timelineRef.current === null) timelineRef.current = new PreviewTimeline();
+  const timeline = timelineRef.current;
+  // Advance exactly once for this sampled time/configuration. Both the settled
+  // base scene and any animated redraw below consume this immutable snapshot.
+  const runtimeFrame = useMemo(() => timeline.update(cfg, clock.runtimeMs), [timeline, cfg, clock.runtimeMs]);
   const reducedMotion = useReducedMotion();
+  const settled = useMemo(
+    () => renderScene(cfg, clock.now, 0, undefined, runtimeFrame.nowMs, runtimeFrame),
+    [cfg, clock.now, runtimeFrame],
+  );
   const options: SlideOptions = {
     enabled: cfg.digitAnimation,
     durationMs: cfg.animationMs,
     reducedMotion,
+    layoutKey: `${settled.usedFallback ? "compact" : cfg.clockFont}:${settled.geometry.width}:${settled.geometry.height}:${cfg.alignment}`,
   };
 
-  const settled = useMemo(() => renderScene(cfg, now, messageAt), [cfg, now, messageAt]);
-  const { frame, replay: startSlide } = useDigitSlide(settled.content, settled.page, settled.slide, options);
+  const { frame, replay: startSlide } = useDigitSlide(settled.content, settled.page, settled.slide + cfg.animationRowGap, options);
   const scene = useMemo(
-    () => (frame.from === null ? settled : renderScene(cfg, now, messageAt, frame)),
-    [cfg, frame, messageAt, now, settled],
+    () => frame.from === null
+      ? settled
+      : renderScene(cfg, clock.now, 0, frame, runtimeFrame.nowMs, runtimeFrame),
+    [cfg, clock.now, frame, runtimeFrame, settled],
   );
 
   const replay = useCallback(() => {
     if (settled.content.length === 0) return;
-    startSlide(earlierContent(cfg, now, settled));
-  }, [cfg, now, settled, startSlide]);
+    startSlide(earlierContent(cfg, clock.now, settled));
+  }, [cfg, clock.now, settled, startSlide]);
 
-  return { now, scene, sliding: frame.from !== null, reducedMotion, replay };
+  return { now: clock.now, scene, sliding: frame.from !== null, reducedMotion, replay };
 }
 
 export type { DigitSlide };

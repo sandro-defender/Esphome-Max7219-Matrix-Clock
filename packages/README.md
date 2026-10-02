@@ -5,7 +5,7 @@ substitutions and the package list; everything else lives here.
 
 | Module | Contents |
 |---|---|
-| `base.yaml` | device identity, `min_version: "2026.9.0"`, project metadata, ESP8266 board, boot defaults, logger, substitution defaults |
+| `base.yaml` | device identity, `min_version: "2026.9.1"`, project metadata, ESP8266 board, boot defaults, logger, substitution defaults |
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant + SNTP time sources |
 | `renderer.yaml` | C++ include list for the renderer, restore-defaults script, OTA error/success timeouts |
 | `display.yaml` | SPI bus, MAX7219 panel, the small lambda that feeds the renderer and publishes changes |

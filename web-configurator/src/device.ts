@@ -1,3 +1,5 @@
+import { FIRMWARE } from "./firmware";
+
 /** Node identity helpers shared by the preview, the YAML generator and the UI. */
 
 export function deviceSlug(name: string): string {
@@ -6,7 +8,7 @@ export function deviceSlug(name: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 31);
-  return slug || "max7219-clock";
+  return slug || String(FIRMWARE.defaults.deviceName);
 }
 
 export function nodeId(name: string): string {

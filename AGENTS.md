@@ -18,14 +18,18 @@ Before changing any project file:
       font assets directly from this repository.
 - [ ] Preserve every font's license, restrict compiled glyphs, and measure
       ESP8266 firmware size before adding another font.
-- [ ] Target ESPHome **2026.9.0 exactly** unless the user explicitly changes
+- [ ] Target ESPHome **2026.9.1 exactly** unless the user explicitly changes
       the target.
 - [ ] Verify ESPHome-specific decisions against official documentation.
 - [ ] Never ask for or expose Wi-Fi credentials, API keys, SSH keys, OTA keys,
       or web passwords. Use `!secret` and keep `secrets.yaml` untracked.
-- [ ] Do not claim completion or push firmware changes until regression tests
-      and `esphome config` pass. The build server runs the optional complete
-      firmware compile with `scripts/validate.ps1 -Compile`.
+- [ ] Follow the user's current **code-only** instruction: do not run ESPHome
+      config/build/compile/code-generation commands or retry toolchain downloads.
+      Run offline script/source tests, host renderer tests and web checks instead;
+      leave full firmware and hardware verification explicitly unverified.
+- [ ] After each finished step, update the roadmap, commit/push only the existing
+      Arena branch and update draft PR #13 with that step's evidence. Do not push
+      main, force-push, or publish releases/deployments during this code work.
 - [ ] Do not force-push, discard unrelated changes, or commit generated build
       output.
 

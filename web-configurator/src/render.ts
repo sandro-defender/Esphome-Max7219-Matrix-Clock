@@ -1,3 +1,4 @@
+import { FIRMWARE, limitsFor } from "./firmware";
 import { fitForPanel, fontSpec, previewFont, type FontFit } from "./fontCatalog";
 import {
   alignStart,
@@ -8,6 +9,7 @@ import {
   type PreviewFont,
 } from "./fonts";
 import type { Config } from "./types";
+import type { TimelineFrame } from "./previewTimeline";
 
 export { deviceSlug, nodeId } from "./device";
 
@@ -215,48 +217,16 @@ export function drawCells(
     const changed = animate && cell.digit && isDigit(previous) && cell.char !== previous;
     if (changed) {
       const travel = layout.slide + animationRowGap;
-      const offset = Math.floor(slide.progress * travel);
-      font.drawGlyph(frame, previous, cell.x, cell.top - offset);
-      font.drawGlyph(frame, cell.char, cell.x, cell.top + travel - offset);
+      // Match C++ float rounding at integer-row boundaries and ClipCanvas.
+      const offset = Math.trunc(Math.fround(Math.fround(Math.min(1, Math.max(0, slide.progress))) * travel));
+      const clipped = { ...frame, clip: { x: cell.x, y: cell.top + font.inkTop, width: cell.advance, height: font.inkHeight } };
+      font.drawGlyph(clipped, previous, cell.x, cell.top - offset);
+      font.drawGlyph(clipped, cell.char, cell.x, cell.top + travel - offset);
       return;
     }
     if (layout.blankColons && cell.char === ":") return;
     font.drawGlyph(frame, cell.char, cell.x, cell.top);
   });
-}
-
-/**
- * Illustration only: one digit per 8×8 module, the layout people picture when
- * they buy a six module strip. The firmware draws the clock proportionally.
- * The digits are cells like any other line, so the slide animation works here
- * too; the separators sit on the module boundary and never move.
- */
-export function moduleClockLayout(frame: Frame, font: PreviewFont, now: Date): ClockLayout {
-  const digits = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`.slice(0, 6);
-  const cells: ClockCell[] = [];
-  for (let index = 0; index < 6 && index * 8 + 8 <= frame.width; index++) {
-    const char = digits[index];
-    const glyph = font.glyph(char);
-    cells.push({
-      char,
-      x: index * 8 + Math.max(0, Math.floor((8 - (glyph?.w ?? 8)) / 2)),
-      advance: 8,
-      top: Math.max(0, Math.floor((8 - (glyph?.h ?? 8)) / 2)),
-      digit: true,
-    });
-  }
-  return { content: digits.slice(0, cells.length), cells, boxTop: 0, slide: 8, blankColons: false };
-}
-
-/** The two-dot separators of the one-digit-per-module illustration. */
-export function drawModuleSeparators(frame: Frame, blinking: boolean): void {
-  if (blinking) return;
-  const y = Math.max(1, Math.floor((8 - 4) / 2));
-  for (const x of [15, 31, 47]) {
-    if (x >= frame.width) continue;
-    setPixel(frame, x, y);
-    setPixel(frame, x, y + 3);
-  }
 }
 
 function drawSecondsBar(frame: Frame, second: number): void {
@@ -314,17 +284,13 @@ function paintChecker(frame: Frame): void {
   }
 }
 
-function choosePage(cfg: Config, now: Date, messageActive: boolean): Page {
+function choosePage(screen: Config["screen"], messageActive: boolean): Page {
   if (messageActive) return "message";
-  if (cfg.autoCycle) {
-    const slot = Math.floor(now.getTime() / 1000 / Math.max(5, cfg.cycleInterval));
-    return slot % 2 === 0 ? "clock" : "date";
-  }
-  switch (cfg.screen) {
+  switch (screen) {
     case "Date":
       return "date";
     case "Message":
-      return "message";
+      return "clock";
     case "Module grid test":
       return "grid";
     case "Pixel checkerboard":
@@ -362,19 +328,25 @@ export function renderScene(
   now: Date,
   messageAt: number,
   slide: SlideFrame = { from: null, progress: 1 },
+  runtimeNowMs = now.getTime(),
+  timeline?: TimelineFrame,
 ): Scene {
   const geo = geometry(cfg.chips, cfg.rows);
   const frame: Frame = { width: geo.width, height: geo.height, pixels: new Uint8Array(geo.width * geo.height) };
   const notices: Notice[] = [];
-  const text = normalizeMessage(cfg.message);
-  const age = now.getTime() - messageAt;
-  const messageActive = text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000);
-  const messageHoldLeft = cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
+  const text = timeline?.message ?? normalizeMessage(cfg.message);
+  const age = timeline?.messageAgeMs ?? Math.max(0, runtimeNowMs - messageAt);
+  const messageActive = timeline?.messageActive ??
+    (text.length > 0 && (cfg.messageHold <= 0 || age < cfg.messageHold * 1000));
+  const messageHoldLeft = timeline
+    ? timeline.messageHoldLeft
+    : cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
+  const selectedScreen = timeline?.screen ?? cfg.screen;
 
   const selected = previewFont(cfg.clockFont);
   const spec = fontSpec(cfg.clockFont);
   const fit = fitForPanel(selected, frame.width, Math.min(8, frame.height));
-  const page = choosePage(cfg, now, messageActive);
+  const page = choosePage(selectedScreen, messageActive);
 
   if (!geo.valid) {
     notices.push({
@@ -421,7 +393,7 @@ export function renderScene(
           font = BUILTIN_FONT;
           usedFallback = true;
         }
-        drawFreeText(frame, font, shown, cfg, Math.max(0, now.getTime() - messageAt));
+        drawFreeText(frame, font, shown, cfg, age);
       }
     } else {
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
@@ -436,25 +408,19 @@ export function renderScene(
         font = BUILTIN_FONT;
         usedFallback = true;
       }
-      if (cfg.layoutPreview === "modules" && page === "clock") {
-        layout = moduleClockLayout(frame, font, now);
-        drawCells(frame, font, layout, slide, cfg.animationRowGap);
-        drawModuleSeparators(frame, cfg.blinkColon && now.getSeconds() % 2 === 1);
-      } else {
-        // The ":" keeps its advance while blinking: only its ink disappears, so
-        // the line can never re-centre itself between odd and even seconds.
-        const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
-        layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
-        drawCells(frame, font, layout, slide, cfg.animationRowGap);
-      }
+      const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
+      layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
+      const activeSlide = cfg.digitAnimation && cfg.animationMs > 0 ? slide : { from: null, progress: 1 };
+      drawCells(frame, font, layout, activeSlide, cfg.animationRowGap);
       if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
     }
-    if (cfg.flipX) mirror(frame);
+    driverTransform(frame, cfg.rotateChip, cfg.flipX);
   }
   if (layout !== null) content = layout.content;
 
-  const nightNow = cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd);
-  const effectiveBrightness = nightNow ? cfg.nightBrightness : cfg.brightness;
+  const nightNow = cfg.nightManual || (cfg.nightDim && isNight(now.getHours(), cfg.nightStart, cfg.nightEnd));
+  const brightnessClock = timeline?.nowMs ?? (runtimeNowMs >>> 0);
+  const effectiveBrightness = cfg.alarmMode ? (Math.floor(brightnessClock / FIRMWARE.renderer.alarmPeriodMs) % 2 === 1 ? limitsFor("brightness").max : limitsFor("brightness").min) : nightNow ? cfg.nightBrightness : cfg.brightness;
 
   let summary = "Display power is off.";
   let detail = "The MAX7219 is held in shutdown, so no pixels are driven.";
@@ -503,15 +469,42 @@ export function renderScene(
   };
 }
 
-function mirror(frame: Frame): void {
-  for (let y = 0; y < frame.height; y++) {
-    const row = y * frame.width;
-    for (let x = 0; x < frame.width / 2; x++) {
-      const a = row + x;
-      const b = row + frame.width - 1 - x;
-      const tmp = frame.pixels[a];
-      frame.pixels[a] = frame.pixels[b];
-      frame.pixels[b] = tmp;
+/** MAX7219 2026.9.1 send64pixels(): flip local X before per-chip rotation. */
+export function driverTransform(frame: Frame, rotation: number, flipX: boolean): void {
+  if (rotation === 0 && !flipX) return;
+  const source = frame.pixels.slice();
+  frame.pixels.fill(0);
+  for (let my = 0; my < frame.height; my += 8) for (let mx = 0; mx < frame.width; mx += 8) {
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      if (!source[(my + y) * frame.width + mx + x]) continue;
+      const xx = flipX ? 7 - x : x;
+      const [dx, dy] = rotation === 90 ? [7-y, xx] : rotation === 180 ? [7-xx, 7-y] : rotation === 270 ? [y, 7-xx] : [xx, y];
+      setPixel(frame, mx + dx, my + dy);
     }
   }
+}
+
+/** Status-frame oracle mirrors the firmware; text templates are extracted from C++. */
+export function renderStatusFrame(width: number, height: number, status: { type: "boot"; version: string; elapsedMs: number } | { type: "ota"; state: number; percent: number; error: number }): Frame {
+  const frame = { width, height, pixels: new Uint8Array(width * height) };
+  if (status.type === "boot") {
+    const text = FIRMWARE.renderer.bootPrefix + status.version;
+    drawFreeText(frame, BUILTIN_FONT, text, { scrollMode: "Scroll", scrollSpeed: FIRMWARE.renderer.bootScrollMs } as Config, status.elapsedMs);
+    return frame;
+  }
+  const key = Object.keys(FIRMWARE.renderer.otaStates).find((name) => FIRMWARE.renderer.otaStates[name] === status.state);
+  if (!key) return frame;
+  const templates = FIRMWARE.renderer.otaTemplates[key] ?? [];
+  const percent = Number.isFinite(status.percent) ? Math.trunc(Math.max(0, Math.min(FIRMWARE.renderer.progressMax, status.percent))) : 0;
+  const value = key === "OTA_UPLOADING" ? percent : status.error;
+  let content = "";
+  for (const template of templates) {
+    content = template.replace(/%u/g, String(value)).replace(/%%/g, "%");
+    if ((BUILTIN_FONT.measure(content) ?? 0) <= width) break;
+  }
+  const bar = FIRMWARE.renderer.otaBarStates.includes(key);
+  const top = bar ? Math.max(0, Math.trunc((height - 1 - BUILTIN_FONT.inkHeight) / 2)) - BUILTIN_FONT.inkTop : BUILTIN_FONT.boxTop(height);
+  drawLine(frame, BUILTIN_FONT, content, Math.max(0, alignStart("Center", BUILTIN_FONT.measure(content) ?? 0, width)), top);
+  if (bar) for (let x = 0; x < Math.floor(width * percent / FIRMWARE.renderer.progressMax); x++) setPixel(frame, x, height - 1);
+  return frame;
 }

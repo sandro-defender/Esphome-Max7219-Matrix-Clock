@@ -1,1 +1,4 @@
-esphome==2026.9.0
+esphome==2026.9.1
+# Exact preview rasteriser and reproducible project-owned font regeneration.
+freetype-py==2.5.1
+fonttools==4.66.1

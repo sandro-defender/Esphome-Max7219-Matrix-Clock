@@ -1,9 +1,203 @@
 # Validation
 
+## Active code-only continuation — 2026-10-02
+
+Per the user's latest instruction, **do not invoke ESPHome config, build,
+compile or code generation**, and do not retry toolchain downloads. The firmware/
+toolchain commands further below are historical/reproduction guidance, not
+commands to run during this continuation. Arena fixes this session to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`; PR #13 still points to
+`arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. The assigned branch
+restriction is preserved; no step-5 code is claimed as present in PR #13.
+
+Step 1 checks executed without ESPHome CLI:
+
+- `python3 tests/test_publish_release.py`: **40 passed**, every external command
+  mocked/blocked; no real GitHub publication or npm installer execution.
+- Source contracts: **36 run, 35 passed, 1 skipped** because exact SDK is not
+  installed in this environment. Do not claim that skipped merge check ran.
+- `make -C tests test`: **315 checks passed**, host renderer only.
+- Web suite: **103 passed** / **1,044 pixel-oracle frames**; typecheck **PASS**.
+
+Step 2 adds **15 workflow/code-gate tests**, `validate-code.yml` and the
+code-only runner. Local execution with `--skip-sdk-checks` passes **91 Python
+tests run / 90 passed / 1 SDK skip**, **315 host checks**, **103 web tests**,
+typecheck, production **web** bundle and diff checks. SDK/generated freshness
+were not rerun locally; the new full CI runner requires exact pinned imports.
+
+### Current code-only commands
+
+With Python 3.12 and `requirements-validation.txt` installed, plus `npm ci`:
+
+```bash
+python scripts/check_code.py              # SDK imports/freshness only; no firmware CLI
+# Explicit reduced local coverage when the exact SDK is not installed:
+python scripts/check_code.py --skip-sdk-checks
+```
+
+The runner cannot call ESPHome/PlatformIO CLI or the firmware validator. A
+local reduced PASS does not claim SDK freshness, config/codegen or compilation.
+The CI checks job runs the full code gate with read-only permissions on all main
+pushes and PRs. PR/manual runs cannot publish/deploy; step 3 adds separate,
+main-only release/Pages jobs with explicitly scoped permissions. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) **passed** for source commit `2753a67`,
+including the full pinned-SDK import/freshness gate. No firmware CLI was run.
+
+Firmware config/codegen/full build measurements have not been rerun. Prior
+checkpoint results below retain their original scope/date.
+
+### Step 3 — pipeline wiring and read-only deployment guard
+
+`tests/test_deployment.py`: **22 passed**, every remote operation mocked and real
+subprocesses blocked. Covers main-only job dependencies/permissions, immutable
+Action refs, same-SHA checkout/build injection, tag/notes/installer integrity,
+superseded-publication skips, retry artifacts and locked Pages rechecks.
+
+The reduced local runner passes **113 Python tests run / 112 passed / 1 SDK
+skip**, **315 host checks**, **103 web tests**, typecheck, web bundle and diff
+checks. Exact-SDK freshness is not rerun locally. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866)
+passed for `8418b49`, including full pinned-SDK freshness. Actual main publishing
+and Pages behavior remain unverified. No ESPHome/PlatformIO CLI,
+new tag, published release or deployment was executed during implementation.
+
+The main pipeline publishes **source/YAML installer releases**, not firmware
+binaries. It uses only Actions' built-in token, keeps PR checks read-only, and
+checks publication again immediately before Pages. See [RELEASING.md](RELEASING.md).
+
+### Step 4 — installer release input/response hardening
+
+`src/release.test.ts`: **22 passed**, including **13 new response/bounds tests**.
+Tests cover streamed UTF-8 byte limits, oversized Content-Length, cancellation,
+split/invalid Unicode, fetch/body deadlines, malformed publication/contracts/tag
+objects, SDK/repository identity, incompatible newest versions, timezone/ID
+ordering and cyclic tags. All HTTP responses are mocks; no browser automation.
+
+Step-4 reduced `check_code.py --skip-sdk-checks`: **113 Python tests run / 112
+passed / 1 exact-SDK skip**, **315 host checks**, **116 web tests**, TypeScript,
+production **web** bundle and whitespace checks passed. Exact SDK imports/
+freshness were not rerun locally. Hosted [run 36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848)
+passed source/preview checks for `dd1037f`; publish/site/deploy jobs were skipped.
+No ESPHome/PlatformIO CLI, firmware build, live release, Pages deployment or
+production secrets were used.
+
+### Step 5 — retained normal-screen/message preview timeline
+
+`tests/renderer_fixture.cpp` now supports sequences in one process, retaining
+real `Runtime` state and applying the actual `Report` screen changes after each
+draw. Browser `PreviewTimeline` uses `performance.now()` (with civil clock and
+timezone separate), uint32 deadline/cycle arithmetic, one-second housekeeping,
+one toggle on late frames, and post-render screen feedback. `usePreview` advances
+one immutable timeline snapshot per sampled frame; settled/animated drawing does
+not advance runtime twice.
+
+The new `src/previewTimeline.test.ts` has **9 tests**. Six scenarios compare
+**47 sequential C++/browser frames** for actual visible pixels, mode/page,
+brightness, screen-before/after-Report, message queue/visibility, cycle timer and
+housekeeping timer. Scenarios cover delayed frames, Clock/Date transitions,
+message expiry between housekeeping ticks, screen-change interruption, interval/
+auto-cycle/brightness edits and uint32 rollover. Editing the default message
+duration does not rewrite an already active message deadline. Countdown, alert,
+boot and OTA timeline interactions remain explicitly pending; existing status
+pixel snapshots do not verify those stateful paths.
+
+Reduced local `scripts/check_code.py --skip-sdk-checks` passed **6 code-only
+gates**: **113 Python tests run / 112 passed / 1 exact-SDK skip**, **315 host
+checks**, **125 web tests**, TypeScript, production web bundle and diff checks.
+The lightweight local Python dependencies were installed under ignored
+`.cache/code-test-deps`; ESPHome is not installed here. No exact SDK import or
+generated-freshness check was performed locally. Hosted [run 36975692611](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+passed at `77cf9ec`, including pinned-SDK/import and generated-freshness checks;
+publish/site/deploy were skipped for the PR. No firmware CLI/config/codegen/
+build, hardware, browser automation, production secrets, publication or
+deployment was used.
+
+## Earlier candidate checkpoint — 2026-10-02
+
+Target **ESPHome 2026.9.1 exactly** on Python 3.12–3.14. Candidate `0.7.0` is
+unreleased. Use the isolated Python validator for current firmware and browser
+installer checks: it copies only selected source directories, excludes
+`secrets.yaml`, creates deterministic fake secrets and keeps build output out
+of the source tree. Production secrets were not opened or copied.
+
+### Reproduce the available checks
+
+```bash
+python3.12 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-validation.txt
+npm --prefix web-configurator ci
+python scripts/generate_firmware_contract.py --check
+python web-configurator/scripts/generate_glyphs.py --check
+make -C tests test
+python tests/test_config.py
+npm --prefix web-configurator test
+npm --prefix web-configurator run typecheck
+npm --prefix web-configurator run build
+python scripts/validate.py --workspace validation-tmp/checkpoint-yaml
+# On a build host with available PlatformIO/toolchain downloads:
+python scripts/validate.py --compile
+```
+
+`--check` fails on stale generated source; regeneration is an intentional source
+change, not a substitute for checking. The YAML validator runs real config and
+C++ code generation for default two-font, all-font and built-in-only firmware,
+plus default/custom-all-font YAML from the actual browser generator. It localizes
+remote endpoints for isolation; it does **not** prove the candidate is published
+or that remote release assets fetch. `--compile` also links default/all-font
+ESP8266 firmware; without it, a PASS is **not a firmware compile**.
+
+### Executed checks from the earlier candidate checkpoint
+
+These results predate the step-5 code-only continuation below and are preserved
+for scope/history; they were not rerun here.
+
+| Command / evidence | Earlier checkpoint result |
+| --- | --- |
+| `make -C tests test` | **315 checks, 0 failures** |
+| `.venv/bin/python tests/test_config.py` | **36 tests, OK, no skips** |
+| `npm --prefix web-configurator test` | **103 passed** |
+| Browser/C++ tagged pixel oracle | **1,044 frame comparisons**, 9 parity tests |
+| `npm --prefix web-configurator run typecheck` | **PASS** |
+| `npm --prefix web-configurator run build` | **PASS** |
+| Both generated-source `--check` commands | **PASS** |
+| `scripts/validate.py --workspace validation-tmp/checkpoint-yaml` | **5 YAML configs + 5 C++ generations passed**, ESPHome 2026.9.1 |
+| Earlier full default ESP8266 compile attempt | **BLOCKED**, exit 1 during PlatformIO toolchain acquisition |
+
+Full-build log: ignored local `validation-tmp/local/compile.log`. The failure
+was `SSLEOFError(UNEXPECTED_EOF_WHILE_READING)` / `HTTPClientError` while
+installing `platformio/espressif8266@4.2.1`; there is no linked current firmware
+or flash/RAM measurement. Current recheck logs are ignored under
+`validation-tmp/checkpoint-logs/` and `validation-tmp/final-checkpoint-yaml/`.
+
+### Not yet verified
+
+- Default/all-font full ESP8266 builds and current flash/RAM headroom.
+- Live main-push release publication, matching Pages deployment, live
+  immutable installer fetch and Pages smoke checks. Workflow wiring and mocked
+  guards are tested; no publication/deployment was run.
+- Stateful countdown, alert, boot and OTA timelines. Normal screen/message
+  cycle, expiry/interruption, preference and rollover paths are covered; other
+  modes remain pending.
+- Physical font/animation/rotation, installed-version boot and encrypted OTA
+  visibility, including off/inverted/dim/night/alarm preferences.
+- Manual keyboard/reduced-motion/small-screen usability. No browser automation
+  was used.
+
+### Legacy validators and historical evidence
+
+The PowerShell/release-offline entry points and workflow commands below are
+archived, **not the recommended candidate pipeline**. In particular,
+`validate-release-offline.sh` copies the whole working tree: do not run it with
+production secrets present. Safe migration and remote release verification are
+open roadmap items. Prior release 0.2.0/0.3.0/0.4.0 binaries and measurements
+used the original ESPHome 2026.9.0 toolchain and must not be relabelled as current
+2026.9.1 results.
+
+## Validation
+
 Everything in this repository can be validated without hardware, and the
 validator never touches your real `secrets.yaml`.
 
-## Quick start
+### Quick start
 
 Windows PowerShell:
 
@@ -42,7 +236,7 @@ writes a fake `secrets.yaml` there (obvious placeholder values, valid key
 length), runs the steps and deletes only that directory again. Your real
 `secrets.yaml` is never read, printed or modified.
 
-## What each step covers
+### What each step covers
 
 | Step | Command | Covers |
 |---|---|---|
@@ -56,7 +250,7 @@ length), runs the steps and deletes only that directory again. Your real
 
 All steps return a non-zero exit code on failure, so they can be used in CI.
 
-## Offline and sandboxed validation
+### Offline and sandboxed validation
 
 Fonts are downloaded at build time. `scripts/validate-release-offline.sh` does
 this automatically; by hand it is:
@@ -76,7 +270,7 @@ This exercises the real code path - git clone at the pinned ref, the `files:`
 list, package-relative `includes:`, web-font download and caching - without
 touching GitHub.
 
-## Caching, pinning and upgrades
+### Caching, pinning and upgrades
 
 * Remote packages and downloaded fonts are cached under `.esphome/packages/`
   and `.esphome/font/` next to your YAML file.
@@ -95,7 +289,7 @@ touching GitHub.
 * Fonts are compiled into the firmware: the Home Assistant font selector
   switches between compiled font IDs and never touches the network at runtime.
 
-## Secrets
+### Secrets
 
 * Every credential lives behind `!secret` in *your* YAML and reaches the
   packages as a substitution (`wifi_ssid: !secret wifi_ssid`).
@@ -105,7 +299,7 @@ touching GitHub.
   only. The credential scan in the test suite fails if a literal secret shows up
   in a tracked file.
 
-## Evidence from the 0.2.0 sandboxed run
+### Evidence from the 0.2.0 sandboxed run
 
 The following was executed while building release 0.2.0 (ESPHome 2026.9.0).
 It is retained as historical evidence; the 0.3.0 five-font change still needs
@@ -127,7 +321,7 @@ the complete validation sequence above before publication.
 | Configurator build (`npm run build`) | single-file `dist/index.html`, 347.79 kB (102.93 kB gzip) |
 | **Full firmware compile** (`scripts/validate.ps1`) | **PASS** with ESPHome 2026.9.0: 529709/1044464 bytes flash (50.7%), 63200/81920 bytes RAM (77.1%) |
 
-## Evidence from the Matrix 2px change (2026-09-29)
+### Evidence from the Matrix 2px change (2026-09-29)
 
 Executed while adding the generated `fonts/matrix-2px` face and the renderer
 fixes shipped alongside it, in a Linux sandbox with ESPHome 2026.9.0 on
@@ -143,7 +337,7 @@ Python 3.12:
 | Configurator (`npm test`, `npm run typecheck`, `npm run build`) | **45 tests pass**, clean type-check, single-file build; `generate_glyphs.py --check` reports fresh previews |
 | Full firmware compile | **not runnable here**: the sandbox's network policy blocks `registry.platformio.org`, so the ESP8266 toolchain cannot be installed. Run `esphome compile dev.yaml` (or `scripts/validate.ps1`) on an unrestricted machine before release. |
 
-## Hardware-only checks that remain
+### Hardware-only checks that remain
 
 These cannot be verified without a real clock and are intentionally listed as
 open items in `ROADMAP.md`:
@@ -155,7 +349,7 @@ open items in `ROADMAP.md`:
 4. Button/switch behaviour on hardware (display power, inversion, night
    brightness).
 
-## Evidence for 0.4.0 (2026-09-30, Python 3.12.7 + ESPHome 2026.9.0)
+### Evidence for 0.4.0 (2026-09-30, Python 3.12.7 + ESPHome 2026.9.0)
 
 Executed in a Linux sandbox with Python 3.12.7, `esphome==2026.9.0`, and the
 ESP8266 Arduino 3.1.2 (`3.30102.0`) / `toolchain-xtensa` GCC 10.3.0
@@ -180,7 +374,7 @@ GitHub:
 | **Live remote `0.4.0` tag check** (`esphome config` cloning `https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`) | **`INFO Cloning https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock@0.4.0`**, **`INFO Configuration is valid!`**, `main.cpp` generated (3,018 lines) with both package headers (`max7219_clock_esphome.h`, `max7219_clock_renderer.h`) copied into the build `src/` directory and both tagged web fonts downloaded |
 | Full 10-face local catalogue (`esphome config dev.yaml` + `esphome compile dev.yaml`) | **`INFO Configuration is valid!`**, **`INFO Successfully compiled program.`** (`main.cpp` 3,182 lines) |
 
-### Measured ESP8266 flash and RAM usage (ESPHome 2026.9.0, `d1_mini`)
+#### Measured ESP8266 flash and RAM usage (ESPHome 2026.9.0, `d1_mini`)
 
 | Configuration | External faces | `Clock font` options | Flash used / 1,044,464 B | Flash delta vs 0 faces | RAM used / 81,920 B | RAM delta vs 0 faces |
 |---|---:|---|---:|---:|---:|---:|

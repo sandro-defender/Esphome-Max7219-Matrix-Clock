@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MatrixCanvas } from "./MatrixCanvas";
 import { LEDS } from "./leds";
-import { fitForPanel, fontSpec, widthWarning } from "./fontCatalog";
+import { fitForPanel, fontSpec } from "./fontCatalog";
 import type { Scene } from "./render";
 import type { Config } from "./types";
 import { cn } from "./utils/cn";
@@ -66,7 +66,6 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
   const spec = fontSpec(cfg.clockFont);
   const fit = fitForPanel(scene.font, scene.geometry.width, Math.min(8, scene.geometry.height));
   const led = LEDS[cfg.led];
-  const warning = widthWarning(spec.label, fit, scene.geometry.width);
   const seconds = now.getSeconds();
   let hour = now.getHours();
   const suffix = cfg.hourFormat === "12-hour" ? (hour >= 12 ? "PM" : "AM") : "";
@@ -136,7 +135,6 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
         </div>
         <div className="summary">
           <p className="summary-title">{scene.summary}</p>
-          <p>{scene.detail}</p>
         </div>
       </div>
 
@@ -175,21 +173,6 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
         ) : null}
       </ul>
 
-      {warning ? (
-        <p className="warn stage-warn" role="status">
-          <strong>Too wide:</strong> {warning}
-        </p>
-      ) : null}
-
-      {scene.notices.length > 0 ? (
-        <ul className="notices">
-          {scene.notices.map((notice) => (
-            <li key={notice.text} className={notice.level === "warn" ? "warn" : "info"}>
-              {notice.text}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </section>
   );
 }

@@ -1,0 +1,72 @@
+# GENERATED from the real entity defaults; do not copy defaults by hand.
+script:
+- id: restore_display_defaults
+  mode: restart
+  then:
+  - lambda: 'auto call = id(clock_font).make_call();
+
+      call.set_option(id(clock_font).has_option("Pixel Clock 6x8") ? "Pixel Clock 6x8" : "Compact 5x7");
+
+      call.perform();'
+  - select.set:
+      id: screen_mode
+      option: Clock
+  - select.set:
+      id: clock_alignment
+      option: Center
+  - select.set:
+      id: time_format
+      option: 24 hour
+  - select.set:
+      id: seconds_display
+      option: Digits
+  - select.set:
+      id: date_format
+      option: DD.MM
+  - select.set:
+      id: message_scroll_behavior
+      option: Scroll
+  - number.set:
+      id: matrix_brightness
+      value: 3.0
+  - number.set:
+      id: night_brightness
+      value: 1.0
+  - number.set:
+      id: animation_duration
+      value: 600.0
+  - number.set:
+      id: animation_row_gap
+      value: 1.0
+  - number.set:
+      id: message_scroll_speed
+      value: 60.0
+  - number.set:
+      id: default_message_duration
+      value: 15.0
+  - number.set:
+      id: countdown_duration
+      value: 300.0
+  - number.set:
+      id: screen_cycle_interval
+      value: 10.0
+  - number.set:
+      id: night_start_hour
+      value: 22.0
+  - number.set:
+      id: night_end_hour
+      value: 7.0
+  - switch.turn_on: matrix_display_power
+  - switch.turn_on: clock_blink
+  - switch.turn_on: clock_animate
+  - switch.turn_off: auto_cycle
+  - switch.turn_off: night_mode
+  - switch.turn_off: night_schedule_enabled
+  - switch.turn_off: display_inversion
+  - switch.turn_off: alarm_mode
+  - lambda: 'max7219_clock::state.clear_message();
+
+      max7219_clock::state.clear_alert();
+
+      max7219_clock::state.cancel_countdown();'
+  - component.update: matrix

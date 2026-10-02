@@ -1,190 +1,105 @@
 import { withFonts } from "./fontSelection";
 import { fontSpec } from "./fontCatalog";
 import { deviceSlug, nodeId } from "./device";
+import { FIRMWARE, PROJECT, firmwareOption, limitsFor, type FirmwareSetting } from "./firmware";
+import { sanitizeConfig } from "./storage";
 import { clampNumber, type Config } from "./types";
 
-const PROJECT_REPOSITORY = "https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock";
-// Must stay identical to examples/release.yaml and the released font packages
-// (checked by tests/test_config.py: test_release_example_pins_tag_and_fonts).
-const PROJECT_REF = "0.5.5";
-export const INSTALLER_READY = true;
-
-/** Must stay identical to examples/release.yaml (checked by tests/test_config.py). */
-const PACKAGE_FILES = [
-  "packages/base.yaml",
-  "packages/network.yaml",
-  "packages/renderer.yaml",
-  "packages/display.yaml",
-  "packages/controls.yaml",
-  "packages/actions.yaml",
-  "packages/diagnostics.yaml",
-  "packages/ota_ui.yaml",
-  "packages/web_server.yaml",
-] as const;
-
-function boundedInteger(value: number, minimum: number, maximum: number): number {
-  return clampNumber(value, minimum, maximum);
-}
-
-function restoreMode(enabled: boolean): string {
-  return enabled ? "RESTORE_DEFAULT_ON" : "RESTORE_DEFAULT_OFF";
-}
+/** No separate release tag, package list, entity names or defaults live here. */
+const TAG = /^\d+\.\d+\.\d+(?:\+[a-f0-9]{12})?$/;
+export function validReleaseTag(tag: string): boolean { return TAG.test(tag); }
 
 export function sanitizeFriendly(name: string): string {
-  const clean = name.replace(/["\\\r\n]/g, "").trim();
-  return clean.slice(0, 48) || "MAX7219 Clock";
+  return name.replace(/[\r\n]/g, " ").trim() || String(FIRMWARE.defaults.friendlyName);
 }
 
 export function sanitizeTimezone(tz: string): string {
   const clean = tz.trim();
-  if (/^[A-Za-z0-9_+\/-]+$/.test(clean)) return clean;
-  return "UTC";
+  if (!/^[A-Za-z0-9_+\/-]+$/.test(clean)) throw new Error("Enter a valid IANA timezone");
+  try { new Intl.DateTimeFormat("en", { timeZone: clean }).format(); }
+  catch { throw new Error("Enter a valid IANA timezone"); }
+  return clean;
 }
 
-export function sanitizeEntity(id: string): string {
-  return id.trim().toLowerCase();
-}
+export function sanitizeEntity(id: string): string { return id.trim().toLowerCase(); }
+export function selectedFontOption(font: Config["clockFont"]): string { return fontSpec(font).option; }
 
-/** Home Assistant "Clock font" option for the selected preview font. */
-export function selectedFontOption(font: Config["clockFont"]): string {
-  return fontSpec(font).option;
+export function entityId(cfg: Config, domain: string, name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return `${domain === "text_sensor" ? "sensor" : domain}.${nodeId(cfg.deviceName)}_${slug}`;
 }
 
 export function entityMap(cfg: Config) {
   const node = nodeId(cfg.deviceName);
+  const byTarget = (target: string) => {
+    const entity = FIRMWARE.entities.find((item) => item.id === target);
+    if (!entity) throw new Error(`No firmware entity ${target}`);
+    return entityId(cfg, entity.domain, entity.name);
+  };
+  const action = (name: string) => {
+    if (!FIRMWARE.actions.some((item) => item.action === name)) throw new Error(`No firmware action ${name}`);
+    return `esphome.${node}_${name}`;
+  };
   return {
-    node,
-    slug: deviceSlug(cfg.deviceName),
-    screen: `select.${node}_screen`,
-    alignment: `select.${node}_clock_alignment`,
-    font: `select.${node}_clock_font`,
-    seconds: `select.${node}_seconds_display`,
-    dateFormat: `select.${node}_date_format`,
-    scroll: `select.${node}_message_scroll`,
-    brightness: `number.${node}_matrix_brightness`,
-    duration: `number.${node}_default_message_duration`,
-    scrollSpeed: `number.${node}_message_scroll_speed`,
-    mode: `text_sensor.${node}_display_mode`,
-    ota: `text_sensor.${node}_ota_state`,
-    showAction: `esphome.${node}_show_message`,
-    clearAction: `esphome.${node}_clear_message`,
-    countdownAction: `esphome.${node}_start_countdown`,
+    node, slug: deviceSlug(cfg.deviceName), screen: byTarget("screen_mode"), alignment: byTarget("clock_alignment"),
+    font: byTarget("clock_font"), seconds: byTarget("seconds_display"), dateFormat: byTarget("date_format"),
+    scroll: byTarget("message_scroll_behavior"), brightness: byTarget("matrix_brightness"),
+    duration: byTarget("default_message_duration"), scrollSpeed: byTarget("message_scroll_speed"),
+    mode: byTarget("display_mode"), ota: byTarget("ota_state"), showAction: action("show_message"),
+    clearAction: action("clear_message"), countdownAction: action("start_countdown"),
   };
 }
 
 export function sampleAction(cfg: Config, message: string, hold = cfg.messageHold): string {
-  const ids = entityMap(cfg);
-  const safe = message.replace(/["\r\n]/g, "'");
-  return `action: ${ids.showAction}\ndata:\n  message: "${safe}"\n  duration: ${boundedInteger(hold, 0, 3600)}`;
+  const range = limitsFor("messageHold");
+  return `action: ${entityMap(cfg).showAction}\ndata:\n  message: ${JSON.stringify(message)}\n  duration: ${clampNumber(hold, range.min, range.max)}`;
 }
 
-export function installCommand(cfg: Config): string {
-  return `esphome run ${deviceSlug(cfg.deviceName)}.yaml`;
+export function installCommand(cfg: Config): string { return `esphome run ${deviceSlug(cfg.deviceName)}.yaml`; }
+
+function valueFor(item: FirmwareSetting, cfg: Config): string | number | boolean {
+  let value = cfg[item.key] as string | number | boolean;
+  if (item.key === "deviceName") value = deviceSlug(String(value));
+  if (item.key === "friendlyName") value = sanitizeFriendly(String(value));
+  if (item.key === "timezone") value = sanitizeTimezone(String(value));
+  if (typeof value === "number") {
+    const range = limitsFor(item.key);
+    value = clampNumber(value, range.min, range.max);
+  }
+  if (typeof value === "string" && value.includes("$")) throw new Error("Substitution references are not allowed in setting text");
+  if (item.key === "clockFont") return selectedFontOption(String(value));
+  if (item.kind === "select") return firmwareOption(item.key, String(value));
+  return value;
 }
 
-export function buildYaml(cfg: Config): string {
-  cfg = withFonts(cfg, cfg.fonts);
-  const deviceName = deviceSlug(cfg.deviceName);
-  const friendlyName = sanitizeFriendly(cfg.friendlyName);
-  const timezone = sanitizeTimezone(cfg.timezone);
-  const chips = boundedInteger(cfg.chips, 1, 16);
-  const rows = boundedInteger(cfg.rows, 1, 4);
-  const packageFiles = [...PACKAGE_FILES, ...cfg.fonts.map((id) => `packages/fonts/${id}.yaml`)].map((file) => `      - ${file}`).join("\n");
-
-  return `# MAX7219 Matrix Clock — one-file installer
-# Generated by the Web Configurator.
-# Keep this file beside secrets.yaml. ESPHome downloads the pinned modular
-# firmware and bundled fonts directly from the project repository.
-
-substitutions:
-  # Credentials are resolved only from your local secrets.yaml.
-  wifi_ssid: !secret wifi_ssid
-  wifi_password: !secret wifi_password
-  api_encryption_key: !secret api_encryption_key
-  fallback_ap_password: !secret fallback_ap_password
-  web_server_username: !secret web_server_username
-  web_server_password: !secret web_server_password
-
-  # Firmware and font assets use the same immutable release.
-  project_ref: "${PROJECT_REF}"
-
-  # Device identity and hardware.
-  device_name: ${deviceName}
-  friendly_name: "${friendlyName}"
-  timezone: ${timezone}
-  board: d1_mini
-  matrix_clk_pin: ${cfg.clkPin}
-  matrix_mosi_pin: ${cfg.mosiPin}
-  matrix_cs_pin: ${cfg.csPin}
-  matrix_chips: "${chips}"
-  matrix_rows: "${rows}"
-  matrix_wiring: ${cfg.wiring}
-  matrix_rotate_chip: "${cfg.rotateChip}"
-  matrix_flip_x: "${cfg.flipX}"
-
-  # Boot defaults. Home Assistant can change these after installation.
-  matrix_intensity: "${boundedInteger(cfg.brightness, 0, 15)}"
-  matrix_night_intensity: "${boundedInteger(cfg.nightBrightness, 0, 15)}"
-  animation_ms: "${boundedInteger(cfg.animationMs, 0, 2000)}"
-  animation_row_gap: "${boundedInteger(cfg.animationRowGap, 0, 2)}"
-  message_ms_per_px: "${boundedInteger(cfg.scrollSpeed, 20, 200)}"
-  screen_cycle_interval: "${boundedInteger(cfg.cycleInterval, 5, 300)}"
-  default_message_duration: "${boundedInteger(cfg.messageHold, 0, 3600)}"
-
-packages:
-  clock:
-    url: ${PROJECT_REPOSITORY}
-    ref: "${PROJECT_REF}"
-    refresh: 1d
-    files:
-${packageFiles}
-
-# Initial Home Assistant preferences. Restored values from an existing device
-# take priority after the first boot.
-select:
-  - id: !extend screen_mode
-    initial_option: "${cfg.screen}"
-  - id: !extend clock_alignment
-    initial_option: "${cfg.alignment}"
-  - id: !extend time_format
-    initial_option: "${cfg.hourFormat === "12-hour" ? "12 hour" : "24 hour"}"
-  - id: !extend seconds_display
-    initial_option: "${cfg.secondsMode}"
-  - id: !extend date_format
-    initial_option: "${cfg.dateFormat}"
-  - id: !extend clock_font
-    initial_option: "${selectedFontOption(cfg.clockFont)}"
-  - id: !extend message_scroll_behavior
-    initial_option: "${cfg.scrollMode}"
-
-number:
-  - id: !extend night_start_hour
-    initial_value: ${boundedInteger(cfg.nightStart, 0, 23)}
-  - id: !extend night_end_hour
-    initial_value: ${boundedInteger(cfg.nightEnd, 0, 23)}
-  - id: !extend animation_duration
-    initial_value: ${boundedInteger(cfg.animationMs, 0, 2000)}
-  - id: !extend animation_row_gap
-    initial_value: ${boundedInteger(cfg.animationRowGap, 0, 2)}
-  - id: !extend message_scroll_speed
-    initial_value: ${boundedInteger(cfg.scrollSpeed, 20, 200)}
-  - id: !extend screen_cycle_interval
-    initial_value: ${boundedInteger(cfg.cycleInterval, 5, 300)}
-  - id: !extend default_message_duration
-    initial_value: ${boundedInteger(cfg.messageHold, 0, 3600)}
-
-switch:
-  - id: !extend matrix_display_power
-    restore_mode: ${restoreMode(cfg.displayPower)}
-  - id: !extend clock_blink
-    restore_mode: ${restoreMode(cfg.blinkColon)}
-  - id: !extend clock_animate
-    restore_mode: ${restoreMode(cfg.digitAnimation)}
-  - id: !extend auto_cycle
-    restore_mode: ${restoreMode(cfg.autoCycle)}
-  - id: !extend night_schedule_enabled
-    restore_mode: ${restoreMode(cfg.nightDim)}
-  - id: !extend display_inversion
-    restore_mode: ${restoreMode(cfg.invert)}
-`;
+export function buildYaml(input: Config, releaseTag: string): string {
+  if (!validReleaseTag(releaseTag)) throw new Error("Installers require an immutable release tag, never main");
+  const cfg = withFonts(sanitizeConfig(input), input.fonts);
+  if (cfg.chips < cfg.rows || cfg.chips % cfg.rows !== 0) throw new Error("Module count must divide evenly into rows");
+  const mapping = FIRMWARE.pinMappings[cfg.board];
+  const pins = [cfg.clkPin, cfg.mosiPin, cfg.csPin].map((pin) => mapping?.[pin]);
+  if (pins.some((pin) => pin === undefined)) throw new Error("Select valid output pins for this board");
+  if (new Set(pins).size !== 3) throw new Error("CLK, DIN and CS need different GPIO pins");
+  const files = [...FIRMWARE.packageFiles, ...cfg.fonts.map((id) => {
+    const file = FIRMWARE.fonts.find((font) => font.id === id)?.package;
+    if (!file) throw new Error(`No firmware font package ${id}`);
+    return file;
+  })];
+  const substitutions = [
+    ...Object.entries(FIRMWARE.secrets).map(([key, secret]) => `  ${key}: !secret ${secret}`),
+    `  project_ref: ${JSON.stringify(releaseTag)}`,
+  ];
+  const sections: Record<string, string[]> = { select: [], number: [], switch: [] };
+  for (const item of FIRMWARE.settings) {
+    const value = valueFor(item, cfg);
+    if (item.kind === "substitution") {
+      substitutions.push(`  ${item.target}: ${JSON.stringify(String(value) + (item.timeSuffix ?? ""))}`);
+    } else {
+      const property = item.kind === "select" ? "initial_option" : item.kind === "number" ? "initial_value" : "restore_mode";
+      const settingValue = item.kind === "switch" ? (value ? "RESTORE_DEFAULT_ON" : "RESTORE_DEFAULT_OFF") : value;
+      sections[item.kind].push(`  - id: !extend ${item.target}\n    ${property}: ${JSON.stringify(settingValue)}`);
+      if (item.substitution) substitutions.push(`  ${item.substitution}: ${JSON.stringify(String(value))}`);
+    }
+  }
+  return `# MAX7219 Matrix Clock — one-file installer\n# Firmware ${releaseTag}; ESPHome ${FIRMWARE.esphomeVersion}\n# Keep beside your local secrets.yaml. Packages and fonts share one immutable tag.\n\nsubstitutions:\n${substitutions.join("\n")}\n\npackages:\n  clock:\n    url: ${PROJECT.repo}\n    ref: ${JSON.stringify(releaseTag)}\n    refresh: 1d\n    files:\n${files.map((file) => `      - ${file}`).join("\n")}\n\n# First-boot preferences only; existing restored values take priority.\n${Object.entries(sections).map(([domain, values]) => `${domain}:\n${values.join("\n")}`).join("\n\n")}\n`;
 }

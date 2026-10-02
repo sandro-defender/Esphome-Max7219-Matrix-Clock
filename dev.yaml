@@ -33,10 +33,12 @@ packages:
   base: !include packages/base.yaml
   network: !include packages/network.yaml
   renderer: !include packages/renderer.yaml
+  defaults: !include packages/restore_defaults.generated.yaml
   display: !include packages/display.yaml
-  fonts: !include packages/fonts_local.yaml
   controls: !include packages/controls.yaml
   actions: !include packages/actions.yaml
   diagnostics: !include packages/diagnostics.yaml
   ota_ui: !include packages/ota_ui.yaml
   web_server: !include packages/web_server.yaml
+  boot_ui: !include packages/boot_ui.yaml
+  fonts: !include packages/fonts_default_local.yaml

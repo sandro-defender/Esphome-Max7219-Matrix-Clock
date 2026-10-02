@@ -1,9 +1,5 @@
-# Convenience default release set; installers list these faces explicitly.
-substitutions:
-  project_ref: 0.5.5
-  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
-  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
-
+# Default release font set. All other faces are opt-in per-face packages.
+# The release ref/font URL substitutions come from base.yaml, never a second tag.
 packages:
+  pixel_clock_6x8: !include fonts/pixel-clock-6x8.yaml
   matrix_2px: !include fonts/matrix-2px.yaml
-  dot_matrix: !include fonts/dot-matrix.yaml

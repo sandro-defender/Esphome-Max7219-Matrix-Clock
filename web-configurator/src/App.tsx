@@ -6,6 +6,8 @@ import {
   AssistantSection,
   DocsSection,
   GallerySection,
+  FontReferenceSection,
+  ReleaseNotesSection,
   HardwareSection,
   InstallSection,
   PROJECT,
@@ -19,6 +21,8 @@ import { CopyButton, copyText, type Patch } from "./ui";
 import { usePinnedChrome } from "./usePinnedChrome";
 import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
+import { usePublishedRelease, type ReleaseState } from "./release";
+import { deviceSlug } from "./device";
 
 type Page = "configure" | "info";
 
@@ -33,27 +37,28 @@ const ConfigureColumn = memo(function ConfigureColumn({
   patch,
   setCfg,
   geo,
-  yaml,
 }: {
   cfg: Config;
   patch: Patch;
   setCfg: Dispatch<SetStateAction<Config>>;
   geo: Geometry;
-  yaml: string;
 }) {
   return (
     <>
-      <TuneSection cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} />
+      <TuneSection cfg={cfg} patch={patch} geo={geo} />
       <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
-      <HardwareSection cfg={cfg} geo={geo} />
-      <InstallSection cfg={cfg} yaml={yaml} />
     </>
   );
 });
 
-const InfoColumn = memo(function InfoColumn({ cfg }: { cfg: Config }) {
+const InfoColumn = memo(function InfoColumn({ cfg, yaml, geo, release, getInstaller }: { cfg: Config; yaml: string; geo: Geometry; release: ReleaseState; getInstaller: () => Promise<string | null> }) {
   return (
     <>
+      <h1>Info &amp; help</h1>
+      <ReleaseNotesSection releaseTag={release.tag} />
+      <InstallSection cfg={cfg} yaml={yaml} ready={release.ready && Boolean(yaml)} releaseTag={release.tag} getInstaller={getInstaller} />
+      <HardwareSection cfg={cfg} geo={geo} />
+      <FontReferenceSection />
       <AssistantSection cfg={cfg} />
       <TroubleshootingSection />
       <GallerySection />
@@ -62,11 +67,12 @@ const InfoColumn = memo(function InfoColumn({ cfg }: { cfg: Config }) {
   );
 });
 
-export default function App() {
+export default function App({ initialPage = "configure" }: { initialPage?: Page } = {}) {
+  const release = usePublishedRelease();
   const initial = useRef(loadConfig()).current;
   const [cfg, setCfg] = useState<Config>(initial.config);
   const [notice, setNotice] = useState<string | null>(initial.from === "link" ? "Settings loaded from the shared link." : null);
-  const [page, setPage] = useState<Page>("configure");
+  const [page, setPage] = useState<Page>(initialPage);
   const topbarRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
@@ -90,7 +96,33 @@ export default function App() {
     setCfg((current) => ({ ...current, [key]: value }));
   }, []);
 
-  const yaml = useMemo(() => buildYaml(cfg), [cfg]);
+  const install = useMemo(() => {
+    try { return { yaml: buildYaml(cfg, release.ready && release.tag ? release.tag : PROJECT.ref), error: "" }; }
+    catch (error) { return { yaml: "", error: error instanceof Error ? error.message : "Invalid settings" }; }
+  }, [cfg, release.ready, release.tag]);
+  const currentConfig = useRef(cfg);
+  currentConfig.current = cfg;
+  const getInstaller = useCallback(async () => {
+    const atClick = currentConfig.current;
+    const result = await release.verify();
+    if (!result.ready || !result.tag) { setNotice("Installer disabled: published release could not be verified."); return null; }
+    if (currentConfig.current !== atClick) { setNotice("Settings changed during verification. Review them and try again."); return null; }
+    try { return buildYaml(atClick, result.tag); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Invalid settings"); return null; }
+  }, [release.verify]);
+  const yaml = install.yaml;
+  const installerReady = release.ready && Boolean(yaml);
+  const download = async () => {
+    if (!installerReady) return;
+    const content = await getInstaller();
+    if (content === null) return;
+    const url = URL.createObjectURL(new Blob([content], { type: "text/yaml;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${deviceSlug(cfg.deviceName)}.yaml`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
   const geo = useMemo(() => geometry(cfg.chips, cfg.rows), [cfg.chips, cfg.rows]);
   const cycleFont = useCallback((direction: -1 | 1) => {
     setCfg((current) => {
@@ -117,7 +149,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <a className="skip-link" href="#tune">
+      <a className="skip-link" href={page === "configure" ? "#tune" : "#release-notes"}>
         Skip to the controls
       </a>
       <header className="topbar" ref={topbarRef}>
@@ -127,7 +159,7 @@ export default function App() {
             <div className="brand-name">
               Clock<span>lab</span>
             </div>
-            <small>Wemos D1 Mini · MAX7219 · ESPHome {PROJECT.esphome}</small>
+            <small>MAX7219 · ESPHome {PROJECT.esphome}</small>
           </div>
         </div>
         <div className="top-actions">
@@ -142,7 +174,8 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
             Reset
           </button>
-          <CopyButton text={yaml} id="top-yaml" label="Copy install YAML" copiedLabel="Copied" className="primary" />
+          <button type="button" className="btn ghost" onClick={download} disabled={!installerReady}>Download YAML</button>
+          <CopyButton text={yaml} id="top-yaml" label="Copy install YAML" copiedLabel="Copied" className="primary" disabled={!installerReady} getText={getInstaller} />
         </div>
       </header>
 
@@ -160,6 +193,10 @@ export default function App() {
           <li><button type="button" className={page === "configure" ? "on" : ""} aria-pressed={page === "configure"} onClick={() => setPage("configure")}>Configure</button></li>
           <li><button type="button" className={page === "info" ? "on" : ""} aria-pressed={page === "info"} onClick={() => setPage("info")}>Info &amp; help</button></li>
         </ul>
+      <div className="release-status" role="status"><span>Newest published release: <strong>{release.tag ?? "checking…"}</strong> · {release.message}</span>
+        {!release.ready ? <button type="button" className="btn ghost" onClick={release.retry} disabled={release.checking}>Retry</button> : null}
+        {install.error ? <strong className="warn-text">{install.error}</strong> : null}
+      </div>
       </nav>
 
       <main id="main" className="shell">
@@ -167,42 +204,13 @@ export default function App() {
           <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
           <div className="content-col">
             <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} onReplay={replay} />
-            <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} yaml={yaml} />
+            <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} />
           </div>
         </> : null}
-        <div className="content-col info-page" hidden={page !== "info"}><InfoColumn cfg={cfg} /></div>
+        {page === "info" ? <div className="content-col info-page"><InfoColumn cfg={cfg} yaml={yaml} geo={geo} release={release} getInstaller={getInstaller} /></div> : null}
       </main>
 
-      <footer className="site-footer">
-        <p className="release-version" role="status">
-          Configurator package release: <strong>{PROJECT.ref}</strong>
-        </p>
-        <p>
-          <strong>Clocklab</strong> — the web configurator for the{" "}
-          <a href={PROJECT.repo} target="_blank" rel="noreferrer">
-            ESPHome MAX7219 Matrix Clock
-          </a>
-          . Firmware target ESPHome {PROJECT.esphome}, release {PROJECT.ref}.
-        </p>
-        <p className="footer-safety">
-          This page never asks for Wi-Fi passwords, API keys, OTA keys or web passwords. Generated installers reference
-          your local <code>secrets.yaml</code> and nothing else leaves your browser.
-        </p>
-        <p className="footer-links">
-          <a href={PROJECT.readme} target="_blank" rel="noreferrer">
-            README
-          </a>
-          <a href={PROJECT.validation} target="_blank" rel="noreferrer">
-            VALIDATION
-          </a>
-          <a href={PROJECT.roadmap} target="_blank" rel="noreferrer">
-            ROADMAP
-          </a>
-          <a href={PROJECT.issues} target="_blank" rel="noreferrer">
-            Issues
-          </a>
-        </p>
-      </footer>
+      <footer className="site-footer"><p className="release-version">Firmware contract {PROJECT.ref} · ESPHome {PROJECT.esphome}</p></footer>
     </div>
   );
 }

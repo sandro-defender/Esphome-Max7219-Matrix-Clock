@@ -14,49 +14,8 @@ esphome:
     - max7219_clock_esphome.h
 
 script:
-  # Bring every user facing setting back to a safe, known state.
-  - id: restore_display_defaults
-    mode: restart
-    then:
-      - select.set:
-          id: screen_mode
-          option: "Clock"
-      - select.set:
-          id: clock_alignment
-          option: "Center"
-      - select.set:
-          id: time_format
-          option: "24 hour"
-      - select.set:
-          id: seconds_display
-          option: "Digits"
-      - select.set:
-          id: date_format
-          option: "DD.MM"
-      - select.set:
-          id: clock_font
-          option: "Compact 5x7"
-      - select.set:
-          id: message_scroll_behavior
-          option: "Scroll"
-      - number.set:
-          id: matrix_brightness
-          value: 3
-      - number.set:
-          id: night_brightness
-          value: 1
-      - switch.turn_on: matrix_display_power
-      - switch.turn_on: clock_blink
-      - switch.turn_on: clock_animate
-      - switch.turn_off: auto_cycle
-      - switch.turn_off: night_mode
-      - switch.turn_off: night_schedule_enabled
-      - switch.turn_off: display_inversion
-      - lambda: |-
-          max7219_clock::state.clear_message();
-          max7219_clock::state.clear_alert();
-          max7219_clock::state.cancel_countdown();
-      - component.update: matrix
+  # Factory reset actions are generated from controls + selected default fonts
+  # in restore_defaults.generated.yaml; no second copy of preference defaults.
 
   # Show the OTA error screen for a few seconds, then restore the previous
   # screen and display power state (Phase 10).
@@ -64,18 +23,6 @@ script:
     mode: restart
     then:
       - delay: 8s
-      - lambda: |-
-          max7219_clock::state.ota_state = max7219_clock::OTA_IDLE;
-          if (!max7219_clock::state.display_power_before_ota) {
-            id(matrix_display_power).turn_off();
-          }
-      - component.update: matrix
-
-  # Successful upload: keep "100%" on the panel and let the OTA component reboot.
-  - id: ota_success_hold
-    mode: restart
-    then:
-      - delay: 2s
       - lambda: |-
           max7219_clock::state.ota_state = max7219_clock::OTA_IDLE;
       - component.update: matrix

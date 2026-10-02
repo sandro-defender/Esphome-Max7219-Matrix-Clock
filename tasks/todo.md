@@ -1,71 +1,150 @@
-# Planned work
+# Current code work and stepwise PR updates
 
-## Phase 16: Renderer and configurator
+## Active instruction — 2026-10-02
 
-### Task 1: Repair digit slide-up animation
+Continue on code only. **Do not run ESPHome config/build/compile/codegen or
+retry toolchain downloads.** Arena fixes this session to
+`arena/01a0fb1d-esphome-max7219-matrix-clock`; PR #13 still points to
+`arena/01a0f913-esphome-max7219-matrix-clock` at `5adcc9a`. Do not push the
+other branch or imply this step is present in PR #13.
+
+- [x] Step 1: audit/harden the publisher and add 40 mocked offline tests.
+  Main provenance/clean checkout, tag races/collisions, draft recovery,
+  non-destructive publication, asset verification and bounded latest selection
+  are covered. No real publisher execution/release/deployment occurred.
+- [x] Step 2: code-only every-main/PR CI, 15 workflow/code-gate contract tests
+  and explicit esbuild pin. No ESPHome/PlatformIO CLI in this workflow.
+  Reduced local gate: 91 Python tests run (90 pass, 1 SDK skip), 315 host checks,
+  103 web tests, typecheck/web bundle pass. Full hosted code-only CI/SDK freshness passed for source commit `2753a67`.
+- [x] Step 3: replace legacy workflows with guarded main-only checks → immutable
+  installer release → same-SHA Pages. Add 22 mocked deployment/workflow tests,
+  read-only tag/notes/asset verification, stale-build skips and Pages-lock recheck.
+  Local reduced gate: 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
+  103 web tests, typecheck/web bundle pass. [Hosted code-only CI passed](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866)
+  for `8418b49`; actual main publication/deployment remains unverified.
+- [x] Step 4: harden installer release lookup with streamed UTF-8 byte limits,
+  timeout/cancellation, strict response/identity/version checks and tag-cycle
+  detection. Add 13 regressions (22 resolver tests). Hosted run
+  [36965718848](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36965718848)
+  passed source/preview checks at `dd1037f`; publication/site/deploy were skipped.
+- [x] Step 5: stateful Clock/Date/message parity. A retained C++ `Runtime`
+  sequence fixture applies `Report` updates after drawing; the browser uses a
+  monotonic, uint32 timeline and advances once for settled/animated frame paths.
+  **9 timeline tests compare 47 sequential native/browser frames** across late
+  cycles, message expiry/interruption, preference edits and rollover.
+  Reduced local gate: 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
+  125 web tests, typecheck, web bundle and diff pass. Exact SDK freshness was
+  not checked locally. [Hosted run 36975692611](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+  passed at `77cf9ec`, including pinned-SDK/source freshness; privileged jobs
+  skipped. Draft PR #14 is open from the assigned branch; PR #13 remains intact.
+- [ ] Remaining: hosted validation of step 5 on the assigned branch, stateful
+  countdown/alert/boot/OTA coverage, live integration, manual
+  accessibility/hardware sign-off. Full ESPHome builds remain deferred.
+
+## Historical checkpoint and next-work list
+
+## 2026-10-02 — draft PR hand-off
+
+The earlier instruction was to finish the step, document the roadmap and push a
+PR. Candidate `0.7.0` targets **ESPHome 2026.9.1 exactly** and remains unreleased.
+The current acceptance checklist is [ROADMAP.md](../ROADMAP.md); historical
+checked tasks below do not certify this candidate.
+
+- [x] Checkpoint default Pixel Clock 6×8 + Matrix 2px, repaired zero, per-cell
+  slides, boot/secure OTA, firmware-derived controls/help/YAML and tagged pixel
+  parity. Extra compatible fonts are opt-in with no artificial cap.
+- [x] Migrate stale Python contracts and run current C++/Python/web checks,
+  typecheck/build, generated freshness and five exact-target YAML/codegen variants.
+- [x] Separate historical compile/size results from current evidence.
+- [x] Commit/push only `arena/01a0f913-esphome-max7219-matrix-clock` and open
+  **[draft PR #13](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/pull/13)**. No main push, release/tag publication or Pages deployment.
+
+## Remaining work after the step-5 preview increment
+
+1. Run hosted code-only validation on the Arena-assigned branch. PR #13's
+   source branch differs and cannot be used in this session.
+2. Extend stateful native/browser timelines to countdown, alert, boot and OTA;
+   current tests establish normal/message behavior only.
+3. Migrate legacy validators safely, refresh release-note metadata, and verify
+   immutable installer/release/Pages integration only when publication is
+   explicitly approved.
+4. Perform manual accessibility and physical font/animation/boot/encrypted-OTA
+   checks. Firmware builds remain deferred by the current instruction.
+
+## Archived tasks from base commit e693db4
+
+Original task states, ESPHome 2026.9.0 evidence and old font/default policies are
+preserved below for traceability only. Earlier SNTP/device update-check plans
+remain prior backlog, not newly implemented features in this checkpoint.
+
+## Planned work
+
+### Phase 16: Renderer and configurator
+
+#### Task 1: Repair digit slide-up animation
 
 - [x] Reproduce the faulty digit transition in `tests/test_renderer.cpp` — `test_slide_animation_uses_ink_height_not_canvas_height()` reproduces the bug.
 - [x] Correct clipping, timing, and changed-digit selection in the renderer — Fixed `draw_line` to use `font.ink_height()` instead of `c.height()` for slide distance.
 - [x] Verify second, minute, hour, and rollover transitions — Covered by existing tests (`test_only_changed_digits_animate`, `test_animation_survives_hour_rollover`, `test_millis_wrap_keeps_clock_stable`).
 
-### Task 2: Join matrix modules in the configurator preview
+#### Task 2: Join matrix modules in the configurator preview
 
 - [x] Remove visual gaps between adjacent 8×8 modules in the matrix canvas — `moduleGeometry()` joins boards edge to edge (`gap = 0`), so the canvas is exactly `modulesX × mod` wide and each board starts where the previous one ends.
 - [x] Retain optional module-boundary guidance without shifting pixels — the *Module boundary guides* switch draws dashed lines into the shared bezel after the LEDs; the overlay is read-only and a single-module panel is a complete no-op.
 - [x] Add boundary-focused configurator tests — `src/MatrixCanvas.test.ts` asserts seam geometry across 1×1…16×4 panels at four canvas widths, guide placement, dpr scaling and preview-only YAML isolation (60 Vitest checks, up from 45).
 
-### Task 3: Compact the configurator
+#### Task 3: Compact the configurator
 
 - [x] Group controls into compact collapsible sections without hiding required settings — native details/summary; Clock face, Hardware and Device initially expanded; static-render regression test.
 - [ ] Keep keyboard access, labels, and small-screen layout usable.
 - [x] Verify YAML generation and share links remain compatible — existing YAML/storage tests pass unchanged (61 configurator tests total).
 
-### Checkpoint: UI and renderer
+#### Checkpoint: UI and renderer
 
 - [x] Renderer and configurator test suites pass — `make -C tests test` reports 245 checks / 0 failures and `npm test` reports 60 passed in `web-configurator/`.
 - [ ] Visual hardware check confirms animation and seamless module preview — still open: it needs a physical panel and a downloaded firmware build.
 
-## Phase 17: Firmware identity and resilient time
+### Phase 17: Firmware identity and resilient time
 
-### Task 4: Show firmware version at boot
+#### Task 4: Show firmware version at boot
 
 - [ ] Add a short boot screen with the project firmware version.
 - [ ] Return to the selected screen without delaying networking or OTA.
 - [ ] Add renderer and configuration tests.
 
-### Task 5: Add configurable SNTP fallback servers
+#### Task 5: Add configurable SNTP fallback servers
 
 - [ ] Keep Home Assistant time as the primary source.
 - [ ] Expose bounded server substitutions with safe defaults, including a Google NTP endpoint.
 - [ ] Test fallback selection when Home Assistant time is unavailable.
 
-## Phase 18: Release awareness and latest channel
+### Phase 18: Release awareness and latest channel
 
-### Task 6: Define a signed-off release manifest
+#### Task 6: Define a signed-off release manifest
 
 - [ ] Add a small, versioned manifest generated only for published releases.
 - [ ] Define compatibility, URL, timeout, and failure behaviour.
 - [ ] Add parser and downgrade-protection tests.
 
-### Task 7: Add opt-in update checks
+#### Task 7: Add opt-in update checks
 
 - [ ] Check the manifest at a bounded interval and expose installed/latest/update-available diagnostics.
 - [ ] Never download firmware, change configuration, or expose secrets automatically.
 - [ ] Verify offline, malformed-response, and GitHub-unavailable behaviour.
 
-### Task 8: Make the configurator default to the latest published release
+#### Task 8: Make the configurator default to the latest published release
 
 - [ ] Resolve “latest” to the newest immutable release tag at configuration-generation time.
 - [ ] Keep an explicit advanced option to choose another supported tag.
 - [ ] Update the generated YAML, documentation, and release-path tests.
 
-### Checkpoint: Release safety
+#### Checkpoint: Release safety
 
 - [ ] `esphome config`, full ESP8266 compile, and all regression tests pass.
 - [ ] Firmware-size delta is recorded and retains safe ESP8266 headroom.
 - [ ] README documents update behaviour, privacy, and the latest-release policy.
 
-## Font-subset work — published in 0.4.0
+### Font-subset work — published in 0.4.0
 
 Latest user decision: Matrix 2px and Dot Matrix are included by default; add
 up to three extras. Compact 5×7 is always available.

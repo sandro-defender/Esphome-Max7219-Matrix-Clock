@@ -11,7 +11,10 @@ substitutions:
   device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
   # Version reported as the ESPHome project version. Keep this in sync with the
   # tag that the release example pins.
-  project_version: "0.5.5"
+  project_ref: "0.7.0"
+  project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
+  project_version: ${project_ref}
+  fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
 
   # ----- Hardware ---------------------------------------------------------
   board: d1_mini                # ESP8266 board (Wemos D1 mini by default)
@@ -34,11 +37,13 @@ substitutions:
   matrix_night_intensity: "1"   # night brightness, 0..15
 
   # ----- Renderer timing --------------------------------------------------
-  display_update_interval: 150ms   # fast enough for smooth message scrolling
+  display_update_interval: 20ms    # 50 Hz: every row of an 8–10-row slide is sampled
   animation_ms: "600"              # slide-up duration, 0 disables the slide
   animation_row_gap: "1"           # blank rows between old and new sliding digits
   message_ms_per_px: "60"          # scrolling speed in ms per pixel
   screen_cycle_interval: "10"      # seconds between clock and date
+  boot_version_duration: "2500"     # non-blocking installed-release splash
+  ota_display_intensity: "3"       # visible even with night/display power off
   default_message_duration: "15"   # seconds used when an action passes <= 0
 
 
@@ -46,21 +51,11 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   comment: ${device_comment}
-  min_version: "2026.9.0"
+  min_version: "2026.9.1"
   project:
     name: sandro-defender.max7219-matrix-clock
     version: ${project_version}
   name_add_mac_suffix: false
-  on_boot:
-    # -100: after the preferences (restored entities) have been loaded.
-    priority: -100
-    then:
-      - lambda: |-
-          // Apply the restored runtime settings to the hardware once at boot.
-          const uint8_t brightness = max7219_clock::clamp_u8(id(matrix_brightness).state, 0, 15);
-          id(matrix).intensity(brightness);
-          id(matrix).turn_on_off(id(matrix_display_power).state);
-      - component.update: matrix
 
 esp8266:
   board: ${board}

@@ -29,6 +29,8 @@ export function CopyButton({
   copiedLabel = "Copied",
   className,
   onCopied,
+  disabled = false,
+  getText,
 }: {
   text: string;
   id: string;
@@ -36,16 +38,20 @@ export function CopyButton({
   copiedLabel?: string;
   className?: string;
   onCopied?: (id: string) => void;
+  disabled?: boolean;
+  /** Installers reverify the newest release immediately before clipboard access. */
+  getText?: () => Promise<string | null>;
 }) {
   const [copied, setCopied] = useState(false);
   const copy = useCallback(async () => {
-    if (!(await copyText(text))) return;
+    const prepared = getText ? await getText() : text;
+    if (prepared === null || !(await copyText(prepared))) return;
     setCopied(true);
     onCopied?.(id);
     window.setTimeout(() => setCopied(false), 1600);
-  }, [text, id, onCopied]);
+  }, [text, id, onCopied, getText]);
   return (
-    <button type="button" className={cn("btn", className ?? "primary")} onClick={copy}>
+    <button type="button" className={cn("btn", className ?? "primary")} onClick={copy} disabled={disabled}>
       <span role="status" aria-live="polite">
         {copied ? copiedLabel : label}
       </span>
@@ -148,12 +154,14 @@ export function NumberField({
   value,
   min,
   max,
+  step = 1,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
+  step?: number;
   onChange: (next: number) => void;
 }) {
   return (
@@ -163,27 +171,13 @@ export function NumberField({
         type="number"
         min={min}
         max={max}
+        step={step}
         value={value}
         onChange={(event) => onChange(clampNumber(Number(event.target.value), min, max))}
       />
     </label>
   );
 }
-
-export function PinField({ label, value, onChange }: { label: string; value: string; onChange: (next: string) => void }) {
-  return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        {PINS.map((pin) => (
-          <option key={pin}>{pin}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-const PINS = ["D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"];
 
 export type Patch = <K extends keyof Config>(key: K, value: Config[K]) => void;
 

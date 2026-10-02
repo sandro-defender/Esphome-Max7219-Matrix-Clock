@@ -1,3 +1,5 @@
+import { FIRMWARE, limitsFor, optionsFor } from "./firmware";
+
 export type Wiring = "snake" | "zigzag";
 export type Alignment = "Left" | "Center" | "Right";
 export type HourFormat = "24-hour" | "12-hour";
@@ -6,30 +8,30 @@ export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 
 /** Home Assistant "Clock font" options compiled by the firmware. */
-export const CLOCK_FONTS = [
-  "pixel-clock-6x8",
-  "md-parola-numeric-7seg",
-  "md-max72xx-system",
-  "matrix-2px",
-  "dot-matrix",
-  "compact",
-] as const;
-export type ClockFont = (typeof CLOCK_FONTS)[number];
+export const CLOCK_FONTS = FIRMWARE.fonts.map((font) => font.id);
+export type ClockFont = string;
 
-/**
- * "firmware" mirrors what packages/max7219_clock_renderer.h draws.
- * "modules" is the one-digit-per-8x8-module illustration.
- */
-export type LayoutPreview = "firmware" | "modules";
+/** Legacy share links are migrated to the real firmware layout. */
+export type LayoutPreview = "firmware";
 
 export type ScreenMode = "Clock" | "Date" | "Message" | "Module grid test" | "Pixel checkerboard";
 export type LedName = "Blood" | "Amber" | "Red" | "Green" | "Ice" | "White";
 
+export type ConfigValue = string | number | boolean | string[];
 export interface Config {
+  [key: string]: ConfigValue | undefined;
   // Identity
   deviceName: string;
   friendlyName: string;
   timezone: string;
+  board: string;
+  deviceComment: string;
+  logLevel: string;
+  otaPort: number;
+  fallbackSsid: string;
+  displayUpdateMs: number;
+  bootVersionMs: number;
+  otaBrightness: number;
 
   // Hardware (compile-time substitutions)
   clkPin: string;
@@ -45,6 +47,7 @@ export interface Config {
   screen: ScreenMode;
   autoCycle: boolean;
   cycleInterval: number;
+  countdownDuration: number;
   alignment: Alignment;
   hourFormat: HourFormat;
   dateFormat: DateFormat;
@@ -67,6 +70,8 @@ export interface Config {
   // Light
   brightness: number;
   nightDim: boolean;
+  nightManual: boolean;
+  alarmMode: boolean;
   nightBrightness: number;
   nightStart: number;
   nightEnd: number;
@@ -81,74 +86,33 @@ export interface Config {
   showModuleBoundaries: boolean;
 }
 
-export const PINS = ["D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"] as const;
-
-export const DEFAULT_CONFIG: Config = {
-  deviceName: "max7219-clock",
-  friendlyName: "MAX7219 Clock",
-  timezone: "UTC",
-
-  clkPin: "D8",
-  mosiPin: "D6",
-  csPin: "D7",
-  chips: 6,
-  rows: 1,
-  wiring: "snake",
-  rotateChip: 0,
-  flipX: false,
-
-  screen: "Clock",
-  autoCycle: false,
-  cycleInterval: 10,
-  alignment: "Center",
-  hourFormat: "24-hour",
-  dateFormat: "DD.MM",
-  secondsMode: "Digits",
-  blinkColon: true,
-  digitAnimation: true,
-  animationMs: 600,
-  animationRowGap: 1,
-  clockFont: "pixel-clock-6x8",
-  fonts: ["pixel-clock-6x8"],
-  layoutPreview: "firmware",
-
+/** Only these visual/demo preferences do not install a firmware setting. */
+export const PREVIEW_DEFAULTS = {
+  layoutPreview: "firmware" as const,
   message: "",
-  messageHold: 20,
-  scrollMode: "Scroll",
-  scrollSpeed: 80,
-
-  brightness: 4,
-  nightDim: false,
-  nightBrightness: 1,
-  nightStart: 23,
-  nightEnd: 6,
-  displayPower: true,
-  invert: false,
-  led: "Blood",
-
+  led: "Blood" as const,
   previewTime: "",
   showModuleBoundaries: false,
 };
 
-/** Bounded ranges, shared by the UI, the YAML generator and the tests. */
-export const LIMITS = {
-  chips: { min: 1, max: 16 },
-  rows: { min: 1, max: 4 },
-  brightness: { min: 0, max: 15 },
-  animationMs: { min: 0, max: 2000 },
-  animationRowGap: { min: 0, max: 2 },
-  scrollSpeed: { min: 20, max: 200 },
-  cycleInterval: { min: 5, max: 300 },
-  messageHold: { min: 0, max: 3600 },
-} as const;
+export const DEFAULT_CONFIG: Config = {
+  ...FIRMWARE.defaults,
+  ...PREVIEW_DEFAULTS,
+  fonts: [...FIRMWARE.defaultFonts],
+} as Config;
+
+/** Bounds are extracted from the actual number entities / ESPHome schema. */
+export const LIMITS = Object.fromEntries(
+  FIRMWARE.settings.filter((item) => typeof item.default === "number").map((item) => [item.key, limitsFor(item.key)]),
+) as Record<string, { min: number; max: number; step: number }>;
 
 export function clampNumber(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-export function isConfigKey(key: string): key is keyof Config {
+export function isConfigKey(key: string): key is keyof Config & string {
   return Object.prototype.hasOwnProperty.call(DEFAULT_CONFIG, key);
 }
 
-export const SCREENS: ScreenMode[] = ["Clock", "Date", "Message", "Module grid test", "Pixel checkerboard"];
+export const SCREENS = optionsFor("screen") as ScreenMode[];

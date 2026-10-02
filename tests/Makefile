@@ -10,15 +10,20 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wno-unused-parameter -O2
 
-.PHONY: all test clean
+.PHONY: all test fixture clean
 
 all: test
 
 test_renderer: test_renderer.cpp ../packages/max7219_clock_renderer.h
 	$(CXX) $(CXXFLAGS) -o $@ test_renderer.cpp
 
+renderer_fixture: renderer_fixture.cpp fonts.generated.h frame.generated.h string_ref.generated.h driver.generated.h ../packages/max7219_clock_renderer.h ../packages/max7219_clock_esphome.h
+	$(CXX) $(CXXFLAGS) -o $@ renderer_fixture.cpp
+
+fixture: renderer_fixture
+
 test: test_renderer
 	./test_renderer
 
 clean:
-	rm -f test_renderer
+	rm -f test_renderer renderer_fixture

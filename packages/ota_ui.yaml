@@ -1,56 +1,37 @@
-# Native OTA module: encrypted transfer plus the on-screen upload status.
-#
-# The transfer itself uses the existing API encryption key, so the key must not
-# be regenerated for an installed device (copy the current key into the new
-# secrets.yaml before flashing). A password is deliberately NOT configured:
-# ESPHome rejects password + encryption together.
-
+# Encrypted native OTA; the local API key is reused, never embedded here.
+# Official 2026.9.1: x is 0..100, OTA blocks loop(), and on_end runs just before
+# reboot. The renderer calls MAX7219::display() synchronously from update().
 ota:
   - platform: esphome
     id: ota_component
     port: ${ota_port}
     encryption:
       key: ${api_encryption_key}
-    # Phase 10: OTA feedback must not depend on the normal update loop, because
-    # the upload blocks the application loop. Each callback stores a few bytes
-    # of state and asks the MAX7219 to redraw immediately.
     on_begin:
+      - script.stop: ota_error_timeout
       - lambda: |-
-          max7219_clock::state.display_power_before_ota = id(matrix_display_power).state;
-          max7219_clock::state.ota_state = max7219_clock::OTA_STARTING;
-          max7219_clock::state.ota_percent = 0;
-          max7219_clock::state.ota_error = 0;
-          // Make sure progress is visible even when the panel was switched off.
-          if (!id(matrix_display_power).state) {
-            id(matrix_display_power).turn_on();
-          }
-      - component.update: matrix
+          max7219_clock::state.begin_ota(id(matrix_display_power).state);
+          id(matrix).update();
     on_progress:
       - lambda: |-
-          const uint8_t percent = max7219_clock::clamp_u8(x * 100.0f, 0, 100);
-          if (percent != max7219_clock::state.ota_percent) {
-            max7219_clock::state.ota_percent = percent;
-            max7219_clock::state.ota_state = max7219_clock::OTA_UPLOADING;
-            // Redraw only when the displayed integer percentage changes.
-            id(matrix).update();
-          }
+          if (max7219_clock::set_ota_progress(x)) id(matrix).update();
     on_end:
       - lambda: |-
           max7219_clock::state.ota_state = max7219_clock::OTA_SUCCESS;
           max7219_clock::state.ota_percent = 100;
-      - component.update: matrix
-      - script.execute: ota_success_hold
+          id(matrix).update();
+          // Only AFTER a successful transfer: give humans time to see 100%.
+          // An asynchronous script/delay cannot hold a rebooting OTA callback.
+          delay(1000);
     on_error:
       - lambda: |-
           max7219_clock::state.ota_state = max7219_clock::OTA_ERROR;
           max7219_clock::state.ota_error = x;
-      - component.update: matrix
-      - script.stop: ota_success_hold
+          id(matrix).update();
       - script.execute: ota_error_timeout
     on_abort:
       - lambda: |-
           max7219_clock::state.ota_state = max7219_clock::OTA_ERROR;
           max7219_clock::state.ota_error = 0;
-      - component.update: matrix
-      - script.stop: ota_success_hold
+          id(matrix).update();
       - script.execute: ota_error_timeout
