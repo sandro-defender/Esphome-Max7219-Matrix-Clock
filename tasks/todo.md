@@ -34,9 +34,9 @@ other branch or imply this step is present in PR #13.
   cycles, message expiry/interruption, preference edits and rollover.
   Reduced local gate: 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
   125 web tests, typecheck, web bundle and diff pass. Exact SDK freshness was
-  not checked locally. PR #13 still has the other head branch; the latest user
-  request is to open a PR from this assigned branch. Hosted code validation
-  remains pending until the branch is pushed.
+  not checked locally. [Hosted run 36975692611](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+  passed at `77cf9ec`, including pinned-SDK/source freshness; privileged jobs
+  skipped. Draft PR #14 is open from the assigned branch; PR #13 remains intact.
 - [ ] Remaining: hosted validation of step 5 on the assigned branch, stateful
   countdown/alert/boot/OTA coverage, live integration, manual
   accessibility/hardware sign-off. Full ESPHome builds remain deferred.

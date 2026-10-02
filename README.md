@@ -34,8 +34,8 @@ checkpoint**, not a ready-to-merge firmware release. The default external pair
 is **Pixel Clock 6×8 + Matrix 2px**, with Compact 5×7 built in and other compatible
 faces optional without an artificial selection cap.
 
-Hosted pinned-SDK freshness passed through step 4; the reduced local result above
-is not exact-SDK freshness. Five YAML/code-generation variants passed at the
+Hosted pinned-SDK freshness passed on step 5; the reduced local result above
+is not a local exact-SDK check. Five YAML/code-generation variants passed at the
 **earlier checkpoint**, not during this continuation. Full ESP8266 compilation
 remains deferred by the user after historical toolchain TLS errors; current
 flash/RAM and real boot/OTA behavior are not verified. Automatic main-push

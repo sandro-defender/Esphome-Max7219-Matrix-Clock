@@ -104,11 +104,11 @@ gates**: **113 Python tests run / 112 passed / 1 exact-SDK skip**, **315 host
 checks**, **125 web tests**, TypeScript, production web bundle and diff checks.
 The lightweight local Python dependencies were installed under ignored
 `.cache/code-test-deps`; ESPHome is not installed here. No exact SDK import or
-generated-freshness check was performed locally. Step-5 hosted validation is
-pending until the assigned branch is pushed and its read-only code gate
-completes. Authentication was restored after failures in the prior turn; no
-firmware CLI/config/codegen/build, hardware, browser automation, production
-secrets, publication or deployment was used.
+generated-freshness check was performed locally. Hosted [run 36975692611](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+passed at `77cf9ec`, including pinned-SDK/import and generated-freshness checks;
+publish/site/deploy were skipped for the PR. No firmware CLI/config/codegen/
+build, hardware, browser automation, production secrets, publication or
+deployment was used.
 
 ## Earlier candidate checkpoint — 2026-10-02
 

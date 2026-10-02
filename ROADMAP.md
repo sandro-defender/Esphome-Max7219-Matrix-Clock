@@ -110,9 +110,10 @@ evidence, not a new build claim.
 - [x] Reduced local code-only gate passed: **113 Python tests run / 112 passed /
   1 exact-SDK skip**, **315 host checks**, **125 web tests**, TypeScript,
   production web bundle and diff checks. Exact-SDK imports/generated freshness
-  were not run locally. Step 5 hosted validation is pending until the assigned
-  branch is pushed and the read-only hosted gate completes. Keep PR #13's
-  existing source branch unchanged.
+  were not run locally. Hosted [step-5 code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+  passed for `77cf9ec`, including pinned-SDK/source-freshness gates; publish/site/
+  deployment jobs were skipped. Draft PR #14 is open from the assigned branch;
+  PR #13's original source branch remains unchanged.
 - [ ] Stateful countdown, alert, boot and OTA event timelines remain unverified;
   renderer snapshot tests do not establish their retained interactions.
 - No firmware CLI/build, hardware test, browser automation, production-secret

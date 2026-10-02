@@ -69,9 +69,11 @@ exact-SDK skip**, **315 host checks**, **125 web tests**, TypeScript, production
 web bundle and diff checks. Nine timeline tests compare **47 sequential native
 and browser frames**, including visible pixels, page/mode, brightness, report
 screens and runtime timers. Exact SDK imports/generated freshness were not run
-locally; hosted step-5 validation will be checked after the assigned-branch
-push. Countdown/alert/boot/OTA retained timelines, firmware compilation,
-physical-device checks and live publication/deployment remain unverified.
+locally; hosted [run 36975692611](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36975692611)
+passed for `77cf9ec`, including pinned-SDK/source-freshness checks. Publish/site/
+deployment jobs were skipped. Countdown/alert/boot/OTA retained timelines,
+firmware compilation, physical-device checks and live publication/deployment
+remain unverified.
 
 ## Earlier draft checkpoint — 2026-10-02
 
