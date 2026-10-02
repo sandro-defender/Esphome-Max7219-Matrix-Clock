@@ -54,6 +54,8 @@ REQUIRED_MODULES = [
     "renderer.yaml",
     "display.yaml",
     "controls.yaml",
+    "buttons.yaml",
+    "entity_visibility.yaml",
     "actions.yaml",
     "diagnostics.yaml",
     "ota_ui.yaml",
@@ -346,14 +348,16 @@ class ConfigContractTests(unittest.TestCase):
         web = load_yaml(PACKAGES / "web_server.yaml")["web_server"]
         self.assertFalse(web.get("ota", True))
         self.assertIn("auth", web)
-        self.assertEqual("basic", web["auth"]["type"], "set auth type explicitly")
+        self.assertEqual("${web_server_auth_type}", web["auth"]["type"], "set auth type explicitly")
+        self.assertEqual("basic", load_yaml(PACKAGES / "web_server.yaml")["substitutions"]["web_server_auth_type"])
+        self.assertFalse(web["include_internal"], "hidden entities must not leak through the device web UI")
 
     # ------------------------------------------------------------------ #
     # Home Assistant surface
     # ------------------------------------------------------------------ #
     def test_required_entities_exist(self):
         found: dict[str, set[str]] = {}
-        for name in ("controls.yaml", "diagnostics.yaml"):
+        for name in ("controls.yaml", "buttons.yaml", "date_controls.yaml", "diagnostics.yaml"):
             config = load_yaml(PACKAGES / name)
             for platform, entries in config.items():
                 if not isinstance(entries, list):
@@ -377,7 +381,7 @@ class ConfigContractTests(unittest.TestCase):
                 )
 
     def test_controls_are_entity_category_config(self):
-        controls = load_yaml(PACKAGES / "controls.yaml")
+        controls = {**load_yaml(PACKAGES / "controls.yaml"), **load_yaml(PACKAGES / "buttons.yaml")}
         for platform in ("select", "number", "switch", "button"):
             for entry in controls[platform]:
                 self.assertEqual(
@@ -442,6 +446,8 @@ class ConfigContractTests(unittest.TestCase):
             "boot_ui.yaml",
             "restore_defaults.generated.yaml",
             "controls.yaml",
+            "buttons.yaml",
+            "entity_visibility.yaml",
             "date_controls.yaml",
             "actions.yaml",
             "diagnostics.yaml",

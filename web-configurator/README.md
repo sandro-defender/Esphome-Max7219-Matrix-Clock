@@ -6,10 +6,13 @@ generates one small installer YAML backed by the version-pinned packages in
 [`../packages/`](../packages/). Live at
 <https://sandro-defender.github.io/Esphome-Max7219-Matrix-Clock/>.
 
-The page is a single scrolling document (Live preview, Tune, Font Lab, Hardware
-and Wiring, Install YAML, Home Assistant, Troubleshooting, Gallery, Docs). The
-matrix is the first thing on screen at every width and becomes a sticky rail
-from 980 px.
+Configure contains the live preview, compact settings cards, Home Assistant
+visibility and Font Lab. Info & help keeps wiring, installer YAML, entity/action
+references, troubleshooting, gallery and documentation. Cards share aligned
+labels and controls; descriptions and entity groups use native disclosures.
+The matrix stays visible on phones and becomes a sticky rail from 980 px.
+The complete coverage audit and fixed safety policies are in
+[docs/CONFIGURATOR_SETTINGS.md](../docs/CONFIGURATOR_SETTINGS.md).
 
 ## Development
 
@@ -67,13 +70,32 @@ being written.
 
 `src/timezone.ts` reads the browser's IANA zone from
 `Intl.DateTimeFormat().resolvedOptions().timeZone` and validates it with the
-firmware's own `sanitizeTimezone()` (`src/yaml.ts`), so the detected value flows
+shared `sanitizeTimezone()` (`src/settingsModel.ts`), so the detected value flows
 unchanged into the installer YAML (`timezone: <zone>`) and the live preview.
-Detection runs only on a **first visit** (no saved config, no shared link): a
-saved configuration or link always wins, and a failed or invalid detection keeps
-the firmware default. The **Use my timezone** button next to the field re-applies
-the detected zone at any time and shows it. Everything is client-side — no
-geolocation API, no IP lookup, no permission prompt, no network request.
+**Automatic timezone** is on by default, including for old saved/shared profiles
+without an explicit policy. It applies on load, focus, visible-tab return,
+`pageshow` and a one-minute visible-page recheck. The field is read-only while
+automatic mode is on. Turn the toggle off to enter a **manual IANA zone**; the
+explicit override is saved and shared and survives browser-zone changes.
+Re-enabling automatic mode or resetting settings immediately re-detects the zone.
+A failed detection keeps the current zone (the firmware default on first use).
+Everything is client-side — no geolocation API, IP lookup, permission prompt or
+network request.
+
+## Home Assistant visibility and optional packages
+
+The visibility section includes every named control, button and diagnostic,
+including nested debug/Wi-Fi info entities. It emits `internal` substitutions;
+entities are never removed, so renderer and action dependencies remain valid.
+This is firmware/YAML configuration: **rebuild and install**, not a live Home
+Assistant preference. Diagnostics and recovery controls are exposed by default.
+Old Home Assistant registry entries may need cleanup after installation; an
+exposed-but-disabled OTA percent entity is different from an internal one.
+
+The Web server card can omit the optional authenticated page and its unused
+secret references. API encryption and native OTA remain; web OTA and listing
+internal entities stay disabled. Network options never include credential
+values. A non-secret allowlist is applied before local storage and sharing.
 
 ## Release verification
 
@@ -101,7 +123,7 @@ quota pressure by embedding a token in the page. Full pipeline detail:
 
 ## Storage and sharing
 
-Display preferences live in `localStorage`; the Share button encodes them as a
+Non-secret settings live in `localStorage`; the Share button encodes them as a
 base64url URL fragment (`#cfg=…`). Every value is validated and clamped on the
 way in, so a hand-edited link cannot break the preview. A shared link is adopted
 once, then stored locally and removed from the URL. Reset clears the saved
@@ -119,7 +141,10 @@ user's local `secrets.yaml` with `!secret` only.
 | `src/digitAnimation.test.ts` | slide timing, duration, switch, reduced motion, layout changes, drawn frame |
 | `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, sizing, boundary guides, LED optics |
 | `src/release.test.ts` | release lookup, response bounds, rate-limit pause, fail-closed selection |
-| `src/timezone.test.tsx` | first-visit detection, invalid-zone fallback, saved/link precedence, generated YAML, the re-apply button |
+| `src/timezone.test.tsx` | automatic load/focus/tab/periodic detection, explicit manual overrides, legacy links, reset, cleanup and preview/YAML timezone parity |
+| `src/settingsModel.test.tsx` | complete compact controls, labels, target switching, dependent fields, privacy allowlist and safe network validation |
+| `src/entityVisibility.test.ts` | per-entity exposure, hidden first-boot settings, optional web-server YAML and preview parity |
+| `../tests/test_settings_contract.py` | complete substitution/entity audit and pinned-SDK merge of real generated installers for both targets |
 | `src/app.test.tsx` | app smoke test: sections, nav, gallery, docs links, disclosures, layout contract |
 
 `src/yaml.test.ts` reads the firmware sources next door, so adding a font to

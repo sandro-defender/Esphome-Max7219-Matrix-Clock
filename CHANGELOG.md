@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.8 - 2026-10-02
+
+### Added
+- Compact, aligned configurator cards with complete firmware bindings, expandable
+  explanations, safe network options and an optional authenticated web server.
+- Per-entity Home Assistant exposure using compile-time `internal` substitutions.
+  Hidden entities keep their firmware IDs, defaults and actions; diagnostics and
+  recovery controls remain exposed by default.
+
+### Changed
+- Automatic timezone follows the browser on load and tab return, including saved
+  and shared profiles. Disable Automatic timezone to keep an explicit manual zone.
+- Installer, preview and saved/shared settings use one validated model for both
+  ESP8266 and ESP-WROOM-32, without accepting or storing credentials.
+
 ## 0.7.7 - 2026-10-02
 
 ### Fixed

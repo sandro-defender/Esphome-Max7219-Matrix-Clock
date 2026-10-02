@@ -46,14 +46,12 @@ interface LiveStageProps {
  */
 export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveStageProps) {
   const chassisRef = useRef<HTMLDivElement>(null);
-  const [chassisH, setChassisH] = useState(0);
 
   useLayoutEffect(() => {
     const el = chassisRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = () => {
       const height = el.offsetHeight;
-      setChassisH(height);
       // Anchor jumps on phones have to clear the pinned matrix as well.
       document.documentElement.style.setProperty("--chassis-h", `${Math.round(height)}px`);
     };
@@ -84,7 +82,7 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
 
   return (
     <section id="preview" className="stage" aria-labelledby="preview-title">
-      <div className="chassis-slot" style={chassisH ? { height: chassisH } : undefined} aria-hidden="true" />
+      <div className="chassis-slot" aria-hidden="true" />
       <div className="chassis" ref={chassisRef}>
         <i className="screw tl" />
         <i className="screw tr" />
@@ -142,9 +140,9 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
         <li>
           <span>Face</span>
           <b className="face-stepper">
-            <button type="button" aria-label="Previous included clock font" onClick={onPreviousFont}>‹</button>
+            <button type="button" aria-label="Previous included clock font" onClick={onPreviousFont}>Previous</button>
             <span className="face-label">{spec.label}</span>
-            <button type="button" aria-label="Next included clock font" onClick={onNextFont}>›</button>
+            <button type="button" aria-label="Next included clock font" onClick={onNextFont}>Next</button>
           </b>
         </li>
         <li>

@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useId, useState, type ReactNode } from "react";
 import { clampNumber, type Config } from "./types";
 import { cn } from "./utils/cn";
 
@@ -59,57 +59,39 @@ export function CopyButton({
   );
 }
 
-export function Toggle({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <button type="button" className={cn("toggle-row", checked && "on")} aria-pressed={checked} onClick={() => onChange(!checked)}>
-      <span>
-        <strong>{label}</strong>
-        {hint ? <em>{hint}</em> : null}
-      </span>
-      <i />
-    </button>
-  );
+/** Aligned, explicitly labelled field used by every firmware widget. */
+export function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return <div className="field setting-row">
+    <label className="field-label" htmlFor={id}>{label}</label>
+    <div className="field-control">{children}</div>
+  </div>;
 }
 
-export function Slider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  unit,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  unit?: string;
-  onChange: (next: number) => void;
+export function Toggle({ label, hint, checked, onChange, disabled = false }: {
+  label: string; hint?: string; checked: boolean; onChange: (next: boolean) => void; disabled?: boolean;
 }) {
-  return (
-    <label className="field">
-      <span className="slider-head">
-        <strong>{label}</strong>
-        <b>
-          {value}
-          {unit ? ` ${unit}` : ""}
-        </b>
-      </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
-    </label>
-  );
+  return <label className="field setting-row toggle-row">
+    <span className="field-label">{label}{hint ? <small>{hint}</small> : null}</span>
+    <span className="checkbox-control">
+      <input type="checkbox" aria-label={label} checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+      <span aria-hidden="true">{checked ? "On" : "Off"}</span>
+    </span>
+  </label>;
+}
+
+export function Slider({ label, value, min, max, step, unit, onChange, disabled = false }: {
+  label: string; value: number; min: number; max: number; step: number; unit?: string;
+  onChange: (next: number) => void; disabled?: boolean;
+}) {
+  const id = useId();
+  return <Field id={id} label={label + (unit ? ` (${unit})` : "")}>
+    <div className="range-control">
+      <input id={id} type="range" min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={(event) => onChange(Number(event.target.value))} />
+      <input type="number" aria-label={`${label} value`} min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={(event) => onChange(clampNumber(Number(event.target.value), min, max))} />
+    </div>
+  </Field>;
 }
 
 export function Segmented<T extends string>({
@@ -149,34 +131,15 @@ export function Segmented<T extends string>({
   );
 }
 
-export function NumberField({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (next: number) => void;
+export function NumberField({ label, value, min, max, step = 1, onChange, disabled = false }: {
+  label: string; value: number; min: number; max: number; step?: number;
+  onChange: (next: number) => void; disabled?: boolean;
 }) {
-  return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(clampNumber(Number(event.target.value), min, max))}
-      />
-    </label>
-  );
+  const id = useId();
+  return <Field id={id} label={label}>
+    <input id={id} type="number" min={min} max={max} step={step} value={value} disabled={disabled}
+      onChange={(event) => onChange(clampNumber(Number(event.target.value), min, max))} />
+  </Field>;
 }
 
 export type Patch = <K extends keyof Config>(key: K, value: Config[K]) => void;

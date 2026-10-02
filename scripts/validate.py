@@ -54,18 +54,26 @@ def local_installer(path, contract):
         raise ValueError("Installer package/font/version refs differ")
     files = remote["files"]
     framework = [file for file in files if not file.startswith("packages/fonts/")]
-    if framework != contract["packageFiles"]:
-        raise ValueError("Installer modules differ from firmware")
+    target = next((target for target in contract["hardwareTargets"] if target["basePackage"] in framework), None)
+    optional = {item["target"] for item in contract["settings"] if item["kind"] == "package"}
+    if target is None or framework != [file for file in target["packageFiles"] if file not in optional or file in framework]:
+        raise ValueError("Installer modules differ from the selected firmware target")
+    allowed = set(target["packageFiles"]) | {font["package"] for font in contract["fonts"] if "package" in font}
+    if len(files) != len(set(files)) or not set(files) <= allowed:
+        raise ValueError("Installer contains unknown or duplicate packages")
     config["packages"] = {"module_" + str(index): Tag(file.replace("packages/fonts/", "packages/local_fonts/"), "!include") for index, file in enumerate(files)}
     path.write_text(dump(config))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config-only", action="store_true", help="Validate YAML only, without code generation or compilation")
     parser.add_argument("--compile", action="store_true", help="Full default and all-font ESP8266 builds, no skipped failures")
     parser.add_argument("--workspace", type=Path, help="Retain an empty validation directory for inspection")
     parser.add_argument("--skip-installers", action="store_true", help="Local YAML/codegen only (npm dependencies unavailable)")
     args = parser.parse_args()
+    if args.config_only and args.compile:
+        parser.error("--config-only cannot be combined with --compile")
     contract, _ = build()
     if version("esphome") != contract["esphomeVersion"]:
         raise SystemExit("The exact firmware ESPHome target is required")
@@ -108,14 +116,28 @@ def main():
             local_installer(second, contract)
             variants["installer"] = None
             variants["installer-all"] = None
+            for target in contract["hardwareTargets"]:
+                for hidden in (False, True):
+                    name = f"installer-{target['id']}-{'internal' if hidden else 'exposed'}"
+                    # No copied board/pin defaults: the CLI and browser use the
+                    # same target-aware sanitization. Exercise web v3/digest too.
+                    profile.write_text(json.dumps({"target": target["id"], "webServer": not hidden,
+                                                   "webServerVersion": 3, "webServerAuthType": "digest", "webServerLog": True,
+                                                   "hiddenEntities": [e["id"] for e in contract["entities"]] if hidden else []}))
+                    destination = work / f"{name}.yaml"
+                    run(generate + [destination, "--config", profile], ROOT / "web-configurator", work / f"{name}-generation.log")
+                    local_installer(destination, contract)
+                    variants[name] = None
         for name in variants:
             path = work / f"{name}.yaml"
             run([executable, "config", path], work, work / f"{name}-config.log")
-            run([executable, "compile", path, "--only-generate"], work, work / f"{name}-codegen.log")
+            if not args.config_only:
+                run([executable, "compile", path, "--only-generate"], work, work / f"{name}-codegen.log")
         if args.compile:
             for name in ("default", "all"):
                 run([executable, "compile", work / f"{name}.yaml"], work, work / f"{name}-compile.log")
-        print(f"PASS: {len(variants)} YAML/codegen variants; " + ("2 full firmware builds" if args.compile else "full compile not requested"), flush=True)
+        checked = "YAML" if args.config_only else "YAML/codegen"
+        print(f"PASS: {len(variants)} {checked} variants; " + ("2 full firmware builds" if args.compile else "full compile not requested"), flush=True)
     finally:
         # Never remove a caller-provided path, and never clean the repository.
         if not args.workspace:

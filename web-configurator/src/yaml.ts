@@ -5,6 +5,8 @@ import { FIRMWARE, PROJECT, firmwareOption, limitsFor, type FirmwareSetting } fr
 import { boardsFor, packageFilesFor, pinMapFor, settingOptions } from "./hardware";
 import { sanitizeConfig } from "./storage";
 import { clampNumber, type Config } from "./types";
+import { enabledSetting, installerSecrets, validateSettingText } from "./settingsModel";
+export { sanitizeTimezone } from "./settingsModel";
 
 /** No separate release tag, package list, entity names or defaults live here. */
 const TAG = /^\d+\.\d+\.\d+$/;
@@ -12,14 +14,6 @@ export function validReleaseTag(tag: string): boolean { return TAG.test(tag); }
 
 export function sanitizeFriendly(name: string): string {
   return name.replace(/[\r\n]/g, " ").trim() || String(FIRMWARE.defaults.friendlyName);
-}
-
-export function sanitizeTimezone(tz: string): string {
-  const clean = tz.trim();
-  if (!/^[A-Za-z0-9_+\/-]+$/.test(clean)) throw new Error("Enter a valid IANA timezone");
-  try { new Intl.DateTimeFormat("en", { timeZone: clean }).format(); }
-  catch { throw new Error("Enter a valid IANA timezone"); }
-  return clean;
 }
 
 export function sanitizeEntity(id: string): string { return id.trim().toLowerCase(); }
@@ -62,14 +56,13 @@ function valueFor(item: FirmwareSetting, cfg: Config): string | number | boolean
   let value = cfg[item.key] as string | number | boolean;
   if (item.key === "deviceName") value = deviceSlug(String(value));
   if (item.key === "friendlyName") value = sanitizeFriendly(String(value));
-  if (item.key === "timezone") value = sanitizeTimezone(String(value));
+  if (typeof value === "string") value = validateSettingText(item, value);
   if (typeof value === "number") {
     const range = limitsFor(item.key);
     value = clampNumber(value, range.min, range.max);
   }
-  if (typeof value === "string" && value.includes("$")) throw new Error("Substitution references are not allowed in setting text");
   if (item.key === "clockFont") return selectedFontOption(String(value));
-  if (item.kind === "select") {
+  if (item.options) {
     // The board is target-specific; only the target's own ids are emitted.
     const choice = String(value);
     const options = settingOptions(item, cfg.target)?.map(String);
@@ -90,17 +83,19 @@ export function buildYaml(input: Config, releaseTag: string): string {
   const pins = [cfg.clkPin, cfg.mosiPin, cfg.csPin].map((pin) => mapping[pin]);
   if (pins.some((pin) => pin === undefined)) throw new Error("Select valid output pins for this board");
   if (new Set(pins).size !== 3) throw new Error("CLK, DIN and CS need different GPIO pins");
-  const files = [...packageFilesFor(cfg.target), ...cfg.fonts.map((id) => {
+  const disabledPackages = FIRMWARE.settings.filter((item) => item.kind === "package" && !cfg[item.key]).map((item) => item.target);
+  const files = [...packageFilesFor(cfg.target).filter((file) => !disabledPackages.includes(file)), ...cfg.fonts.map((id) => {
     const file = FIRMWARE.fonts.find((font) => font.id === id)?.package;
     if (!file) throw new Error(`No firmware font package ${id}`);
     return file;
   })];
   const substitutions = [
-    ...Object.entries(FIRMWARE.secrets).map(([key, secret]) => `  ${key}: !secret ${secret}`),
+    ...Object.entries(installerSecrets(cfg)).map(([key, secret]) => `  ${key}: !secret ${secret}`),
     `  project_ref: ${JSON.stringify(releaseTag)}`,
   ];
   const sections: Record<string, string[]> = { select: [], number: [], switch: [] };
   for (const item of FIRMWARE.settings) {
+    if (item.kind === "package" || !enabledSetting(item, cfg)) continue;
     const value = valueFor(item, cfg);
     if (item.kind === "substitution") {
       substitutions.push(`  ${item.target}: ${JSON.stringify(String(value) + (item.timeSuffix ?? ""))}`);
@@ -110,6 +105,12 @@ export function buildYaml(input: Config, releaseTag: string): string {
       sections[item.kind].push(`  - id: !extend ${item.target}\n    ${property}: ${JSON.stringify(settingValue)}`);
       if (item.substitution) substitutions.push(`  ${item.substitution}: ${JSON.stringify(String(value))}`);
     }
+  }
+  // Use internal substitutions, not !remove: renderer lambdas, restore scripts,
+  // API actions and nested debug/wifi-info components still need these objects.
+  substitutions.push("  # Home Assistant exposure: rebuild and install to apply.");
+  for (const entity of FIRMWARE.entities) {
+    substitutions.push(`  ${entity.visibilitySubstitution}: ${JSON.stringify(String(cfg.hiddenEntities.includes(entity.id)))}`);
   }
   return `# MAX7219 Matrix Clock — one-file installer\n# Firmware ${releaseTag}; ESPHome ${FIRMWARE.esphomeVersion}\n# Keep beside your local secrets.yaml. Packages and fonts share one immutable tag.\n\nsubstitutions:\n${substitutions.join("\n")}\n\npackages:\n  clock:\n    url: ${PROJECT.repo}\n    ref: ${JSON.stringify(releaseTag)}\n    refresh: 1d\n    files:\n${files.map((file) => `      - ${file}`).join("\n")}\n\n# First-boot preferences only; existing restored values take priority.\n${Object.entries(sections).map(([domain, values]) => `${domain}:\n${values.join("\n")}`).join("\n\n")}\n`;
 }

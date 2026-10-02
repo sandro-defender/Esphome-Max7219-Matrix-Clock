@@ -10,31 +10,43 @@ text_sensor:
   # Official components -----------------------------------------------------
   - platform: version
     name: "ESPHome version"
+    id: esphome_version
+    internal: ${ha_hide_esphome_version}
     hide_timestamp: true
     entity_category: diagnostic
 
   - platform: debug
     device:
       name: "Device info"
+      id: device_info
+      internal: ${ha_hide_device_info}
     reset_reason:
       name: "Reset reason"
+      id: reset_reason
+      internal: ${ha_hide_reset_reason}
 
   - platform: wifi_info
     ip_address:
       name: "IP address"
+      id: ip_address
+      internal: ${ha_hide_ip_address}
     ssid:
       name: "Connected SSID"
+      id: connected_ssid
+      internal: ${ha_hide_connected_ssid}
 
   # Renderer state (published by the display lambda, no polling) -----------
   - platform: template
     name: "Display mode"
     id: display_mode
+    internal: ${ha_hide_display_mode}
     entity_category: diagnostic
     update_interval: never
 
   - platform: template
     name: "OTA state"
     id: ota_state
+    internal: ${ha_hide_ota_state}
     entity_category: diagnostic
     update_interval: never
 
@@ -42,12 +54,15 @@ sensor:
   # Official components -----------------------------------------------------
   - platform: wifi_signal
     name: "Wi-Fi signal"
+    id: wifi_signal_db
+    internal: ${ha_hide_wifi_signal_db}
     update_interval: 60s
     entity_category: diagnostic
 
   - platform: uptime
     name: "Uptime"
     id: uptime_sensor
+    internal: ${ha_hide_uptime_sensor}
     update_interval: 60s
     entity_category: diagnostic
 
@@ -55,15 +70,21 @@ sensor:
     free:
       name: "Free heap"
       id: free_heap
+      internal: ${ha_hide_free_heap}
     block:
       name: "Largest free block"
+      id: largest_free_block
+      internal: ${ha_hide_largest_free_block}
     fragmentation:
       name: "Heap fragmentation"
+      id: heap_fragmentation
+      internal: ${ha_hide_heap_fragmentation}
 
   # Renderer state (published by the display lambda, no polling) -----------
   - platform: template
     name: "Countdown remaining"
     id: countdown_remaining
+    internal: ${ha_hide_countdown_remaining}
     unit_of_measurement: s
     accuracy_decimals: 0
     icon: mdi:timer-outline
@@ -73,6 +94,7 @@ sensor:
   - platform: template
     name: "OTA percent"
     id: ota_percent
+    internal: ${ha_hide_ota_percent}
     unit_of_measurement: "%"
     accuracy_decimals: 0
     icon: mdi:upload
@@ -83,4 +105,6 @@ sensor:
 binary_sensor:
   - platform: status
     name: "Status"
+    id: device_status
+    internal: ${ha_hide_device_status}
     entity_category: diagnostic
