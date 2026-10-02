@@ -321,6 +321,7 @@ struct Frame {
   uint8_t animation_row_gap = 1;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
+  uint32_t date_scroll_ms_per_px = 60;
 
   // Night brightness scheduling
   bool night_manual = false;
@@ -1181,7 +1182,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   // the same deterministic ticker as messages instead of clipping them.
   if (mode == MODE_DATE && active->text_width(content) > width) {
     state.reset_animation();
-    draw_free_text(canvas, *active, content, f.now_ms, true, f.scroll_ms_per_px,
+    draw_free_text(canvas, *active, content, f.now_ms, true, f.date_scroll_ms_per_px,
                    active->centered_box_top(height));
     return;
   }

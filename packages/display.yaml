@@ -59,6 +59,7 @@ display:
       frame.animation_row_gap = max7219_clock::clamp_u8((int) id(animation_row_gap).state, 0, 2);
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
+      frame.date_scroll_ms_per_px = max7219_clock::clamp_u32((int) id(date_scroll_speed).state, 20, 200);
       frame.ota_brightness = ${ota_display_intensity};
       frame.night_manual = id(night_mode).state;
       frame.alarm_mode = id(alarm_mode).state;

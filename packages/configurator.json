@@ -187,6 +187,11 @@
       "group": "Messages",
       "input": "range"
     },
+    "dateScrollSpeed": {
+      "target": "date_scroll_speed",
+      "group": "Screen",
+      "input": "range"
+    },
     "messageHold": {
       "target": "default_message_duration",
       "group": "Messages"

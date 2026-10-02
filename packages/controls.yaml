@@ -204,6 +204,21 @@ number:
       - component.update: matrix
 
   - platform: template
+    name: "Date scroll speed"
+    id: date_scroll_speed
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${date_ms_per_px}
+    min_value: 20
+    max_value: 200
+    step: 5
+    unit_of_measurement: ms/px
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Default message duration"
     id: default_message_duration
     entity_category: config
