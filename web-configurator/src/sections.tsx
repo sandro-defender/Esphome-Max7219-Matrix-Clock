@@ -15,7 +15,11 @@ function FirmwareField({ item, cfg, patch, detected }: { item: FirmwareSetting; 
   const options = item.input === "pin" ? Object.keys(FIRMWARE.pinMappings[cfg.board] ?? {}) :
     item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : item.options;
   if (options) return <label className="field"><span className="field-label">{item.label}</span>
-    <select value={String(value)} onChange={(event) => patch(item.key, typeof item.default === "number" ? Number(event.target.value) : event.target.value)}>
+    <select value={String(value)} onChange={(event) => {
+      const next = typeof item.default === "number" ? Number(event.target.value) : event.target.value;
+      patch(item.key, next);
+      if (item.key === "rotateChip") patch("reverseEnable", next === 180);
+    }}>
       {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid pin</option> : null}
       {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
     </select></label>;

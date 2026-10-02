@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "2a24173cb985f8daa3f978ded0a44d382fede8c6cd902c938fa20f58919bfd9a",
+  "sourceHash": "b174adbc958e6c477006c2ed7fa3f1b6234f2a589ecff8d699387f6199e42094",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.5",
   "esphomeVersion": "2026.9.1",
@@ -640,6 +640,16 @@
       ]
     },
     {
+      "key": "reverseEnable",
+      "kind": "substitution",
+      "target": "matrix_reverse_enable",
+      "group": "Hardware",
+      "label": "Reverse chip chain",
+      "input": "boolean",
+      "driverKey": "reverse_enable",
+      "default": false
+    },
+    {
       "key": "flipX",
       "kind": "substitution",
       "target": "matrix_flip_x",
@@ -764,6 +774,7 @@
     "rows": 1,
     "wiring": "snake",
     "rotateChip": 0,
+    "reverseEnable": false,
     "flipX": false,
     "displayUpdateMs": 20,
     "bootVersionMs": 2500,

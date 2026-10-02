@@ -429,7 +429,7 @@ export function renderScene(
       if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
       }
     }
-    driverTransform(frame, cfg.rotateChip, cfg.flipX);
+    driverTransform(frame, cfg.rotateChip, cfg.flipX, cfg.reverseEnable);
   }
   if (layout !== null) content = layout.content;
 
@@ -485,13 +485,14 @@ export function renderScene(
 }
 
 /** MAX7219 2026.9.1 send64pixels(): flip local X before per-chip rotation. */
-export function driverTransform(frame: Frame, rotation: number, flipX: boolean): void {
-  if (rotation === 0 && !flipX) return;
+export function driverTransform(frame: Frame, rotation: number, flipX: boolean, reverseChain = false): void {
+  if (rotation === 0 && !flipX && !reverseChain) return;
   const source = frame.pixels.slice();
   frame.pixels.fill(0);
   for (let my = 0; my < frame.height; my += 8) for (let mx = 0; mx < frame.width; mx += 8) {
     for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-      if (!source[(my + y) * frame.width + mx + x]) continue;
+      const sourceX = reverseChain ? frame.width - mx - 8 + x : mx + x;
+      if (!source[(my + y) * frame.width + sourceX]) continue;
       const xx = flipX ? 7 - x : x;
       const [dx, dy] = rotation === 90 ? [7-y, xx] : rotation === 180 ? [7-xx, 7-y] : rotation === 270 ? [y, 7-xx] : [xx, y];
       setPixel(frame, mx + dx, my + dy);

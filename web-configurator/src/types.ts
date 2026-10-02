@@ -42,6 +42,7 @@ export interface Config {
   rows: number;
   wiring: Wiring;
   rotateChip: 0 | 90 | 180 | 270;
+  reverseEnable: boolean;
   flipX: boolean;
 
   // Display (restored Home Assistant preferences)
