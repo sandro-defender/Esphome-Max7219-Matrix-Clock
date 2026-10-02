@@ -98,6 +98,7 @@ select:
       - "DD.MM.YY"
       - "Weekday DD.MM.YY"
       - "Weekday DD. MMM YY"
+      - "Weekday MMM.DD"
     set_action:
       - component.update: matrix
 

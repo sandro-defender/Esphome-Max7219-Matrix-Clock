@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5 - 2026-10-02
+
+### Added
+- **Weekday MMM.DD** is available as a compact date-format choice, for example
+  `THU MAR.05`.
+
 ## 0.7.4 - 2026-10-02
 
 ### Added

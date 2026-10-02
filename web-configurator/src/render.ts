@@ -160,6 +160,7 @@ export function dateContent(now: Date, cfg: Config): string {
   if (cfg.dateFormat === "DD.MM.YY") return `${day}.${month}.${year}`;
   if (cfg.dateFormat === "Weekday DD.MM.YY") return `${weekday} ${day}.${month}.${year}`;
   if (cfg.dateFormat === "Weekday DD. MMM YY") return `${weekday} ${day}. ${monthName} ${year}`;
+  if (cfg.dateFormat === "Weekday MMM.DD") return `${weekday} ${monthName}.${day}`;
   return `${day}.${month}`;
 }
 

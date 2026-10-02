@@ -504,8 +504,9 @@ class ConfigContractTests(unittest.TestCase):
         esp32 = load_yaml(REPO / "examples/esp-wroom-32.yaml", base_dir=REPO)
         remote = esp32["packages"]["clock"]
         self.assertEqual("packages/base-esp32.yaml", remote["files"][0])
-        self.assertEqual("0.7.4", remote["ref"])
+        self.assertEqual(load_yaml(PACKAGES / "base.yaml")["substitutions"]["project_ref"], remote["ref"])
         base = load_yaml(PACKAGES / "base-esp32.yaml")
+        self.assertEqual(remote["ref"], base["substitutions"]["project_ref"])
         self.assertEqual("esp32dev", base["substitutions"]["board"])
         self.assertEqual("GPIO18", base["substitutions"]["matrix_clk_pin"])
         self.assertEqual("GPIO23", base["substitutions"]["matrix_mosi_pin"])

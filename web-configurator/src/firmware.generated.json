@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "36bffca1d7b838cd83903e9a20f644478ae900a92b496053d82a6c98d99e7fe0",
+  "sourceHash": "2a24173cb985f8daa3f978ded0a44d382fede8c6cd902c938fa20f58919bfd9a",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.4",
+  "releaseVersion": "0.7.5",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- Date format choices now include **DD.MM.YY**, **Weekday DD.MM.YY**, and\n  **Weekday DD. MMM YY**. The longer weekday formats scroll across a 48×8\n  matrix instead of being cut off.\n- A **Temperature** screen can show a Home Assistant numeric sensor. Choose\n  its entity in the configurator's new **Temperature sensor entity** field.",
+  "releaseNotes": "### Added\n- **Weekday MMM.DD** is available as a compact date-format choice, for example\n  `THU MAR.05`.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -201,7 +201,8 @@
         "DD/MM",
         "DD.MM.YY",
         "Weekday DD.MM.YY",
-        "Weekday DD. MMM YY"
+        "Weekday DD. MMM YY",
+        "Weekday MMM.DD"
       ],
       "default": "DD.MM",
       "input": "select"
@@ -836,7 +837,8 @@
         "DD/MM",
         "DD.MM.YY",
         "Weekday DD.MM.YY",
-        "Weekday DD. MMM YY"
+        "Weekday DD. MMM YY",
+        "Weekday MMM.DD"
       ],
       "initial_option": "DD.MM",
       "domain": "select",
