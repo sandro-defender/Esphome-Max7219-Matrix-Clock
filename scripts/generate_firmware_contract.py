@@ -75,7 +75,7 @@ def range_of(validator):
 
 
 def source_notes(tag: str) -> str:
-    text = (ROOT / "CHANGELOG.md").read_text()
+    text = (ROOT / "CHANGELOG.md").read_text(encoding="utf8")
     match = re.search(r"^## " + re.escape(tag) + r"(?: - [^\n]+)?\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     if not match or not match[1].strip():
         raise ValueError(f"CHANGELOG.md needs nonempty notes for firmware {tag}")
@@ -87,7 +87,7 @@ def build():
     target = base["esphome"]["min_version"]
     if version("esphome") != target:
         raise ValueError(f"Use exactly ESPHome {target}, installed {version('esphome')}")
-    requirements = (ROOT / "requirements-validation.txt").read_text().splitlines()
+    requirements = (ROOT / "requirements-validation.txt").read_text(encoding="utf8").splitlines()
     if f"esphome=={target}" not in requirements:
         raise ValueError("requirements-validation.txt and firmware target disagree")
     from esphome.components.max7219digit import display as driver
@@ -95,7 +95,7 @@ def build():
     from esphome.components.esp8266 import boards, gpio
     from esphome import config_validation as cv
 
-    bindings = json.loads((ROOT / "packages/configurator.json").read_text())
+    bindings = json.loads((ROOT / "packages/configurator.json").read_text(encoding="utf8"))
     dev = load(ROOT / "dev.yaml")
     default_wrapper = load(ROOT / "packages/fonts_web.yaml")
     default_fonts = [Path(str(p)).stem for p in default_wrapper["packages"].values()]
@@ -316,7 +316,7 @@ def build():
     development["packages"]["clock"]["ref"] = "main"
     outputs[ROOT / "examples/development.yaml"] = "# GENERATED DEVELOPMENT example only; never used by the public installer.\n" + dump(development)
     for path in (ROOT / "web-configurator/package.json", ROOT / "web-configurator/package-lock.json"):
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf8"))
         data["version"] = tag
         if "packages" in data:
             data["packages"][""]["version"] = tag
