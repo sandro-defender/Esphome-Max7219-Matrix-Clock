@@ -371,7 +371,7 @@ export function DocsSection() {
             <a href={PROJECT.roadmap} target="_blank" rel="noreferrer">
               ROADMAP.md
             </a>{" "}
-            — the implementation contract and what is still open (including Font Lab candidates).
+            — open work with acceptance criteria.
           </li>
           <li>
             <a href={PROJECT.issues} target="_blank" rel="noreferrer">
@@ -399,8 +399,8 @@ export function DocsSection() {
           <a href={PROJECT.live} target="_blank" rel="noreferrer">
             sandro-defender.github.io/Esphome-Max7219-Matrix-Clock
           </a>{" "}
-          builds automatically: a GitHub Actions workflow tests, type-checks and builds <code>web-configurator/</code>{" "}
-          on every push to <code>main</code>, compiles the firmware, publishes an immutable release first, then deploys the matching static bundle to GitHub Pages. Installer access fails closed on a source/version mismatch. To run it yourself, fork
+          builds automatically: a GitHub Actions workflow runs the full code gate on every push to <code>main</code>{" "}
+          and pull request, publishes an immutable installer release from the validated main commit, then builds and deploys the matching static bundle to GitHub Pages. It never compiles firmware. Installer access fails closed on a source/version mismatch. To run it yourself, fork
           the repository and enable the same workflow — see{" "}
           <a href={`${PROJECT.repo}/tree/${PROJECT.ref}/web-configurator`} target="_blank" rel="noreferrer">
             web-configurator/README.md
