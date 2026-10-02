@@ -79,6 +79,7 @@ enum DateFormat : uint8_t {
   DATE_DD_MM_YY,   // 31.12.26
   DATE_WEEKDAY_DD_MM_YY,   // THU 31.12.26
   DATE_WEEKDAY_DD_MMM_YY,  // THU 31. DEC 26
+  DATE_WEEKDAY_MMM_DD,     // THU DEC.31
 };
 
 // --------------------------------------------------------------------------
@@ -669,7 +670,8 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
           snprintf(out, out_size, "%02d.%02d.%02d", f.day, f.month, f.year % 100);
           break;
         case DATE_WEEKDAY_DD_MM_YY:
-        case DATE_WEEKDAY_DD_MMM_YY: {
+        case DATE_WEEKDAY_DD_MMM_YY:
+        case DATE_WEEKDAY_MMM_DD: {
           static const char *const weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
           static const char *const months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                                                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
@@ -679,8 +681,10 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
                                adjusted_year / 400 + month_offsets[f.month - 1] + f.day) % 7;
           if (f.date_format == DATE_WEEKDAY_DD_MM_YY)
             snprintf(out, out_size, "%s %02d.%02d.%02d", weekdays[weekday], f.day, f.month, f.year % 100);
-          else
+          else if (f.date_format == DATE_WEEKDAY_DD_MMM_YY)
             snprintf(out, out_size, "%s %02d. %s %02d", weekdays[weekday], f.day, months[f.month - 1], f.year % 100);
+          else
+            snprintf(out, out_size, "%s %s.%02d", weekdays[weekday], months[f.month - 1], f.day);
           break;
         }
         default:

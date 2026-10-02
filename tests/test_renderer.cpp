@@ -1161,6 +1161,9 @@ static void test_date_formats() {
   f.date_format = DATE_WEEKDAY_DD_MMM_YY;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "THU 05. MAR 26") == 0);
+  f.date_format = DATE_WEEKDAY_MMM_DD;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "THU MAR.05") == 0);
 }
 
 static void test_temperature_content() {

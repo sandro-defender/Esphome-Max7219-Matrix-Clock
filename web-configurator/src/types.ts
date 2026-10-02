@@ -3,7 +3,7 @@ import { FIRMWARE, limitsFor, optionsFor } from "./firmware";
 export type Wiring = "snake" | "zigzag";
 export type Alignment = "Left" | "Center" | "Right";
 export type HourFormat = "24-hour" | "12-hour";
-export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM" | "DD.MM.YY" | "Weekday DD.MM.YY" | "Weekday DD. MMM YY";
+export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM" | "DD.MM.YY" | "Weekday DD.MM.YY" | "Weekday DD. MMM YY" | "Weekday MMM.DD";
 export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 

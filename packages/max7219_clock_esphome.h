@@ -119,6 +119,8 @@ template<typename Option> inline uint8_t date_format_from_option(const Option &o
     return DATE_WEEKDAY_DD_MM_YY;
   if (option == "Weekday DD. MMM YY")
     return DATE_WEEKDAY_DD_MMM_YY;
+  if (option == "Weekday MMM.DD")
+    return DATE_WEEKDAY_MMM_DD;
   return DATE_DD_MM;
 }
 

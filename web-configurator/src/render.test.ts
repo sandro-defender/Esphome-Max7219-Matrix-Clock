@@ -45,6 +45,7 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "DD.MM.YY" })).toBe("02.01.26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD.MM.YY" })).toBe("FRI 02.01.26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday MMM.DD" })).toBe("FRI JAN.02");
   });
 });
 
