@@ -23,6 +23,7 @@ import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
 import { INSTALL_FRESH_MS, usePublishedRelease, type ReleaseState } from "./release";
 import { deviceSlug } from "./device";
+import { detectTimezone, withDetectedTimezone } from "./timezone";
 
 type Page = "configure" | "info";
 
@@ -37,15 +38,17 @@ const ConfigureColumn = memo(function ConfigureColumn({
   patch,
   setCfg,
   geo,
+  detected,
 }: {
   cfg: Config;
   patch: Patch;
   setCfg: Dispatch<SetStateAction<Config>>;
   geo: Geometry;
+  detected: string | null;
 }) {
   return (
     <>
-      <TuneSection cfg={cfg} patch={patch} geo={geo} />
+      <TuneSection cfg={cfg} patch={patch} geo={geo} detected={detected} />
       <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
     </>
   );
@@ -70,7 +73,11 @@ const InfoColumn = memo(function InfoColumn({ cfg, yaml, geo, release, getInstal
 export default function App({ initialPage = "configure" }: { initialPage?: Page } = {}) {
   const release = usePublishedRelease();
   const initial = useRef(loadConfig()).current;
-  const [cfg, setCfg] = useState<Config>(initial.config);
+  // First visit only: the browser zone pre-fills the Timezone field. A saved
+  // config or a shared link keeps its own value, and a failed detection keeps
+  // the firmware default. Detection is local and never contacts a network.
+  const detected = useMemo(() => detectTimezone(), []);
+  const [cfg, setCfg] = useState<Config>(() => withDetectedTimezone(initial.config, initial.from, detected));
   const [notice, setNotice] = useState<string | null>(initial.from === "link" ? "Settings loaded from the shared link." : null);
   const [page, setPage] = useState<Page>(initialPage);
   const topbarRef = useRef<HTMLElement>(null);
@@ -204,7 +211,7 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
           <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
           <div className="content-col">
             <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} onReplay={replay} />
-            <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} />
+            <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} detected={detected} />
           </div>
         </> : null}
         {page === "info" ? <div className="content-col info-page"><InfoColumn cfg={cfg} yaml={yaml} geo={geo} release={release} getInstaller={getInstaller} /></div> : null}

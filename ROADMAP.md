@@ -4,33 +4,7 @@ Open work only, each item with acceptance criteria. Completed work is history
 ([docs/HISTORY.md](docs/HISTORY.md)); released behaviour is user documentation
 ([README.md](README.md)). Nothing here is a release promise.
 
-## 1. Automatic timezone detection in the web configurator
-
-Status: not implemented. `timezone` is a free-text substitution in
-`packages/base.yaml` (default `Europe/Berlin`), exposed through
-`packages/configurator.json`, validated by `sanitizeTimezone()` in
-`web-configurator/src/yaml.ts`, and written into the generated installer YAML
-used by Home Assistant time and the SNTP fallback.
-
-Acceptance criteria:
-
-- [ ] On first visit (no saved config, no shared link) the Timezone field is
-      pre-filled from `Intl.DateTimeFormat().resolvedOptions().timeZone`,
-      validated through `sanitizeTimezone()`.
-- [ ] Detection failure or an invalid/unknown zone keeps the firmware default
-      (`Europe/Berlin`).
-- [ ] A visible "Use my timezone" action next to the field re-applies the
-      detected zone at any time and shows the detected value.
-- [ ] A saved config or shared link that already contains a timezone is never
-      overwritten by detection.
-- [ ] The detected zone flows unchanged into the installer YAML
-      (`timezone: <zone>`) and the live preview.
-- [ ] Purely client-side: no geolocation, no IP lookup, no permission prompt,
-      nothing sent anywhere.
-- [ ] Tests in `web-configurator/src/` cover first-visit detection, invalid-zone
-      fallback, saved-config/share-link precedence, and the generated YAML.
-
-## 2. Current firmware build and size measurement
+## 1. Current firmware build and size measurement
 
 Status: **Unverified**. No linked ESP8266 binary or flash/RAM measurement exists
 for the current source; CI never compiles firmware.
@@ -43,7 +17,7 @@ for the current source; CI never compiles firmware.
       [packages/fonts/README.md](packages/fonts/README.md), with the date and
       SDK version; clearly separate the historical 2026.9.0/`0.4.0` numbers.
 
-## 3. Physical-device verification
+## 2. Physical-device verification
 
 Status: **Unverified**. All of these need a real 48×8 panel and a flashed board.
 
@@ -58,7 +32,7 @@ Status: **Unverified**. All of these need a real 48×8 panel and a flashed board
       alarm preferences.
 - [ ] Wiring/orientation checks with both built-in test patterns.
 
-## 4. Retained preview timelines for countdown, alert, boot and OTA
+## 3. Retained preview timelines for countdown, alert, boot and OTA
 
 Status: covered for the normal screen and messages only.
 
@@ -68,7 +42,7 @@ Status: covered for the normal screen and messages only.
 - [ ] Assert visible pixels, mode/page, brightness and timers for each sequence;
       do not claim parity for paths without tests.
 
-## 5. Legacy validator migration
+## 4. Legacy validator migration
 
 Status: `scripts/validate-release-offline.sh` copies the whole working tree and
 must not be run with a production `secrets.yaml` present.
@@ -79,7 +53,7 @@ must not be run with a production `secrets.yaml` present.
 - [ ] Remove the warning in [VALIDATION.md](VALIDATION.md) and state the
       replacement's exact coverage.
 
-## 6. Manual interface review
+## 5. Manual interface review
 
 Status: no browser automation is used.
 
@@ -88,7 +62,7 @@ Status: no browser automation is used.
 - [ ] Reduced-motion and small-screen (≤320 px) review of the current
       deployment; record date, browser and findings.
 
-## 7. ESPHome target change
+## 6. ESPHome target change
 
 Status: pinned to 2026.9.1.
 

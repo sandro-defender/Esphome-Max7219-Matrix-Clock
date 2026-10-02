@@ -21,6 +21,13 @@ Nothing but anonymous GitHub release lookups leaves the page: no credential, no
 telemetry, no IP lookup. See
 [web-configurator/README.md](web-configurator/README.md).
 
+On a first visit the **Timezone** field is pre-filled with your browser's IANA
+zone (read locally from `Intl.DateTimeFormat`, validated, never sent anywhere),
+so the generated clock and the live preview show your local time; the **Use my
+timezone** button re-applies it at any time. A saved configuration or a shared
+link always keeps its own timezone, and if detection fails the firmware default
+(`Europe/Berlin`) is kept.
+
 ### Manual installation
 
 1. Install ESPHome 2026.9.1: `pip install -r requirements-validation.txt`.

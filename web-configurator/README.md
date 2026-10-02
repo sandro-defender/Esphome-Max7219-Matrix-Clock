@@ -52,6 +52,18 @@ timezone kept separate. `src/MatrixCanvas.tsx` draws one continuous dot lattice
 across module seams; the optional boundary guides are an overlay and never move
 a dot or change the canvas size.
 
+## Timezone detection
+
+`src/timezone.ts` reads the browser's IANA zone from
+`Intl.DateTimeFormat().resolvedOptions().timeZone` and validates it with the
+firmware's own `sanitizeTimezone()` (`src/yaml.ts`), so the detected value flows
+unchanged into the installer YAML (`timezone: <zone>`) and the live preview.
+Detection runs only on a **first visit** (no saved config, no shared link): a
+saved configuration or link always wins, and a failed or invalid detection keeps
+the firmware default. The **Use my timezone** button next to the field re-applies
+the detected zone at any time and shows it. Everything is client-side — no
+geolocation API, no IP lookup, no permission prompt, no network request.
+
 ## Release verification
 
 `src/release.ts` finds the newest **published** release by `published_at` (never
@@ -96,6 +108,7 @@ user's local `secrets.yaml` with `!secret` only.
 | `src/digitAnimation.test.ts` | slide timing, duration, switch, reduced motion, layout changes, drawn frame |
 | `src/MatrixCanvas.test.ts` | seamless module joining, seam geometry, sizing, boundary guides, LED optics |
 | `src/release.test.ts` | release lookup, response bounds, rate-limit pause, fail-closed selection |
+| `src/timezone.test.tsx` | first-visit detection, invalid-zone fallback, saved/link precedence, generated YAML, the re-apply button |
 | `src/app.test.tsx` | app smoke test: sections, nav, gallery, docs links, disclosures, layout contract |
 
 `src/yaml.test.ts` reads the firmware sources next door, so adding a font to

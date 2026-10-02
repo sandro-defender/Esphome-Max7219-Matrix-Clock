@@ -9,7 +9,7 @@ import { FIRMWARE, PROJECT, limitsFor, type FirmwareSetting } from "./firmware";
 export { PROJECT } from "./firmware";
 
 /** One widget for every real firmware binding; labels/options/bounds are generated. */
-function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Config; patch: Patch }) {
+function FirmwareField({ item, cfg, patch, detected }: { item: FirmwareSetting; cfg: Config; patch: Patch; detected?: string | null }) {
   const value = cfg[item.key];
   if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} onChange={(next) => patch(item.key, next)} />;
   const options = item.input === "pin" ? Object.keys(FIRMWARE.pinMappings[cfg.board] ?? {}) :
@@ -24,16 +24,34 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
     return item.input === "range" ? <Slider label={item.label} value={Number(value)} {...range} unit={item.unit} onChange={(next) => patch(item.key, next)} /> :
       <NumberField label={item.label + (item.unit ? ` (${item.unit})` : "")} value={Number(value)} {...range} onChange={(next) => patch(item.key, next)} />;
   }
+  // Detection is local (Intl only) and never overwrites a saved config or link:
+  // the button is the user's own way to re-apply the browser zone at any time.
+  if (item.key === "timezone") return <div className="field">
+    <span className="field-label">{item.label}</span>
+    <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} />
+    <div className="btn-row">
+      <button
+        type="button"
+        className="btn ghost"
+        disabled={detected === null || detected === undefined}
+        title={detected ? `Set ${detected}` : "Your browser does not report a timezone"}
+        onClick={() => { if (detected) patch("timezone", detected); }}
+      >
+        Use my timezone
+      </button>
+      <span className="hint">{detected ? <>Detected: <code>{detected}</code></> : "Automatic detection is unavailable in this browser — type your IANA zone."}</span>
+    </div>
+  </div>;
   return <label className="field"><span className="field-label">{item.label}</span>
     <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} /></label>;
 }
 
-export function TuneSection({ cfg, patch, geo }: { cfg: Config; patch: Patch; geo: Geometry }) {
+export function TuneSection({ cfg, patch, geo, detected = null }: { cfg: Config; patch: Patch; geo: Geometry; detected?: string | null }) {
   const groups = [...new Set(FIRMWARE.settings.map((item) => item.group))];
   return <Section id="tune" title="Settings">
     <div className="tune-grid">{groups.map((group) => <fieldset className="control-group" key={group}>
       <legend>{group}</legend>{FIRMWARE.settings.filter((item) => item.group === group).map((item) =>
-        <FirmwareField key={item.key} item={item} cfg={cfg} patch={patch} />)}
+        <FirmwareField key={item.key} item={item} cfg={cfg} patch={patch} detected={detected} />)}
     </fieldset>)}</div>
     <fieldset className="control-group"><legend>Preview</legend>
       <label className="field"><span className="field-label">Message</span><input value={cfg.message} maxLength={FIRMWARE.renderer.messageMaxBytes} onChange={(event) => patch("message", event.target.value)} /></label>
