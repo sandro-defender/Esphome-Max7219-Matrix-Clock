@@ -419,7 +419,7 @@ export function renderScene(
         usedFallback = true;
       }
       if (page === "date" && (font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width) {
-        drawFreeText(frame, font, content, { ...cfg, scrollMode: "Scroll", scrollSpeed: cfg.dateScrollSpeed }, runtimeNowMs);
+        drawFreeText(frame, font, content, { ...cfg, scrollMode: "Scroll", scrollSpeed: cfg.dateScrollSpeed }, age);
       } else {
       const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
       layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
