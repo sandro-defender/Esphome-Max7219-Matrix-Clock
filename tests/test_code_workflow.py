@@ -103,7 +103,7 @@ class CodeGateTests(unittest.TestCase):
     def test_plan_keeps_source_publisher_workflow_and_pixel_oracle_coverage(self):
         commands = [command for _, command in check_code.check_plan("python", "npm")]
         self.assertIn(["python", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"], commands)
-        self.assertIn(["make", "-C", "tests", "test"], commands)
+        self.assertIn(["make", "-C", "tests", "test", "fixture"], commands)
         self.assertIn(["npm", "--prefix", "web-configurator", "test"], commands)
         self.assertIn(["npm", "--prefix", "web-configurator", "run", "typecheck"], commands)
         self.assertIn(["npm", "--prefix", "web-configurator", "run", "build"], commands)

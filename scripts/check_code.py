@@ -56,7 +56,9 @@ def check_plan(python, npm, skip_sdk_checks=False):
             ("Browser/host glyph freshness (SDK imports only)", [python, "web-configurator/scripts/generate_glyphs.py", "--check"]),
         ])
     checks.extend([
-        ("Host renderer regression", ["make", "-C", "tests", "test"]),
+        # Browser parity tests execute this native fixture after the host suite.
+        # Build it explicitly because `test` only creates `test_renderer`.
+        ("Host renderer regression and browser fixture", ["make", "-C", "tests", "test", "fixture"]),
         ("Python source, publisher and workflow regressions", [python, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]),
         ("Browser/source pixel oracle", [npm, "--prefix", "web-configurator", "test"]),
         ("TypeScript", [npm, "--prefix", "web-configurator", "run", "typecheck"]),
