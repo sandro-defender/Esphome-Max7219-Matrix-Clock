@@ -29,9 +29,10 @@ configuration, a shared link or a failed detection keeps its own timezone
 1. Install ESPHome 2026.9.1: `pip install -r requirements-validation.txt`.
 2. Copy `secrets.yaml.example` to `secrets.yaml` and fill in your values
    (keep the existing API key if the device is already paired).
-3. Copy `examples/release.yaml` next to it and adjust the substitutions for your
-   hardware. Its `ref:` and `project_ref:` are generated from `project_ref` in
-   `packages/base.yaml`, pin one published version tag and must stay identical.
+3. Copy `examples/release.yaml` next to it for a Wemos D1 mini, or
+   `examples/esp-wroom-32.yaml` for an ESP-WROOM-32 DevKit. Adjust substitutions
+   for your hardware. Both pin one published version tag and keep `ref:` and
+   `project_ref:` identical.
 4. `esphome config <your-file>.yaml` — must report `Configuration is valid!`.
 5. `esphome run <your-file>.yaml` — first flash over USB, later updates over
    the air.
@@ -52,6 +53,11 @@ needed while working on the firmware.
 | Data/MOSI pin | D6 |
 | Chip-select pin | D7 |
 | Panel supply | 5 V, common ground with the ESP8266 |
+
+For an **ESP-WROOM-32 DevKit**, use `examples/esp-wroom-32.yaml`. Its defaults
+are `esp32dev`, MAX7219 CLK **GPIO18**, DIN **GPIO23**, CS **GPIO5**, and OTA
+port **3232**. The panel still needs a shared ground and suitable 3.3 V logic
+levels; change the substitutions if your board is wired differently.
 
 Change the board, pins, module count, rows, wiring style, rotation and flip
 through substitutions in your own YAML — no need to edit the packages:
