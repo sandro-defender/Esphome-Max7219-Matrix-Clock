@@ -35,8 +35,9 @@ python scripts/check_code.py --skip-sdk-checks
 
 The runner cannot call ESPHome/PlatformIO CLI or the firmware validator. A
 local reduced PASS does not claim SDK freshness, config/codegen or compilation.
-The CI workflow runs the full code gate with read-only permissions on all main
-pushes and PRs; it never publishes/deploys. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) **passed** for source commit `2753a67`,
+The CI checks job runs the full code gate with read-only permissions on all main
+pushes and PRs. PR/manual runs cannot publish/deploy; step 3 adds separate,
+main-only release/Pages jobs with explicitly scoped permissions. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36937698635) **passed** for source commit `2753a67`,
 including the full pinned-SDK import/freshness gate. No firmware CLI was run.
 
 Firmware config/codegen/full build measurements have not been rerun. Prior
@@ -51,13 +52,28 @@ superseded-publication skips, retry artifacts and locked Pages rechecks.
 
 The reduced local runner passes **113 Python tests run / 112 passed / 1 SDK
 skip**, **315 host checks**, **103 web tests**, typecheck, web bundle and diff
-checks. Exact-SDK freshness is not rerun locally. Hosted CI/live main publishing
-and Pages behavior remain unverified for this step. No ESPHome/PlatformIO CLI,
+checks. Exact-SDK freshness is not rerun locally. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866)
+passed for `8418b49`, including full pinned-SDK freshness. Actual main publishing
+and Pages behavior remain unverified. No ESPHome/PlatformIO CLI,
 new tag, published release or deployment was executed during implementation.
 
 The main pipeline publishes **source/YAML installer releases**, not firmware
 binaries. It uses only Actions' built-in token, keeps PR checks read-only, and
 checks publication again immediately before Pages. See [RELEASING.md](RELEASING.md).
+
+### Step 4 — installer release input/response hardening
+
+`src/release.test.ts`: **22 passed**, including **13 new response/bounds tests**.
+Tests cover streamed UTF-8 byte limits, oversized Content-Length, cancellation,
+split/invalid Unicode, fetch/body deadlines, malformed publication/contracts/tag
+objects, SDK/repository identity, incompatible newest versions, timezone/ID
+ordering and cyclic tags. All HTTP responses are mocks; no browser automation.
+
+Reduced `check_code.py --skip-sdk-checks`: **113 Python tests run / 112 passed /
+1 exact-SDK skip**, **315 host checks**, **116 web tests**, TypeScript, production
+**web** bundle and whitespace checks pass. Exact SDK imports/freshness were not
+rerun locally; hosted CI for step 4 is pending. No ESPHome/PlatformIO CLI,
+firmware build, live release, Pages deployment or production secrets were used.
 
 ## Earlier candidate checkpoint — 2026-10-02
 

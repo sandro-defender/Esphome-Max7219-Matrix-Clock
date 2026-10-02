@@ -29,9 +29,21 @@ verification. A read-only guard skips superseded publications and rechecks while
 holding the Pages lock. Permissions, Actions, artifact retries and main/fork/PR
 boundaries are covered by 22 new mocked tests. No live publishing/deployment or
 ESPHome CLI was executed. Reduced checks: 113 Python tests (112 pass, 1 SDK skip),
-315 host checks, 103 web tests, typecheck/web bundle passed. Hosted step-3 CI and
-actual main integration remain pending. [RELEASING.md](RELEASING.md) documents
+315 host checks, 103 web tests, typecheck/web bundle passed. Hosted [code-only CI](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866)
+passed for `8418b49`, including full SDK freshness. Actual main integration
+remains unverified. [RELEASING.md](RELEASING.md) documents
 this source/YAML release pipeline and the still-deferred firmware/device gates.
+
+### Step 4: bounded, fail-closed installer release lookup
+
+Stream responses with a UTF-8 byte cap and deadline/cancellation, including a
+fetcher/body that ignores AbortSignal. Validate publication records, version,
+repository/SDK identity and tag-object shapes; reject cycles and malformed input
+without installing an older supported tag. Add 13 mocked release regressions
+(22 resolver / 116 web tests total). Reduced code-only gate passes 113 Python
+tests (112 pass, 1 SDK skip), 315 host checks, typecheck/web bundle and diff checks.
+Hosted step-4 CI is pending. No ESPHome CLI/build/codegen, live publishing,
+Pages deployment, browser automation or production-secret access was performed.
 
 ## Earlier draft checkpoint — 2026-10-02
 

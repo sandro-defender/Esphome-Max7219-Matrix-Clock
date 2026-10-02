@@ -81,3 +81,100 @@ describe("newest published immutable firmware", () => {
     expect((await resolvePublishedRelease(fetcher, 10)).ready).toBe(false);
   });
 });
+
+function streamed(bytes: Uint8Array[], cancel = () => {}) {
+  return new Response(new ReadableStream<Uint8Array>({
+    start(controller) { for (const chunk of bytes) controller.enqueue(chunk); controller.close(); },
+    cancel,
+  }));
+}
+
+describe("fail-closed release input and response bounds", () => {
+  it("rejects malformed public metadata instead of silently choosing an older release", async () => {
+    for (const change of [{ id: "2" }, { id: -1 }, { id: 1.5 }, { body: null },
+      { published_at: "2026-10-02T00:00:00" }, { published_at: "invalid" }, { draft: "false" }, { tag_name: null }]) {
+      const result = await resolvePublishedRelease(server([release(), { ...release(tag, "2026-10-02T00:00:00Z", 2), ...change }]));
+      expect(result.ready).toBe(false);
+    }
+  });
+  it("fails on null/array/primitive release records", async () => {
+    for (const invalid of [null, [], 1, "bad", {}]) {
+      expect((await resolvePublishedRelease(server([release(), invalid]))).ready).toBe(false);
+    }
+  });
+  it("does not install an older supported tag when the newest version differs", async () => {
+    const fetcher = server([release(), release("9.9.9", "2026-10-02T00:00:00Z", 2)]);
+    expect(await resolvePublishedRelease(fetcher)).toMatchObject({ tag: "9.9.9", ready: false });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("uses timezone-normalized publication time and a numeric ID tie break", async () => {
+    const newer = release(tag, "2026-10-02T04:00:00+04:00", 2);
+    const older = { ...release(tag, "2026-10-02T00:00:00Z", 1), body: "Wrong tie winner" };
+    expect((await resolvePublishedRelease(server([older, newer]))).ready).toBe(true);
+  });
+  it("checks tagged repository/SDK identity and rejects malformed contract roots", async () => {
+    for (const changed of [null, [], "bad", { ...FIRMWARE, repository: "other/repo" }, { ...FIRMWARE, esphomeVersion: "2026.9.0" }]) {
+      expect((await resolvePublishedRelease(server([release()], changed))).ready).toBe(false);
+    }
+  });
+  it("rejects more than one API page worth of entries", async () => {
+    const fetcher = server(Array.from({ length: 101 }, () => release()));
+    expect((await resolvePublishedRelease(fetcher)).ready).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("rejects oversized declared bodies before looking up contracts", async () => {
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const fetcher = vi.fn(() => Promise.resolve(new Response(body, { headers: { "Content-Length": String(1024 * 1024 + 1) } })));
+    expect((await resolvePublishedRelease(fetcher)).message).toContain("too large");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it("counts UTF-8 bytes instead of JavaScript characters", async () => {
+    const data = JSON.stringify([{ ...release(), body: "😀".repeat(270_000) }]);
+    expect(data.length).toBeLessThan(1024 * 1024);
+    expect(new TextEncoder().encode(data).byteLength).toBeGreaterThan(1024 * 1024);
+    const fetcher = vi.fn(() => Promise.resolve(new Response(data)));
+    expect((await resolvePublishedRelease(fetcher)).message).toContain("too large");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("cancels an over-limit chunked response while reading", async () => {
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) { controller.enqueue(new Uint8Array(1024 * 1024 + 1)); }, cancel,
+    });
+    expect((await resolvePublishedRelease(() => Promise.resolve(new Response(body)))).message).toContain("too large");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it("decodes valid UTF-8 split across chunks and rejects invalid byte sequences", async () => {
+    const data = new TextEncoder().encode(JSON.stringify([release()]));
+    const base = server();
+    const fetcher = vi.fn((url: string) => url.includes("/releases?") ? Promise.resolve(streamed(Array.from(data, (byte) => Uint8Array.of(byte)))) : base(url));
+    expect((await resolvePublishedRelease(fetcher)).ready).toBe(true);
+    expect((await resolvePublishedRelease(() => Promise.resolve(streamed([Uint8Array.of(0xc3, 0x28)])))).ready).toBe(false);
+  });
+  it("times out a fetcher even if it ignores the AbortSignal", async () => {
+    const result = await resolvePublishedRelease(() => new Promise<Response>(() => {}), 10);
+    expect(result).toMatchObject({ ready: false, checking: false });
+    expect(result.message).toContain("timed out");
+  });
+  it("times out and cancels an unfinished response body", async () => {
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const result = await resolvePublishedRelease(() => Promise.resolve(new Response(body)), 10);
+    expect(result.ready).toBe(false);
+    expect(result.message).toContain("timed out");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it("rejects cyclic or malformed tag objects with bounded requests", async () => {
+    const base = server();
+    const cyclic = vi.fn((url: string) => url.includes("git/ref/tags") || url.includes("git/tags/") ?
+      response({ object: { type: "tag", sha: "a".repeat(40) } }) : base(url));
+    expect((await resolvePublishedRelease(cyclic)).ready).toBe(false);
+    expect(cyclic.mock.calls.filter(([url]) => url.includes("git/tags/")).length).toBe(1);
+    for (const data of [null, [], { object: null }, { object: { type: "commit", sha: 123 } }]) {
+      const malformed = vi.fn((url: string) => url.includes("git/ref/tags") ? response(data) : base(url));
+      expect((await resolvePublishedRelease(malformed)).ready).toBe(false);
+    }
+  });
+});

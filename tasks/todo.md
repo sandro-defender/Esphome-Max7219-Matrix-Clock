@@ -17,7 +17,13 @@ retry toolchain downloads. Update draft PR #13 after every finished step.**
   installer release → same-SHA Pages. Add 22 mocked deployment/workflow tests,
   read-only tag/notes/asset verification, stale-build skips and Pages-lock recheck.
   Local reduced gate: 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
-  103 web tests, typecheck/web bundle pass. Hosted/live integration is pending.
+  103 web tests, typecheck/web bundle pass. [Hosted code-only CI passed](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866)
+  for `8418b49`; actual main publication/deployment remains unverified.
+- [x] Step 4: harden installer release lookup with streamed UTF-8 byte limits,
+  timeout/cancellation, strict response/identity/version checks and tag-cycle
+  detection. Add 13 regressions (22 resolver / 116 web tests total). Reduced
+  local gate passes 113 Python tests (112 pass, 1 SDK skip), 315 host checks,
+  typecheck/web bundle. Hosted step-4 CI is pending; no firmware CLI was run.
 - [ ] Later: live integration, stateful parity, manual accessibility/hardware
   sign-off. Full ESPHome builds remain deferred by the user.
 

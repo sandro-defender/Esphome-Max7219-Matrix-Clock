@@ -61,12 +61,31 @@ checkpoint below as earlier evidence, not a new build claim.
 - [x] Add **22 deployment/workflow tests** with mocked remote operations. Local
   reduced gate: **113 Python tests run / 112 pass / 1 SDK skip**, **315 host
   checks**, **103 web tests**, typecheck/web bundle/diff checks pass.
-- [ ] Observe hosted CI for this step; real main release/Pages integration and
-  physical-device sign-off remain unverified. No ESPHome CLI was run.
+- [x] Hosted [code-only CI passed](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock/actions/runs/36961874866) for source commit `8418b49`,
+  including full pinned-SDK freshness. Main-only publish/site/deploy remain
+  unexecuted on this PR; live integration and device sign-off stay unverified.
+
+### Finished step 4 — bounded, fail-closed installer release lookup
+
+- [x] Bound streamed responses by **UTF-8 bytes**, reject oversized declared
+  bodies and cancel oversized/unfinished streams. Decode split Unicode safely
+  and reject invalid UTF-8 rather than accepting a corrupt metadata response.
+- [x] Enforce the deadline even when a fetcher or body ignores AbortSignal;
+  preserve anonymous credential-free GETs and the existing no-old-tag fallback.
+- [x] Validate publication records/timestamps/IDs, page sizes, tagged repository
+  and SDK identity; reject a newest version that differs from the current UI.
+  Fail closed instead of silently selecting an older supported release.
+- [x] Validate tag-object shapes and stop cyclic annotated tags early, retaining
+  the bounded dereference and publishing-SHA gate.
+- [x] Add **13 release-response regressions** (22 resolver tests total). Local
+  reduced gate: **116 web tests**, **315 host checks**, **113 Python tests run /
+  112 pass / 1 SDK skip**, typecheck, web bundle and diff checks pass.
+- [ ] Observe hosted CI for step 4. No ESPHome CLI, release publication, Pages
+  deployment, browser automation or production-secret access was performed.
 
 ### Next finished-step targets
 
-- [ ] Improve release-response/error edge cases and stateful preview parity.
+- [ ] Extend stateful preview parity beyond the current 1,044-frame oracle.
 - [ ] Safely migrate legacy validator entry points without running firmware CLI.
 - [ ] Refresh current release-note metadata and validate live release/installer/
   Pages behavior when publication is explicitly approved. Firmware/hardware

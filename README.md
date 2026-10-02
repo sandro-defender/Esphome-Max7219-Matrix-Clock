@@ -18,17 +18,21 @@ runner tests with read-only every-main/PR checks. `scripts/check_code.py` runs
 source/host/web validation without firmware CLI commands; its reduced local
 mode explicitly skips SDK freshness. Actual publishing/deployment and physical
 verification remain unverified. Main-only release/Pages source wiring now has
-22 deployment/workflow tests; its live integration remains unverified.
+22 deployment/workflow tests; its live integration remains unverified. Installer
+release lookup now has 22 tests covering streamed byte limits, deadlines,
+malformed responses, source identity and no fallback to older releases. The
+current reduced code gate passes 116 web tests; SDK freshness is scoped separately.
 
 This branch targets **ESPHome 2026.9.1 exactly** and is an **unreleased
 checkpoint**, not a ready-to-merge firmware release. The default external pair
 is **Pixel Clock 6×8 + Matrix 2px**, with Compact 5×7 built in and other compatible
 faces optional without an artificial selection cap.
 
-Current C++/Python/web regressions, generated-source freshness, TypeScript/build
-and five isolated YAML/code-generation variants pass. Full ESP8266 compilation
-is blocked by PlatformIO toolchain-download TLS errors; current flash/RAM and
-real boot/OTA behavior are not verified. Automatic main-push source/YAML-release
+Current code-only C++/Python/web regressions and TypeScript/web bundle pass;
+hosted pinned-SDK freshness passed through step 3. Five YAML/code-generation
+variants passed at the **earlier checkpoint**, not during this continuation.
+Full ESP8266 compilation remains deferred by the user after historical toolchain
+TLS errors; current flash/RAM and real boot/OTA behavior are not verified. Automatic main-push source/YAML-release
 and matching Pages workflow wiring is implemented, but not live-publication-tested. See [ROADMAP.md](ROADMAP.md),
 [REPORT.md](REPORT.md) and [VALIDATION.md](VALIDATION.md).
 
