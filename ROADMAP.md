@@ -131,7 +131,7 @@ evidence, not a new build claim.
 ## Earlier checkpoint — 2026-10-02
 
 **Status: implementation checkpoint for a draft PR, not a completed release.**
-The current candidate is `0.7.0` (unreleased), targeting **ESPHome 2026.9.1
+The current candidate is `0.7.1` (published by the main-push workflow after merge), targeting **ESPHome 2026.9.1
 exactly**, on `arena/01a0f913-esphome-max7219-matrix-clock`, based on
 `e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
 

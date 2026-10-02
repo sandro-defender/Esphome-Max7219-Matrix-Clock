@@ -77,7 +77,7 @@ remain unverified.
 
 ## Earlier draft checkpoint — 2026-10-02
 
-- **Candidate:** `0.7.0`, unreleased; exact target ESPHome **2026.9.1**.
+- **Candidate:** `0.7.1` (workflow-published after merge); exact target ESPHome **2026.9.1**.
 - **Branch:** `arena/01a0f913-esphome-max7219-matrix-clock`.
 - **Base commit:** `e693db49da8c09ae6f41c16dc2d9a5c0d0c93f3b`.
 - **Disposition:** checkpoint this work and open a draft PR. This is not a
