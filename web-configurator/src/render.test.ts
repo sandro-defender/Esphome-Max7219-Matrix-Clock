@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { FONT_CATALOG, previewFont } from "./fontCatalog";
-import { clockContent, dateContent, geometry, renderScene, type Frame } from "./render";
+import { clockContent, dateContent, driverTransform, geometry, renderScene, type Frame } from "./render";
 import { DEFAULT_CONFIG, type Config } from "./types";
 
 const at = (frame: Frame, x: number, y: number) => (y * frame.width + x < frame.pixels.length ? frame.pixels[y * frame.width + x] : 0);
@@ -23,6 +23,19 @@ describe("geometry", () => {
   it("flags a module count that does not divide into rows", () => {
     expect(geometry(7, 2).valid).toBe(false);
     expect(geometry(7, 2).width).toBe(56);
+  });
+});
+
+describe("driverTransform", () => {
+  it("reverses chip positions as well as pixels for a 180-degree chain rotation", () => {
+    const frame = { width: 16, height: 8, pixels: new Uint8Array(16 * 8) };
+    frame.pixels[0] = 1;
+    frame.pixels[8] = 1;
+
+    driverTransform(frame, 180, false, true);
+
+    expect(at(frame, 15, 7)).toBe(1);
+    expect(at(frame, 7, 7)).toBe(1);
   });
 });
 

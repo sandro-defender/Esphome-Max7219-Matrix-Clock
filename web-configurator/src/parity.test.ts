@@ -67,6 +67,10 @@ describe("exact firmware / browser pixel parity", () => {
     }
   });
 
+  it("reverses the chip chain when a 180-degree rotation needs digit positions swapped", () => {
+    compare(config({ rotateChip: 180, reverseEnable: true, clockFont: "matrix-2px" }));
+  });
+
   it("matches ASCII, spaces, unsupported/UTF-8 text, scrolling and timeout", () => {
     for (const clockFont of FONT_CATALOG.map((font) => font.id)) for (const message of ["HI  THERE", "0123456", "LONG MESSAGE SCROLLS ACROSS THE PANEL", " a🙂აბ b "]) {
       for (const scrollMode of ["Scroll", "Static"] as const) for (const elapsed of [0, 120, 3000, 15000]) compare(config({ clockFont, message, scrollMode }), date, undefined, elapsed);

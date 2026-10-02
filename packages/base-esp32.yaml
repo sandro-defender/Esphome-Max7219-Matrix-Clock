@@ -28,6 +28,7 @@ substitutions:
   matrix_rows: "1"
   matrix_wiring: snake
   matrix_rotate_chip: "0"
+  matrix_reverse_enable: "false"
   matrix_flip_x: "false"
   matrix_intensity: "3"
   matrix_night_intensity: "1"

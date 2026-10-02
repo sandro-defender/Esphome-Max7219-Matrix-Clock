@@ -89,8 +89,9 @@ static std::string visible_pixels(const display::Display &panel, const Values &v
   std::vector<uint8_t> visible(panel.width_ * panel.height_, 0);
   for (int my = 0; my < panel.height_; my += 8) for (int mx = 0; mx < panel.width_; mx += 8) {
     uint8_t columns[8] = {};
+    const int source_mx = N(values.at("reverseEnable")) ? panel.width_ - mx - 8 : mx;
     for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
-      if (panel.pixels[(my+y)*panel.width_ + mx+x]) columns[x] |= 1U << y;
+      if (panel.pixels[(my+y)*panel.width_ + source_mx+x]) columns[x] |= 1U << y;
     StockDriver driver;
     driver.orientation_ = std::stoi(values.at("rotateChip")) / 90;
     driver.flip_x_ = N(values.at("flipX"));

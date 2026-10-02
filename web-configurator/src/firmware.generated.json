@@ -3112,6 +3112,16 @@
       ]
     },
     {
+      "key": "reverseEnable",
+      "kind": "substitution",
+      "target": "matrix_reverse_enable",
+      "group": "Hardware",
+      "label": "Reverse chip chain",
+      "input": "boolean",
+      "driverKey": "reverse_enable",
+      "default": false
+    },
+    {
       "key": "flipX",
       "kind": "substitution",
       "target": "matrix_flip_x",
@@ -3236,6 +3246,7 @@
     "rows": 1,
     "wiring": "snake",
     "rotateChip": 0,
+    "reverseEnable": false,
     "flipX": false,
     "displayUpdateMs": 20,
     "bootVersionMs": 2500,

@@ -34,6 +34,7 @@ substitutions:
   matrix_rows: "1"              # one row of modules = 8 pixels high
   matrix_wiring: snake          # chip_lines_style: snake or zigzag
   matrix_rotate_chip: "0"       # 0, 90, 180 or 270
+  matrix_reverse_enable: "false" # reverse chip order; needed for whole-chain 180° rotation
   matrix_flip_x: "false"
   matrix_intensity: "3"         # boot brightness, 0..15
   matrix_night_intensity: "1"   # night brightness, 0..15
