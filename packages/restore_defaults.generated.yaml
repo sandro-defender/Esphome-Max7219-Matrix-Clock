@@ -51,6 +51,9 @@ script:
       id: screen_cycle_interval
       value: 10.0
   - number.set:
+      id: date_screen_duration
+      value: 10.0
+  - number.set:
       id: night_start_hour
       value: 22.0
   - number.set:

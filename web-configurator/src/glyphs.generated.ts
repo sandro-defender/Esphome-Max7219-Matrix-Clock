@@ -324,8 +324,8 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "top": 0,
         "advance": 7,
         "rows": [
-          51,
-          51,
+          63,
+          63,
           51,
           51,
           51,

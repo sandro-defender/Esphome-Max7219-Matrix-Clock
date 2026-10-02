@@ -241,6 +241,21 @@ number:
       - component.update: matrix
 
   - platform: template
+    name: "Date screen duration"
+    id: date_screen_duration
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_value: ${date_screen_duration}
+    min_value: 5
+    max_value: 300
+    step: 5
+    unit_of_measurement: s
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Night start hour"
     id: night_start_hour
     entity_category: config

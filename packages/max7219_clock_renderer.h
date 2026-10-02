@@ -115,6 +115,19 @@ class ClipCanvas : public Canvas {
   int x_, y_, w_, h_;
 };
 
+// Draw an entire screen at an offset while retaining Canvas clipping. This is
+// used for the short horizontal slide between selected screens.
+class TranslatedCanvas : public Canvas {
+ public:
+  TranslatedCanvas(Canvas &parent, int x_offset) : parent_(parent), x_offset_(x_offset) {}
+  void pixel(int x, int y, bool on) override { parent_.pixel(x + x_offset_, y, on); }
+  int width() const override { return parent_.width(); }
+  int height() const override { return parent_.height(); }
+ private:
+  Canvas &parent_;
+  int x_offset_;
+};
+
 // --------------------------------------------------------------------------
 // Font interface: one glyph cell at a time so that the renderer owns layout,
 // alignment and the per-digit slide-up animation.
@@ -314,6 +327,7 @@ struct Frame {
   // Automatic screen cycling
   bool auto_cycle = false;
   uint32_t cycle_interval_s = 10;
+  uint32_t date_cycle_interval_s = 10;
 };
 
 // --------------------------------------------------------------------------
@@ -370,6 +384,13 @@ struct Runtime {
   int applied_power = -1;
   int applied_inversion = -1;
   uint32_t cycle_last_ms = 0;
+
+  // Selected-screen slide state. Temporary priority screens deliberately do
+  // not use this path: OTA, boot, alerts and messages must appear at once.
+  int selected_screen = -1;
+  int screen_transition_previous = -1;
+  uint32_t screen_transition_started_ms = 0;
+  bool screen_transition_active = false;
 
   // Last values published to Home Assistant (publish on change only)
   int reported_mode = -1;
@@ -675,6 +696,55 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
   }
 }
 
+// Draw a selected screen without carrying over the per-digit clock animation.
+// The caller uses this for both sides of a whole-screen transition.
+inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
+                      int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
+inline void draw_seconds_bar(Canvas &c, int second);
+
+inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
+                                        const Frame &f, uint8_t screen) {
+  uint8_t mode = MODE_CLOCK;
+  switch (screen) {
+    case SCREEN_DATE:
+      mode = MODE_DATE;
+      break;
+    case SCREEN_GRID_TEST:
+      mode = MODE_GRID_TEST;
+      break;
+    case SCREEN_PIXEL_TEST:
+      mode = MODE_PIXEL_TEST;
+      break;
+    default:
+      break;
+  }
+  if (mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
+    draw_bitmap_test(canvas, mode);
+    return;
+  }
+
+  const int width = canvas.width();
+  const int height = canvas.height();
+  const GlyphFont *active = &font;
+  char content[24] = {0};
+  bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
+  bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
+  if (has_content && active->text_width(content) > width) {
+    if (with_seconds) {
+      with_seconds = false;
+      has_content = build_content(f, mode, false, content, sizeof(content));
+    }
+    if (has_content && active->text_width(content) > width) active = &fallback;
+  }
+  if (!has_content) {
+    snprintf(content, sizeof(content), "--:--");
+    active = &fallback;
+  }
+  const bool blank_colons = mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
+  draw_line(canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+}
+
 // Choose the face for a free-text string (message, alert, OTA): the selected
 // font when it has every glyph, otherwise the built-in fallback. The external
 // faces only compile clock glyphs (see fonts_*.yaml), so Latin messages and
@@ -899,7 +969,9 @@ inline void housekeeping(const Frame &f, Report &report) {
     if (f.auto_cycle && !state.alert_active && !state.message_active &&
         state.countdown_deadline_ms == 0 && state.ota_state == OTA_IDLE && !state.boot_active &&
         (f.screen == SCREEN_CLOCK || f.screen == SCREEN_DATE)) {
-      const uint32_t interval = (f.cycle_interval_s < 5 ? 5 : f.cycle_interval_s) * 1000UL;
+      const uint32_t selected_interval_s =
+          f.screen == SCREEN_DATE ? f.date_cycle_interval_s : f.cycle_interval_s;
+      const uint32_t interval = (selected_interval_s < 5 ? 5 : selected_interval_s) * 1000UL;
       const uint32_t now = f.now_ms == 0 ? 1 : f.now_ms;
       if (state.cycle_last_ms == 0) {
         state.cycle_last_ms = now;  // arm the timer on the first second
@@ -991,6 +1063,35 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     draw_free_text(canvas, text_font, text, (uint32_t)(f.now_ms - started), f.message_scroll, f.scroll_ms_per_px,
                    text_font.centered_box_top(height));
     return;
+  }
+
+  // Slide only between user-selected normal screens. Priority screens above
+  // intentionally return before this point so an OTA/error/message is never
+  // delayed by an animation.
+  if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
+    if (state.selected_screen != f.screen) {
+      const int previous = state.selected_screen;
+      state.selected_screen = f.screen;
+      state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_PIXEL_TEST &&
+                                       f.animate && f.animation_ms > 0;
+      state.screen_transition_previous = previous;
+      state.screen_transition_started_ms = f.now_ms;
+    }
+    if (!f.animate || f.animation_ms == 0) state.screen_transition_active = false;
+    if (state.screen_transition_active) {
+      float progress = (float) (uint32_t)(f.now_ms - state.screen_transition_started_ms) / (float) f.animation_ms;
+      if (progress >= 1.0f) {
+        state.screen_transition_active = false;
+      } else {
+        const int offset = (int) (progress * width);
+        TranslatedCanvas outgoing(canvas, -offset);
+        TranslatedCanvas incoming(canvas, width - offset);
+        draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
+        draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        state.reset_animation();
+        return;
+      }
+    }
   }
 
   // Fixed-width text screens (clock, date, countdown).

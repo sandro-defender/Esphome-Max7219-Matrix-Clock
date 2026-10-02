@@ -22,5 +22,6 @@ frame.brightness_day = N(values.at("brightness"));
 frame.brightness_night = N(values.at("nightBrightness"));
 frame.auto_cycle = N(values.at("autoCycle"));
 frame.cycle_interval_s = (uint32_t) N(values.at("cycleInterval"));
+frame.date_cycle_interval_s = (uint32_t) N(values.at("dateScreenDuration"));
 
 }

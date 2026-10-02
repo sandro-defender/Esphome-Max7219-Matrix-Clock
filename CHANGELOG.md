@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.3 - 2026-10-02
+
+### Added
+- **Date screen duration** is a Home Assistant setting (5–300 seconds). When
+  automatic screen cycling is enabled, it controls how long Date remains
+  visible independently of the Clock screen interval.
+
+### Changed
+- Switching between Clock, Date, Module grid test and Pixel checkerboard now
+  uses the configured animation duration for a short horizontal slide. Boot,
+  OTA, alerts and messages still appear immediately.
+
+### Fixed
+- Matrix 2px digit **0** now has its missing two-pixel top stroke.
+
 ## 0.7.2 - 2026-10-02
 
 ### Added

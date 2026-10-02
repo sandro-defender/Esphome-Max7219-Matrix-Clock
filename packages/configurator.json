@@ -193,6 +193,10 @@
       "target": "screen_cycle_interval",
       "group": "Screen"
     },
+    "dateScreenDuration": {
+      "target": "date_screen_duration",
+      "group": "Screen"
+    },
     "nightStart": {
       "target": "night_start_hour",
       "group": "Light"
