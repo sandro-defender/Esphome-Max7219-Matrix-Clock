@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
+import inspect
 import json
 import logging
 import re
@@ -97,7 +98,7 @@ def build():
     if f"esphome=={target}" not in requirements:
         raise ValueError("requirements-validation.txt and firmware target disagree")
     from esphome.components.max7219digit import display as driver
-    from esphome.components import logger
+    from esphome.components import logger, web_server, wifi
     from esphome.components.esp8266 import boards, gpio
     from esphome import config_validation as cv
 
@@ -178,7 +179,13 @@ def build():
                 candidates = [item] if "name" in item else [v for v in item.values() if isinstance(v, dict) and "name" in v]
                 for entity in candidates:
                     record = {key: entity[key] for key in ("id", "name", "entity_category", "disabled_by_default", "unit_of_measurement", "min_value", "max_value", "step", "options", "initial_option", "initial_value", "restore_mode") if key in entity}
-                    record.update({"domain": domain, "package": path})
+                    visibility = re.fullmatch(r"\$\{(ha_hide_\w+)\}", str(entity.get("internal", "")))
+                    if not entity.get("id") or visibility is None:
+                        raise ValueError("Every named entity needs a stable ID and an internal exposure substitution: " + entity["name"])
+                    record.update({"domain": domain, "package": path,
+                                   "visibilitySubstitution": visibility[1],
+                                   "visibleByDefault": not cv.boolean(resolve(subs[visibility[1]], subs)),
+                                   "recommended": entity["id"] in bindings["recommendedEntities"]})
                     if record.get("id") == "clock_font":
                         record["options"] = [font_options["compact"]] + [font_options[key] for key in default_fonts]
                         record["initial_option"] = font_options[initial_font]
@@ -188,8 +195,19 @@ def build():
     entity_by_id = {e["id"]: e for e in entities if "id" in e}
     if len(entity_by_id) != sum("id" in e for e in entities):
         raise ValueError("Duplicate firmware entity ID")
+    integration_names = {key for module in modules for key in module if key not in ("substitutions", "packages")}
+    integration_names |= {item["platform"] for module in modules for entries in module.values() if isinstance(entries, list)
+                          for item in entries if isinstance(item, dict) and "platform" in item}
+    for entity_id in entity_by_id:
+        cv.validate_id_name(entity_id)
+        if entity_id in integration_names:
+            raise ValueError("Entity ID conflicts with an included ESPHome integration: " + entity_id)
     settings = []
-    consumed_subs = set(bindings["internalSubstitutions"])
+    consumed_subs = set(bindings["internalSubstitutions"]) | {e["visibilitySubstitution"] for e in entities}
+    if len({e["visibilitySubstitution"] for e in entities}) != len(entities):
+        raise ValueError("Entity exposure substitutions must be unique")
+    if not set(bindings["recommendedEntities"]) <= set(entity_by_id):
+        raise ValueError("Recommended recovery/diagnostic entities must exist")
     for key, binding in bindings["entities"].items():
         entity = entity_by_id[binding["target"]]
         domain = entity["domain"]
@@ -220,7 +238,8 @@ def build():
 
     driver_schema = {str(k): v for k, v in driver.CONFIG_SCHEMA.schema.items()}
     limits = {"matrix_chips": range_of(driver_schema["num_chips"]), "matrix_rows": range_of(driver_schema["num_chip_lines"]),
-              "ota_display_intensity": range_of(driver_schema["intensity"]), "ota_port": range_of(cv.port)}
+              "ota_display_intensity": range_of(driver_schema["intensity"]), "ota_port": range_of(cv.port),
+              "web_server_port": range_of(cv.port)}
     renderer = (ROOT / "packages/max7219_clock_renderer.h").read_text()
     # Pin catalogues keep ESPHome's own board tables instead of one expanded
     # map per board: per-board aliases (including the SDK's string references),
@@ -248,11 +267,21 @@ def build():
                 record["default"] = int(value)
                 record.update(limits[sub])
                 record["input"] = "integer"
-            elif input_type == "milliseconds":
-                record["default"] = cv.positive_time_period_milliseconds(value).total_milliseconds
+            elif input_type in ("milliseconds", "seconds"):
+                milliseconds = cv.positive_time_period_milliseconds(value).total_milliseconds
+                divisor = 1000 if input_type == "seconds" else 1
+                if milliseconds % divisor:
+                    raise ValueError("UI time units lose precision for " + sub)
+                record["default"] = milliseconds // divisor
                 record["input"] = "integer"
-                record["timeSuffix"] = "ms"
-                record["min"] = 1
+                record["timeSuffix"] = "s" if input_type == "seconds" else "ms"
+                # Firmware timers are uint32 milliseconds. Browser redraw timers
+                # are signed int32, so keep display sampling safe there as well.
+                maximum = range_of(cv.uint32_t)["max"]
+                if input_type == "milliseconds":
+                    maximum //= 2
+                record.update({"min": 0 if sub.endswith("_timeout") else 1,
+                               "max": maximum // divisor, "step": 1})
             elif input_type == "boolean":
                 record["default"] = bool(cv.boolean(value))
             elif input_type == "driver-option":
@@ -266,6 +295,15 @@ def build():
             elif input_type == "logger-option":
                 record["options"] = list(logger.LOG_LEVELS)
                 record["input"] = "select"
+            elif input_type == "wifi-power-save-option":
+                record.update({"options": list(wifi.WIFI_POWER_SAVE_MODES), "default": str(value).upper(), "input": "select"})
+            elif input_type == "web-auth-option":
+                record.update({"options": [web_server.AUTH_TYPE_BASIC, web_server.AUTH_TYPE_DIGEST], "input": "select"})
+            elif input_type == "web-server-version-option":
+                schema = web_server.CONFIG_SCHEMA.validators[0].schema
+                validator = next(v for k, v in schema.items() if str(k) == "version")
+                record.update({"options": list(inspect.getclosurevars(validator).nonlocals["values"]),
+                               "default": int(value), "input": "select"})
             records.append(record)
         return records
 
@@ -321,6 +359,26 @@ def build():
         return mapping
 
     settings += substitution_records(subs, list(boards.BOARDS))
+    secret_keys = {key for key, value in dev["substitutions"].items() if isinstance(value, Tag) and value.tag == "!secret"}
+    for key, binding in bindings["packages"].items():
+        path = binding["target"]
+        if path not in core_files:
+            raise ValueError("Optional package must be a real dev.yaml module: " + path)
+        references = set(re.findall(r"\$\{(\w+)\}", (ROOT / path).read_text()))
+        other_references = set(re.findall(r"\$\{(\w+)\}", "\n".join((ROOT / f).read_text() for f in core_files if f not in (path, reset_path))))
+        settings.append({"key": key, "kind": "package", **binding, "default": True,
+                         "exclusiveSecrets": sorted((references & secret_keys) - other_references)})
+    groups = bindings["groups"]
+    if len({g["id"] for g in groups}) != len(groups) or {s["group"] for s in settings} != {g["id"] for g in groups}:
+        raise ValueError("Every setting needs exactly one declared UI group")
+    if len({s["key"] for s in settings}) != len(settings):
+        raise ValueError("Duplicate setting key")
+    for item in settings:
+        if "requires" in item and item["requires"] not in bindings["packages"]:
+            raise ValueError("Conditional setting must name an optional package")
+    entity_groups = {s["target"]: s["group"] for s in settings if s["kind"] in ("select", "number", "switch")}
+    for entity in entities:
+        entity["group"] = entity_groups.get(entity["id"], "Buttons" if entity["domain"] == "button" else "Diagnostics")
     consumed_subs |= {record["target"] for record in settings if record["kind"] == "substitution"}
     if consumed_subs != set(subs):
         raise ValueError("Substitution bindings drifted: " + str(set(subs) ^ consumed_subs))
@@ -399,7 +457,7 @@ def build():
     contract = {"schemaVersion": bindings["schemaVersion"], "sourceHash": digest.hexdigest(), "repository": subs["project_repo"], "releaseVersion": tag,
                 "esphomeVersion": target, "releaseNotes": source_notes(tag), "packageFiles": core_files,
                 "defaultTarget": default_id, "hardwareTargets": hardware_targets,
-                "secrets": secrets, "defaultFonts": default_fonts, "fonts": font_specs, "settings": settings,
+                "secrets": secrets, "defaultFonts": default_fonts, "fonts": font_specs, "settings": settings, "groups": groups,
                 "defaults": {**{s["key"]: s["default"] for s in settings}, "target": default_id}, "entities": entities, "actions": actions,
                 "renderer": {"messageMaxBytes": int(re.search(r"char message_text\[(\d+)\]", renderer)[1]) - 1,
                              "alertMaxBytes": int(re.search(r"char alert_text\[(\d+)\]", renderer)[1]) - 1,

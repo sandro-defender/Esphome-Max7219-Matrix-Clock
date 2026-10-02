@@ -35,7 +35,9 @@ packages:
   renderer: !include packages/renderer.yaml
   defaults: !include packages/restore_defaults.generated.yaml
   display: !include packages/display.yaml
+  visibility: !include packages/entity_visibility.yaml
   controls: !include packages/controls.yaml
+  buttons: !include packages/buttons.yaml
   date_controls: !include packages/date_controls.yaml
   actions: !include packages/actions.yaml
   diagnostics: !include packages/diagnostics.yaml

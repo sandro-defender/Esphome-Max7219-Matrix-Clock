@@ -9,7 +9,7 @@ import { FIRMWARE, PROJECT } from "./firmware";
 import { TuneSection } from "./sections";
 import { geometry } from "./render";
 
-const configIds = ["preview", "tune", "font-lab"];
+const configIds = ["preview", "tune", "entity-visibility", "font-lab"];
 const infoIds = ["hardware", "install", "assistant", "troubleshooting", "gallery", "docs", "font-reference", "release-notes"];
 
 describe("App", () => {
@@ -41,7 +41,7 @@ describe("App", () => {
     // One selectable hardware target per generated contract entry, first selected.
     expect(tune).toContain('role="radiogroup" aria-label="Hardware target"');
     for (const target of FIRMWARE.hardwareTargets) expect(tune, target.id).toContain(target.label);
-    const selected = /aria-checked="true"[\s\S]*?<strong>([^<]+)<\/strong>/.exec(tune);
+    const selected = /type="radio"[^>]*checked=""[^>]*>[\s\S]*?<strong>([^<]+)<\/strong>/.exec(tune);
     expect(selected?.[1]).toBe(FIRMWARE.hardwareTargets.find((target) => target.id === FIRMWARE.defaultTarget)!.label);
     expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
     expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(2);
@@ -182,8 +182,11 @@ describe("responsive layout", () => {
     expect(Number(/rgba\(16, 14, 12, ([\d.]+)\)/.exec(nav)![1])).toBeGreaterThanOrEqual(0.95);
 
     // The spacer keeps the document height honest while the chassis is fixed.
-    expect(rule(css, ".chassis-slot", PHONE)).toContain("height: 200px");
+    expect(rule(css, ".chassis-slot", PHONE)).toContain("height: var(--chassis-h)");
     expect(markup).toContain('class="chassis-slot"');
+    // A measured inline height used to override desktop's zero-height spacer.
+    const stage = readFileSync(new URL("./LiveStage.tsx", import.meta.url), "utf8");
+    expect(stage).not.toContain("style={chassisH");
   });
 
   it("gives anchor jumps room for the menu and the pinned matrix", () => {
@@ -202,5 +205,14 @@ describe("responsive layout", () => {
     expect(markup).toContain("600 ms");
     expect(markup).toContain("Replay last change");
 
+  });
+  it("keeps responsive alignment, readable controls, focus indicators and compact spacing in CSS", () => {
+    expect(css).toContain("grid-template-columns: var(--label-width) minmax(0, 1fr)");
+    expect(css).toContain("minmax(min(100%, 340px), 1fr)");
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr) 6.3rem");
+    expect(css).toContain("@media (max-width: 479px)");
+    expect(css).toContain("font-size: 16px; min-height: 38px");
+    expect(css).toContain(":focus-visible");
+    expect(css).not.toContain(".setting-row { display: none");
   });
 });

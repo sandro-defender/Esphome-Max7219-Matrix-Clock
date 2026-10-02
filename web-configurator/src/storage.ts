@@ -1,4 +1,5 @@
 import { FIRMWARE } from "./firmware";
+import { sanitizeHiddenEntities, textLimit } from "./settingsModel";
 import { LEDS as LED_PALETTE } from "./leds";
 import { withFonts } from "./fontSelection";
 import { DEFAULT_TARGET, isHardwareTarget, settingOptions, targetIds, targetSpec } from "./hardware";
@@ -7,8 +8,8 @@ import { CLOCK_FONTS, DEFAULT_CONFIG, LIMITS, clampNumber, isConfigKey, type Con
 /**
  * Settings persistence.
  *
- * The configurator never asks for credentials, so everything it stores is a
- * display preference. Settings are kept in localStorage for the next visit and
+ * The configurator never asks for credentials; only allowlisted non-secret
+ * settings are kept in localStorage for the next visit and
  * can be shared as a URL fragment, which is why every value is validated on
  * the way in: a hand-edited link must never be able to break the preview.
  */
@@ -37,11 +38,15 @@ export function sanitizeConfig(input: unknown): Config {
   // and which board ids and pin names are acceptable at all.
   const target = isHardwareTarget(source.target) ? source.target : DEFAULT_TARGET;
   const enums = enumsFor(target);
-  const config: Config = { ...DEFAULT_CONFIG, ...targetSpec(target).defaults, target, fonts: [...DEFAULT_CONFIG.fonts] };
+  const config: Config = { ...DEFAULT_CONFIG, ...targetSpec(target).defaults, target, fonts: [...DEFAULT_CONFIG.fonts], hiddenEntities: [...DEFAULT_CONFIG.hiddenEntities] };
   for (const key of Object.keys(source)) {
     if (!isConfigKey(key)) continue;
     const value = source[key];
     const fallback = config[key];
+    if (key === "hiddenEntities") {
+      config.hiddenEntities = sanitizeHiddenEntities(value);
+      continue;
+    }
     if (key === "fonts") {
       config.fonts = withFonts(config, value).fonts;
       continue;
@@ -52,6 +57,8 @@ export function sanitizeConfig(input: unknown): Config {
     }
     if (typeof fallback === "number") {
       if (typeof value !== "number" || !Number.isFinite(value)) continue;
+      const allowed = enums[key];
+      if (allowed && !allowed.includes(value)) continue;
       const range = RANGES[key];
       config[key] = (range ? clampNumber(value, range.min, range.max) : Math.round(value)) as never;
       continue;
@@ -59,7 +66,7 @@ export function sanitizeConfig(input: unknown): Config {
     if (typeof value !== "string") continue;
     const allowed = enums[key];
     if (allowed && !allowed.includes(value)) continue;
-    config[key] = (typeof fallback === "string" ? value.slice(0, 64) : value) as never;
+    config[key] = (typeof fallback === "string" ? value.slice(0, textLimit(key)) : value) as never;
   }
   // Old links have no inclusion list: retain their selected face as one extra.
   // Values that are absent come from the target's own base package; a value
@@ -84,7 +91,7 @@ function fromBase64Url(text: string): string {
 }
 
 export function encodeConfig(cfg: Config): string {
-  return toBase64Url(JSON.stringify(cfg));
+  return toBase64Url(JSON.stringify(sanitizeConfig(cfg)));
 }
 
 export function decodeConfig(encoded: string): Config | null {
@@ -128,7 +135,7 @@ export function loadConfig(): { config: Config; from: "link" | "saved" | "defaul
 
 export function saveConfig(cfg: Config): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeConfig(cfg)));
   } catch {
     // Storage is optional; the configurator still works without it.
   }

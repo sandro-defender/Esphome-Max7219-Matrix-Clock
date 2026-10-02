@@ -5,6 +5,7 @@ number:
   - platform: template
     name: "Date scroll speed"
     id: date_scroll_speed
+    internal: ${ha_hide_date_scroll_speed}
     entity_category: config
     optimistic: true
     restore_value: true

@@ -1,106 +1,15 @@
-import type { Config, LedName } from "./types";
-import { LEDS } from "./leds";
+import type { Config } from "./types";
 import { deviceSlug } from "./device";
 import { fontSpec } from "./fontCatalog";
 import { type Geometry } from "./render";
-import { CopyButton, NumberField, type Patch, Section, Slider, Toggle } from "./ui";
+import { CopyButton, Section } from "./ui";
 import { entityId, entityMap, installCommand, sampleAction } from "./yaml";
-import { FIRMWARE, PROJECT, limitsFor, type FirmwareSetting } from "./firmware";
-import { HARDWARE_TARGETS, pinMapFor, pinNamesFor, settingOptions, targetDefault, targetSpec, targetSummary } from "./hardware";
+import { FIRMWARE, PROJECT } from "./firmware";
+import { installerSecrets } from "./settingsModel";
+import { pinMapFor, targetDefault, targetSpec } from "./hardware";
 export { PROJECT } from "./firmware";
 
-/** One widget for every real firmware binding; labels/options/bounds are generated. */
-function FirmwareField({ item, cfg, patch, detected }: { item: FirmwareSetting; cfg: Config; patch: Patch; detected?: string | null }) {
-  const value = cfg[item.key];
-  if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} onChange={(next) => patch(item.key, next)} />;
-  const options = item.input === "pin" ? pinNamesFor(cfg.target, cfg.board) :
-    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
-  if (options) return <label className="field"><span className="field-label">{item.label}</span>
-    <select value={String(value)} onChange={(event) => {
-      const next = typeof item.default === "number" ? Number(event.target.value) : event.target.value;
-      patch(item.key, next);
-      if (item.key === "rotateChip") patch("reverseEnable", next === 180);
-    }}>
-      {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid {item.input === "pin" ? "pin" : "option"}</option> : null}
-      {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
-    </select></label>;
-  if (typeof item.default === "number") {
-    const range = limitsFor(item.key);
-    return item.input === "range" ? <Slider label={item.label} value={Number(value)} {...range} unit={item.unit} onChange={(next) => patch(item.key, next)} /> :
-      <NumberField label={item.label + (item.unit ? ` (${item.unit})` : "")} value={Number(value)} {...range} onChange={(next) => patch(item.key, next)} />;
-  }
-  // Detection is local (Intl only) and never overwrites a saved config or link:
-  // the button is the user's own way to re-apply the browser zone at any time.
-  if (item.key === "timezone") return <div className="field">
-    <span className="field-label">{item.label}</span>
-    <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} />
-    <div className="btn-row">
-      <button
-        type="button"
-        className="btn ghost"
-        disabled={detected === null || detected === undefined}
-        title={detected ? `Set ${detected}` : "Your browser does not report a timezone"}
-        onClick={() => { if (detected) patch("timezone", detected); }}
-      >
-        Use my timezone
-      </button>
-      <span className="hint">{detected ? <>Detected: <code>{detected}</code></> : "Automatic detection is unavailable in this browser — type your IANA zone."}</span>
-    </div>
-  </div>;
-  return <label className="field"><span className="field-label">{item.label}</span>
-    <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} /></label>;
-}
-
-/**
- * Hardware target selector. Switching it rewrites the generated board, pin,
- * OTA port and comment defaults from the selected base package, so the board
- * and pin lists below can only contain values that target actually has.
- */
-function HardwareTargetPicker({ cfg, onTarget }: { cfg: Config; onTarget: (id: string) => void }) {
-  const current = targetSpec(cfg.target);
-  return <fieldset className="control-group target-picker">
-    <legend>Hardware target</legend>
-    <div className="target-options" role="radiogroup" aria-label="Hardware target">
-      {HARDWARE_TARGETS.map((target) => <button
-        key={target.id}
-        type="button"
-        role="radio"
-        aria-checked={cfg.target === target.id}
-        className={cfg.target === target.id ? "target-option on" : "target-option"}
-        onClick={() => onTarget(target.id)}
-      >
-        <strong>{target.label}</strong>
-        <em>{targetSummary(target.id)}</em>
-      </button>)}
-    </div>
-    <p className="hint">
-      Installer uses <code>{current.basePackage}</code> with {targetSummary(current.id)}. Board and pin
-      choices follow the target; other pins can be set in your own YAML later.
-    </p>
-  </fieldset>;
-}
-
-export function TuneSection({ cfg, patch, geo, detected = null, onTarget }: { cfg: Config; patch: Patch; geo: Geometry; detected?: string | null; onTarget?: (id: string) => void }) {
-  const groups = [...new Set(FIRMWARE.settings.map((item) => item.group))];
-  // App.tsx swaps the whole configuration; the patch fallback keeps an
-  // isolated render (tests) usable and still selects the target.
-  const selectTarget = (id: string) => { if (onTarget) onTarget(id); else patch("target", id); };
-  return <Section id="tune" title="Settings">
-    <HardwareTargetPicker cfg={cfg} onTarget={selectTarget} />
-    <div className="tune-grid">{groups.map((group) => <fieldset className="control-group" key={group}>
-      <legend>{group}</legend>{FIRMWARE.settings.filter((item) => item.group === group).map((item) =>
-        <FirmwareField key={item.key} item={item} cfg={cfg} patch={patch} detected={detected} />)}
-    </fieldset>)}</div>
-    <fieldset className="control-group"><legend>Preview</legend>
-      <label className="field"><span className="field-label">Message</span><input value={cfg.message} maxLength={FIRMWARE.renderer.messageMaxBytes} onChange={(event) => patch("message", event.target.value)} /></label>
-      <label className="field"><span className="field-label">LED colour</span><select value={cfg.led} onChange={(event) => patch("led", event.target.value as LedName)}>
-        {Object.entries(LEDS).map(([key, led]) => <option key={key} value={key}>{led.label}</option>)}
-      </select></label>
-      <Toggle label="Module boundaries" checked={cfg.showModuleBoundaries} onChange={(value) => patch("showModuleBoundaries", value)} />
-    </fieldset>
-    {!geo.valid ? <p className="warn" role="alert">Module count must divide evenly into rows.</p> : null}
-  </Section>;
-}
+export { TuneSection } from "./Settings";
 
 export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
   const target = targetSpec(cfg.target);
@@ -224,7 +133,7 @@ export function InstallSection({ cfg, yaml, ready = false, releaseTag, getInstal
     <div className="panel"><h3>Install in five steps</h3><ol className="install-steps">
       <li>Adjust settings and fonts on Configure.</li>
       <li>Wait for the newest published release to be verified. Copy the installer below into <code>{slug}.yaml</code>.</li>
-      <li>Keep these keys in your own <code>secrets.yaml</code>: {Object.values(FIRMWARE.secrets).map((key, index) => <span key={key}>{index ? ", " : ""}<code>{key}</code></span>)}. No credential is entered into, stored by, or sent from this page.</li>
+      <li>Keep these keys in your own <code>secrets.yaml</code>: {Object.values(installerSecrets(cfg)).map((key, index) => <span key={key}>{index ? ", " : ""}<code>{key}</code></span>)}. No credential is entered into, stored by, or sent from this page.</li>
       <li>Use ESPHome <strong>{FIRMWARE.esphomeVersion}</strong>. Run <code>esphome config {slug}.yaml</code> and require “Configuration is valid!”.</li>
       <li>Flash over USB once with <code>{installCommand(cfg)}</code>, adopt in Home Assistant, then use encrypted native OTA. ESP8266 may need a physical reset after the initial serial flash before OTA works.</li>
     </ol><CopyButton text={installCommand(cfg)} id="run" label="Copy install command" className="ghost" />
@@ -249,12 +158,12 @@ export function AssistantSection({ cfg }: { cfg: Config }) {
       <div className="table-scroll"><table className="pin-table"><tbody>{FIRMWARE.actions.map((action) => <tr key={action.action}>
         <td><code>esphome.{ids.node}_{action.action}</code></td><td>{action.description}</td><td>{Object.entries(action.variables).map(([key, type]) => `${key}: ${type}`).join(", ")}</td>
       </tr>)}</tbody></table></div><p>A configured default duration of 0 persists until cleared; action durations at or below 0 select that default. Messages preserve spaces and ASCII case is uppercased, truncated at a valid UTF-8 boundary to {FIRMWARE.renderer.messageMaxBytes} bytes. Unsupported text uses the built-in fallback.</p></div>
-    <div className="panel"><h3>Entity reference</h3><div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
+    <div className="panel"><h3>Entity reference</h3><p>Exposure is set under Configure → Home Assistant visibility. Hidden entities remain in the firmware but are not advertised to Home Assistant or the device web server. Rebuild and install to apply changes; previously registered Home Assistant entities may need cleanup.</p><div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
       {FIRMWARE.entities.map((entity, index) => <tr key={`${entity.domain}-${entity.id ?? entity.name}-${index}`}>
         <td><strong>{entity.name}</strong><br /><code>{entityId(cfg, entity.domain, entity.name)}</code></td>
         <td>{entity.id === "clock_font" ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
           (entity.min_value !== undefined ? `${entity.min_value}–${entity.max_value}, step ${entity.step} ${entity.unit_of_measurement ?? ""}` : entity.domain)}
-          {entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
+          {cfg.hiddenEntities.includes(entity.id) ? " · internal (hidden)" : " · exposed"}{entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
       </tr>)}
     </tbody></table></div></div>
   </Section>;
@@ -312,7 +221,7 @@ const TROUBLE: { term: string; lines: string[] }[] = [
   {
     term: "Could not find the pinned remote ref",
     lines: [
-      "The ref pins a release tag that does not exist in the repository you point at — publish the tag first, or point ref at an existing one. If ESPHome cached the failed attempt, run once with refresh: 0s.",
+      "The ref pins a release tag that does not exist in the repository you point at. Wait for the main-push workflow to publish it, or use an already published release; never create a release or tag by hand. If ESPHome cached the failed attempt, run once with refresh: 0s.",
     ],
   },
   {

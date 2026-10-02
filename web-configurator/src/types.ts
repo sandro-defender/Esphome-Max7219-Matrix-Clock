@@ -26,12 +26,27 @@ export interface Config {
   deviceName: string;
   friendlyName: string;
   timezone: string;
+  automaticTimezone: boolean;
+  /** Firmware entity IDs to make internal at compile time (never removed). */
+  hiddenEntities: string[];
   temperatureEntity: string;
   board: string;
   deviceComment: string;
   logLevel: string;
   otaPort: number;
   fallbackSsid: string;
+  fallbackApTimeout: number;
+  wifiRebootTimeout: number;
+  wifiPowerSave: string;
+  apiRebootTimeout: number;
+  sntpServer1: string;
+  sntpServer2: string;
+  sntpUpdateInterval: number;
+  webServer: boolean;
+  webServerPort: number;
+  webServerVersion: number;
+  webServerAuthType: string;
+  webServerLog: boolean;
   displayUpdateMs: number;
   bootVersionMs: number;
   otaBrightness: number;
@@ -51,6 +66,7 @@ export interface Config {
   screen: ScreenMode;
   autoCycle: boolean;
   cycleInterval: number;
+  dateScreenDuration: number;
   countdownDuration: number;
   alignment: Alignment;
   hourFormat: HourFormat;
@@ -100,9 +116,16 @@ export const PREVIEW_DEFAULTS = {
   showModuleBoundaries: false,
 };
 
+/** Browser policy and entity selection; these are not renderer preferences. */
+export const CONFIGURATOR_DEFAULTS = {
+  automaticTimezone: true,
+  hiddenEntities: FIRMWARE.entities.filter((entity) => !entity.visibleByDefault).map((entity) => entity.id),
+};
+
 export const DEFAULT_CONFIG: Config = {
   ...FIRMWARE.defaults,
   ...PREVIEW_DEFAULTS,
+  ...CONFIGURATOR_DEFAULTS,
   fonts: [...FIRMWARE.defaultFonts],
 } as Config;
 

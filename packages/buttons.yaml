@@ -1,0 +1,78 @@
+# Home Assistant convenience and recovery buttons. Internal entities still
+# exist in firmware; hiding a button never removes its shared action script.
+
+button:
+  - platform: restart
+    name: "Restart device"
+    id: restart_device
+    internal: ${ha_hide_restart_device}
+    entity_category: config
+
+  - platform: template
+    name: "Return to clock"
+    id: button_return_to_clock
+    internal: ${ha_hide_button_return_to_clock}
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Clock"
+      - lambda: |-
+          max7219_clock::state.clear_message();
+          max7219_clock::state.clear_alert();
+          max7219_clock::state.cancel_countdown();
+      - component.update: matrix
+
+  - platform: template
+    name: "Clear message"
+    id: button_clear_message
+    internal: ${ha_hide_button_clear_message}
+    entity_category: config
+    on_press:
+      - script.execute: clear_message_action
+
+  - platform: template
+    name: "Start countdown"
+    id: button_start_countdown
+    internal: ${ha_hide_button_start_countdown}
+    entity_category: config
+    on_press:
+      - script.execute: start_countdown_action
+
+  - platform: template
+    name: "Cancel countdown"
+    id: button_cancel_countdown
+    internal: ${ha_hide_button_cancel_countdown}
+    entity_category: config
+    on_press:
+      - lambda: |-
+          max7219_clock::state.cancel_countdown();
+      - component.update: matrix
+
+  - platform: template
+    name: "Run module grid test"
+    id: button_grid_test
+    internal: ${ha_hide_button_grid_test}
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Module grid test"
+
+  - platform: template
+    name: "Run pixel test"
+    id: button_pixel_test
+    internal: ${ha_hide_button_pixel_test}
+    entity_category: config
+    on_press:
+      - select.set:
+          id: screen_mode
+          option: "Pixel checkerboard"
+
+  - platform: template
+    name: "Restore display defaults"
+    id: button_restore_defaults
+    internal: ${ha_hide_button_restore_defaults}
+    entity_category: config
+    on_press:
+      - script.execute: restore_display_defaults

@@ -30,7 +30,7 @@ python scripts/check_code.py                       # full code gate
 | Firmware contract freshness | `python scripts/generate_firmware_contract.py --check` | generated JSON/YAML/npm version match the firmware sources and the `all_paths` hash |
 | Glyph freshness | `python web-configurator/scripts/generate_glyphs.py --check` | committed preview bitmaps match the fonts the firmware compiles |
 | Host renderer | `make -C tests test fixture` | C++ state machine, layout, animation, OTA screens; browser parity fixture |
-| Python regressions | `python -m unittest discover -s tests -p "test_*.py" -v` | source contracts, publisher, workflow/Pages guards (remote calls mocked) |
+| Python regressions | `python -m unittest discover -s tests -p "test_*.py" -v` | source contracts, real installer/package merges through SDK helpers (not whole-config validation), publisher, workflow/Pages guards (remote calls mocked) |
 | Web tests | `npm --prefix web-configurator test` | preview parity, YAML generator, storage/share links, release resolver |
 | TypeScript | `npm --prefix web-configurator run typecheck` | `tsc --noEmit` |
 | Web bundle | `npm --prefix web-configurator run build` | production single-file bundle (not firmware) |
@@ -63,6 +63,9 @@ runs the full gate.
 * `esphome config dev.yaml` / `esphome compile dev.yaml` — real ESPHome
   validation and compilation on a build host, with your own toolchain. Neither
   runs in CI, and neither is needed for the code gate.
+* `python scripts/validate.py --config-only` — isolated real YAML validation
+  (no codegen/compile) for both targets, exposed/all-internal entity profiles,
+  web-server omission and web-v3/digest options, plus default/all/built-in fonts.
 * `python scripts/validate.py [--compile] [--workspace DIR]` — isolated
   validator: copies only `packages/` and `fonts/`, writes deterministic fake
   secrets, keeps build artifacts under ignored `validation-tmp/`. `--compile`

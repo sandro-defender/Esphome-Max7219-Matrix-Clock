@@ -18,7 +18,9 @@ packages:
     - packages/renderer.yaml
     - packages/restore_defaults.generated.yaml
     - packages/display.yaml
+    - packages/entity_visibility.yaml
     - packages/controls.yaml
+    - packages/buttons.yaml
     - packages/date_controls.yaml
     - packages/actions.yaml
     - packages/diagnostics.yaml
