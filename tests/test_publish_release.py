@@ -348,6 +348,12 @@ class PublicationTests(OfflineTest):
         with patch.object(publisher, "tag_commit", return_value=SHA), patch.object(publisher, "api", side_effect=[None, [draft]]):
             self.assertEqual(publisher.release_state(REPO, TAG, SHA), draft)
 
+    def test_unusable_draft_tag_lookup_falls_back_to_authenticated_list(self):
+        draft = release(draft=True)
+        hidden = {"tag_name": "untagged-draft", "draft": True, "prerelease": False, "assets": []}
+        with patch.object(publisher, "tag_commit", return_value=SHA), patch.object(publisher, "api", side_effect=[hidden, [draft]]):
+            self.assertEqual(publisher.release_state(REPO, TAG, SHA), draft)
+
 
 class ProvenanceTests(OfflineTest):
     def setUp(self):
