@@ -41,6 +41,7 @@ enum Mode : uint8_t {
   MODE_GRID_TEST,
   MODE_PIXEL_TEST,
   MODE_BOOT,
+  MODE_TEMPERATURE,
 };
 
 enum Screen : uint8_t {
@@ -48,6 +49,7 @@ enum Screen : uint8_t {
   SCREEN_DATE,
   SCREEN_GRID_TEST,
   SCREEN_PIXEL_TEST,
+  SCREEN_TEMPERATURE,
 };
 
 enum OtaState : uint8_t {
@@ -74,6 +76,9 @@ enum DateFormat : uint8_t {
   DATE_DD_MM = 0,  // 31.12
   DATE_MM_DD,      // 12/31
   DATE_DD_MM_SLASH,// 31/12
+  DATE_DD_MM_YY,   // 31.12.26
+  DATE_WEEKDAY_DD_MM_YY,   // THU 31.12.26
+  DATE_WEEKDAY_DD_MMM_YY,  // THU 31. DEC 26
 };
 
 // --------------------------------------------------------------------------
@@ -300,6 +305,9 @@ struct Frame {
   int second = 0;
   int day = 1;
   int month = 1;
+  int year = 2026;
+  bool temperature_valid = false;
+  float temperature_c = 0.0f;
 
   // Display preferences (entity state)
   int screen = SCREEN_CLOCK;
@@ -498,6 +506,8 @@ inline const char *mode_name(uint8_t mode) {
       return "Clock";
     case MODE_DATE:
       return "Date";
+    case MODE_TEMPERATURE:
+      return "Temperature";
     case MODE_MESSAGE:
       return "Message";
     case MODE_COUNTDOWN:
@@ -521,6 +531,8 @@ inline const char *screen_name(uint8_t screen) {
       return "Clock";
     case SCREEN_DATE:
       return "Date";
+    case SCREEN_TEMPERATURE:
+      return "Temperature";
     case SCREEN_GRID_TEST:
       return "Module grid test";
     case SCREEN_PIXEL_TEST:
@@ -651,9 +663,39 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
         case DATE_DD_MM_SLASH:
           snprintf(out, out_size, "%02d/%02d", f.day, f.month);
           break;
+        case DATE_DD_MM_YY:
+          snprintf(out, out_size, "%02d.%02d.%02d", f.day, f.month, f.year % 100);
+          break;
+        case DATE_WEEKDAY_DD_MM_YY:
+        case DATE_WEEKDAY_DD_MMM_YY: {
+          static const char *const weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+          static const char *const months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                                               "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+          static const int month_offsets[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+          const int adjusted_year = f.year - (f.month < 3 ? 1 : 0);
+          const int weekday = (adjusted_year + adjusted_year / 4 - adjusted_year / 100 +
+                               adjusted_year / 400 + month_offsets[f.month - 1] + f.day) % 7;
+          if (f.date_format == DATE_WEEKDAY_DD_MM_YY)
+            snprintf(out, out_size, "%s %02d.%02d.%02d", weekdays[weekday], f.day, f.month, f.year % 100);
+          else
+            snprintf(out, out_size, "%s %02d. %s %02d", weekdays[weekday], f.day, months[f.month - 1], f.year % 100);
+          break;
+        }
         default:
           snprintf(out, out_size, "%02d.%02d", f.day, f.month);
           break;
+      }
+      return true;
+    case MODE_TEMPERATURE:
+      if (!f.temperature_valid) {
+        snprintf(out, out_size, "--.-");
+        return true;
+      }
+      {
+        const int tenths = (int) (f.temperature_c * 10.0f + (f.temperature_c >= 0.0f ? 0.5f : -0.5f));
+        const int whole = tenths / 10;
+        const int fraction = tenths < 0 ? -(tenths % 10) : tenths % 10;
+        snprintf(out, out_size, "%d.%d", whole, fraction);
       }
       return true;
     case MODE_COUNTDOWN: {
@@ -701,6 +743,7 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
 inline void draw_seconds_bar(Canvas &c, int second);
+inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
 inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
                                         const Frame &f, uint8_t screen) {
@@ -708,6 +751,9 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   switch (screen) {
     case SCREEN_DATE:
       mode = MODE_DATE;
+      break;
+    case SCREEN_TEMPERATURE:
+      mode = MODE_TEMPERATURE;
       break;
     case SCREEN_GRID_TEST:
       mode = MODE_GRID_TEST;
@@ -729,6 +775,7 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
+  if (has_content) active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
       with_seconds = false;
@@ -886,6 +933,8 @@ inline uint8_t effective_mode(const Frame &f) {
   switch (f.screen) {
     case SCREEN_DATE:
       return MODE_DATE;
+    case SCREEN_TEMPERATURE:
+      return MODE_TEMPERATURE;
     case SCREEN_GRID_TEST:
       return MODE_GRID_TEST;
     case SCREEN_PIXEL_TEST:
@@ -1068,11 +1117,11 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   // Slide only between user-selected normal screens. Priority screens above
   // intentionally return before this point so an OTA/error/message is never
   // delayed by an animation.
-  if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
+  if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_TEMPERATURE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
-      state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_PIXEL_TEST &&
+      state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
                                        f.animate && f.animation_ms > 0;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
@@ -1098,6 +1147,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
+  if (has_content) active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
@@ -1111,6 +1161,15 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     // No valid time yet: keep a readable, non-empty placeholder.
     snprintf(content, sizeof(content), "--:--");
     active = &fallback;
+  }
+
+  // The weekday formats are intentionally longer than one 48-pixel row. Use
+  // the same deterministic ticker as messages instead of clipping them.
+  if (mode == MODE_DATE && active->text_width(content) > width) {
+    state.reset_animation();
+    draw_free_text(canvas, *active, content, f.now_ms, true, f.scroll_ms_per_px,
+                   active->centered_box_top(height));
+    return;
   }
 
   // Slide-up animation: only for unchanged layouts (same mode and length).

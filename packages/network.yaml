@@ -37,3 +37,11 @@ time:
       - 0.pool.ntp.org
       - 1.pool.ntp.org
     update_interval: 1h
+
+# A numeric Home Assistant sensor selected in the installer. The display shows
+# its value with one decimal place; use a Celsius entity for a °C reading.
+sensor:
+  - platform: homeassistant
+    id: temperature_sensor
+    entity_id: ${temperature_entity}
+    internal: true

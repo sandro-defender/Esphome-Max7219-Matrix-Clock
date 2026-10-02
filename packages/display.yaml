@@ -42,7 +42,10 @@ display:
         frame.second = time_now.second;
         frame.day = time_now.day_of_month;
         frame.month = time_now.month;
+        frame.year = time_now.year;
       }
+      frame.temperature_valid = !max7219_clock::is_nan(id(temperature_sensor).state);
+      frame.temperature_c = id(temperature_sensor).state;
 
       // ----- Frame: durable preferences (restored entities) ---------------
       frame.screen = max7219_clock::screen_from_option(id(screen_mode).current_option());
@@ -102,6 +105,7 @@ display:
         switch (max7219_clock::report.mode) {
           case max7219_clock::MODE_CLOCK:
           case max7219_clock::MODE_DATE:
+          case max7219_clock::MODE_TEMPERATURE:
           case max7219_clock::MODE_GRID_TEST:
           case max7219_clock::MODE_PIXEL_TEST:
             id(screen_mode).publish_state(
@@ -128,9 +132,7 @@ display:
         id(matrix).intensity(max7219_clock::clamp_u8(max7219_clock::report.brightness, 0, 15));
       }
       if (max7219_clock::report.screen_changed) {
-        id(screen_mode).publish_state(
-            max7219_clock::screen_from_mode(max7219_clock::report.screen) == max7219_clock::SCREEN_DATE ? "Date"
-                                                                                                        : "Clock");
+        id(screen_mode).publish_state(max7219_clock::option_for_screen(max7219_clock::report.screen));
       }
 
       // Render -> hardware flush in the same call. MAX7219::update() only

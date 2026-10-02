@@ -42,6 +42,9 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, DEFAULT_CONFIG)).toBe("02.01");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "MM/DD" })).toBe("01/02");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "DD/MM" })).toBe("02/01");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "DD.MM.YY" })).toBe("02.01.26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD.MM.YY" })).toBe("FRI 02.01.26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
   });
 });
 
@@ -114,6 +117,12 @@ describe("renderScene", () => {
     const scene = sceneWith({ screen: "Date", dateFormat: "MM/DD" });
     expect(scene.page).toBe("date");
     expect(lit(scene.frame)).toBeGreaterThan(0);
+  });
+
+  it("shows the temperature placeholder until Home Assistant supplies a value", () => {
+    const scene = sceneWith({ screen: "Temperature" });
+    expect(scene.page).toBe("temperature");
+    expect(scene.content).toBe("--.-");
   });
 
   it("lets an active message take the whole display", () => {

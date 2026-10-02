@@ -21,7 +21,7 @@ export { deviceSlug, nodeId } from "./device";
  * seconds bar. That is what makes the preview trustworthy.
  */
 
-export type Page = "clock" | "date" | "message" | "grid" | "checkerboard" | "blank";
+export type Page = "clock" | "date" | "temperature" | "message" | "grid" | "checkerboard" | "blank";
 
 export interface Geometry {
   modulesX: number;
@@ -152,8 +152,14 @@ export function clockContent(now: Date, cfg: Config, withSeconds: boolean): stri
 export function dateContent(now: Date, cfg: Config): string {
   const day = pad(now.getDate());
   const month = pad(now.getMonth() + 1);
+  const year = pad(now.getFullYear() % 100);
+  const weekday = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
+  const monthName = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
   if (cfg.dateFormat === "MM/DD") return `${month}/${day}`;
   if (cfg.dateFormat === "DD/MM") return `${day}/${month}`;
+  if (cfg.dateFormat === "DD.MM.YY") return `${day}.${month}.${year}`;
+  if (cfg.dateFormat === "Weekday DD.MM.YY") return `${weekday} ${day}.${month}.${year}`;
+  if (cfg.dateFormat === "Weekday DD. MMM YY") return `${weekday} ${day}. ${monthName} ${year}`;
   return `${day}.${month}`;
 }
 
@@ -289,6 +295,8 @@ function choosePage(screen: Config["screen"], messageActive: boolean): Page {
   switch (screen) {
     case "Date":
       return "date";
+    case "Temperature":
+      return "temperature";
     case "Message":
       return "clock";
     case "Module grid test":
@@ -306,6 +314,8 @@ function pageLabel(page: Page): string {
       return "the clock";
     case "date":
       return "the date";
+    case "temperature":
+      return "the temperature";
     case "message":
       return "the message";
     case "grid":
@@ -397,7 +407,7 @@ export function renderScene(
       }
     } else {
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
-      const build = (): string => (page === "date" ? dateContent(now, cfg) : clockContent(now, cfg, withSeconds));
+      const build = (): string => page === "date" ? dateContent(now, cfg) : page === "temperature" ? "--.-" : clockContent(now, cfg, withSeconds);
       content = build();
       if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width && withSeconds) {
         withSeconds = false;
@@ -408,11 +418,15 @@ export function renderScene(
         font = BUILTIN_FONT;
         usedFallback = true;
       }
+      if (page === "date" && (font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width) {
+        drawFreeText(frame, font, content, { ...cfg, scrollMode: "Scroll" }, runtimeNowMs);
+      } else {
       const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
       layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
       const activeSlide = cfg.digitAnimation && cfg.animationMs > 0 ? slide : { from: null, progress: 1 };
       drawCells(frame, font, layout, activeSlide, cfg.animationRowGap);
       if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
+      }
     }
     driverTransform(frame, cfg.rotateChip, cfg.flipX);
   }
