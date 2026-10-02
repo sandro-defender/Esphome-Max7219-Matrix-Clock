@@ -16,6 +16,7 @@ display:
     num_chip_lines: ${matrix_rows}
     chip_lines_style: ${matrix_wiring}
     rotate_chip: ${matrix_rotate_chip}
+    reverse_enable: ${matrix_reverse_enable}
     flip_x: ${matrix_flip_x}
     intensity: ${matrix_intensity}
     # The renderer owns scrolling and animation; the component's own scrolling

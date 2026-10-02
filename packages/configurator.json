@@ -103,6 +103,13 @@
       "input": "driver-option",
       "driverKey": "rotate_chip"
     },
+    "reverseEnable": {
+      "target": "matrix_reverse_enable",
+      "group": "Hardware",
+      "label": "Reverse chip chain",
+      "input": "boolean",
+      "driverKey": "reverse_enable"
+    },
     "flipX": {
       "target": "matrix_flip_x",
       "group": "Hardware",
