@@ -38,6 +38,11 @@ describe("App", () => {
     const tune = renderToStaticMarkup(<TuneSection cfg={cfg} patch={() => {}} geo={geometry(cfg.chips, cfg.rows)} />);
     for (const item of FIRMWARE.settings) expect(tune, item.key).toContain(item.label.replace(/&/g, "&amp;"));
     for (const spec of FONT_CATALOG) expect(tune, spec.label).toContain(spec.label);
+    // One selectable hardware target per generated contract entry, first selected.
+    expect(tune).toContain('role="radiogroup" aria-label="Hardware target"');
+    for (const target of FIRMWARE.hardwareTargets) expect(tune, target.id).toContain(target.label);
+    const selected = /aria-checked="true"[\s\S]*?<strong>([^<]+)<\/strong>/.exec(tune);
+    expect(selected?.[1]).toBe(FIRMWARE.hardwareTargets.find((target) => target.id === FIRMWARE.defaultTarget)!.label);
     expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
     expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(2);
   });

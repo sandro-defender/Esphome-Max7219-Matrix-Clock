@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.6 - 2026-10-02
+
+### Added
+- The configurator now starts with a **hardware target** selector. Keep the
+  **ESP8266 Wemos D1 mini** defaults, or switch to the **ESP-WROOM-32 DevKit**:
+  the ESP32 installer uses `packages/base-esp32.yaml`, board `esp32dev`, CLK
+  `GPIO18`, DIN `GPIO23`, CS `GPIO5` and OTA port `3232`. Board and pin choices
+  follow the target, so ESP8266 aliases such as `D8` can never appear in an
+  ESP32 installer. The ESP8266 configuration is unchanged.
+
 ## 0.7.5 - 2026-10-02
 
 ### Added

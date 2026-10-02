@@ -32,6 +32,33 @@ export interface FirmwareFont {
   package?: string;
 }
 
+/**
+ * Pin data in ESPHome's own shape: per-board aliases (a string means "the
+ * alias table of that board"), the shared alias base and the output-capable
+ * GPIO numbers per board variant. `hardware.ts` expands one board on demand.
+ */
+export interface FirmwarePinCatalog {
+  variants: Record<string, number[]>;
+  boardVariants: Record<string, string>;
+  boardAliases: Record<string, Record<string, number> | string>;
+  baseAliases: Record<string, number>;
+}
+
+export interface FirmwareHardwareTarget {
+  id: string;
+  label: string;
+  platform: string;
+  /** The real ESPHome package whose values this target installs. */
+  basePackage: string;
+  /** The substitution key that selects the board for this target. */
+  boardKey: string;
+  /** Only the settings whose default differs from the default target. */
+  defaults: Record<string, string | number | boolean>;
+  /** Complete module list for an installer of this target. */
+  packageFiles: string[];
+  pins: FirmwarePinCatalog;
+}
+
 export interface FirmwareEntity {
   id?: string;
   name: string;
@@ -54,13 +81,15 @@ export const FIRMWARE = generated as unknown as {
   esphomeVersion: string;
   releaseNotes: string;
   packageFiles: string[];
+  /** The target whose values the top-level settings/defaults/packageFiles carry. */
+  defaultTarget: string;
+  hardwareTargets: FirmwareHardwareTarget[];
   secrets: Record<string, string>;
   defaultFonts: string[];
   fonts: FirmwareFont[];
   settings: FirmwareSetting[];
   defaults: Record<string, string | number | boolean>;
   entities: FirmwareEntity[];
-  pinMappings: Record<string, Record<string, number>>;
   renderer: { messageMaxBytes: number; alertMaxBytes: number; otaStates: Record<string, number>;
     otaTemplates: Record<string, string[]>; otaBarStates: string[]; progressMax: number; bootPrefix: string; bootScrollMs: number; alarmPeriodMs: number };
   actions: { action: string; description: string; variables: Record<string, string> }[];

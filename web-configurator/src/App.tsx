@@ -21,6 +21,7 @@ import { CopyButton, copyText, type Patch } from "./ui";
 import { usePinnedChrome } from "./usePinnedChrome";
 import { usePreview } from "./usePreview";
 import { buildYaml } from "./yaml";
+import { switchTarget } from "./hardware";
 import { INSTALL_FRESH_MS, usePublishedRelease, type ReleaseState } from "./release";
 import { deviceSlug } from "./device";
 import { detectTimezone, withDetectedTimezone } from "./timezone";
@@ -46,9 +47,13 @@ const ConfigureColumn = memo(function ConfigureColumn({
   geo: Geometry;
   detected: string | null;
 }) {
+  // The target decides the board, pin and OTA defaults; switching rewrites them.
+  const onTarget = useCallback((id: string) => {
+    setCfg((current) => switchTarget(current, id));
+  }, [setCfg]);
   return (
     <>
-      <TuneSection cfg={cfg} patch={patch} geo={geo} detected={detected} />
+      <TuneSection cfg={cfg} patch={patch} geo={geo} detected={detected} onTarget={onTarget} />
       <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
     </>
   );

@@ -6,17 +6,18 @@ import { type Geometry } from "./render";
 import { CopyButton, NumberField, type Patch, Section, Slider, Toggle } from "./ui";
 import { entityId, entityMap, installCommand, sampleAction } from "./yaml";
 import { FIRMWARE, PROJECT, limitsFor, type FirmwareSetting } from "./firmware";
+import { HARDWARE_TARGETS, pinMapFor, pinNamesFor, settingOptions, targetDefault, targetSpec, targetSummary } from "./hardware";
 export { PROJECT } from "./firmware";
 
 /** One widget for every real firmware binding; labels/options/bounds are generated. */
 function FirmwareField({ item, cfg, patch, detected }: { item: FirmwareSetting; cfg: Config; patch: Patch; detected?: string | null }) {
   const value = cfg[item.key];
   if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} onChange={(next) => patch(item.key, next)} />;
-  const options = item.input === "pin" ? Object.keys(FIRMWARE.pinMappings[cfg.board] ?? {}) :
-    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : item.options;
+  const options = item.input === "pin" ? pinNamesFor(cfg.target, cfg.board) :
+    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
   if (options) return <label className="field"><span className="field-label">{item.label}</span>
     <select value={String(value)} onChange={(event) => patch(item.key, typeof item.default === "number" ? Number(event.target.value) : event.target.value)}>
-      {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid pin</option> : null}
+      {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid {item.input === "pin" ? "pin" : "option"}</option> : null}
       {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
     </select></label>;
   if (typeof item.default === "number") {
@@ -46,9 +47,42 @@ function FirmwareField({ item, cfg, patch, detected }: { item: FirmwareSetting; 
     <input value={String(value)} maxLength={240} onChange={(event) => patch(item.key, event.target.value)} /></label>;
 }
 
-export function TuneSection({ cfg, patch, geo, detected = null }: { cfg: Config; patch: Patch; geo: Geometry; detected?: string | null }) {
+/**
+ * Hardware target selector. Switching it rewrites the generated board, pin,
+ * OTA port and comment defaults from the selected base package, so the board
+ * and pin lists below can only contain values that target actually has.
+ */
+function HardwareTargetPicker({ cfg, onTarget }: { cfg: Config; onTarget: (id: string) => void }) {
+  const current = targetSpec(cfg.target);
+  return <fieldset className="control-group target-picker">
+    <legend>Hardware target</legend>
+    <div className="target-options" role="radiogroup" aria-label="Hardware target">
+      {HARDWARE_TARGETS.map((target) => <button
+        key={target.id}
+        type="button"
+        role="radio"
+        aria-checked={cfg.target === target.id}
+        className={cfg.target === target.id ? "target-option on" : "target-option"}
+        onClick={() => onTarget(target.id)}
+      >
+        <strong>{target.label}</strong>
+        <em>{targetSummary(target.id)}</em>
+      </button>)}
+    </div>
+    <p className="hint">
+      Installer uses <code>{current.basePackage}</code> with {targetSummary(current.id)}. Board and pin
+      choices follow the target; other pins can be set in your own YAML later.
+    </p>
+  </fieldset>;
+}
+
+export function TuneSection({ cfg, patch, geo, detected = null, onTarget }: { cfg: Config; patch: Patch; geo: Geometry; detected?: string | null; onTarget?: (id: string) => void }) {
   const groups = [...new Set(FIRMWARE.settings.map((item) => item.group))];
+  // App.tsx swaps the whole configuration; the patch fallback keeps an
+  // isolated render (tests) usable and still selects the target.
+  const selectTarget = (id: string) => { if (onTarget) onTarget(id); else patch("target", id); };
   return <Section id="tune" title="Settings">
+    <HardwareTargetPicker cfg={cfg} onTarget={selectTarget} />
     <div className="tune-grid">{groups.map((group) => <fieldset className="control-group" key={group}>
       <legend>{group}</legend>{FIRMWARE.settings.filter((item) => item.group === group).map((item) =>
         <FirmwareField key={item.key} item={item} cfg={cfg} patch={patch} detected={detected} />)}
@@ -65,12 +99,22 @@ export function TuneSection({ cfg, patch, geo, detected = null }: { cfg: Config;
 }
 
 export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
-  const softwareSpi = cfg.clkPin !== "D5" || (cfg.mosiPin !== "D7");
+  const target = targetSpec(cfg.target);
+  const pins = pinMapFor(cfg.target, cfg.board);
+  const variant = target.pins.boardVariants[cfg.board];
+  // Hardware SPI pins are platform facts: D5/D7 on an ESP8266, the VSPI pins on
+  // a classic ESP32. Other ESP32 variants fall back to software SPI wording.
+  const hardwarePins = variant === "ESP32" ? { clk: "GPIO18", mosi: "GPIO23" }
+    : target.platform === "esp8266" ? { clk: "D5", mosi: "D7" } : null;
+  const hardwareSpi = hardwarePins !== null
+    && pins[cfg.clkPin] === pins[hardwarePins.clk] && pins[cfg.mosiPin] === pins[hardwarePins.mosi];
+  const fallback = (key: string) => String(targetDefault(cfg.target, key));
   return (
     <Section
       id="hardware"
       title="Hardware and Wiring"
-      lead={<>The reference build uses {String(FIRMWARE.defaults.board)}, {String(FIRMWARE.defaults.chips)} modules and {String(FIRMWARE.defaults.rows)} row, with three data lines and shared 5 V power.</>}
+      lead={<>{target.label} with board {cfg.board}, {String(targetDefault(cfg.target, "chips"))} modules and{" "}
+        {String(targetDefault(cfg.target, "rows"))} row, three data lines and shared 5 V power.</>}
     >
       <div className="panel">
         <h3>Default wiring</h3>
@@ -80,7 +124,7 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
             <tr>
               <th>Signal</th>
               <th>Module pin</th>
-              <th>D1 Mini</th>
+              <th>{target.platform === "esp32" ? "ESP32 pin" : "D1 mini pin"}</th>
               <th>Notes</th>
             </tr>
           </thead>
@@ -89,19 +133,19 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
               <td>Clock</td>
               <td>CLK</td>
               <td>{cfg.clkPin}</td>
-              <td>{String(FIRMWARE.defaults.clkPin)} by default; D5 is the hardware SPI clock alternative</td>
+              <td>{fallback("clkPin")} by default{hardwarePins ? `; ${hardwarePins.clk} is the hardware SPI clock` : ""}</td>
             </tr>
             <tr>
               <td>Data</td>
               <td>DIN</td>
               <td>{cfg.mosiPin}</td>
-              <td>{String(FIRMWARE.defaults.mosiPin)} by default; first module only — then OUT → IN down the chain</td>
+              <td>{fallback("mosiPin")} by default; first module only — then OUT → IN down the chain</td>
             </tr>
             <tr>
               <td>Load / chip select</td>
               <td>CS</td>
               <td>{cfg.csPin}</td>
-              <td>{String(FIRMWARE.defaults.csPin)} by default</td>
+              <td>{fallback("csPin")} by default</td>
             </tr>
             <tr>
               <td>Ground</td>
@@ -113,26 +157,28 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
               <td>Supply</td>
               <td>VCC</td>
               <td>5V</td>
-              <td>Matrix wants 5 V; logic from the D1 Mini is 3.3 V</td>
+              <td>Matrix wants 5 V; the controller's logic is 3.3 V</td>
             </tr>
           </tbody>
         </table>
         </div>
         <p>
-          Chain <strong>DOUT of one module to DIN of the next</strong>, starting at the module that gets the D1 Mini's
+          Chain <strong>DOUT of one module to DIN of the next</strong>, starting at the module that gets the controller's
           three lines. The numbers under the preview are chain order. The matrix wants 5 V on VCC; 3.3 V logic usually
           clocks a short chain fine. Past three or four modules, a level shifter on CLK, DIN, and CS is the reliable fix.
           Keep the total current in mind: at full brightness a six-module panel can draw more than half an ampere, so
           power it from a proper 5 V supply rather than a laptop USB port.
         </p>
-        {softwareSpi ? (
-          <p>
-            D5 is hardware SPI clock and D7 is hardware MOSI on a D1 Mini. This configuration uses {cfg.clkPin} and{" "}
-            {cfg.mosiPin}, so ESPHome uses software SPI — flexible pinning at a small CPU cost. Leave the wires where
-            they are if the clock already runs.
-          </p>
+        {hardwareSpi ? (
+          <p>CLK and DIN sit on the hardware SPI pins ({hardwarePins!.clk}/{hardwarePins!.mosi}), so ESPHome drives the chain over hardware SPI.</p>
         ) : (
-          <p>CLK and DIN sit on the hardware SPI pins (D5/D7), so ESPHome drives the chain over hardware SPI.</p>
+          <p>
+            {hardwarePins
+              ? `${hardwarePins.clk} is hardware SPI clock and ${hardwarePins.mosi} is hardware MOSI on this controller. `
+              : ""}
+            This configuration uses {cfg.clkPin} and {cfg.mosiPin}, so ESPHome uses software SPI — flexible pinning at
+            a small CPU cost. Leave the wires where they are if the clock already runs.
+          </p>
         )}
       </div>
 
@@ -154,9 +200,10 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
       <div className="panel">
         <h3>Changing the hardware shape</h3>
         <p>
-          Everything physical is a substitution in the generated YAML, so you never edit the firmware packages: module
-          count and rows (Tune → Hardware), wiring style, per-chip rotation, X flip, the three pins, the board id, and
-          the timezone. See the full substitution table in{" "}
+          Everything physical is a substitution in the generated YAML, so you never edit the firmware packages: the
+          hardware target and its board (Tune → Hardware target), module count and rows (Tune → Hardware), wiring style,
+          per-chip rotation, X flip, the three pins, and the timezone. Switching the target rewrites the board, pin and
+          OTA defaults that the chosen base package provides. See the full substitution table in{" "}
           <a href={PROJECT.readme} target="_blank" rel="noreferrer">
             README.md
           </a>

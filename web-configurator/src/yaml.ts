@@ -2,6 +2,7 @@ import { withFonts } from "./fontSelection";
 import { fontSpec } from "./fontCatalog";
 import { deviceSlug, nodeId } from "./device";
 import { FIRMWARE, PROJECT, firmwareOption, limitsFor, type FirmwareSetting } from "./firmware";
+import { boardsFor, packageFilesFor, pinMapFor, settingOptions } from "./hardware";
 import { sanitizeConfig } from "./storage";
 import { clampNumber, type Config } from "./types";
 
@@ -68,7 +69,13 @@ function valueFor(item: FirmwareSetting, cfg: Config): string | number | boolean
   }
   if (typeof value === "string" && value.includes("$")) throw new Error("Substitution references are not allowed in setting text");
   if (item.key === "clockFont") return selectedFontOption(String(value));
-  if (item.kind === "select") return firmwareOption(item.key, String(value));
+  if (item.kind === "select") {
+    // The board is target-specific; only the target's own ids are emitted.
+    const choice = String(value);
+    const options = settingOptions(item, cfg.target)?.map(String);
+    if (options && !options.includes(choice)) throw new Error(`Select a valid ${item.label.toLowerCase()} for this hardware target`);
+    return firmwareOption(item.key, choice);
+  }
   return value;
 }
 
@@ -76,11 +83,14 @@ export function buildYaml(input: Config, releaseTag: string): string {
   if (!validReleaseTag(releaseTag)) throw new Error("Installers require an immutable release tag, never main");
   const cfg = withFonts(sanitizeConfig(input), input.fonts);
   if (cfg.chips < cfg.rows || cfg.chips % cfg.rows !== 0) throw new Error("Module count must divide evenly into rows");
-  const mapping = FIRMWARE.pinMappings[cfg.board];
-  const pins = [cfg.clkPin, cfg.mosiPin, cfg.csPin].map((pin) => mapping?.[pin]);
+  if (!boardsFor(cfg.target).includes(cfg.board)) throw new Error("Select a valid board for this hardware target");
+  // Pins resolve through the selected target's own aliases, so an ESP8266
+  // alias such as D8 can never be written into an ESP32 installer.
+  const mapping = pinMapFor(cfg.target, cfg.board);
+  const pins = [cfg.clkPin, cfg.mosiPin, cfg.csPin].map((pin) => mapping[pin]);
   if (pins.some((pin) => pin === undefined)) throw new Error("Select valid output pins for this board");
   if (new Set(pins).size !== 3) throw new Error("CLK, DIN and CS need different GPIO pins");
-  const files = [...FIRMWARE.packageFiles, ...cfg.fonts.map((id) => {
+  const files = [...packageFilesFor(cfg.target), ...cfg.fonts.map((id) => {
     const file = FIRMWARE.fonts.find((font) => font.id === id)?.package;
     if (!file) throw new Error(`No firmware font package ${id}`);
     return file;

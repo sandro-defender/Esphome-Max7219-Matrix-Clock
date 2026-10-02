@@ -1159,5 +1159,14 @@ button.font-card:hover { border-color: var(--amber-dim); }
 .control-group { min-width: 0; margin: 0 0 16px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; }
 .control-group legend { font-weight: 700; padding: 0 6px; }
 .control-group .field { margin-bottom: 12px; }
+/* Hardware target selector: two explicit radios, never a hidden default. */
+.target-picker { border-color: var(--amber-dim); }
+.target-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.target-option { display: grid; gap: 2px; text-align: left; padding: 10px 12px; min-height: 44px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--bg-3); color: var(--ink); }
+.target-option strong { font-size: 0.9rem; }
+.target-option em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: 0.68rem; line-height: 1.5; }
+.target-option.on { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.target-option.on strong { color: var(--amber-2); }
+.target-picker .hint { margin-top: 10px; }
 .release-notes { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.7; }
 [hidden] { display: none !important; }
