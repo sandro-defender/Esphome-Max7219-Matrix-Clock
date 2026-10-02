@@ -32,11 +32,13 @@ describe("single-source firmware / UI / installer parity", () => {
     expect(FIRMWARE.sourceHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it("pins explicit immutable tags, never main, including commit-versioned releases", () => {
+  it("pins one plain immutable version tag, never main and never a commit suffix", () => {
     expect(releaseExample).toContain(`ref: ${FIRMWARE.releaseVersion}`);
     expect(yaml).toContain(`ref: "${FIRMWARE.releaseVersion}"`);
-    const tag = `${FIRMWARE.releaseVersion}+abcdef012345`;
-    expect(buildYaml(DEFAULT_CONFIG, tag)).toContain(`project_ref: "${tag}"`);
+    const next = `${FIRMWARE.releaseVersion.split(".").slice(0, 2).join(".")}.${Number(FIRMWARE.releaseVersion.split(".")[2]) + 1}`;
+    expect(buildYaml(DEFAULT_CONFIG, next)).toContain(`project_ref: "${next}"`);
+    // A commit-suffixed tag is not a version: releases always bump the patch.
+    expect(() => buildYaml(DEFAULT_CONFIG, `${FIRMWARE.releaseVersion}+abcdef012345`)).toThrow(/immutable/);
     for (const ref of ["main", "master", "HEAD", "0.7.0/../../main", "0.7.0-beta", "0.7.0\nref: main"])
       expect(() => buildYaml(DEFAULT_CONFIG, ref)).toThrow(/immutable/);
   });

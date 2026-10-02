@@ -58,18 +58,15 @@ class TagTests(OfflineTest):
         self.assertEqual(publisher.choose_tag(TAG, SHA, {}), TAG)
         self.assertEqual(publisher.choose_tag(TAG, SHA, {TAG: SHA}), TAG)
 
-    def test_later_commit_uses_commit_suffix(self):
-        suffixed = TAG + "+" + SHA[:12]
-        self.assertEqual(publisher.choose_tag(TAG, SHA, {TAG: OTHER}), suffixed)
-        self.assertEqual(publisher.choose_tag(TAG, SHA, {TAG: OTHER, suffixed: SHA}), suffixed)
-
-    def test_suffix_collision_is_not_moved(self):
-        collision = SHA[:12] + "c" * 28
-        with self.assertRaisesRegex(ValueError, "collision"):
-            publisher.choose_tag(TAG, SHA, {TAG: OTHER, TAG + "+" + SHA[:12]: collision})
+    def test_same_version_from_another_commit_is_refused_not_renamed(self):
+        # One version, one tag, one commit: the fix is a project_ref bump, never
+        # a longer tag name and never moving the existing tag.
+        for refs in ({TAG: OTHER}, {TAG: OTHER, TAG + "+" + SHA[:12]: SHA}):
+            with self.subTest(refs=refs), self.assertRaisesRegex(ValueError, "another commit"):
+                publisher.choose_tag(TAG, SHA, refs)
 
     def test_invalid_versions_and_shas_fail(self):
-        for version in (None, "main", "v0.7.0", "0.7.0-rc1", "00.7.0", "0.7.0+abcd", "0.7.0\n"):
+        for version in (None, "main", "v0.7.0", "0.7.0-rc1", "00.7.0", "0.7.0+abcd", "0.7.0+abcdef012345", "0.7.0\n"):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 publisher.choose_tag(version, SHA, {})
         for sha in (None, "", "a" * 39, "A" * 40, SHA + "\n"):
@@ -85,8 +82,8 @@ class TagTests(OfflineTest):
     def test_annotated_tags_are_dereferenced_and_encoded(self):
         with patch.object(publisher, "api", side_effect=[{"object": {"type": "tag", "sha": OTHER}},
                                                       {"object": {"type": "commit", "sha": SHA}}]) as api:
-            self.assertEqual(publisher.tag_commit(REPO, TAG + "+" + SHA[:12]), SHA)
-            self.assertIn("%2B", api.call_args_list[0].args[1])
+            self.assertEqual(publisher.tag_commit(REPO, TAG), SHA)
+            self.assertEqual(api.call_args_list[0].args[1], "git/ref/tags/" + TAG)
             self.assertEqual(api.call_args_list[1].args[1], "git/tags/" + OTHER)
 
     def test_malformed_noncommit_and_cyclic_tags_fail(self):
@@ -103,21 +100,27 @@ class TagTests(OfflineTest):
         self.assertEqual(api.call_count, 5)
 
     def test_atomic_reservation_is_verified(self):
-        with patch.object(publisher, "tag_commit", side_effect=[None, None, SHA]), patch.object(publisher, "api") as api:
+        with patch.object(publisher, "tag_commit", side_effect=[None, SHA]), patch.object(publisher, "api") as api:
             self.assertEqual(publisher.reserve_tag(REPO, TAG, SHA), TAG)
         self.assertEqual(api.call_args.args[1], "git/refs")
         self.assertIn("POST", api.call_args.args)
         self.assertIn("ref=refs/tags/" + TAG, api.call_args.args)
 
-    def test_base_reservation_race_falls_back_without_force_update(self):
-        with patch.object(publisher, "tag_commit", side_effect=[None, None, OTHER, None, SHA]), patch.object(publisher, "api", side_effect=[command_error(422), {}]) as api:
-            self.assertEqual(publisher.reserve_tag(REPO, TAG, SHA), TAG + "+" + SHA[:12])
-        self.assertEqual(api.call_count, 2)
+    def test_reservation_race_re_reads_the_winner(self):
+        with patch.object(publisher, "tag_commit", side_effect=[None, SHA]), patch.object(publisher, "api", side_effect=command_error(422)) as api:
+            self.assertEqual(publisher.reserve_tag(REPO, TAG, SHA), TAG)
+        self.assertEqual(api.call_count, 1)
         self.assertTrue(all("POST" in call.args for call in api.call_args_list))
 
-    def test_existing_suffix_is_verified_not_recreated(self):
-        with patch.object(publisher, "tag_commit", side_effect=[OTHER, SHA]), patch.object(publisher, "api") as api:
-            self.assertEqual(publisher.reserve_tag(REPO, TAG, SHA), TAG + "+" + SHA[:12])
+    def test_reservation_race_with_a_different_commit_is_refused(self):
+        # A concurrent publisher that used the version for another commit must
+        # not be overwritten, and must not silently become this commit's release.
+        with patch.object(publisher, "tag_commit", side_effect=[None, OTHER]), patch.object(publisher, "api", side_effect=command_error(422)), self.assertRaisesRegex(ValueError, "another commit"):
+            publisher.reserve_tag(REPO, TAG, SHA)
+
+    def test_existing_tag_is_verified_not_recreated(self):
+        with patch.object(publisher, "tag_commit", return_value=SHA), patch.object(publisher, "api") as api:
+            self.assertEqual(publisher.reserve_tag(REPO, TAG, SHA), TAG)
         api.assert_not_called()
 
     def test_permission_failure_is_not_a_tag_race(self):
@@ -129,7 +132,7 @@ class TagTests(OfflineTest):
         with patch.object(publisher, "tag_commit", return_value=None), patch.object(publisher, "api", side_effect=command_error(422)) as api, self.assertRaises(RuntimeError):
             publisher.reserve_tag(REPO, TAG, SHA)
         self.assertEqual(api.call_count, 3)
-        with patch.object(publisher, "tag_commit", side_effect=[None, None, OTHER]), patch.object(publisher, "api"), self.assertRaisesRegex(ValueError, "mismatch"):
+        with patch.object(publisher, "tag_commit", side_effect=[None, OTHER]), patch.object(publisher, "api"), self.assertRaisesRegex(ValueError, "mismatch"):
             publisher.reserve_tag(REPO, TAG, SHA)
 
 
@@ -404,8 +407,8 @@ class ProvenanceTests(OfflineTest):
             publish.assert_not_called()
             self.assertEqual(output.read_text(), f"tag={TAG}\ncommit={SHA}\n")
 
-    def test_latest_cli_rejects_a_mismatched_commit_suffix(self):
-        with patch.object(publisher, "latest", return_value=release(tag=TAG + "+" + OTHER[:12])), patch.object(publisher, "tag_commit", return_value=SHA), self.assertRaises(ValueError):
+    def test_latest_cli_rejects_a_tag_without_a_commit(self):
+        with patch.object(publisher, "latest", return_value=release()), patch.object(publisher, "tag_commit", return_value=None), self.assertRaises(ValueError):
             publisher.main(["--latest"])
 
 

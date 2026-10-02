@@ -79,17 +79,16 @@ class DeploymentTests(unittest.TestCase):
                 self.ready(content=content)
 
     def test_invalid_tags_versions_shas_and_suffixes_fail_before_api(self):
-        for tag, sha in (("main", SHA), ("0.8.0", SHA), (TAG, "bad"), (TAG + "+" + OTHER[:12], SHA)):
+        for tag, sha in (("main", SHA), ("0.8.0", SHA), (TAG, "bad"), (TAG + "+" + OTHER[:12], SHA), ("0.7.0-rc1", SHA)):
             with self.subTest(tag=tag, sha=sha), patch.object(releases, "latest") as latest, self.assertRaises(ValueError):
                 deployment.deployment_ready(CONTRACT, tag, sha)
             latest.assert_not_called()
 
-    def test_commit_suffix_is_used_in_installer_and_notes(self):
-        tag = TAG + "+" + SHA[:12]
-        release = {**RELEASE, "tag_name": tag, "body": f"## {tag}\n\nCandidate notes.\n"}
-        ready, commands = self.ready(tag=tag, latest=[release, release], release=release)
+    def test_version_tag_is_used_in_installer_and_notes(self):
+        # One plain version tag per release: no commit suffix anywhere.
+        ready, commands = self.ready(tag=TAG, latest=[RELEASE, RELEASE], release=RELEASE)
         self.assertTrue(ready)
-        self.assertEqual(commands[0][-2], tag)
+        self.assertEqual(commands[0][-2], TAG)
 
     def test_unsafe_name_or_missing_notes_fail_before_api(self):
         for changed in ({"defaults": {"deviceName": "../../secrets"}}, {"releaseNotes": ""}):

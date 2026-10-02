@@ -6,7 +6,7 @@ import { sanitizeConfig } from "./storage";
 import { clampNumber, type Config } from "./types";
 
 /** No separate release tag, package list, entity names or defaults live here. */
-const TAG = /^\d+\.\d+\.\d+(?:\+[a-f0-9]{12})?$/;
+const TAG = /^\d+\.\d+\.\d+$/;
 export function validReleaseTag(tag: string): boolean { return TAG.test(tag); }
 
 export function sanitizeFriendly(name: string): string {

@@ -105,7 +105,7 @@ describe("exact firmware / browser pixel parity", () => {
         expect(cpp.brightness).toBe(1);
       }
     }
-    const version = `${FIRMWARE.releaseVersion}+abcdef012345`;
+    const version = FIRMWARE.releaseVersion;
     for (const elapsed of [0, 25, 600, 2499]) {
       const cfg = config({ displayPower: false, invert: true, brightness: 0 });
       const cpp = oracle(cfg, date, "", elapsed, "boot", 0, 0, version);

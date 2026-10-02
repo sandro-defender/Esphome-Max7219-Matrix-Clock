@@ -1,75 +1,108 @@
-# Code-only release and Pages pipeline
+# Releasing and publishing
 
-This is candidate source wiring, not evidence of an executed release or device
-validation. The user explicitly deferred ESPHome config, build, code generation
-and compilation. No firmware binary, flash/RAM result or hardware sign-off is
-produced by this pipeline.
+**Every push to `main` publishes a release and redeploys Pages**, including a
+documentation-only change. The pipeline is
+[`.github/workflows/validate-code.yml`](.github/workflows/validate-code.yml);
+it publishes source/YAML installers, never firmware binaries.
 
-## Events and boundaries
+## What a main push does
 
-`.github/workflows/validate-code.yml` validates every main push and PR, without
-path filters. Manual runs validate only. PRs/forks cannot publish or deploy;
-publication jobs require this repository's `push` to `refs/heads/main`.
-
-| Job | Dependency | Permissions |
+| Job | Runs when | Does |
 | --- | --- | --- |
-| checks | none | contents: read |
-| publish | successful checks | contents: write |
-| site | successful checks + publish | contents: read, pages: read |
-| deploy | successful publish + ready site | contents: read, pages: write, id-token: write |
+| `checks` | every main push and PR | full code gate (`scripts/check_code.py`): exact-SDK freshness, host tests, web tests, typecheck, production web bundle |
+| `publish` | main push, after `checks` | `scripts/publish_release.py`: reserve tag, build the installer asset, create a draft, verify notes/assets, publish, verify again |
+| `site` | main push, after `publish` | `scripts/verify_deployment.py` re-checks the newest publication, then builds `web-configurator/dist` with `VITE_RELEASE_COMMIT` |
+| `deploy` | main push, after `site` reports ready | holds the `pages` lock, rechecks the newest publication, deploys the matching artifact |
 
-All Actions are SHA-pinned; checkout credentials are not persisted. Only the
-publisher/read-only verification steps receive Actions' built-in `github.token`.
-No custom API/SSH credential or user PAT is needed. Pages must already be enabled;
-the workflow does not change repository settings or auto-enable it.
+PRs, forks and manual runs execute `checks` only; they can never publish or
+deploy. All Actions are SHA-pinned and checkouts do not persist credentials.
 
-## Immutable versioned source/YAML releases
+## Version and tag scheme (immutable)
 
-`publish_release.py` verifies main-push provenance, exact checkout SHA and clean
-source. The first commit at a canonical version reserves `VERSION`; later
-commits use `VERSION+12hexSHA`. Ref creation is atomic, collisions fail, and
-existing refs are never moved. Repeating a completed commit verifies content
-without editing published notes/assets, even when server locking is disabled.
+* One version, one tag, one commit: the tag is the plain version, `X.Y.Z`
+  (for example `0.7.1` at `455edc5f463ce75fb32f7fc7937af4a5895bf866`).
+* **Every release-worthy merge bumps the patch version**: update `project_ref`
+  in `packages/base.yaml` and add the matching `CHANGELOG.md` section in the same
+  PR, then regenerate the contract.
+* Tags are never moved and never reused for another commit. A repeated run for
+  the same commit re-verifies the existing tag and never edits published notes or
+  assets.
+* If the version in `project_ref` was already published from a different commit,
+  publication fails before creating anything. The fix is the next patch bump,
+  never a longer tag name and never deleting the existing tag.
+* Tags and releases are **only** created by the publisher. Deleting them by hand
+  leaves the deployed site with no matching release — that has already happened
+  once ([docs/HISTORY.md](docs/HISTORY.md)).
 
-The installer asset comes from the actual browser YAML generator, with local
-`!secret` references only. Notes come from the source-generated firmware
-contract. A draft receives its installer before publication; metadata and asset
-bytes/digests are checked before and after publication. Wrong existing drafts
-fail instead of destructively clobbering. No `.bin` artifact is published.
+A release is installable only when it is the **newest published** (non-draft,
+non-prerelease) versioned release by `published_at`. GitHub's "Latest" marker
+and the version number are ignored on purpose: the hand-made `0.7.0` release is
+newer by creation time but older by publication and cannot verify.
 
-The old tag-only auto-notes workflow was removed so it cannot race tag
-reservation or create an incompatible release. Tags created by the publisher
-are not an independent validation/publication trigger.
+## What the browser verifies before enabling the installer
 
-## Matching Pages and stale-retry protection
+`web-configurator/src/release.ts` checks, in order:
 
-The site job checks out the exact validated publishing SHA, verifies that its
-tag is still newest by **publication time**, and compares release notes and the
-published installer with freshly generated YAML. Only then does it build the
-web bundle with `VITE_RELEASE_COMMIT` and upload a run/attempt-specific artifact.
-No glyph/source data is silently regenerated during site creation.
+1. newest published versioned release by `published_at` (bounded pagination,
+   strict metadata, no fallback to an older release);
+2. its base version equals the version compiled into the page;
+3. the tag's `web-configurator/src/firmware.generated.json` has the same
+   repository, ESPHome version, schema version, `sourceHash` and release
+   version;
+4. the release body equals `## <tag>` plus the CHANGELOG section;
+5. the tag is a plain `X.Y.Z`, resolves to a commit within 4 annotated-tag
+   levels and has no cycle;
+6. the page's own `VITE_RELEASE_COMMIT` equals that commit, so a stale open page
+   says "A newer configurator has been published. Refresh this page." instead of
+   installing a different source tree.
 
-The deploy job holds the `pages` concurrency lock and repeats the read-only
-newest-tag/SHA/notes/installer check immediately before deploying the matching
-artifact. A superseded publication skips; malformed/offline/mismatched responses
-fail closed. PR/manual runs and failed validation/publication never reach Pages.
-The browser independently verifies tagged source/notes/SHA before export, so a
-stale open page cannot silently install different firmware.
+Only then is the copy/download button enabled, and each export repeats the
+check (reusing a verification younger than 30 s). A paused or unverified release
+always fails closed.
 
-There is no atomic transaction across GitHub release publication and Pages.
-Publication can change after the final read; the browser's commit gate remains
-the final fail-closed protection during deployment lag. GitHub may supersede
-pending Pages jobs; release publication and main validation use per-commit groups.
+## Anonymous API quota
 
-## Current evidence / next approval
+The browser calls `api.github.com` **without a token**: 60 requests per hour
+**per IP address**, shared by everyone behind the same NAT, VPN or carrier
+gateway. An HTTP 304 still consumes quota. "Release lookup failed (403)" in the
+configurator was quota exhaustion, not a broken repository.
 
-Publisher tests mock git/gh/npm. Deployment tests mock all remote operations and
-block real subprocesses. Workflow contract tests check events, dependency order,
-permissions, pinned Actions, SHA/artifact propagation and firmware-CLI absence.
+* One verification costs two requests (release list, tag object).
+* Results are reused: re-check every 15 minutes (`RECHECK_MS`), reuse on tab
+  focus/reload a result younger than 5 minutes (`FRESH_MS`), and share one
+  pre-export check for 30 seconds (`INSTALL_FRESH_MS`).
+* On 403/429 with `x-ratelimit-remaining: 0` the page shows a timed pause
+  ("Automatic retry at HH:MM", from `Retry-After` or `x-ratelimit-reset`,
+  default 5 minutes, capped at 65 minutes) and retries by itself; the status
+  line offers a manual Retry.
+* The fix for quota pressure is **fewer requests**, never an embedded token: any
+  token shipped in a public page is a leaked credential.
 
-Real publication, Pages environment permissions/approvals, live installer fetch,
-rerun behavior and deployment lag still need integration verification after
-explicit approval. Refresh current release-note metadata before a public release.
-Full firmware compilation, size/headroom and real boot/OTA/animation checks
-remain separate deferred gates. Keep the PR a draft until those limitations
-are signed off; source wiring alone is not a completed hardware release.
+## Recovery without hand-made releases
+
+| Situation | Do this |
+| --- | --- |
+| Main-push run failed before publishing | Re-run the failed jobs of that run. Re-runs keep the original push event, and the publisher is idempotent for the same commit. |
+| Publisher failed halfway (draft exists) | Re-run the same run: the draft is re-verified, missing assets are uploaded, then it is published. A mismatched draft fails instead of being overwritten. |
+| A workflow tag is missing after a manual deletion | Re-run the publisher for that commit; it recreates the same version tag and verifies the content. Never create it by hand. |
+| The publish job failed with "already published from another commit" | Bump `project_ref` in `packages/base.yaml` (next patch) with its `CHANGELOG.md` section, regenerate the contract, and merge; the failed commit simply has no release. |
+| A hand-made release is newest | Publish the next workflow version (bump `project_ref` + CHANGELOG section). The hand-made release is then ignored, exactly as `0.7.1` superseded `0.7.0`. Never edit or delete it. |
+| Pages is stale or the deploy job failed | Re-run the failed jobs of the newest main-push run, or push a new commit (every push publishes). Do not touch releases, tags or the Pages artifact. |
+| Release notes or the installer asset look wrong | Fix the source (`CHANGELOG.md` section, package or generator), bump `project_ref`, and publish a new release. Published notes/assets are immutable. |
+
+Never: create/edit/delete/re-publish releases or tags by hand, move a tag, force-
+push `main`, upload assets manually, or enable/disable Pages from the workflow.
+
+## Release-worthy changes
+
+A firmware change that users should be able to install needs, in one PR:
+
+1. the source change,
+2. `project_ref` bumped in `packages/base.yaml`,
+3. a matching `## <version>` section in `CHANGELOG.md`,
+4. a regenerated contract (`python scripts/generate_firmware_contract.py`) when
+   a hashed file changed ([AGENTS.md](AGENTS.md)).
+
+Merging then publishes that plain `X.Y.Z` tag and redeploys Pages from the same
+commit. If the version was already published from another commit the publish job
+fails closed (no release, no deploy); bump the patch version and merge again.

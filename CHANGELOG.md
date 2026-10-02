@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.2 - 2026-10-02
+
+### Added
+- **The web configurator pre-fills the timezone from the visitor's browser** on
+  a first visit. The IANA zone from
+  `Intl.DateTimeFormat().resolvedOptions().timeZone` is validated with the same
+  rules as a hand-typed zone, flows unchanged into the generated installer YAML
+  (`timezone: <zone>`) and the live preview, and can be re-applied at any time
+  with the new **"Use my timezone"** button, which shows the detected value. A
+  saved configuration or a shared link always keeps its own timezone, an
+  unusable detection keeps the firmware default (`Europe/Berlin`), and nothing
+  is geolocated, looked up or sent anywhere.
+
+### Changed
+- **Releases always bump the patch version.** A release-worthy change updates
+  `project_ref` in `packages/base.yaml` and adds its `CHANGELOG.md` section, so a
+  version is published as a plain `X.Y.Z` tag that is never moved or reused for
+  another commit. The `X.Y.Z+<12-hex-sha>` tag scheme is gone: if a version was
+  already published from a different commit, publication fails before anything
+  is created and the fix is the next patch bump.
+
 ## 0.7.1 - 2026-10-02
 
 ### Fixed
