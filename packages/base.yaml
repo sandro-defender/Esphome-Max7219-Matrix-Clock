@@ -43,6 +43,7 @@ substitutions:
   animation_ms: "600"              # slide-up duration, 0 disables the slide
   animation_row_gap: "1"           # blank rows between old and new sliding digits
   message_ms_per_px: "60"          # scrolling speed in ms per pixel
+  date_ms_per_px: "60"             # weekday-date scrolling speed in ms per pixel
   screen_cycle_interval: "10"      # seconds between clock and date
   date_screen_duration: "10"       # seconds the Date screen remains visible
   boot_version_duration: "2500"     # non-blocking installed-release splash

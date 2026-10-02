@@ -119,6 +119,13 @@ describe("renderScene", () => {
     expect(lit(scene.frame)).toBeGreaterThan(0);
   });
 
+  it("uses the independent date-scroll-speed setting for weekday dates", () => {
+    const base = { ...DEFAULT_CONFIG, screen: "Date" as const, dateFormat: "Weekday DD. MMM YY" as const };
+    const fast = renderScene({ ...base, dateScrollSpeed: 20 }, NOON, 0, { from: null, progress: 1 }, 1000);
+    const slow = renderScene({ ...base, dateScrollSpeed: 200 }, NOON, 0, { from: null, progress: 1 }, 1000);
+    expect(fast.frame.pixels).not.toEqual(slow.frame.pixels);
+  });
+
   it("shows the temperature placeholder until Home Assistant supplies a value", () => {
     const scene = sceneWith({ screen: "Temperature" });
     expect(scene.page).toBe("temperature");

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "ef91374b9f11aec499ac1fd5879b71de99e8e130bb201a50de8e6c9861d0e8f1",
+  "sourceHash": "36bffca1d7b838cd83903e9a20f644478ae900a92b496053d82a6c98d99e7fe0",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.4",
   "esphomeVersion": "2026.9.1",
@@ -12,6 +12,7 @@
     "packages/restore_defaults.generated.yaml",
     "packages/display.yaml",
     "packages/controls.yaml",
+    "packages/date_controls.yaml",
     "packages/actions.yaml",
     "packages/diagnostics.yaml",
     "packages/ota_ui.yaml",
@@ -287,6 +288,20 @@
       "unit": "ms/px",
       "input": "range",
       "substitution": "message_ms_per_px"
+    },
+    {
+      "key": "dateScrollSpeed",
+      "kind": "number",
+      "target": "date_scroll_speed",
+      "group": "Screen",
+      "label": "Date scroll speed",
+      "default": 60.0,
+      "min": 20,
+      "max": 200,
+      "step": 5,
+      "unit": "ms/px",
+      "input": "range",
+      "substitution": "date_ms_per_px"
     },
     {
       "key": "messageHold",
@@ -720,6 +735,7 @@
     "animationMs": 600.0,
     "animationRowGap": 1.0,
     "scrollSpeed": 60.0,
+    "dateScrollSpeed": 60.0,
     "messageHold": 15.0,
     "countdownDuration": 300.0,
     "cycleInterval": 10.0,
@@ -1099,6 +1115,18 @@
       "entity_category": "config",
       "domain": "button",
       "package": "packages/controls.yaml"
+    },
+    {
+      "id": "date_scroll_speed",
+      "name": "Date scroll speed",
+      "entity_category": "config",
+      "unit_of_measurement": "ms/px",
+      "min_value": 20,
+      "max_value": 200,
+      "step": 5,
+      "initial_value": 60.0,
+      "domain": "number",
+      "package": "packages/date_controls.yaml"
     },
     {
       "name": "Wi-Fi signal",

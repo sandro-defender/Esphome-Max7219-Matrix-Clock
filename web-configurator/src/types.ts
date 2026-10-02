@@ -67,6 +67,7 @@ export interface Config {
   messageHold: number;
   scrollMode: MessageScroll;
   scrollSpeed: number;
+  dateScrollSpeed: number;
 
   // Light
   brightness: number;

@@ -42,6 +42,9 @@ script:
       id: message_scroll_speed
       value: 60.0
   - number.set:
+      id: date_scroll_speed
+      value: 60.0
+  - number.set:
       id: default_message_duration
       value: 15.0
   - number.set:

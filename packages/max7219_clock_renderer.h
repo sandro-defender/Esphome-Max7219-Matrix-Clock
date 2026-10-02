@@ -321,6 +321,7 @@ struct Frame {
   uint8_t animation_row_gap = 1;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
+  uint32_t date_scroll_ms_per_px = 60;
 
   // Night brightness scheduling
   bool night_manual = false;
@@ -399,6 +400,7 @@ struct Runtime {
   int screen_transition_previous = -1;
   uint32_t screen_transition_started_ms = 0;
   bool screen_transition_active = false;
+  uint32_t date_scroll_started_ms = 0;
 
   // Last values published to Home Assistant (publish on change only)
   int reported_mode = -1;
@@ -804,6 +806,16 @@ inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont 
   return primary;
 }
 
+// A weekday date is its own marquee. Do not combine that continuous movement
+// with the one-off whole-screen slide used by short fixed screens.
+inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
+                                      const GlyphFont &fallback, int width) {
+  char content[24] = {0};
+  if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
+  const GlyphFont &text_font = font_for_text(primary, fallback, content);
+  return text_font.text_width(content) > width;
+}
+
 // Draw one text line. `animate_from` (may be nullptr) holds the previous
 // content of the same length; only changed digits are animated. With
 // `blank_colons` the ':' glyphs keep their advance but draw no ink, which is
@@ -1122,6 +1134,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
+      if (f.screen == SCREEN_DATE) state.date_scroll_started_ms = 0;
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
                                        f.animate && f.animation_ms > 0;
       state.screen_transition_previous = previous;
@@ -1132,6 +1145,8 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       float progress = (float) (uint32_t)(f.now_ms - state.screen_transition_started_ms) / (float) f.animation_ms;
       if (progress >= 1.0f) {
         state.screen_transition_active = false;
+        if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width))
+          state.date_scroll_started_ms = f.now_ms;
       } else {
         const int offset = (int) (progress * width);
         TranslatedCanvas outgoing(canvas, -offset);
@@ -1169,7 +1184,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   // the same deterministic ticker as messages instead of clipping them.
   if (mode == MODE_DATE && active->text_width(content) > width) {
     state.reset_animation();
-    draw_free_text(canvas, *active, content, f.now_ms, true, f.scroll_ms_per_px,
+    if (state.date_scroll_started_ms == 0) state.date_scroll_started_ms = f.now_ms;
+    draw_free_text(canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
+                   f.date_scroll_ms_per_px,
                    active->centered_box_top(height));
     return;
   }

@@ -12,6 +12,7 @@ frame.animation_ms = max7219_clock::clamp_u32((int) N(values.at("animationMs")),
 frame.animation_row_gap = max7219_clock::clamp_u8((int) N(values.at("animationRowGap")), 0, 2);
 frame.message_scroll = S(values.at("scrollMode")) == "Scroll";
 frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) N(values.at("scrollSpeed")), 20, 200);
+frame.date_scroll_ms_per_px = max7219_clock::clamp_u32((int) N(values.at("dateScrollSpeed")), 20, 200);
 frame.ota_brightness = N(values.at("otaBrightness"));
 frame.night_manual = N(values.at("nightManual"));
 frame.alarm_mode = N(values.at("alarmMode"));

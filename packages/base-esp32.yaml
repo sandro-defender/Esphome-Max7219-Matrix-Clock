@@ -36,6 +36,7 @@ substitutions:
   animation_ms: "600"
   animation_row_gap: "1"
   message_ms_per_px: "60"
+  date_ms_per_px: "60"
   screen_cycle_interval: "10"
   date_screen_duration: "10"
   boot_version_duration: "2500"
