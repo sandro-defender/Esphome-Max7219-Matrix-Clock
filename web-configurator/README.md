@@ -52,6 +52,17 @@ timezone kept separate. `src/MatrixCanvas.tsx` draws one continuous dot lattice
 across module seams; the optional boundary guides are an overlay and never move
 a dot or change the canvas size.
 
+## Hardware targets
+
+`Tune → Hardware target` switches between the **ESP8266 Wemos D1 mini**
+(`../packages/base.yaml`, `d1_mini`, `D8`/`D6`/`D7`, OTA port 8266) and the
+**ESP-WROOM-32 DevKit** (`../packages/base-esp32.yaml`, `esp32dev`, CLK
+`GPIO18`, DIN `GPIO23`, CS `GPIO5`, OTA port 3232). The board and pin selects,
+the installer's module list and its pins all come from `hardwareTargets` in
+`src/firmware.generated.json`; `src/hardware.ts` expands only the selected
+board, and a foreign board or pin alias fails installer generation instead of
+being written.
+
 ## Timezone detection
 
 `src/timezone.ts` reads the browser's IANA zone from

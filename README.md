@@ -24,6 +24,11 @@ zone (read locally, never sent); **Use my timezone** re-applies it. A saved
 configuration, a shared link or a failed detection keeps its own timezone
 (firmware default `Europe/Berlin`).
 
+**Hardware target** in Tune selects the controller: **ESP8266 Wemos D1 mini**
+(`examples/release.yaml` wiring) or **ESP-WROOM-32 DevKit**. The board and pin
+lists, the base package the installer loads and the OTA port all follow the
+target, so an ESP32 installer never contains an ESP8266 pin alias such as `D8`.
+
 ### Manual installation
 
 1. Install ESPHome 2026.9.1: `pip install -r requirements-validation.txt`.
