@@ -183,7 +183,11 @@ def release_state(repo, tag, sha, allow_missing=False):
     # The authenticated release list still exposes that draft, allowing us to
     # verify it before publication without accepting an expected absence.
     release = api(repo, "releases/tags/" + quote(tag, safe=""), allow_missing=True)
-    if release is None:
+    # Some draft responses are not a usable representation of their tag (for
+    # example, GitHub's temporary `untagged-*` draft identity). Treat that the
+    # same as the hidden 404 and verify the matching list entry instead.
+    if (not isinstance(release, dict) or release.get("tag_name") != tag or
+            type(release.get("draft")) is not bool):
         release = listed_release(repo, tag)
     if release is None and allow_missing:
         return None
