@@ -223,6 +223,8 @@ class FakeGitHub:
     def api(self, repo, endpoint, *args, **kwargs):
         if endpoint.startswith("releases/tags/"):
             return copy.deepcopy(self.value)
+        if endpoint.startswith("releases?"):
+            return [] if self.value is None else [copy.deepcopy(self.value)]
         raise AssertionError("Unexpected API operation: " + endpoint)
 
     def execute(self, args, **kwargs):
@@ -337,6 +339,11 @@ class PublicationTests(OfflineTest):
         for bad in (release(tag="0.8.0"), release(prerelease=True), release(draft="false"), release(assets=None)):
             with self.subTest(bad=bad), patch.object(publisher, "tag_commit", return_value=SHA), patch.object(publisher, "api", return_value=bad), self.assertRaises(ValueError):
                 publisher.release_state(REPO, TAG, SHA)
+
+    def test_draft_hidden_by_tag_lookup_is_found_in_authenticated_list(self):
+        draft = release(draft=True)
+        with patch.object(publisher, "tag_commit", return_value=SHA), patch.object(publisher, "api", side_effect=[None, [draft]]):
+            self.assertEqual(publisher.release_state(REPO, TAG, SHA), draft)
 
 
 class ProvenanceTests(OfflineTest):
