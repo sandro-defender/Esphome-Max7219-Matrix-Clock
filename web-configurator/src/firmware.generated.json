@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "3913cc3e2433d32e5e3846b08532d86f8ba38fc94a9991f014d31d93a14e4386",
+  "sourceHash": "36bffca1d7b838cd83903e9a20f644478ae900a92b496053d82a6c98d99e7fe0",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.4",
   "esphomeVersion": "2026.9.1",
@@ -12,6 +12,7 @@
     "packages/restore_defaults.generated.yaml",
     "packages/display.yaml",
     "packages/controls.yaml",
+    "packages/date_controls.yaml",
     "packages/actions.yaml",
     "packages/diagnostics.yaml",
     "packages/ota_ui.yaml",
@@ -925,18 +926,6 @@
       "package": "packages/controls.yaml"
     },
     {
-      "id": "date_scroll_speed",
-      "name": "Date scroll speed",
-      "entity_category": "config",
-      "unit_of_measurement": "ms/px",
-      "min_value": 20,
-      "max_value": 200,
-      "step": 5,
-      "initial_value": 60.0,
-      "domain": "number",
-      "package": "packages/controls.yaml"
-    },
-    {
       "id": "default_message_duration",
       "name": "Default message duration",
       "entity_category": "config",
@@ -1126,6 +1115,18 @@
       "entity_category": "config",
       "domain": "button",
       "package": "packages/controls.yaml"
+    },
+    {
+      "id": "date_scroll_speed",
+      "name": "Date scroll speed",
+      "entity_category": "config",
+      "unit_of_measurement": "ms/px",
+      "min_value": 20,
+      "max_value": 200,
+      "step": 5,
+      "initial_value": 60.0,
+      "domain": "number",
+      "package": "packages/date_controls.yaml"
     },
     {
       "name": "Wi-Fi signal",

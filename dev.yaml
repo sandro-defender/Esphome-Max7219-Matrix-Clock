@@ -36,6 +36,7 @@ packages:
   defaults: !include packages/restore_defaults.generated.yaml
   display: !include packages/display.yaml
   controls: !include packages/controls.yaml
+  date_controls: !include packages/date_controls.yaml
   actions: !include packages/actions.yaml
   diagnostics: !include packages/diagnostics.yaml
   ota_ui: !include packages/ota_ui.yaml

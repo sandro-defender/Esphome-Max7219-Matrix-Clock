@@ -1034,7 +1034,7 @@ static void test_selected_screen_change_starts_slide_transition() {
   CHECK(state.screen_transition_active);
 }
 
-static void test_scrolling_date_skips_screen_slide_transition() {
+static void test_scrolling_date_starts_after_screen_slide_transition() {
   Frame f = base_frame();
   f.seconds_mode = SECONDS_OFF;
   f.animate = true;
@@ -1051,7 +1051,13 @@ static void test_scrolling_date_skips_screen_slide_transition() {
   f.screen = SCREEN_DATE;
   f.now_ms = 1000;
   render(canvas, font, compact, f, r);
+  CHECK(state.screen_transition_active);
+  CHECK_EQ(state.date_scroll_started_ms, 0);
+
+  f.now_ms = 1600;
+  render(canvas, font, compact, f, r);
   CHECK(!state.screen_transition_active);
+  CHECK_EQ(state.date_scroll_started_ms, 1600);
 }
 
 static void test_bitmap_test_screens() {
@@ -1532,7 +1538,7 @@ int main() {
   test_auto_cycle_clock_date();
   test_date_screen_duration_is_independent();
   test_selected_screen_change_starts_slide_transition();
-  test_scrolling_date_skips_screen_slide_transition();
+  test_scrolling_date_starts_after_screen_slide_transition();
   test_alarm_mode_flashes_twice_per_second();
   test_bitmap_test_screens();
   test_report_publishes_only_on_change();

@@ -15,6 +15,7 @@ the package list; everything else lives here.
 | `fonts_local.yaml` | generated five-face catalogue for offline metrics and glyph generation |
 | `local_fonts/*.yaml` | generated local equivalents of the five face packages |
 | `controls.yaml` | selects, numbers, switches and buttons exposed to Home Assistant |
+| `date_controls.yaml` | date-specific Home Assistant controls, including weekday-date scroll speed |
 | `actions.yaml` | `api.actions` (`show_message`, `clear_message`, `start_countdown`, `cancel_countdown`, `show_status`, `get_status`) and the shared button scripts |
 | `diagnostics.yaml` | Wi-Fi/uptime/heap/version diagnostics plus display-mode, OTA-state and countdown sensors |
 | `ota_ui.yaml` | encrypted native OTA platform and the on-screen upload status callbacks |

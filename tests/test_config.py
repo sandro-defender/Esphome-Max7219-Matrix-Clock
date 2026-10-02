@@ -442,6 +442,7 @@ class ConfigContractTests(unittest.TestCase):
             "boot_ui.yaml",
             "restore_defaults.generated.yaml",
             "controls.yaml",
+            "date_controls.yaml",
             "actions.yaml",
             "diagnostics.yaml",
             "ota_ui.yaml",

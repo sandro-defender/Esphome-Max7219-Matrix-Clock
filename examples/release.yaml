@@ -20,6 +20,7 @@ packages:
     - packages/restore_defaults.generated.yaml
     - packages/display.yaml
     - packages/controls.yaml
+    - packages/date_controls.yaml
     - packages/actions.yaml
     - packages/diagnostics.yaml
     - packages/ota_ui.yaml
