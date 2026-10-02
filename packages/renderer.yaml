@@ -17,6 +17,17 @@ script:
   # Factory reset actions are generated from controls + selected default fonts
   # in restore_defaults.generated.yaml; no second copy of preference defaults.
 
+  # Template switches restore before the MAX7219 component has allocated its
+  # display buffer. A normal user action can refresh immediately, but a
+  # restored action must wait for the first scheduled display update.
+  - id: request_matrix_refresh
+    mode: restart
+    then:
+      - lambda: |-
+          if (App.is_setup_complete()) {
+            id(matrix).update();
+          }
+
   # Show the OTA error screen for a few seconds, then restore the previous
   # screen and display power state (Phase 10).
   - id: ota_error_timeout

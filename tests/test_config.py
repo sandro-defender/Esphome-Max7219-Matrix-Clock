@@ -414,6 +414,18 @@ class ConfigContractTests(unittest.TestCase):
         for name, (low, high) in bounds.items():
             self.assertLess(low, high, f"{name} has an empty range")
 
+    def test_restored_switches_do_not_refresh_matrix_during_setup(self):
+        """Template switches restore before the MAX7219 display is set up."""
+        controls = load_yaml(PACKAGES / "controls.yaml")
+        for switch in controls["switch"]:
+            for action_name in ("turn_on_action", "turn_off_action"):
+                action = switch[action_name][0]
+                self.assertNotIn("component.update", action)
+                self.assertEqual(action, {"script.execute": "request_matrix_refresh"})
+        renderer = read(PACKAGES / "renderer.yaml")
+        self.assertIn("App.is_setup_complete()", renderer)
+        self.assertIn("id(matrix).update()", renderer)
+
     # ------------------------------------------------------------------ #
     # Entry points and pinning
     # ------------------------------------------------------------------ #
