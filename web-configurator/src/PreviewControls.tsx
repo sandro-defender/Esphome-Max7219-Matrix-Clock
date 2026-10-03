@@ -1,7 +1,7 @@
 import { normalizeMessage } from "./fonts";
 import type { Scene } from "./render";
 import { FIRMWARE, limitsFor } from "./firmware";
-import type { Config } from "./types";
+import { WEATHER_PREVIEW_OPTIONS, type Config, type PreviewTemperatureKey, type PreviewWeatherCondition } from "./types";
 
 interface PreviewControlsProps {
   cfg: Config;
@@ -10,11 +10,13 @@ interface PreviewControlsProps {
   reducedMotion: boolean;
   onMessage: (value: string) => void;
   onPreviewTime: (value: string) => void;
+  onWeatherTemperature: (key: PreviewTemperatureKey, value: string) => void;
+  onWeatherCondition: (value: PreviewWeatherCondition) => void;
   onReplay: () => void;
 }
 
 /** Only interactive controls and live readouts belong on Configure. */
-export function PreviewControls({ cfg, scene, sliding, reducedMotion, onMessage, onPreviewTime, onReplay }: PreviewControlsProps) {
+export function PreviewControls({ cfg, scene, sliding, reducedMotion, onMessage, onPreviewTime, onWeatherTemperature, onWeatherCondition, onReplay }: PreviewControlsProps) {
   const slideState = reducedMotion ? "reduced motion" : !cfg.digitAnimation || cfg.animationMs === 0 ? "off" :
     `${cfg.animationMs} ms${sliding ? " · sliding" : ""}`;
   return <div className="preview-controls">
@@ -31,6 +33,30 @@ export function PreviewControls({ cfg, scene, sliding, reducedMotion, onMessage,
       <input id="ha-message" maxLength={FIRMWARE.renderer.messageMaxBytes} value={cfg.message} spellCheck={false} onChange={(event) => onMessage(event.target.value)} />
       <div className="chips">{["DOOR OPEN", "TEA READY", "GOOD NIGHT", "WARNING"].map((message) => <button key={message} type="button" className="chip" onClick={() => onMessage(cfg.message === message ? "" : message)}>{message}</button>)}</div>
       <output className="matrix-reads">{normalizeMessage(cfg.message) || "—"}{scene.messageActive && scene.messageHoldLeft !== null ? ` · ${scene.messageHoldLeft}s left` : ""}</output>
+    </div>
+    <div className="panel weather-preview">
+      <div className="slider-head"><strong>Weather panel demo</strong><b>Preview only</b></div>
+      <p className="field-note">These sample values never query Home Assistant or enter installer YAML. Set Modules to 12 to see the side panels; blank or invalid temperatures show the safe placeholder.</p>
+      <label htmlFor="preview-weather-condition">Weather condition
+        <select id="preview-weather-condition" value={cfg.previewWeatherCondition}
+          onChange={(event) => onWeatherCondition(event.target.value as PreviewWeatherCondition)}>
+          {WEATHER_PREVIEW_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+      </label>
+      <div className="weather-samples">
+        <label htmlFor="preview-home-temperature">Indoor sensor · °C
+          <input id="preview-home-temperature" type="text" inputMode="decimal" value={cfg.previewHomeTemperature} placeholder="unavailable"
+            onChange={(event) => onWeatherTemperature("previewHomeTemperature", event.target.value)} />
+        </label>
+        <label htmlFor="preview-outdoor-temperature">Outdoor sensor · °C (preferred)
+          <input id="preview-outdoor-temperature" type="text" inputMode="decimal" value={cfg.previewOutdoorTemperature} placeholder="unavailable"
+            onChange={(event) => onWeatherTemperature("previewOutdoorTemperature", event.target.value)} />
+        </label>
+        <label htmlFor="preview-weather-temperature">Weather attribute · °C (fallback)
+          <input id="preview-weather-temperature" type="text" inputMode="decimal" value={cfg.previewWeatherTemperature} placeholder="unavailable"
+            onChange={(event) => onWeatherTemperature("previewWeatherTemperature", event.target.value)} />
+        </label>
+      </div>
     </div>
     <div className="facts"><span><b>{cfg.chips}</b> modules · {scene.geometry.width}×{scene.geometry.height} px</span>
       <span>Screen <b>{cfg.screen}</b></span><span>Brightness <b>{scene.effectiveBrightness}/{limitsFor("brightness").max}</b></span>

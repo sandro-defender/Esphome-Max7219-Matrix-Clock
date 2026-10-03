@@ -1180,11 +1180,14 @@ button.font-card:hover { border-color: var(--amber-dim); }
 .entity-label small { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; }
 /* Compact the preview demos as well, without hiding explanations or labels. */
 .preview-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; }
-.preview-controls > h1, .preview-controls > .composer, .preview-controls > .facts { grid-column: 1 / -1; }
+.preview-controls > h1, .preview-controls > .composer, .preview-controls > .weather-preview, .preview-controls > .facts { grid-column: 1 / -1; }
 .preview-controls .panel, .preview-controls .facts { margin-top: 0; }
 .preview-controls > h1 { font-family: var(--serif); font-size: 1.8rem; margin: 0 0 4px; }
 .preview-controls input { background: #120f0c; border: 1px solid var(--line); border-radius: var(--r-s); }
 .composer input { width: 100%; min-height: 36px; margin-top: 6px; padding: 5px 8px; }
+.weather-preview label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; color: var(--muted); font-size: .8rem; }
+.weather-preview select, .weather-preview input { width: 100%; min-width: 0; min-height: 36px; padding: 5px 8px; color: var(--ink); }
+.weather-samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 8px; margin-top: 8px; }
 @media (max-width: 479px) {
   .compact-settings { --label-width: 7.8rem; }
   .control-group { padding: 8px 10px; }
