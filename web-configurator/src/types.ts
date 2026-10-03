@@ -16,6 +16,20 @@ export type LayoutPreview = "firmware";
 
 export type ScreenMode = "Clock" | "Date" | "Temperature" | "Message" | "Module grid test" | "Pixel checkerboard";
 export type LedName = "Blood" | "Amber" | "Red" | "Green" | "Ice" | "White";
+export const WEATHER_PREVIEW_OPTIONS = [
+  { value: "clear", label: "Clear / sunny" },
+  { value: "clear-night", label: "Clear night" },
+  { value: "partlycloudy", label: "Partly cloudy" },
+  { value: "cloudy", label: "Cloudy" },
+  { value: "fog", label: "Fog / mist" },
+  { value: "rain", label: "Rain / drizzle" },
+  { value: "snow", label: "Snow / sleet" },
+  { value: "thunderstorm", label: "Thunderstorm" },
+  { value: "windy", label: "Windy" },
+  { value: "unknown", label: "Unknown / unavailable" },
+] as const;
+export type PreviewWeatherCondition = typeof WEATHER_PREVIEW_OPTIONS[number]["value"];
+export type PreviewTemperatureKey = "previewHomeTemperature" | "previewOutdoorTemperature" | "previewWeatherTemperature";
 
 export type ConfigValue = string | number | boolean | string[];
 export interface Config {
@@ -71,6 +85,9 @@ export interface Config {
   alignment: Alignment;
   hourFormat: HourFormat;
   dateFormat: DateFormat;
+  clockLayout: string;
+  dateShowWeatherIcon: boolean;
+  dateShowOutdoorTemperature: boolean;
   secondsMode: SecondsMode;
   blinkColon: boolean;
   digitAnimation: boolean;
@@ -103,6 +120,11 @@ export interface Config {
   // Preview only
   /** "HH:MM[:SS]" to freeze the preview clock; empty means live. */
   previewTime: string;
+  /** Raw demo values; blank or invalid text previews an unavailable sensor reading. */
+  previewHomeTemperature: string;
+  previewOutdoorTemperature: string;
+  previewWeatherTemperature: string;
+  previewWeatherCondition: PreviewWeatherCondition;
   /** Dashed guides where the 8x8 boards meet. Preview only; never drawn on the panel. */
   showModuleBoundaries: boolean;
 }
@@ -113,6 +135,10 @@ export const PREVIEW_DEFAULTS = {
   message: "",
   led: "Blood" as const,
   previewTime: "",
+  previewHomeTemperature: "21.5",
+  previewOutdoorTemperature: "13.2",
+  previewWeatherTemperature: "12.8",
+  previewWeatherCondition: "clear" as const,
   showModuleBoundaries: false,
 };
 

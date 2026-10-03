@@ -219,7 +219,10 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
         {page === "configure" ? <>
           <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
           <div className="content-col">
-            <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} onReplay={replay} />
+            <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion}
+              onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)}
+              onWeatherTemperature={(key, value) => patch(key, value)}
+              onWeatherCondition={(value) => patch("previewWeatherCondition", value)} onReplay={replay} />
             <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} detected={detected} />
           </div>
         </> : null}

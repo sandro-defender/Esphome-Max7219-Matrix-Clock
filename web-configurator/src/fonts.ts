@@ -15,6 +15,10 @@ export interface PixelTarget {
   height: number;
   pixels: Uint8Array;
   clip?: { x: number; y: number; width: number; height: number };
+  /** Optional local view into a larger row-major frame. */
+  offsetX?: number;
+  offsetY?: number;
+  stride?: number;
 }
 
 export interface Glyph {
@@ -59,7 +63,13 @@ export function setPixel(target: PixelTarget, x: number, y: number, value = 1): 
   const py = Math.round(y);
   if (px < 0 || py < 0 || px >= target.width || py >= target.height) return;
   if (target.clip && (px < target.clip.x || py < target.clip.y || px >= target.clip.x + target.clip.width || py >= target.clip.y + target.clip.height)) return;
-  target.pixels[py * target.width + px] = value;
+  const absoluteX = (target.offsetX ?? 0) + px;
+  const absoluteY = (target.offsetY ?? 0) + py;
+  const stride = target.stride ?? target.width;
+  if (absoluteX < 0 || absoluteY < 0 || absoluteX >= stride) return;
+  const index = absoluteY * stride + absoluteX;
+  if (index < 0 || index >= target.pixels.length) return;
+  target.pixels[index] = value;
 }
 
 export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: number): void {

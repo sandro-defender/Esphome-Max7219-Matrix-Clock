@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "4570cbf579af4be3a652e07037329f638d2086a60c86d47cfb9ea99b8f697082",
+  "sourceHash": "fc8d534e86cf33c7f43a6e89d262e2e446d9cf5b802649bc60546d695775fa1f",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.8",
+  "releaseVersion": "0.7.9",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- Compact, aligned configurator cards with complete firmware bindings, expandable\n  explanations, safe network options and an optional authenticated web server.\n- Per-entity Home Assistant exposure using compile-time `internal` substitutions.\n  Hidden entities keep their firmware IDs, defaults and actions; diagnostics and\n  recovery controls remain exposed by default.\n\n### Changed\n- Automatic timezone follows the browser on load and tab return, including saved\n  and shared profiles. Disable Automatic timezone to keep an explicit manual zone.\n- Installer, preview and saved/shared settings use one validated model for both\n  ESP8266 and ESP-WROOM-32, without accepting or storing credentials.",
+  "releaseNotes": "### Added\n- Restored **Clock layout** selection for the 12-module display: clock only,\n  indoor temperature + clock + weather icon, or indoor temperature + clock +\n  weather icon and outdoor temperature. The preview includes sample values and\n  icons without querying Home Assistant or adding installer credentials.\n- Independent restored Date-screen switches for the weather icon and outdoor\n  temperature. Either or both reserve the right three-module panel while date\n  text remains clipped and scrollable in its safe area.\n- Install-time Home Assistant entity sources for indoor temperature, dedicated\n  outdoor temperature and a `weather.*` entity. The weather state selects the\n  icon, its temperature attribute is a fallback, and a valid dedicated outdoor\n  sensor takes priority. Unavailable or malformed readings use a safe\n  placeholder.\n- Compact clear/day and clear/night, partly cloudy, cloudy, fog, rain, snow,\n  thunderstorm, windy and unknown weather icons, including common OpenWeatherMap\n  state names. The legacy Temperature screen entity remains compatible.\n\n### Changed\n- The renderer confines the clock, date scrolling and digit animation to their\n  panel regions; the legacy six-module clock layout retains its original\n  full-width behavior.\n- The installer validates Home Assistant entity-ID syntax and gives examples;\n  its static configurator does not claim to browse a live entity registry.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2668,6 +2668,38 @@
       "input": "select"
     },
     {
+      "key": "clockLayout",
+      "kind": "select",
+      "target": "clock_layout",
+      "group": "Clock",
+      "label": "Clock layout",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "default": "Clock only",
+      "input": "select"
+    },
+    {
+      "key": "dateShowWeatherIcon",
+      "kind": "switch",
+      "target": "date_show_weather_icon",
+      "group": "Screens",
+      "label": "Show weather icon on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
+      "key": "dateShowOutdoorTemperature",
+      "kind": "switch",
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens",
+      "label": "Show outdoor temperature on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
       "key": "dateFormat",
       "kind": "select",
       "target": "date_format",
@@ -2979,6 +3011,33 @@
       "label": "Temperature sensor entity",
       "input": "text",
       "default": "sensor.outdoor_temperature"
+    },
+    {
+      "key": "homeTemperatureEntity",
+      "kind": "substitution",
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.living_room_temperature"
+    },
+    {
+      "key": "outdoorTemperatureEntity",
+      "kind": "substitution",
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.openweathermap_temperature"
+    },
+    {
+      "key": "weatherEntity",
+      "kind": "substitution",
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
+      "input": "text",
+      "default": "weather.openweathermap"
     },
     {
       "key": "board",
@@ -3373,7 +3432,7 @@
     },
     {
       "id": "Screens",
-      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date; the Temperature screen uses a numeric Home Assistant sensor in °C."
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
     },
     {
       "id": "Light",
@@ -3406,6 +3465,9 @@
     "alignment": "Center",
     "hourFormat": "24-hour",
     "secondsMode": "Digits",
+    "clockLayout": "Clock only",
+    "dateShowWeatherIcon": false,
+    "dateShowOutdoorTemperature": false,
     "dateFormat": "DD.MM",
     "scrollMode": "Scroll",
     "brightness": 3.0,
@@ -3433,6 +3495,9 @@
     "deviceComment": "ESP8266 MAX7219 matrix clock (packages release)",
     "timezone": "Europe/Berlin",
     "temperatureEntity": "sensor.outdoor_temperature",
+    "homeTemperatureEntity": "sensor.living_room_temperature",
+    "outdoorTemperatureEntity": "sensor.openweathermap_temperature",
+    "weatherEntity": "weather.openweathermap",
     "board": "d1_mini",
     "clkPin": "D8",
     "mosiPin": "D6",
@@ -3530,6 +3595,23 @@
       "domain": "select",
       "package": "packages/controls.yaml",
       "visibilitySubstitution": "ha_hide_seconds_display",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "clock_layout",
+      "name": "Clock layout",
+      "entity_category": "config",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "initial_option": "Clock only",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_layout",
       "visibleByDefault": true,
       "recommended": false,
       "group": "Clock"
@@ -3958,6 +4040,30 @@
       "domain": "number",
       "package": "packages/date_controls.yaml",
       "visibilitySubstitution": "ha_hide_date_scroll_speed",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_show_weather_icon",
+      "name": "Show weather icon on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_weather_icon",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_show_outdoor_temperature",
+      "name": "Show outdoor temperature on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_outdoor_temperature",
       "visibleByDefault": true,
       "recommended": false,
       "group": "Screens"

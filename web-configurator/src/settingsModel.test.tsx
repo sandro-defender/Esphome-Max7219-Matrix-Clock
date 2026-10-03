@@ -8,7 +8,7 @@ import { FIRMWARE } from "./firmware";
 import { switchTarget } from "./hardware";
 import { geometry } from "./render";
 import { TuneSection } from "./Settings";
-import { SETTINGS_GROUPS } from "./settingsModel";
+import { ENTITY_ID_FIELDS, SETTINGS_GROUPS } from "./settingsModel";
 import { decodeConfig, encodeConfig, sanitizeConfig, saveConfig } from "./storage";
 import { DEFAULT_CONFIG, type Config } from "./types";
 import { buildYaml } from "./yaml";
@@ -128,6 +128,40 @@ describe("compact settings model", () => {
     expect(localStorage.getItem("max7219-clock.config.v1")).not.toContain("NEVER_SAVE_ME");
     expect(buildYaml(clean, FIRMWARE.releaseVersion)).toContain(JSON.stringify(comment));
     expect(sanitizeConfig({ webServerVersion: 99 }).webServerVersion).toBe(DEFAULT_CONFIG.webServerVersion);
+  });
+
+  it("validates install-time Home Assistant entity IDs and shows examples without live lookup", () => {
+    const examples = {
+      temperatureEntity: "sensor.outdoor_temperature",
+      homeTemperatureEntity: "sensor.living_room_temperature",
+      outdoorTemperatureEntity: "sensor.openweathermap_temperature",
+      weatherEntity: "weather.openweathermap",
+    };
+    const yaml = buildYaml({ ...DEFAULT_CONFIG, ...examples }, FIRMWARE.releaseVersion);
+    for (const [key, value] of Object.entries(examples)) {
+      const item = FIRMWARE.settings.find((setting) => setting.key === key)!;
+      expect(yaml).toContain(`  ${item.target}: ${JSON.stringify(value)}`);
+      const field = ENTITY_ID_FIELDS[key];
+      const input = staticSettings().querySelector<HTMLInputElement>(`#setting-${key}`)!;
+      expect(input.pattern).toBe(`${field.domain}\\.[a-z0-9_]+`);
+      expect(input.maxLength).toBe(255);
+      expect(input.getAttribute("aria-describedby")).toBe(`setting-${key}-hint`);
+      expect(staticSettings().getElementById(`setting-${key}-hint`)?.textContent).toContain(value);
+    }
+    const screensHelp = staticSettings().querySelector('[data-settings-group="Screens"]')!.textContent!;
+    expect(screensHelp).toContain("cannot query your entity list");
+    expect(screensHelp).toContain("temperature attribute as fallback");
+
+    for (const invalid of [
+      { temperatureEntity: "light.desk" },
+      { homeTemperatureEntity: "sensor.Living_Room" },
+      { outdoorTemperatureEntity: "sensor.openweathermap-temperature" },
+      { weatherEntity: "sensor.openweathermap" },
+      { weatherEntity: "weather.openweathermap\\nsubstitutions:" },
+    ]) expect(() => buildYaml({ ...DEFAULT_CONFIG, ...invalid }, FIRMWARE.releaseVersion)).toThrow(/entity ID/);
+
+    expect(buildYaml({ ...DEFAULT_CONFIG, weatherEntity: " weather.openweathermap " }, FIRMWARE.releaseVersion))
+      .toContain('  weather_entity: "weather.openweathermap"');
   });
 
   it("validates safe network text and bounds timers and ports to firmware-safe integers", () => {

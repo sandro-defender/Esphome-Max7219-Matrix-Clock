@@ -25,6 +25,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <float.h>
+#include <stdlib.h>
 
 namespace max7219_clock {
 
@@ -70,6 +72,25 @@ enum SecondsMode : uint8_t {
   SECONDS_OFF = 0,
   SECONDS_DIGITS,
   SECONDS_BAR,
+};
+
+enum ClockLayout : uint8_t {
+  CLOCK_LAYOUT_ONLY = 0,
+  CLOCK_LAYOUT_WEATHER_ICON,
+  CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER,
+};
+
+enum WeatherCondition : uint8_t {
+  WEATHER_UNKNOWN = 0,
+  WEATHER_CLEAR,
+  WEATHER_CLEAR_NIGHT,
+  WEATHER_PARTLY_CLOUDY,
+  WEATHER_CLOUDY,
+  WEATHER_FOG,
+  WEATHER_RAIN,
+  WEATHER_SNOW,
+  WEATHER_THUNDERSTORM,
+  WEATHER_WINDY,
 };
 
 enum DateFormat : uint8_t {
@@ -123,6 +144,20 @@ class ClipCanvas : public Canvas {
 
 // Draw an entire screen at an offset while retaining Canvas clipping. This is
 // used for the short horizontal slide between selected screens.
+class ViewportCanvas : public Canvas {
+ public:
+  ViewportCanvas(Canvas &parent, int x, int width) : parent_(parent), x_(x), width_(width) {}
+  void pixel(int x, int y, bool on) override {
+    if (x >= 0 && x < width_ && y >= 0 && y < parent_.height()) parent_.pixel(x_ + x, y, on);
+  }
+  int width() const override { return width_; }
+  int height() const override { return parent_.height(); }
+ private:
+  Canvas &parent_;
+  int x_;
+  int width_;
+};
+
 class TranslatedCanvas : public Canvas {
  public:
   TranslatedCanvas(Canvas &parent, int x_offset) : parent_(parent), x_offset_(x_offset) {}
@@ -309,11 +344,21 @@ struct Frame {
   int year = 2026;
   bool temperature_valid = false;
   float temperature_c = 0.0f;
+  // Optional panel sources are read as Home Assistant text states so invalid
+  // and unavailable values remain explicit instead of becoming zero.
+  bool home_temperature_valid = false;
+  float home_temperature = 0.0f;
+  bool outdoor_temperature_valid = false;
+  float outdoor_temperature = 0.0f;
+  uint8_t weather_condition = WEATHER_UNKNOWN;
 
   // Display preferences (entity state)
   int screen = SCREEN_CLOCK;
   int alignment = ALIGN_CENTER;
   int seconds_mode = SECONDS_DIGITS;
+  int clock_layout = CLOCK_LAYOUT_ONLY;
+  bool date_show_weather_icon = false;
+  bool date_show_outdoor_temperature = false;
   int date_format = DATE_DD_MM;
   bool use_12h = false;
   bool blink_colon = true;
@@ -339,6 +384,31 @@ struct Frame {
   uint32_t cycle_interval_s = 10;
   uint32_t date_cycle_interval_s = 10;
 };
+
+struct WeatherPanelGeometry {
+  bool available = false;
+  int group_x = 0;
+  int left_x = 0;
+  int clock_x = 0;
+  int right_x = 0;
+  int date_safe_width = 0;
+};
+
+inline WeatherPanelGeometry weather_panel_geometry(const Canvas &canvas) {
+  WeatherPanelGeometry layout;
+  if (canvas.width() < 96 || canvas.height() < 8) return layout;
+  layout.available = true;
+  layout.group_x = (canvas.width() - 96) / 2;
+  layout.left_x = layout.group_x;
+  layout.clock_x = layout.group_x + 24;
+  layout.right_x = layout.group_x + 72;
+  layout.date_safe_width = layout.right_x;
+  return layout;
+}
+
+inline bool date_weather_panel_enabled(const Frame &f) {
+  return f.date_show_weather_icon || f.date_show_outdoor_temperature;
+}
 
 // --------------------------------------------------------------------------
 // Runtime: everything that must survive between redraws but must not touch
@@ -618,6 +688,92 @@ inline void upper_ascii(char *text) {
 // NaN test without <cmath>: the template sensor publishes NAN when no
 // countdown is running.
 inline bool is_nan(float value) { return value != value; }
+inline bool is_finite(float value) { return value == value && value <= FLT_MAX && value >= -FLT_MAX; }
+
+// Parse a Home Assistant state strictly. Empty, unknown, unavailable, partial
+// numeric text, NaN and infinities are all absent values, never zero readings.
+inline bool parse_temperature_text(const char *text, float &value) {
+  if (text == nullptr) return false;
+  while (*text == ' ' || *text == '\t' || *text == '\r' || *text == '\n') text++;
+  if (*text == '\0') return false;
+  char *end = nullptr;
+  const float parsed = strtof(text, &end);
+  if (end == text || !is_finite(parsed)) return false;
+  while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n') end++;
+  if (*end != '\0') return false;
+  value = parsed;
+  return true;
+}
+
+// A supplied outdoor sensor wins when it has a current numeric value. If it
+// is unset/unavailable, the weather entity's current `temperature` attribute
+// is the safe fallback; both invalid sources leave the display unavailable.
+inline bool choose_outdoor_temperature(bool dedicated_valid, float dedicated,
+                                       bool weather_valid, float weather, float &value) {
+  if (dedicated_valid && is_finite(dedicated)) {
+    value = dedicated;
+    return true;
+  }
+  if (weather_valid && is_finite(weather)) {
+    value = weather;
+    return true;
+  }
+  return false;
+}
+
+inline bool contains_text(const char *text, const char *part) {
+  return text != nullptr && part != nullptr && strstr(text, part) != nullptr;
+}
+
+// Normalize provider-specific condition spelling (HA enums or OpenWeatherMap
+// descriptions) into one of the renderer's small, fixed bitmap categories.
+inline uint8_t weather_from_condition(const char *condition) {
+  char normalized[64] = {0};
+  size_t output = 0;
+  bool previous_space = true;
+  if (condition != nullptr) {
+    for (const unsigned char *p = (const unsigned char *) condition; *p != '\0' && output + 1 < sizeof(normalized); p++) {
+      unsigned char ch = *p;
+      if (ch >= 'A' && ch <= 'Z') ch = (unsigned char) (ch - 'A' + 'a');
+      if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+        normalized[output++] = (char) ch;
+        previous_space = false;
+      } else if (!previous_space && output + 1 < sizeof(normalized)) {
+        normalized[output++] = ' ';
+        previous_space = true;
+      }
+    }
+  }
+  if (output > 0 && normalized[output - 1] == ' ') normalized[--output] = '\0';
+  if (output == 0 || contains_text(normalized, "unknown") || contains_text(normalized, "unavailable") ||
+      strcmp(normalized, "none") == 0 || contains_text(normalized, "exceptional"))
+    return WEATHER_UNKNOWN;
+  if (contains_text(normalized, "thunder") || contains_text(normalized, "lightning") ||
+      contains_text(normalized, "hail"))
+    return WEATHER_THUNDERSTORM;
+  if (contains_text(normalized, "snow") || contains_text(normalized, "sleet")) return WEATHER_SNOW;
+  if (contains_text(normalized, "wind") || contains_text(normalized, "squall") ||
+      contains_text(normalized, "tornado"))
+    return WEATHER_WINDY;
+  if (contains_text(normalized, "fog") || contains_text(normalized, "mist") ||
+      contains_text(normalized, "haze") || contains_text(normalized, "smoke") ||
+      contains_text(normalized, "dust") || contains_text(normalized, "sand") ||
+      contains_text(normalized, "ash"))
+    return WEATHER_FOG;
+  if (contains_text(normalized, "rain") || contains_text(normalized, "drizzle") ||
+      contains_text(normalized, "shower") || contains_text(normalized, "pour"))
+    return WEATHER_RAIN;
+  if (contains_text(normalized, "partly cloudy") || strcmp(normalized, "partlycloudy") == 0 ||
+      contains_text(normalized, "few clouds") || contains_text(normalized, "scattered clouds"))
+    return WEATHER_PARTLY_CLOUDY;
+  if (contains_text(normalized, "cloud") || contains_text(normalized, "overcast") ||
+      contains_text(normalized, "broken clouds"))
+    return WEATHER_CLOUDY;
+  if (contains_text(normalized, "clear night") || contains_text(normalized, "night clear"))
+    return WEATHER_CLEAR_NIGHT;
+  if (contains_text(normalized, "sunny") || contains_text(normalized, "clear")) return WEATHER_CLEAR;
+  return WEATHER_UNKNOWN;
+}
 
 inline uint32_t hash_text(const char *text) {
   uint32_t hash = 2166136261UL;
@@ -749,6 +905,8 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
 inline void draw_seconds_bar(Canvas &c, int second);
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid);
+inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature);
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
 inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
@@ -775,8 +933,25 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     return;
   }
 
-  const int width = canvas.width();
-  const int height = canvas.height();
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+  int content_x = 0;
+  int content_width = canvas.width();
+  if (screen == SCREEN_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (screen == SCREEN_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int width = content_canvas.width();
+  const int height = content_canvas.height();
   const GlyphFont *active = &font;
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
@@ -795,8 +970,9 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     active = &fallback;
   }
   const bool blank_colons = mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
-  draw_line(canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  draw_line(content_canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
 // Choose the face for a free-text string (message, alert, OTA): the selected
@@ -861,6 +1037,176 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
       }
     }
     cursor += step;
+  }
+}
+
+inline void format_temperature_text(float value, bool valid, int width, char *out, size_t out_size) {
+  BuiltinFont font;
+  if (!valid || !is_finite(value) || value < -999.9f || value > 999.9f) {
+    snprintf(out, out_size, "--.-");
+    return;
+  }
+  const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
+  const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
+  char candidate[16];
+  snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
+           (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  if (font.text_width(candidate) <= width) {
+    snprintf(out, out_size, "%s", candidate);
+    return;
+  }
+  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
+  snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
+  if (font.text_width(candidate) <= width)
+    snprintf(out, out_size, "%s", candidate);
+  else
+    snprintf(out, out_size, "--.-");
+}
+
+inline void draw_temperature_text(Canvas &c, float value, bool valid) {
+  char text[16];
+  format_temperature_text(value, valid, c.width(), text, sizeof(text));
+  BuiltinFont font;
+  draw_line(c, font, text, nullptr, 1.0f, ALIGN_CENTER, font.centered_box_top(c.height()));
+}
+
+inline int micro_text_width(const char *text) {
+  int width = 0;
+  if (text != nullptr)
+    for (const char *p = text; *p != '\0'; p++) width += *p == '.' ? 2 : 4;
+  return width;
+}
+
+inline void format_micro_temperature(float value, bool valid, int width, char *out, size_t out_size) {
+  if (!valid || !is_finite(value) || value < -999.9f || value > 999.9f) {
+    snprintf(out, out_size, "--.-");
+    return;
+  }
+  const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
+  const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
+  char candidate[16];
+  snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
+           (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  if (micro_text_width(candidate) <= width) {
+    snprintf(out, out_size, "%s", candidate);
+    return;
+  }
+  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
+  snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
+  if (micro_text_width(candidate) <= width)
+    snprintf(out, out_size, "%s", candidate);
+  else
+    snprintf(out, out_size, "----");
+}
+
+inline uint8_t micro_glyph_row(char ch, int row) {
+  static const uint8_t DIGITS[10][5] = {
+      {0b111, 0b101, 0b101, 0b101, 0b111}, {0b010, 0b110, 0b010, 0b010, 0b111},
+      {0b111, 0b001, 0b111, 0b100, 0b111}, {0b111, 0b001, 0b111, 0b001, 0b111},
+      {0b101, 0b101, 0b111, 0b001, 0b001}, {0b111, 0b100, 0b111, 0b001, 0b111},
+      {0b111, 0b100, 0b111, 0b101, 0b111}, {0b111, 0b001, 0b010, 0b010, 0b010},
+      {0b111, 0b101, 0b111, 0b101, 0b111}, {0b111, 0b101, 0b111, 0b001, 0b111},
+  };
+  if (row < 0 || row >= 5) return 0;
+  if (ch >= '0' && ch <= '9') return DIGITS[ch - '0'][row];
+  if (ch == '-') return row == 2 ? 0b111 : 0;
+  if (ch == '.') return row >= 3 ? 0b010 : 0;
+  return 0;
+}
+
+inline void draw_micro_temperature(Canvas &c, float value, bool valid) {
+  char text[16];
+  format_micro_temperature(value, valid, c.width(), text, sizeof(text));
+  const int total_width = micro_text_width(text);
+  int cursor = std::max(0, (c.width() - total_width) / 2);
+  const int top = std::max(0, (c.height() - 5) / 2);
+  for (const char *p = text; *p != '\0'; p++) {
+    if (*p == '.') {
+      for (int row = 0; row < 5; row++)
+        for (int col = 0; col < 3; col++)
+          if (micro_glyph_row(*p, row) & (1U << (2 - col))) c.pixel(cursor + col, top + row, true);
+      cursor += 2;
+    } else {
+      for (int row = 0; row < 5; row++)
+        for (int col = 0; col < 3; col++)
+          if (micro_glyph_row(*p, row) & (1U << (2 - col))) c.pixel(cursor + col, top + row, true);
+      cursor += 4;
+    }
+  }
+}
+
+inline void draw_weather_icon(Canvas &c, int x, int y, uint8_t condition, bool night) {
+  static const uint8_t CLEAR_DAY[8] = {0x18, 0x5A, 0x3C, 0xFF, 0x3C, 0x5A, 0x18, 0x00};
+  static const uint8_t CLEAR_NIGHT[8] = {0x1C, 0x38, 0x70, 0xE0, 0xE0, 0x70, 0x38, 0x1C};
+  static const uint8_t PARTLY_CLOUDY[8] = {0x18, 0x1C, 0x1A, 0x0F, 0x1E, 0x7C, 0xFE, 0x7C};
+  static const uint8_t CLOUDY[8] = {0x00, 0x1C, 0x3E, 0x7F, 0xFF, 0xFF, 0x7E, 0x00};
+  static const uint8_t FOG[8] = {0x00, 0x3C, 0x7E, 0x00, 0xFF, 0x00, 0x7E, 0x00};
+  static const uint8_t RAIN[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x14, 0x28, 0x50};
+  static const uint8_t SNOW[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x2A, 0x54, 0x2A};
+  static const uint8_t THUNDERSTORM[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x38, 0x10, 0x38};
+  static const uint8_t WINDY[8] = {0x5E, 0x80, 0x7C, 0x02, 0xBE, 0x00, 0x78, 0x00};
+  static const uint8_t UNKNOWN[8] = {0x3C, 0x42, 0x02, 0x0C, 0x10, 0x00, 0x10, 0x00};
+  const uint8_t *rows = UNKNOWN;
+  switch (condition) {
+    case WEATHER_CLEAR:
+      rows = night ? CLEAR_NIGHT : CLEAR_DAY;
+      break;
+    case WEATHER_CLEAR_NIGHT:
+      rows = CLEAR_NIGHT;
+      break;
+    case WEATHER_PARTLY_CLOUDY:
+      rows = PARTLY_CLOUDY;
+      break;
+    case WEATHER_CLOUDY:
+      rows = CLOUDY;
+      break;
+    case WEATHER_FOG:
+      rows = FOG;
+      break;
+    case WEATHER_RAIN:
+      rows = RAIN;
+      break;
+    case WEATHER_SNOW:
+      rows = SNOW;
+      break;
+    case WEATHER_THUNDERSTORM:
+      rows = THUNDERSTORM;
+      break;
+    case WEATHER_WINDY:
+      rows = WINDY;
+      break;
+    default:
+      rows = UNKNOWN;
+      break;
+  }
+  for (int row = 0; row < 8; row++)
+    for (int col = 0; col < 8; col++)
+      if (rows[row] & (0x80U >> col)) c.pixel(x + col, y + row, true);
+}
+
+inline bool weather_night(const Frame &f) {
+  return f.weather_condition == WEATHER_CLEAR_NIGHT ||
+         (f.weather_condition == WEATHER_CLEAR && f.time_valid && (f.hour < 6 || f.hour >= 19));
+}
+
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid) {
+  ViewportCanvas panel(canvas, x, 24);
+  draw_temperature_text(panel, value, valid);
+}
+
+// The fixed three-module right panel holds an icon, a temperature, or both.
+inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature) {
+  if (!show_icon && !show_temperature) return;
+  ViewportCanvas panel(canvas, x, 24);
+  const int top = std::max(0, (panel.height() - 8) / 2);
+  if (show_icon && show_temperature) {
+    draw_weather_icon(panel, 0, top, f.weather_condition, weather_night(f));
+    ViewportCanvas value(panel, 8, 16);
+    draw_micro_temperature(value, f.outdoor_temperature, f.outdoor_temperature_valid);
+  } else if (show_icon) {
+    draw_weather_icon(panel, 8, top, f.weather_condition, weather_night(f));
+  } else {
+    draw_temperature_text(panel, f.outdoor_temperature, f.outdoor_temperature_valid);
   }
 }
 
@@ -1131,16 +1477,20 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     return;
   }
 
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+
   // Slide only between user-selected normal screens. Priority screens above
   // intentionally return before this point so an OTA/error/message is never
-  // delayed by an animation.
+  // delayed by an animation. On the 12-module layout the panel regions stay
+  // stationary, so skip the whole-screen slide and animate only within the
+  // allocated clock/date viewport.
   if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_TEMPERATURE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
       if (f.screen == SCREEN_DATE) state.date_scroll_started_ms = 0;
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
-                                       f.animate && f.animation_ms > 0;
+                                       f.animate && f.animation_ms > 0 && !panels.available;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
     }
@@ -1163,20 +1513,38 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     }
   }
 
+  int content_x = 0;
+  int content_width = width;
+  if (mode == MODE_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;  // exactly six modules, regardless of the outer panel width
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (mode == MODE_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int layout_width = content_canvas.width();
+
   // Fixed-width text screens (clock, date, countdown).
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
-  if (has_content && active->text_width(content) > width) {
+  if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
       with_seconds = false;
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
     // 2. fall back to the built-in font, which always fits the default layout
-    if (has_content && active->text_width(content) > width) active = &fallback;
+    if (has_content && active->text_width(content) > layout_width) active = &fallback;
   }
   if (!has_content) {
     // No valid time yet: keep a readable, non-empty placeholder.
@@ -1186,12 +1554,11 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   // The weekday formats are intentionally longer than one 48-pixel row. Use
   // the same deterministic ticker as messages instead of clipping them.
-  if (mode == MODE_DATE && active->text_width(content) > width) {
+  if (mode == MODE_DATE && active->text_width(content) > layout_width) {
     state.reset_animation();
     if (state.date_scroll_started_ms == 0) state.date_scroll_started_ms = f.now_ms;
-    draw_free_text(canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
-                   f.date_scroll_ms_per_px,
-                   active->centered_box_top(height));
+    draw_free_text(content_canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
+                   f.date_scroll_ms_per_px, active->centered_box_top(height));
     return;
   }
 
@@ -1199,10 +1566,10 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   const bool same_layout = state.anim_prev_mode == (int) mode &&
                            strlen(state.anim_prev) == strlen(content) &&
                            state.anim_font_identity == active->identity() &&
-                           state.anim_width == width && state.anim_height == height &&
+                           state.anim_width == layout_width && state.anim_height == height &&
                            state.anim_alignment == f.alignment;
   state.anim_font_identity = active->identity();
-  state.anim_width = width;
+  state.anim_width = layout_width;
   state.anim_height = height;
   state.anim_alignment = f.alignment;
   if (!same_layout) {
@@ -1239,11 +1606,12 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
 
   const int box_top = active->centered_box_top(height);
-  draw_line(canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
+  draw_line(content_canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
             box_top, blank_colons, f.animation_row_gap);
 
-  // Seconds alternative: full-width progress bar on the bottom row.
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  // Seconds bar follows the clock's six-module viewport, never the side panels.
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
 // Convenience overload used by the YAML display lambda.

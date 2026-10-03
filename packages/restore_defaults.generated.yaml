@@ -21,6 +21,11 @@ script:
       id: seconds_display
       option: Digits
   - select.set:
+      id: clock_layout
+      option: Clock only
+  - switch.turn_off: date_show_weather_icon
+  - switch.turn_off: date_show_outdoor_temperature
+  - select.set:
       id: date_format
       option: DD.MM
   - select.set:

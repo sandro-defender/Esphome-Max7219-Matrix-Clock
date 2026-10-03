@@ -53,6 +53,24 @@
       "label": "Temperature sensor entity",
       "input": "text"
     },
+    "homeTemperatureEntity": {
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text"
+    },
+    "outdoorTemperatureEntity": {
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text"
+    },
+    "weatherEntity": {
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
+      "input": "text"
+    },
     "board": {
       "target": "board",
       "group": "Hardware",
@@ -246,6 +264,18 @@
       "target": "seconds_display",
       "group": "Clock"
     },
+    "clockLayout": {
+      "target": "clock_layout",
+      "group": "Clock"
+    },
+    "dateShowWeatherIcon": {
+      "target": "date_show_weather_icon",
+      "group": "Screens"
+    },
+    "dateShowOutdoorTemperature": {
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens"
+    },
     "dateFormat": {
       "target": "date_format",
       "group": "Screens"
@@ -379,7 +409,7 @@
     },
     {
       "id": "Screens",
-      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date; the Temperature screen uses a numeric Home Assistant sensor in °C."
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
     },
     {
       "id": "Light",

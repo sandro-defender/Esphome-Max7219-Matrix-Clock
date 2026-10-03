@@ -53,6 +53,56 @@ class SettingsCoverageTests(unittest.TestCase):
         self.assertFalse(covered & set(CONTRACT["secrets"]))
         self.assertEqual({item["group"] for item in CONTRACT["settings"]}, {g["id"] for g in CONTRACT["groups"]})
 
+    def test_install_time_weather_sources_keep_legacy_temperature_and_import_weather_attributes(self):
+        expected_substitutions = {
+            "home_temperature_entity": "sensor.living_room_temperature",
+            "outdoor_temperature_entity": "sensor.openweathermap_temperature",
+            "weather_entity": "weather.openweathermap",
+        }
+        for base_path in ("packages/base.yaml", "packages/base-esp32.yaml"):
+            substitutions = load(ROOT / base_path)["substitutions"]
+            for name, example in expected_substitutions.items():
+                self.assertEqual(substitutions[name], example)
+            self.assertEqual(substitutions["temperature_entity"], "sensor.outdoor_temperature")
+        bindings = BINDINGS["substitutions"]
+        self.assertEqual({bindings[key]["target"] for key in (
+            "homeTemperatureEntity", "outdoorTemperatureEntity", "weatherEntity"
+        )}, set(expected_substitutions))
+
+        network = load(ROOT / "packages/network.yaml")
+        self.assertEqual(network["sensor"][0]["id"], "temperature_sensor")
+        imported = {item["id"]: item for item in network["text_sensor"]}
+        self.assertEqual(imported["home_temperature_text"]["entity_id"], "${home_temperature_entity}")
+        self.assertEqual(imported["outdoor_temperature_text"]["entity_id"], "${outdoor_temperature_entity}")
+        self.assertEqual(imported["weather_condition_text"]["entity_id"], "${weather_entity}")
+        self.assertEqual(imported["weather_temperature_text"]["entity_id"], "${weather_entity}")
+        self.assertEqual(imported["weather_temperature_text"]["attribute"], "temperature")
+        self.assertTrue(all(item["internal"] for item in imported.values()))
+
+    def test_clock_layout_and_date_weather_controls_restore_and_redraw(self):
+        controls = load(ROOT / "packages/controls.yaml")
+        clock_layout = next(item for item in controls["select"] if item.get("id") == "clock_layout")
+        self.assertEqual(clock_layout["name"], "Clock layout")
+        self.assertTrue(clock_layout["restore_value"])
+        self.assertEqual(clock_layout["initial_option"], "Clock only")
+        self.assertEqual(clock_layout["options"], [
+            "Clock only", "Clock + weather icon", "Clock + home and outdoor weather"
+        ])
+        self.assertEqual(clock_layout["set_action"], [{"component.update": "matrix"}])
+
+        date_controls = load(ROOT / "packages/date_controls.yaml")
+        switches = {item["id"]: item for item in date_controls["switch"]}
+        self.assertEqual(set(switches), {"date_show_weather_icon", "date_show_outdoor_temperature"})
+        for entity in switches.values():
+            self.assertTrue(entity["optimistic"])
+            self.assertEqual(entity["restore_mode"], "RESTORE_DEFAULT_OFF")
+            self.assertEqual(entity["turn_on_action"], [{"script.execute": "request_matrix_refresh"}])
+            self.assertEqual(entity["turn_off_action"], [{"script.execute": "request_matrix_refresh"}])
+        self.assertEqual({
+            BINDINGS["entities"][key]["target"]
+            for key in ("clockLayout", "dateShowWeatherIcon", "dateShowOutdoorTemperature")
+        }, {"clock_layout", *switches})
+
     def test_every_named_entity_has_a_unique_internal_flag_including_nested_diagnostics(self):
         actual = {}
         for path in CONTRACT["packageFiles"]:

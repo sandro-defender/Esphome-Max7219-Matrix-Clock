@@ -4,7 +4,7 @@ import { fontSpec } from "./fontCatalog";
 import { HARDWARE_TARGETS, pinNamesFor, settingOptions, targetSpec, targetSummary } from "./hardware";
 import { LEDS } from "./leds";
 import type { Geometry } from "./render";
-import { enabledSetting, SETTINGS_GROUPS, textLimit } from "./settingsModel";
+import { enabledSetting, ENTITY_ID_FIELDS, entityIdPattern, SETTINGS_GROUPS, textLimit } from "./settingsModel";
 import { Field, NumberField, type Patch, Section, Slider, Toggle } from "./ui";
 
 /** Every generated binding gets one widget; no second hand-maintained list. */
@@ -31,12 +31,18 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
     return item.input === "range" ? <Slider label={item.label} value={Number(value)} {...range} unit={item.unit} disabled={disabled} onChange={(next) => patch(item.key, next)} /> :
       <NumberField label={item.label + (item.unit ? ` (${item.unit})` : "")} value={Number(value)} {...range} disabled={disabled} onChange={(next) => patch(item.key, next)} />;
   }
-  return <Field id={id} label={item.label}>
-    <input id={id} type="text" value={String(value)} maxLength={textLimit(item.key)} disabled={disabled}
-      readOnly={item.key === "timezone" && cfg.automaticTimezone}
-      aria-describedby={item.key === "timezone" ? "timezone-hint" : undefined}
-      autoCapitalize="none" spellCheck={false} onChange={(event) => patch(item.key, event.target.value)} />
-  </Field>;
+  const entityField = ENTITY_ID_FIELDS[item.key];
+  const hintId = entityField ? `${id}-hint` : item.key === "timezone" ? "timezone-hint" : undefined;
+  return <>
+    <Field id={id} label={item.label}>
+      <input id={id} type="text" value={String(value)} maxLength={textLimit(item.key)} disabled={disabled}
+        readOnly={item.key === "timezone" && cfg.automaticTimezone}
+        pattern={entityIdPattern(item.key)} title={entityField ? `Example: ${entityField.example}` : undefined}
+        aria-describedby={hintId}
+        autoCapitalize="none" spellCheck={false} onChange={(event) => patch(item.key, event.target.value)} />
+    </Field>
+    {entityField ? <p id={hintId} className="field-note">{entityField.hint} Example: <code>{entityField.example}</code>.</p> : null}
+  </>;
 }
 
 /** Native radios give hardware selection normal Tab/arrow-key behavior. */

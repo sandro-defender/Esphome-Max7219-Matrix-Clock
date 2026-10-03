@@ -154,7 +154,7 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
         <li>
           <span>HH:MM:SS</span>
           <b>
-            {fit.width} px of {scene.geometry.width}
+            {fit.width} px of {scene.clockViewportWidth}
           </b>
         </li>
         <li>
