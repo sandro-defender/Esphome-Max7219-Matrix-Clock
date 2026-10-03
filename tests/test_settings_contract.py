@@ -53,6 +53,32 @@ class SettingsCoverageTests(unittest.TestCase):
         self.assertFalse(covered & set(CONTRACT["secrets"]))
         self.assertEqual({item["group"] for item in CONTRACT["settings"]}, {g["id"] for g in CONTRACT["groups"]})
 
+    def test_install_time_weather_sources_keep_legacy_temperature_and_import_weather_attributes(self):
+        expected_substitutions = {
+            "home_temperature_entity": "sensor.living_room_temperature",
+            "outdoor_temperature_entity": "sensor.openweathermap_temperature",
+            "weather_entity": "weather.openweathermap",
+        }
+        for base_path in ("packages/base.yaml", "packages/base-esp32.yaml"):
+            substitutions = load(ROOT / base_path)["substitutions"]
+            for name, example in expected_substitutions.items():
+                self.assertEqual(substitutions[name], example)
+            self.assertEqual(substitutions["temperature_entity"], "sensor.outdoor_temperature")
+        bindings = BINDINGS["substitutions"]
+        self.assertEqual({bindings[key]["target"] for key in (
+            "homeTemperatureEntity", "outdoorTemperatureEntity", "weatherEntity"
+        )}, set(expected_substitutions))
+
+        network = load(ROOT / "packages/network.yaml")
+        self.assertEqual(network["sensor"][0]["id"], "temperature_sensor")
+        imported = {item["id"]: item for item in network["text_sensor"]}
+        self.assertEqual(imported["home_temperature_text"]["entity_id"], "${home_temperature_entity}")
+        self.assertEqual(imported["outdoor_temperature_text"]["entity_id"], "${outdoor_temperature_entity}")
+        self.assertEqual(imported["weather_condition_text"]["entity_id"], "${weather_entity}")
+        self.assertEqual(imported["weather_temperature_text"]["entity_id"], "${weather_entity}")
+        self.assertEqual(imported["weather_temperature_text"]["attribute"], "temperature")
+        self.assertTrue(all(item["internal"] for item in imported.values()))
+
     def test_every_named_entity_has_a_unique_internal_flag_including_nested_diagnostics(self):
         actual = {}
         for path in CONTRACT["packageFiles"]:

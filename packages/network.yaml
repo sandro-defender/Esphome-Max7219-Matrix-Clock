@@ -45,10 +45,32 @@ time:
       - ${sntp_server_2}
     update_interval: ${sntp_update_interval}
 
-# A numeric Home Assistant sensor selected in the installer. The display shows
-# its value with one decimal place; use a Celsius entity for a °C reading.
+# Keep the legacy numeric import used by the existing Temperature screen.
 sensor:
   - platform: homeassistant
     id: temperature_sensor
     entity_id: ${temperature_entity}
+    internal: true
+
+# Import weather sources as text so `unknown`/`unavailable` remain explicit
+# instead of turning into zero or leaving a previous numeric reading on screen.
+# A weather entity exposes its condition as state and its current temperature
+# as the standard `temperature` attribute (including OpenWeatherMap).
+text_sensor:
+  - platform: homeassistant
+    id: home_temperature_text
+    entity_id: ${home_temperature_entity}
+    internal: true
+  - platform: homeassistant
+    id: outdoor_temperature_text
+    entity_id: ${outdoor_temperature_entity}
+    internal: true
+  - platform: homeassistant
+    id: weather_condition_text
+    entity_id: ${weather_entity}
+    internal: true
+  - platform: homeassistant
+    id: weather_temperature_text
+    entity_id: ${weather_entity}
+    attribute: temperature
     internal: true

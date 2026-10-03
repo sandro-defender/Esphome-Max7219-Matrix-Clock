@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "4570cbf579af4be3a652e07037329f638d2086a60c86d47cfb9ea99b8f697082",
+  "sourceHash": "9c0aaed25980d7a8e263fdc8986cebf07bf8ff35db4e9fa51a2b0fe0b5b2f7a8",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.8",
   "esphomeVersion": "2026.9.1",
@@ -2981,6 +2981,33 @@
       "default": "sensor.outdoor_temperature"
     },
     {
+      "key": "homeTemperatureEntity",
+      "kind": "substitution",
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.living_room_temperature"
+    },
+    {
+      "key": "outdoorTemperatureEntity",
+      "kind": "substitution",
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.openweathermap_temperature"
+    },
+    {
+      "key": "weatherEntity",
+      "kind": "substitution",
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
+      "input": "text",
+      "default": "weather.openweathermap"
+    },
+    {
       "key": "board",
       "kind": "substitution",
       "target": "board",
@@ -3433,6 +3460,9 @@
     "deviceComment": "ESP8266 MAX7219 matrix clock (packages release)",
     "timezone": "Europe/Berlin",
     "temperatureEntity": "sensor.outdoor_temperature",
+    "homeTemperatureEntity": "sensor.living_room_temperature",
+    "outdoorTemperatureEntity": "sensor.openweathermap_temperature",
+    "weatherEntity": "weather.openweathermap",
     "board": "d1_mini",
     "clkPin": "D8",
     "mosiPin": "D6",

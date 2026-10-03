@@ -17,7 +17,12 @@ substitutions:
   board: esp32dev
   log_level: INFO
   timezone: Europe/Berlin
+  # Retain the legacy Temperature screen entity for existing installations.
   temperature_entity: sensor.outdoor_temperature
+  # Install-time Home Assistant sources for configurable weather panels.
+  home_temperature_entity: sensor.living_room_temperature
+  outdoor_temperature_entity: sensor.openweathermap_temperature
+  weather_entity: weather.openweathermap
   ota_port: "3232"
 
   # Standard VSPI wiring for an ESP-WROOM-32 DevKit.

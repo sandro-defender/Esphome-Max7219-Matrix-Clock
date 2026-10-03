@@ -53,6 +53,24 @@
       "label": "Temperature sensor entity",
       "input": "text"
     },
+    "homeTemperatureEntity": {
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text"
+    },
+    "outdoorTemperatureEntity": {
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text"
+    },
+    "weatherEntity": {
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
+      "input": "text"
+    },
     "board": {
       "target": "board",
       "group": "Hardware",
