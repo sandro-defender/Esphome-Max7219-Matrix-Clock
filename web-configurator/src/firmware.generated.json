@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "fc8d534e86cf33c7f43a6e89d262e2e446d9cf5b802649bc60546d695775fa1f",
+  "sourceHash": "5d5e95ef1378dc280bff6a0fe51b0acff6a640c1d8dee64f363ce8fd2afd9fcd",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.9",
+  "releaseVersion": "0.7.10",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- Restored **Clock layout** selection for the 12-module display: clock only,\n  indoor temperature + clock + weather icon, or indoor temperature + clock +\n  weather icon and outdoor temperature. The preview includes sample values and\n  icons without querying Home Assistant or adding installer credentials.\n- Independent restored Date-screen switches for the weather icon and outdoor\n  temperature. Either or both reserve the right three-module panel while date\n  text remains clipped and scrollable in its safe area.\n- Install-time Home Assistant entity sources for indoor temperature, dedicated\n  outdoor temperature and a `weather.*` entity. The weather state selects the\n  icon, its temperature attribute is a fallback, and a valid dedicated outdoor\n  sensor takes priority. Unavailable or malformed readings use a safe\n  placeholder.\n- Compact clear/day and clear/night, partly cloudy, cloudy, fog, rain, snow,\n  thunderstorm, windy and unknown weather icons, including common OpenWeatherMap\n  state names. The legacy Temperature screen entity remains compatible.\n\n### Changed\n- The renderer confines the clock, date scrolling and digit animation to their\n  panel regions; the legacy six-module clock layout retains its original\n  full-width behavior.\n- The installer validates Home Assistant entity-ID syntax and gives examples;\n  its static configurator does not claim to browse a live entity registry.",
+  "releaseNotes": "### Fixed\n- Draw a clearer partly-cloudy weather icon on 8×8 panels and use the same\n  compact temperature digits on both side panels.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
