@@ -208,24 +208,25 @@ const MICRO_GLYPH_ROWS: Record<string, readonly number[]> = {
   "4": [0b101, 0b101, 0b111, 0b001, 0b001], "5": [0b111, 0b100, 0b111, 0b001, 0b111],
   "6": [0b111, 0b100, 0b111, 0b101, 0b111], "7": [0b111, 0b001, 0b010, 0b010, 0b010],
   "8": [0b111, 0b101, 0b111, 0b101, 0b111], "9": [0b111, 0b101, 0b111, 0b001, 0b111],
-  "-": [0, 0, 0b111, 0, 0], ".": [0, 0, 0, 0b010, 0b010],
+  "-": [0, 0, 0b111, 0, 0], ".": [0, 0, 0, 0b010, 0b010], "°": [0b110, 0b110, 0, 0, 0],
 };
 
-function microTextWidth(text: string): number { return [...text].reduce((sum, char) => sum + (char === "." ? 2 : 4), 0); }
+function microTextWidth(text: string): number { return [...text].reduce((sum, char) => sum + (char === "." ? 2 : char === "°" ? 3 : 4), 0); }
 
 export function formatMicroTemperature(value: number | null, width: number): string {
   if (value === null || !Number.isFinite(value) || value < -999.9 || value > 999.9) return "--.-";
-  const candidate = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
+  const candidate = `${Math.trunc(value + (value >= 0 ? 0.5 : -0.5))}°`;
   if (microTextWidth(candidate) <= width) return candidate;
   const whole = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
   return microTextWidth(whole) <= width ? whole : "----";
 }
 
-function drawMicroTemperature(frame: Frame, value: number | null): void {
+function drawMicroTemperature(frame: Frame, value: number | null, showDegree = true): void {
   const text = formatMicroTemperature(value, frame.width);
-  let cursor = Math.max(0, Math.trunc((frame.width - microTextWidth(text)) / 2));
+  const rendered = showDegree ? text : text.replace("°", "");
+  let cursor = Math.max(0, Math.trunc((frame.width - microTextWidth(rendered)) / 2));
   const top = Math.max(0, Math.trunc((frame.height - 5) / 2));
-  for (const char of text) {
+  for (const char of rendered) {
     const rows = MICRO_GLYPH_ROWS[char] ?? [];
     for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++)
       if (rows[y] & (1 << (2 - x))) setPixel(frame, cursor + x, top + y);
@@ -233,23 +234,23 @@ function drawMicroTemperature(frame: Frame, value: number | null): void {
   }
 }
 
-function drawHomeTemperaturePanel(frame: Frame, x: number, value: number | null): void {
-  drawMicroTemperature(viewport(frame, x, 24), value);
+function drawHomeTemperaturePanel(frame: Frame, x: number, value: number | null, showDegree = true): void {
+  drawMicroTemperature(viewport(frame, x, 24), value, showDegree);
 }
 
 export function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeatherCondition, night: boolean,
-                                 temperature: number | null, showIcon: boolean, showTemperature: boolean): void {
+                                 temperature: number | null, showIcon: boolean, showTemperature: boolean, showDegree = true): void {
   if (!showIcon && !showTemperature) return;
   const panel = viewport(frame, x, 24);
   const top = Math.max(0, Math.trunc((panel.height - 8) / 2));
   if (showIcon && showTemperature) {
     drawWeatherIcon(viewport(panel, 0, 8), condition, night, top);
-    drawMicroTemperature(viewport(panel, 8, 16), temperature);
+    drawMicroTemperature(viewport(panel, 8, 16), temperature, showDegree);
   } else if (showIcon) {
     const icon = viewport(panel, 8, 8);
     drawWeatherIcon(icon, condition, night, top);
   } else {
-    drawMicroTemperature(panel, temperature);
+    drawMicroTemperature(panel, temperature, showDegree);
   }
 }
 
@@ -565,15 +566,15 @@ export function renderScene(
       if (page === "clock" && panels.available) {
         contentFrame = viewport(frame, panels.clockX, 48);
         if (cfg.clockLayout === "Clock + home and outdoor weather")
-          drawHomeTemperaturePanel(frame, panels.leftX, homeTemperature);
+          drawHomeTemperaturePanel(frame, panels.leftX, homeTemperature, cfg.showTemperatureDegree);
         if (cfg.clockLayout === "Clock + weather icon")
-          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, false);
+          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, false, cfg.showTemperatureDegree);
         else if (cfg.clockLayout === "Clock + home and outdoor weather")
-          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, true);
+          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, true, cfg.showTemperatureDegree);
       } else if (page === "date" && panels.available && (cfg.dateShowWeatherIcon || cfg.dateShowOutdoorTemperature)) {
         contentFrame = viewport(frame, 0, panels.dateSafeWidth);
         drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature,
-          cfg.dateShowWeatherIcon, cfg.dateShowOutdoorTemperature);
+          cfg.dateShowWeatherIcon, cfg.dateShowOutdoorTemperature, cfg.showTemperatureDegree);
       }
 
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).

@@ -88,6 +88,7 @@ export interface Config {
   clockLayout: string;
   dateShowWeatherIcon: boolean;
   dateShowOutdoorTemperature: boolean;
+  showTemperatureDegree: boolean;
   secondsMode: SecondsMode;
   blinkColon: boolean;
   digitAnimation: boolean;

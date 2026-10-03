@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "2874619d1251a3696b744746101370af74028f6c89a71e54cd964db57f6754b7",
+  "sourceHash": "e37bd833bee7f044e4e46c5aff58f4f8db4a3e0f543c84e09db78f7e7c8eb7ac",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.12",
+  "releaseVersion": "0.7.13",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n- Round both side-panel temperatures to whole numbers; no decimal values are\n  shown on the 12-module clock or Date screen weather panel.",
+  "releaseNotes": "### Changed\n- Add a compact degree ring after every whole-number side-panel temperature.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2700,6 +2700,15 @@
       "input": "boolean"
     },
     {
+      "key": "showTemperatureDegree",
+      "kind": "switch",
+      "target": "show_temperature_degree",
+      "group": "Clock",
+      "label": "Show temperature degree symbol",
+      "default": true,
+      "input": "boolean"
+    },
+    {
       "key": "dateFormat",
       "kind": "select",
       "target": "date_format",
@@ -3468,6 +3477,7 @@
     "clockLayout": "Clock only",
     "dateShowWeatherIcon": false,
     "dateShowOutdoorTemperature": false,
+    "showTemperatureDegree": true,
     "dateFormat": "DD.MM",
     "scrollMode": "Scroll",
     "brightness": 3.0,
@@ -4043,6 +4053,18 @@
       "visibleByDefault": true,
       "recommended": false,
       "group": "Screens"
+    },
+    {
+      "id": "show_temperature_degree",
+      "name": "Show temperature degree symbol",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_ON",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_show_temperature_degree",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "date_show_weather_icon",

@@ -359,6 +359,7 @@ struct Frame {
   int clock_layout = CLOCK_LAYOUT_ONLY;
   bool date_show_weather_icon = false;
   bool date_show_outdoor_temperature = false;
+  bool show_temperature_degree = true;
   int date_format = DATE_DD_MM;
   bool use_12h = false;
   bool blink_colon = true;
@@ -905,7 +906,7 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
 inline void draw_seconds_bar(Canvas &c, int second);
-inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid);
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid, bool show_degree = true);
 inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature);
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
@@ -940,7 +941,7 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     content_x = panels.clock_x;
     content_width = 48;
     if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
-      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid, f.show_temperature_degree);
     if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
       draw_weather_panel(canvas, panels.right_x, f, true, false);
     else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
@@ -1073,7 +1074,7 @@ inline void draw_temperature_text(Canvas &c, float value, bool valid) {
 inline int micro_text_width(const char *text) {
   int width = 0;
   if (text != nullptr)
-    for (const char *p = text; *p != '\0'; p++) width += *p == '.' ? 2 : 4;
+    for (const char *p = text; *p != '\0'; p++) width += *p == '.' ? 2 : *p == '^' ? 3 : 4;
   return width;
 }
 
@@ -1084,7 +1085,9 @@ inline void format_micro_temperature(float value, bool valid, int width, char *o
   }
   const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
   char candidate[16];
-  snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
+  // '^' is the compact renderer's internal degree-ring marker. It draws as a
+  // 2x2 ring and avoids adding UTF-8 handling to this fixed-size buffer.
+  snprintf(candidate, sizeof(candidate), "%ld^", (long) whole);
   if (micro_text_width(candidate) <= width) {
     snprintf(out, out_size, "%s", candidate);
     return;
@@ -1104,12 +1107,14 @@ inline uint8_t micro_glyph_row(char ch, int row) {
   if (ch >= '0' && ch <= '9') return DIGITS[ch - '0'][row];
   if (ch == '-') return row == 2 ? 0b111 : 0;
   if (ch == '.') return row >= 3 ? 0b010 : 0;
+  if (ch == '^') return row < 2 ? 0b110 : 0;
   return 0;
 }
 
-inline void draw_micro_temperature(Canvas &c, float value, bool valid) {
+inline void draw_micro_temperature(Canvas &c, float value, bool valid, bool show_degree = true) {
   char text[16];
   format_micro_temperature(value, valid, c.width(), text, sizeof(text));
+  if (!show_degree && text[strlen(text) - 1] == '^') text[strlen(text) - 1] = '\0';
   const int total_width = micro_text_width(text);
   int cursor = std::max(0, (c.width() - total_width) / 2);
   const int top = std::max(0, (c.height() - 5) / 2);
@@ -1185,11 +1190,11 @@ inline bool weather_night(const Frame &f) {
          (f.weather_condition == WEATHER_CLEAR && f.time_valid && (f.hour < 6 || f.hour >= 19));
 }
 
-inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid) {
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid, bool show_degree) {
   ViewportCanvas panel(canvas, x, 24);
   // Side panels are deliberately one visual family: compact digits remain
   // readable beside the icon and never compete with the six-module clock.
-  draw_micro_temperature(panel, value, valid);
+  draw_micro_temperature(panel, value, valid, show_degree);
 }
 
 // The fixed three-module right panel holds an icon, a temperature, or both.
@@ -1200,11 +1205,11 @@ inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_
   if (show_icon && show_temperature) {
     draw_weather_icon(panel, 0, top, f.weather_condition, weather_night(f));
     ViewportCanvas value(panel, 8, 16);
-    draw_micro_temperature(value, f.outdoor_temperature, f.outdoor_temperature_valid);
+    draw_micro_temperature(value, f.outdoor_temperature, f.outdoor_temperature_valid, f.show_temperature_degree);
   } else if (show_icon) {
     draw_weather_icon(panel, 8, top, f.weather_condition, weather_night(f));
   } else {
-    draw_micro_temperature(panel, f.outdoor_temperature, f.outdoor_temperature_valid);
+    draw_micro_temperature(panel, f.outdoor_temperature, f.outdoor_temperature_valid, f.show_temperature_degree);
   }
 }
 
@@ -1517,7 +1522,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     content_x = panels.clock_x;
     content_width = 48;  // exactly six modules, regardless of the outer panel width
     if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
-      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid, f.show_temperature_degree);
     if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
       draw_weather_panel(canvas, panels.right_x, f, true, false);
     else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)

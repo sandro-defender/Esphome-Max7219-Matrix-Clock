@@ -276,6 +276,10 @@
       "target": "date_show_outdoor_temperature",
       "group": "Screens"
     },
+    "showTemperatureDegree": {
+      "target": "show_temperature_degree",
+      "group": "Clock"
+    },
     "dateFormat": {
       "target": "date_format",
       "group": "Screens"
