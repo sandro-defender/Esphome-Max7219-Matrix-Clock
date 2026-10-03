@@ -215,11 +215,7 @@ function microTextWidth(text: string): number { return [...text].reduce((sum, ch
 
 export function formatMicroTemperature(value: number | null, width: number): string {
   if (value === null || !Number.isFinite(value) || value < -999.9 || value > 999.9) return "--.-";
-  const tenths = roundedTenths(value);
-  const magnitude = Math.abs(tenths);
-  const candidate = magnitude % 10 === 0
-    ? `${tenths < 0 ? "-" : ""}${Math.floor(magnitude / 10)}`
-    : `${tenths < 0 ? "-" : ""}${Math.floor(magnitude / 10)}.${magnitude % 10}`;
+  const candidate = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
   if (microTextWidth(candidate) <= width) return candidate;
   const whole = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
   return microTextWidth(whole) <= width ? whole : "----";

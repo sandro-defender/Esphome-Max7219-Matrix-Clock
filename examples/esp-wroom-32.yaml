@@ -7,11 +7,11 @@ substitutions:
   fallback_ap_password: !secret 'fallback_ap_password'
   web_server_username: !secret 'web_server_username'
   web_server_password: !secret 'web_server_password'
-  project_ref: 0.7.11
+  project_ref: 0.7.12
 packages:
   clock:
     url: https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock
-    ref: 0.7.11
+    ref: 0.7.12
     refresh: 1d
     files:
     - packages/base-esp32.yaml

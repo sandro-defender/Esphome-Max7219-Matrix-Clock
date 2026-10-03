@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.12 - 2026-10-03
+
+### Changed
+- Round both side-panel temperatures to whole numbers; no decimal values are
+  shown on the 12-module clock or Date screen weather panel.
+
 ## 0.7.11 - 2026-10-03
 
 ### Fixed

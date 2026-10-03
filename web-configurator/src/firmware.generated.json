@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "dbb6b70eb477c6b8e33160d9de933b87230ab62ca9e1b62c41bc3d76aeb103d1",
+  "sourceHash": "2874619d1251a3696b744746101370af74028f6c89a71e54cd964db57f6754b7",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.11",
+  "releaseVersion": "0.7.12",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n- Publish the current 8×8 weather-icon and compact side-temperature fixes\n  under a new version after `0.7.10` was already released.",
+  "releaseNotes": "### Changed\n- Round both side-panel temperatures to whole numbers; no decimal values are\n  shown on the 12-module clock or Date screen weather panel.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
