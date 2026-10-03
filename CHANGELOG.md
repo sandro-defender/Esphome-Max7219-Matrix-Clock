@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.11 - 2026-10-03
+
+### Fixed
+- Publish the current 8×8 weather-icon and compact side-temperature fixes
+  under a new version after `0.7.10` was already released.
+
 ## 0.7.10 - 2026-10-03
 
 ### Fixed
