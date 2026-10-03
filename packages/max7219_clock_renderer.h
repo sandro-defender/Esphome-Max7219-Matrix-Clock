@@ -385,6 +385,31 @@ struct Frame {
   uint32_t date_cycle_interval_s = 10;
 };
 
+struct WeatherPanelGeometry {
+  bool available = false;
+  int group_x = 0;
+  int left_x = 0;
+  int clock_x = 0;
+  int right_x = 0;
+  int date_safe_width = 0;
+};
+
+inline WeatherPanelGeometry weather_panel_geometry(const Canvas &canvas) {
+  WeatherPanelGeometry layout;
+  if (canvas.width() < 96 || canvas.height() < 8) return layout;
+  layout.available = true;
+  layout.group_x = (canvas.width() - 96) / 2;
+  layout.left_x = layout.group_x;
+  layout.clock_x = layout.group_x + 24;
+  layout.right_x = layout.group_x + 72;
+  layout.date_safe_width = layout.right_x;
+  return layout;
+}
+
+inline bool date_weather_panel_enabled(const Frame &f) {
+  return f.date_show_weather_icon || f.date_show_outdoor_temperature;
+}
+
 // --------------------------------------------------------------------------
 // Runtime: everything that must survive between redraws but must not touch
 // flash. Held in one inline instance (see `state` below) so the YAML actions
@@ -880,6 +905,8 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
 inline void draw_seconds_bar(Canvas &c, int second);
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid);
+inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature);
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
 inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
@@ -906,8 +933,25 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     return;
   }
 
-  const int width = canvas.width();
-  const int height = canvas.height();
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+  int content_x = 0;
+  int content_width = canvas.width();
+  if (screen == SCREEN_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (screen == SCREEN_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int width = content_canvas.width();
+  const int height = content_canvas.height();
   const GlyphFont *active = &font;
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
@@ -926,8 +970,9 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     active = &fallback;
   }
   const bool blank_colons = mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
-  draw_line(canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  draw_line(content_canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
 // Choose the face for a free-text string (message, alert, OTA): the selected
@@ -1432,16 +1477,20 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     return;
   }
 
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+
   // Slide only between user-selected normal screens. Priority screens above
   // intentionally return before this point so an OTA/error/message is never
-  // delayed by an animation.
+  // delayed by an animation. On the 12-module layout the panel regions stay
+  // stationary, so skip the whole-screen slide and animate only within the
+  // allocated clock/date viewport.
   if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_TEMPERATURE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
       if (f.screen == SCREEN_DATE) state.date_scroll_started_ms = 0;
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
-                                       f.animate && f.animation_ms > 0;
+                                       f.animate && f.animation_ms > 0 && !panels.available;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
     }
@@ -1464,20 +1513,38 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     }
   }
 
+  int content_x = 0;
+  int content_width = width;
+  if (mode == MODE_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;  // exactly six modules, regardless of the outer panel width
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (mode == MODE_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int layout_width = content_canvas.width();
+
   // Fixed-width text screens (clock, date, countdown).
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
-  if (has_content && active->text_width(content) > width) {
+  if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
       with_seconds = false;
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
     // 2. fall back to the built-in font, which always fits the default layout
-    if (has_content && active->text_width(content) > width) active = &fallback;
+    if (has_content && active->text_width(content) > layout_width) active = &fallback;
   }
   if (!has_content) {
     // No valid time yet: keep a readable, non-empty placeholder.
@@ -1487,12 +1554,11 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   // The weekday formats are intentionally longer than one 48-pixel row. Use
   // the same deterministic ticker as messages instead of clipping them.
-  if (mode == MODE_DATE && active->text_width(content) > width) {
+  if (mode == MODE_DATE && active->text_width(content) > layout_width) {
     state.reset_animation();
     if (state.date_scroll_started_ms == 0) state.date_scroll_started_ms = f.now_ms;
-    draw_free_text(canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
-                   f.date_scroll_ms_per_px,
-                   active->centered_box_top(height));
+    draw_free_text(content_canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
+                   f.date_scroll_ms_per_px, active->centered_box_top(height));
     return;
   }
 
@@ -1500,10 +1566,10 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   const bool same_layout = state.anim_prev_mode == (int) mode &&
                            strlen(state.anim_prev) == strlen(content) &&
                            state.anim_font_identity == active->identity() &&
-                           state.anim_width == width && state.anim_height == height &&
+                           state.anim_width == layout_width && state.anim_height == height &&
                            state.anim_alignment == f.alignment;
   state.anim_font_identity = active->identity();
-  state.anim_width = width;
+  state.anim_width = layout_width;
   state.anim_height = height;
   state.anim_alignment = f.alignment;
   if (!same_layout) {
@@ -1540,11 +1606,12 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
 
   const int box_top = active->centered_box_top(height);
-  draw_line(canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
+  draw_line(content_canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
             box_top, blank_colons, f.animation_row_gap);
 
-  // Seconds alternative: full-width progress bar on the bottom row.
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  // Seconds bar follows the clock's six-module viewport, never the side panels.
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
 // Convenience overload used by the YAML display lambda.

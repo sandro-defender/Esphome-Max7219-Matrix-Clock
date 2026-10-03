@@ -1052,12 +1052,12 @@ static void test_scrolling_date_starts_after_screen_slide_transition() {
   f.now_ms = 1000;
   render(canvas, font, compact, f, r);
   CHECK(state.screen_transition_active);
-  CHECK_EQ(state.date_scroll_started_ms, 0);
+  CHECK_EQ(state.date_scroll_started_ms, 0U);
 
   f.now_ms = 1600;
   render(canvas, font, compact, f, r);
   CHECK(!state.screen_transition_active);
-  CHECK_EQ(state.date_scroll_started_ms, 1600);
+  CHECK_EQ(state.date_scroll_started_ms, 1600U);
 }
 
 static void test_bitmap_test_screens() {
@@ -1247,6 +1247,167 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
     if (std::find(patterns.begin(), patterns.end(), bits) == patterns.end()) patterns.push_back(bits);
   }
   CHECK_EQ(patterns.size(), sizeof(categories) / sizeof(categories[0]));
+}
+
+static bool region_has_pixels(const FakeCanvas &canvas, int x0, int x1) {
+  for (int y = 0; y < canvas.height(); y++)
+    for (int x = x0; x < x1; x++)
+      if (canvas.get(x, y)) return true;
+  return false;
+}
+
+static void test_twelve_module_clock_layouts_keep_clock_in_middle_six() {
+  FakeCanvas clock_only(96, 8), icon_layout(96, 8), home_weather(96, 8);
+  const int layouts[] = {CLOCK_LAYOUT_ONLY, CLOCK_LAYOUT_WEATHER_ICON, CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER};
+  FakeCanvas *canvases[] = {&clock_only, &icon_layout, &home_weather};
+  for (int i = 0; i < 3; i++) {
+    Frame f = base_frame(1000);
+    f.seconds_mode = SECONDS_OFF;
+    f.clock_layout = layouts[i];
+    f.home_temperature = 21.5f;
+    f.home_temperature_valid = true;
+    f.outdoor_temperature = 13.2f;
+    f.outdoor_temperature_valid = true;
+    f.weather_condition = WEATHER_CLEAR;
+    reset_state();
+    render(*canvases[i], compact, compact, f, report);
+    CHECK(region_has_pixels(*canvases[i], 24, 72));
+    for (int y = 0; y < 8; y++) for (int x = 24; x < 72; x++)
+      CHECK_EQ(canvases[i]->get(x, y), clock_only.get(x, y));
+  }
+  CHECK(!region_has_pixels(clock_only, 0, 24));
+  CHECK(!region_has_pixels(clock_only, 72, 96));
+  CHECK(!region_has_pixels(icon_layout, 0, 24));
+  CHECK(region_has_pixels(icon_layout, 72, 96));
+  CHECK(region_has_pixels(home_weather, 0, 24));
+  CHECK(region_has_pixels(home_weather, 72, 96));
+
+  const WeatherPanelGeometry layout = weather_panel_geometry(clock_only);
+  CHECK(layout.available);
+  CHECK_EQ(layout.left_x, 0);
+  CHECK_EQ(layout.clock_x, 24);
+  CHECK_EQ(layout.right_x, 72);
+  CHECK_EQ(layout.date_safe_width, 72);
+}
+
+static void test_six_module_clock_ignores_weather_panels_for_compatibility() {
+  FakeCanvas plain(48, 8), selected(48, 8);
+  Frame f = base_frame(1000);
+  f.seconds_mode = SECONDS_OFF;
+  reset_state();
+  render(plain, compact, compact, f, report);
+  f.clock_layout = CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  f.home_temperature_valid = true;
+  f.home_temperature = 22.0f;
+  f.outdoor_temperature_valid = true;
+  f.outdoor_temperature = 12.0f;
+  f.weather_condition = WEATHER_RAIN;
+  reset_state();
+  render(selected, compact, compact, f, report);
+  CHECK(!weather_panel_geometry(selected).available);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 48; x++) CHECK_EQ(selected.get(x, y), plain.get(x, y));
+}
+
+static void test_date_weather_switches_reserve_the_right_panel_and_scroll_inside_safe_width() {
+  struct SwitchCase { bool icon; bool temperature; };
+  const SwitchCase cases[] = {{false, false}, {true, false}, {false, true}, {true, true}};
+  for (const auto &item : cases) {
+    FakeCanvas canvas(96, 8);
+    Frame f = base_frame(1000);
+    f.screen = SCREEN_DATE;
+    f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+    f.date_show_weather_icon = item.icon;
+    f.date_show_outdoor_temperature = item.temperature;
+    f.weather_condition = WEATHER_CLOUDY;
+    f.outdoor_temperature_valid = true;
+    f.outdoor_temperature = 14.6f;
+    f.animate = false;
+    reset_state();
+    render(canvas, compact, compact, f, report);
+    CHECK(region_has_pixels(canvas, 0, 72));
+    if (item.icon || item.temperature) {
+      FakeCanvas expected(96, 8);
+      draw_weather_panel(expected, 72, f, item.icon, item.temperature);
+      for (int y = 0; y < 8; y++) for (int x = 72; x < 96; x++)
+        CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+    }
+  }
+
+  // Exercise a narrower safe viewport where even the built-in longest date
+  // must marquee; both marquee frames remain clipped before the reserved side.
+  FakeCanvas first(96, 8), later(96, 8);
+  ViewportCanvas safe_first(first, 0, 64), safe_later(later, 0, 64);
+  draw_free_text(safe_first, compact, "THU 31. DEC 26", 0, true, 20, compact.centered_box_top(8));
+  draw_free_text(safe_later, compact, "THU 31. DEC 26", 80, true, 20, compact.centered_box_top(8));
+  CHECK(region_has_pixels(first, 0, 64));
+  CHECK(region_has_pixels(later, 0, 64));
+  CHECK(!region_has_pixels(first, 64, 96));
+  CHECK(!region_has_pixels(later, 64, 96));
+  bool changed = false;
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 64; x++) changed |= first.get(x, y) != later.get(x, y);
+  CHECK(changed);
+}
+
+static void test_clock_and_date_digit_animation_stay_inside_allocated_regions() {
+  const auto check_clock_side_panels = [](const FakeCanvas &canvas, const Frame &f) {
+    FakeCanvas expected(96, 8);
+    draw_home_temperature_panel(expected, 0, f.home_temperature, f.home_temperature_valid);
+    draw_weather_panel(expected, 72, f, true, true);
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 24; x++) CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+      for (int x = 72; x < 96; x++) CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+    }
+  };
+
+  FakeCanvas clock(96, 8), clock_reference(48, 8);
+  Frame f = base_frame(1000);
+  f.clock_layout = CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  f.home_temperature = 22.4f;
+  f.home_temperature_valid = true;
+  f.outdoor_temperature = 12.6f;
+  f.outdoor_temperature_valid = true;
+  f.weather_condition = WEATHER_RAIN;
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 600;
+  reset_state();
+  render(clock, compact, compact, f, report);
+  reset_state();
+  render(clock_reference, compact, compact, f, report);
+  f.now_ms = 1200;
+  f.hour = 0;
+  f.minute = 0;
+  render(clock, compact, compact, f, report);
+  render(clock_reference, compact, compact, f, report);
+  check_clock_side_panels(clock, f);
+  for (int y = 0; y < 8; y++) for (int x = 24; x < 72; x++) CHECK_EQ(clock.get(x, y), clock_reference.get(x - 24, y));
+
+  FakeCanvas date(96, 8), date_reference(72, 8);
+  f = base_frame(1000);
+  f.screen = SCREEN_DATE;
+  f.date_format = DATE_DD_MM;
+  f.date_show_weather_icon = true;
+  f.date_show_outdoor_temperature = true;
+  f.weather_condition = WEATHER_SNOW;
+  f.outdoor_temperature = -4.2f;
+  f.outdoor_temperature_valid = true;
+  f.animate = true;
+  f.animation_ms = 600;
+  f.day = 1;
+  reset_state();
+  render(date, compact, compact, f, report);
+  reset_state();
+  render(date_reference, compact, compact, f, report);
+  f.now_ms = 1200;
+  f.day = 2;
+  render(date, compact, compact, f, report);
+  render(date_reference, compact, compact, f, report);
+  FakeCanvas expected(96, 8);
+  draw_weather_panel(expected, 72, f, true, true);
+  for (int y = 0; y < 8; y++) {
+    for (int x = 0; x < 72; x++) CHECK_EQ(date.get(x, y), date_reference.get(x, y));
+    for (int x = 72; x < 96; x++) CHECK_EQ(date.get(x, y), expected.get(x, y));
+  }
 }
 
 static void test_temperature_content() {
@@ -1633,6 +1794,10 @@ int main() {
   test_weather_condition_normalization();
   test_weather_temperature_values_are_explicit_and_prioritized();
   test_fixed_weather_panels_and_bitmap_categories();
+  test_twelve_module_clock_layouts_keep_clock_in_middle_six();
+  test_six_module_clock_ignores_weather_panels_for_compatibility();
+  test_date_weather_switches_reserve_the_right_panel_and_scroll_inside_safe_width();
+  test_clock_and_date_digit_animation_stay_inside_allocated_regions();
   test_temperature_content();
   test_12_hour_clock_blanks_leading_zero();
   test_deadline_rollover();
