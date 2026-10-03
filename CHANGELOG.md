@@ -3,8 +3,9 @@
 ## 0.7.10 - 2026-10-03
 
 ### Fixed
-- Draw a clearer partly-cloudy weather icon on 8×8 panels and use the same
-  compact temperature digits on both side panels.
+- Draw clear, distinct 8×8 icons for every supported weather condition and
+  use the same compact temperature digits on both side panels; whole values no
+  longer show a trailing `.0`.
 
 ## 0.7.9 - 2026-10-03
 
