@@ -1285,7 +1285,7 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   draw_weather_icon(snow, 0, 0, WEATHER_SNOW, false);
   CHECK(rain.get(2, 5));
   CHECK(!snow.get(2, 5));
-  CHECK(snow.get(3, 6));
+  CHECK(snow.get(2, 6));
 }
 
 static bool region_has_pixels(const FakeCanvas &canvas, int x0, int x1) {
