@@ -79,6 +79,30 @@ class SettingsCoverageTests(unittest.TestCase):
         self.assertEqual(imported["weather_temperature_text"]["attribute"], "temperature")
         self.assertTrue(all(item["internal"] for item in imported.values()))
 
+    def test_clock_layout_and_date_weather_controls_restore_and_redraw(self):
+        controls = load(ROOT / "packages/controls.yaml")
+        clock_layout = next(item for item in controls["select"] if item.get("id") == "clock_layout")
+        self.assertEqual(clock_layout["name"], "Clock layout")
+        self.assertTrue(clock_layout["restore_value"])
+        self.assertEqual(clock_layout["initial_option"], "Clock only")
+        self.assertEqual(clock_layout["options"], [
+            "Clock only", "Clock + weather icon", "Clock + home and outdoor weather"
+        ])
+        self.assertEqual(clock_layout["set_action"], [{"component.update": "matrix"}])
+
+        date_controls = load(ROOT / "packages/date_controls.yaml")
+        switches = {item["id"]: item for item in date_controls["switch"]}
+        self.assertEqual(set(switches), {"date_show_weather_icon", "date_show_outdoor_temperature"})
+        for entity in switches.values():
+            self.assertTrue(entity["optimistic"])
+            self.assertEqual(entity["restore_mode"], "RESTORE_DEFAULT_OFF")
+            self.assertEqual(entity["turn_on_action"], [{"script.execute": "request_matrix_refresh"}])
+            self.assertEqual(entity["turn_off_action"], [{"script.execute": "request_matrix_refresh"}])
+        self.assertEqual({
+            BINDINGS["entities"][key]["target"]
+            for key in ("clockLayout", "dateShowWeatherIcon", "dateShowOutdoorTemperature")
+        }, {"clock_layout", *switches})
+
     def test_every_named_entity_has_a_unique_internal_flag_including_nested_diagnostics(self):
         actual = {}
         for path in CONTRACT["packageFiles"]:

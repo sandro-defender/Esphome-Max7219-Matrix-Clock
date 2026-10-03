@@ -88,6 +88,22 @@ select:
       - component.update: matrix
 
   - platform: template
+    name: "Clock layout"
+    id: clock_layout
+    internal: ${ha_hide_clock_layout}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Clock only"
+    options:
+      - "Clock only"
+      - "Clock + weather icon"
+      - "Clock + home and outdoor weather"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Date format"
     id: date_format
     internal: ${ha_hide_date_format}

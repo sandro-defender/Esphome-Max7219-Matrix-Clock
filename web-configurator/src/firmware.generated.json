@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "9c0aaed25980d7a8e263fdc8986cebf07bf8ff35db4e9fa51a2b0fe0b5b2f7a8",
+  "sourceHash": "caac663d9741195f75cb496ba0578d5c25c77fa3a836b48bec735d75c523cdef",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.8",
   "esphomeVersion": "2026.9.1",
@@ -2668,6 +2668,38 @@
       "input": "select"
     },
     {
+      "key": "clockLayout",
+      "kind": "select",
+      "target": "clock_layout",
+      "group": "Clock",
+      "label": "Clock layout",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "default": "Clock only",
+      "input": "select"
+    },
+    {
+      "key": "dateShowWeatherIcon",
+      "kind": "switch",
+      "target": "date_show_weather_icon",
+      "group": "Screens",
+      "label": "Show weather icon on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
+      "key": "dateShowOutdoorTemperature",
+      "kind": "switch",
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens",
+      "label": "Show outdoor temperature on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
       "key": "dateFormat",
       "kind": "select",
       "target": "date_format",
@@ -3433,6 +3465,9 @@
     "alignment": "Center",
     "hourFormat": "24-hour",
     "secondsMode": "Digits",
+    "clockLayout": "Clock only",
+    "dateShowWeatherIcon": false,
+    "dateShowOutdoorTemperature": false,
     "dateFormat": "DD.MM",
     "scrollMode": "Scroll",
     "brightness": 3.0,
@@ -3560,6 +3595,23 @@
       "domain": "select",
       "package": "packages/controls.yaml",
       "visibilitySubstitution": "ha_hide_seconds_display",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "clock_layout",
+      "name": "Clock layout",
+      "entity_category": "config",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "initial_option": "Clock only",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_layout",
       "visibleByDefault": true,
       "recommended": false,
       "group": "Clock"
@@ -3988,6 +4040,30 @@
       "domain": "number",
       "package": "packages/date_controls.yaml",
       "visibilitySubstitution": "ha_hide_date_scroll_speed",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_show_weather_icon",
+      "name": "Show weather icon on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_weather_icon",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_show_outdoor_temperature",
+      "name": "Show outdoor temperature on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_outdoor_temperature",
       "visibleByDefault": true,
       "recommended": false,
       "group": "Screens"

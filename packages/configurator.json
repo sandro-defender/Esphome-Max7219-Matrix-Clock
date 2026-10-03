@@ -264,6 +264,18 @@
       "target": "seconds_display",
       "group": "Clock"
     },
+    "clockLayout": {
+      "target": "clock_layout",
+      "group": "Clock"
+    },
+    "dateShowWeatherIcon": {
+      "target": "date_show_weather_icon",
+      "group": "Screens"
+    },
+    "dateShowOutdoorTemperature": {
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens"
+    },
     "dateFormat": {
       "target": "date_format",
       "group": "Screens"
