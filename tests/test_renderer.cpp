@@ -1212,6 +1212,10 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   CHECK(strcmp(text, "--.-") == 0);
   format_micro_temperature(21.5f, true, 16, text, sizeof(text));
   CHECK(strcmp(text, "21.5") == 0);
+  format_micro_temperature(21.0f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "21") == 0);
+  format_micro_temperature(-4.0f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "-4") == 0);
   format_micro_temperature(0.0f, false, 16, text, sizeof(text));
   CHECK(strcmp(text, "--.-") == 0);
 
@@ -1265,14 +1269,23 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   }
   CHECK_EQ(patterns.size(), sizeof(categories) / sizeof(categories[0]));
 
-  // Partly cloudy must retain a distinct sun (upper-left) and a clean cloud
-  // outline; the old dense bitmap was visually indistinguishable on hardware.
+  // Partly cloudy must retain a visible sun above a separate cloud. These
+  // checks protect the visual language of the one-module (8x8) icon.
   FakeCanvas partly_cloudy(8, 8);
   draw_weather_icon(partly_cloudy, 0, 0, WEATHER_PARTLY_CLOUDY, false);
-  CHECK(partly_cloudy.get(2, 0));
-  CHECK(partly_cloudy.get(1, 1));
-  CHECK(!partly_cloudy.get(7, 3));
-  CHECK(partly_cloudy.get(1, 6));
+  CHECK(partly_cloudy.get(2, 0));   // sun ray
+  CHECK(partly_cloudy.get(3, 2));   // sun disc
+  CHECK(!partly_cloudy.get(0, 4));  // gap between sun and cloud
+  CHECK(partly_cloudy.get(3, 6));   // cloud body
+
+  // Rain and snow use intentionally different lower-half marks, so the
+  // forecast remains understandable on a single 8x8 MAX7219 module.
+  FakeCanvas rain(8, 8), snow(8, 8);
+  draw_weather_icon(rain, 0, 0, WEATHER_RAIN, false);
+  draw_weather_icon(snow, 0, 0, WEATHER_SNOW, false);
+  CHECK(rain.get(2, 5));
+  CHECK(!snow.get(2, 5));
+  CHECK(snow.get(3, 6));
 }
 
 static bool region_has_pixels(const FakeCanvas &canvas, int x0, int x1) {

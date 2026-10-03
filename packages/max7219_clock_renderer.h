@@ -1049,8 +1049,11 @@ inline void format_temperature_text(float value, bool valid, int width, char *ou
   const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
   const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
   char candidate[16];
-  snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
-           (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  if (magnitude % 10U == 0)
+    snprintf(candidate, sizeof(candidate), "%s%u", tenths < 0 ? "-" : "", (unsigned) (magnitude / 10U));
+  else
+    snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
+             (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
   if (font.text_width(candidate) <= width) {
     snprintf(out, out_size, "%s", candidate);
     return;
@@ -1085,8 +1088,11 @@ inline void format_micro_temperature(float value, bool valid, int width, char *o
   const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
   const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
   char candidate[16];
-  snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
-           (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  if (magnitude % 10U == 0)
+    snprintf(candidate, sizeof(candidate), "%s%u", tenths < 0 ? "-" : "", (unsigned) (magnitude / 10U));
+  else
+    snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
+             (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
   if (micro_text_width(candidate) <= width) {
     snprintf(out, out_size, "%s", candidate);
     return;
@@ -1136,17 +1142,18 @@ inline void draw_micro_temperature(Canvas &c, float value, bool valid) {
 }
 
 inline void draw_weather_icon(Canvas &c, int x, int y, uint8_t condition, bool night) {
+  // High-contrast 8x8 glyphs: each weather category has one unmistakable
+  // feature (rays, crescent, cloud, fog bands, drops, flakes, bolt or wind).
+  // Detailed vector weather icons become indistinct at this physical size.
   static const uint8_t CLEAR_DAY[8] = {0x18, 0x5A, 0x3C, 0xFF, 0x3C, 0x5A, 0x18, 0x00};
   static const uint8_t CLEAR_NIGHT[8] = {0x1C, 0x38, 0x70, 0xE0, 0xE0, 0x70, 0x38, 0x1C};
-  // Separate the small sun from the cloud silhouette. The earlier overlap
-  // turned into an indistinct block on a real 8x8 module.
-  static const uint8_t PARTLY_CLOUDY[8] = {0x30, 0x78, 0x30, 0x00, 0x38, 0x7C, 0xFE, 0x7C};
-  static const uint8_t CLOUDY[8] = {0x00, 0x1C, 0x3E, 0x7F, 0xFF, 0xFF, 0x7E, 0x00};
-  static const uint8_t FOG[8] = {0x00, 0x3C, 0x7E, 0x00, 0xFF, 0x00, 0x7E, 0x00};
-  static const uint8_t RAIN[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x14, 0x28, 0x50};
-  static const uint8_t SNOW[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x2A, 0x54, 0x2A};
-  static const uint8_t THUNDERSTORM[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x38, 0x10, 0x38};
-  static const uint8_t WINDY[8] = {0x5E, 0x80, 0x7C, 0x02, 0xBE, 0x00, 0x78, 0x00};
+  static const uint8_t PARTLY_CLOUDY[8] = {0x24, 0x18, 0x3C, 0x18, 0x00, 0x3C, 0x7E, 0x3C};
+  static const uint8_t CLOUDY[8] = {0x00, 0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x00, 0x00};
+  static const uint8_t FOG[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x55, 0x2A, 0x55};
+  static const uint8_t RAIN[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x24, 0x12, 0x09};
+  static const uint8_t SNOW[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x00, 0x2A, 0x1C};
+  static const uint8_t THUNDERSTORM[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x18, 0x30, 0x18};
+  static const uint8_t WINDY[8] = {0x7E, 0x01, 0x00, 0x3E, 0x40, 0x00, 0x7E, 0x01};
   static const uint8_t UNKNOWN[8] = {0x3C, 0x42, 0x02, 0x0C, 0x10, 0x00, 0x10, 0x00};
   const uint8_t *rows = UNKNOWN;
   switch (condition) {

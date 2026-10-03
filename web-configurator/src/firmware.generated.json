@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "5d5e95ef1378dc280bff6a0fe51b0acff6a640c1d8dee64f363ce8fd2afd9fcd",
+  "sourceHash": "fd88e0612c470f87b9189598f97b25a6f29fdf9c8537675304830775b85b7154",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.10",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n- Draw a clearer partly-cloudy weather icon on 8×8 panels and use the same\n  compact temperature digits on both side panels.",
+  "releaseNotes": "### Fixed\n- Draw clear, distinct 8×8 icons for every supported weather condition and\n  use the same compact temperature digits on both side panels; whole values no\n  longer show a trailing `.0`.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

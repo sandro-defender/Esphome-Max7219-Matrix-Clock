@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { FONT_CATALOG, previewFont } from "./fontCatalog";
 import {
-  choosePreviewOutdoorTemperature, clockContent, dateContent, drawWeatherPanel, driverTransform, formatPreviewTemperature,
+  choosePreviewOutdoorTemperature, clockContent, dateContent, drawWeatherPanel, driverTransform, formatMicroTemperature, formatPreviewTemperature,
   geometry, parsePreviewTemperature, renderScene, weatherFromCondition, weatherIconRows, weatherPanelGeometry, type Frame,
 } from "./render";
 import { DEFAULT_CONFIG, WEATHER_PREVIEW_OPTIONS, type Config } from "./types";
@@ -56,6 +56,9 @@ describe("weather parsing and fixed panels", () => {
     expect(choosePreviewOutdoorTemperature("unknown", "NaN")).toBeNull();
     expect(formatPreviewTemperature(null, 24)).toBe("--.-");
     expect(formatPreviewTemperature(-12.3, 24)).toBe("-12");
+    expect(formatMicroTemperature(21, 16)).toBe("21");
+    expect(formatMicroTemperature(-4, 16)).toBe("-4");
+    expect(formatMicroTemperature(21.5, 16)).toBe("21.5");
   });
 
   it("centres the clock in six modules, keeps 6-module output unchanged and draws all three 12-module layouts", () => {
