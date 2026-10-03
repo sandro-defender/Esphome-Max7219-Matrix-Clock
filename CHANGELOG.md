@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.14 - 2026-10-04
+
+### Fixed
+- Use a compact, high-contrast sun icon for clear weather on 8×8 panels.
+
 ## 0.7.13 - 2026-10-03
 
 ### Changed

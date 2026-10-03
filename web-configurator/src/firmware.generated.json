@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "e37bd833bee7f044e4e46c5aff58f4f8db4a3e0f543c84e09db78f7e7c8eb7ac",
+  "sourceHash": "3436f3d0c776d2960b54889a278ae1242c07dbfab73c1a5a6345e657ffd09fd1",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.13",
+  "releaseVersion": "0.7.14",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n- Add a compact degree ring after every whole-number side-panel temperature.",
+  "releaseNotes": "### Fixed\n- Use a compact, high-contrast sun icon for clear weather on 8×8 panels.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
