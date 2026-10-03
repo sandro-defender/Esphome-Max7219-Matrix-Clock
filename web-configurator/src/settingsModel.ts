@@ -29,7 +29,37 @@ export function installerSecrets(cfg: Config): Record<string, string> {
 export function textLimit(key: string): number {
   if (key === "message") return FIRMWARE.renderer.messageMaxBytes;
   if (key === "fallbackSsid") return 32; // Export also checks the UTF-8 byte length.
+  if (ENTITY_ID_FIELDS[key]) return 255;
   return 240;
+}
+
+/** Installer-time IDs: the static page cannot browse a Home Assistant registry. */
+export const ENTITY_ID_FIELDS: Record<string, { domain: "sensor" | "weather"; example: string; hint: string }> = {
+  temperatureEntity: {
+    domain: "sensor",
+    example: "sensor.outdoor_temperature",
+    hint: "Legacy Temperature screen source. Enter an existing numeric Home Assistant sensor ID; the static configurator cannot query your entity list.",
+  },
+  homeTemperatureEntity: {
+    domain: "sensor",
+    example: "sensor.living_room_temperature",
+    hint: "Indoor reading shown on the left in the three-panel Clock layout. Enter an existing sensor ID; this static configurator cannot browse Home Assistant entities.",
+  },
+  outdoorTemperatureEntity: {
+    domain: "sensor",
+    example: "sensor.openweathermap_temperature",
+    hint: "Preferred outdoor source. If its current state is missing or invalid, the weather entity's temperature attribute is used instead.",
+  },
+  weatherEntity: {
+    domain: "weather",
+    example: "weather.openweathermap",
+    hint: "The weather state supplies the condition/icon; its temperature attribute is the outdoor fallback. Enter the ID from Home Assistant—there is no live entity lookup.",
+  },
+};
+
+export function entityIdPattern(key: string): string | undefined {
+  const field = ENTITY_ID_FIELDS[key];
+  return field ? `${field.domain}\\.[a-z0-9_]+` : undefined;
 }
 
 export function sanitizeTimezone(tz: string): string {
@@ -50,8 +80,14 @@ export function validateSettingText(item: FirmwareSetting, value: string): strin
     const bytes = new TextEncoder().encode(value).length;
     if (bytes < 1 || bytes > 32) throw new Error("Fallback hotspot name must be 1–32 UTF-8 bytes");
   }
-  if (item.key === "temperatureEntity" && !/^sensor\.[a-z0-9_]+$/.test(value)) {
-    throw new Error("Temperature sensor entity must be a Home Assistant sensor ID, for example sensor.outdoor_temperature");
+  const entityField = ENTITY_ID_FIELDS[item.key];
+  if (entityField) {
+    const id = value.trim();
+    const pattern = new RegExp(`^${entityField.domain}\\.[a-z0-9_]+$`);
+    if (id.length > 255 || !pattern.test(id)) {
+      throw new Error(`${item.label} must be a valid Home Assistant ${entityField.domain} entity ID, for example ${entityField.example}`);
+    }
+    return id;
   }
   if (item.input === "hostname") {
     const labels = value.replace(/\.$/, "").split(".");

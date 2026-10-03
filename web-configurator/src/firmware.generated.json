@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "f643b1a73234df423a8400c62405fddea1c0cf3833d15442f0be9aecf6ba7522",
+  "sourceHash": "74fd5aab53ccd12ee67f4b8cd686b5071c49bbcbbe41d5473003a86af976c612",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.8",
   "esphomeVersion": "2026.9.1",
@@ -3432,7 +3432,7 @@
     },
     {
       "id": "Screens",
-      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date; the Temperature screen uses a numeric Home Assistant sensor in °C."
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
     },
     {
       "id": "Light",

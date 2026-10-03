@@ -126,10 +126,26 @@ available by default. Old registry entries may need cleanup after flashing.
 | Screen | Clock, Date, Temperature, Message, Module grid test, Pixel checkerboard |
 | Clock alignment | Left, Center, Right |
 | Time format | 24 hour, 12 hour |
+| Clock layout | Clock only, Clock + weather icon, Clock + home and outdoor weather |
 | Seconds display | Off, Digits, Bar |
 | Date format | DD.MM, MM/DD, DD/MM, DD.MM.YY, Weekday DD.MM.YY, Weekday DD. MMM YY, Weekday MMM.DD |
 | Clock font | included external faces plus Compact 5×7 |
 | Message scroll | Scroll, Static |
+
+### Weather panels for 12-module rows
+
+With **12 modules in one row** (96×8 pixels), the restored **Clock layout** select offers Clock only, Clock + weather icon, or indoor temperature + Clock + weather icon/outdoor temperature. The clock stays in the middle six modules; each side panel uses three modules. On a six-module row the existing clock layout is unchanged. On Date, the restored **Show weather icon on date** and **Show outdoor temperature on date** switches work independently; either reserves the right three-module area. Changes redraw immediately and saved Home Assistant preferences survive restart.
+
+Enter the Home Assistant entity IDs when installing:
+
+```yaml
+substitutions:
+  home_temperature_entity: sensor.living_room_temperature
+  outdoor_temperature_entity: sensor.openweathermap_temperature
+  weather_entity: weather.openweathermap
+```
+
+Use a numeric sensor for indoor/outdoor temperature. The dedicated outdoor sensor wins when it has a valid reading; otherwise the weather entity's `temperature` attribute is used. Its state supplies the condition/icon. The configurator is a static page and cannot browse your Home Assistant entity list, so these IDs must already exist in Home Assistant. The older `temperature_entity` substitution remains the source for the existing Temperature screen. Unavailable or invalid readings render as placeholders, never stale numbers. Supported weather conditions include clear/day/night, partly cloudy, cloudy, fog, rain, snow, thunderstorm, windy and unknown.
 
 ### Numbers
 
@@ -150,7 +166,8 @@ available by default. Old registry entries may need cleanup after flashing.
 ### Switches, buttons and diagnostics
 
 Switches: Matrix display, Blinking colon, Digit animation, Automatic screen
-cycling, Night mode, Night schedule, Alarm mode, Display inversion.
+cycling, **Show weather icon on date**, **Show outdoor temperature on date**,
+Night mode, Night schedule, Alarm mode, Display inversion.
 Buttons: `Restart device`, `Return to clock`, `Clear message`, `Start countdown`,
 `Cancel countdown`, `Run module grid test`, `Run pixel test`,
 `Restore display defaults`.

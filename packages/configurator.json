@@ -409,7 +409,7 @@
     },
     {
       "id": "Screens",
-      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date; the Temperature screen uses a numeric Home Assistant sensor in °C."
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
     },
     {
       "id": "Light",
