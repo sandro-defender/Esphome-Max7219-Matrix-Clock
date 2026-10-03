@@ -168,7 +168,7 @@ export function weatherFromCondition(raw: string): PreviewWeatherCondition {
 const WEATHER_ICON_ROWS: Record<PreviewWeatherCondition, readonly number[]> = {
   clear: [0x18, 0x5a, 0x3c, 0xff, 0x3c, 0x5a, 0x18, 0x00],
   "clear-night": [0x1c, 0x38, 0x70, 0xe0, 0xe0, 0x70, 0x38, 0x1c],
-  partlycloudy: [0x18, 0x1c, 0x1a, 0x0f, 0x1e, 0x7c, 0xfe, 0x7c],
+  partlycloudy: [0x30, 0x78, 0x30, 0x00, 0x38, 0x7c, 0xfe, 0x7c],
   cloudy: [0x00, 0x1c, 0x3e, 0x7f, 0xff, 0xff, 0x7e, 0x00],
   fog: [0x00, 0x3c, 0x7e, 0x00, 0xff, 0x00, 0x7e, 0x00],
   rain: [0x1c, 0x3e, 0x7f, 0xff, 0x7e, 0x14, 0x28, 0x50],
@@ -200,12 +200,6 @@ export function formatPreviewTemperature(value: number | null, width: number): s
   if ((BUILTIN_FONT.measure(candidate) ?? Number.POSITIVE_INFINITY) <= width) return candidate;
   const whole = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
   return (BUILTIN_FONT.measure(whole) ?? Number.POSITIVE_INFINITY) <= width ? whole : "--.-";
-}
-
-function drawTemperatureText(frame: Frame, value: number | null): void {
-  const text = formatPreviewTemperature(value, frame.width);
-  const width = BUILTIN_FONT.measure(text) ?? 0;
-  drawLine(frame, BUILTIN_FONT, text, Math.max(0, alignStart("Center", width, frame.width)), BUILTIN_FONT.boxTop(frame.height));
 }
 
 const MICRO_GLYPH_ROWS: Record<string, readonly number[]> = {
@@ -242,7 +236,7 @@ function drawMicroTemperature(frame: Frame, value: number | null): void {
 }
 
 function drawHomeTemperaturePanel(frame: Frame, x: number, value: number | null): void {
-  drawTemperatureText(viewport(frame, x, 24), value);
+  drawMicroTemperature(viewport(frame, x, 24), value);
 }
 
 export function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeatherCondition, night: boolean,
@@ -257,7 +251,7 @@ export function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeat
     const icon = viewport(panel, 8, 8);
     drawWeatherIcon(icon, condition, night, top);
   } else {
-    drawTemperatureText(panel, temperature);
+    drawMicroTemperature(panel, temperature);
   }
 }
 

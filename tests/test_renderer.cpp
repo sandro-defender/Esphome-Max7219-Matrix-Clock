@@ -1220,6 +1220,14 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   int x0, y0, x1, y1;
   CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
   CHECK(x0 >= 0 && x1 < 24);
+  // Both side temperatures use the same compact 3x5 digits.  The left panel
+  // must not silently switch to the larger built-in face when its value fits.
+  FakeCanvas expected_home(24, 8);
+  FakeCanvas actual_home(24, 8);
+  draw_micro_temperature(expected_home, 21.5f, true);
+  draw_home_temperature_panel(actual_home, 0, 21.5f, true);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 24; x++)
+    CHECK_EQ(actual_home.get(x, y), expected_home.get(x, y));
   canvas.clear();
   draw_home_temperature_panel(canvas, 0, 0.0f, false);
   CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
@@ -1235,6 +1243,15 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   CHECK(x0 >= 72 && x1 < 96);
   CHECK(canvas.on_count() > 0);
 
+  // The right panel also keeps compact digits when the Date screen enables
+  // only outdoor temperature (without the icon).
+  FakeCanvas expected_outdoor(24, 8);
+  FakeCanvas actual_outdoor(24, 8);
+  draw_micro_temperature(expected_outdoor, 13.2f, true);
+  draw_weather_panel(actual_outdoor, 0, f, false, true);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 24; x++)
+    CHECK_EQ(actual_outdoor.get(x, y), expected_outdoor.get(x, y));
+
   const uint8_t categories[] = {WEATHER_UNKNOWN, WEATHER_CLEAR, WEATHER_CLEAR_NIGHT, WEATHER_PARTLY_CLOUDY,
                                 WEATHER_CLOUDY, WEATHER_FOG, WEATHER_RAIN, WEATHER_SNOW,
                                 WEATHER_THUNDERSTORM, WEATHER_WINDY};
@@ -1247,6 +1264,15 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
     if (std::find(patterns.begin(), patterns.end(), bits) == patterns.end()) patterns.push_back(bits);
   }
   CHECK_EQ(patterns.size(), sizeof(categories) / sizeof(categories[0]));
+
+  // Partly cloudy must retain a distinct sun (upper-left) and a clean cloud
+  // outline; the old dense bitmap was visually indistinguishable on hardware.
+  FakeCanvas partly_cloudy(8, 8);
+  draw_weather_icon(partly_cloudy, 0, 0, WEATHER_PARTLY_CLOUDY, false);
+  CHECK(partly_cloudy.get(2, 0));
+  CHECK(partly_cloudy.get(1, 1));
+  CHECK(!partly_cloudy.get(7, 3));
+  CHECK(partly_cloudy.get(1, 6));
 }
 
 static bool region_has_pixels(const FakeCanvas &canvas, int x0, int x1) {

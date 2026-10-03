@@ -1138,7 +1138,9 @@ inline void draw_micro_temperature(Canvas &c, float value, bool valid) {
 inline void draw_weather_icon(Canvas &c, int x, int y, uint8_t condition, bool night) {
   static const uint8_t CLEAR_DAY[8] = {0x18, 0x5A, 0x3C, 0xFF, 0x3C, 0x5A, 0x18, 0x00};
   static const uint8_t CLEAR_NIGHT[8] = {0x1C, 0x38, 0x70, 0xE0, 0xE0, 0x70, 0x38, 0x1C};
-  static const uint8_t PARTLY_CLOUDY[8] = {0x18, 0x1C, 0x1A, 0x0F, 0x1E, 0x7C, 0xFE, 0x7C};
+  // Separate the small sun from the cloud silhouette. The earlier overlap
+  // turned into an indistinct block on a real 8x8 module.
+  static const uint8_t PARTLY_CLOUDY[8] = {0x30, 0x78, 0x30, 0x00, 0x38, 0x7C, 0xFE, 0x7C};
   static const uint8_t CLOUDY[8] = {0x00, 0x1C, 0x3E, 0x7F, 0xFF, 0xFF, 0x7E, 0x00};
   static const uint8_t FOG[8] = {0x00, 0x3C, 0x7E, 0x00, 0xFF, 0x00, 0x7E, 0x00};
   static const uint8_t RAIN[8] = {0x1C, 0x3E, 0x7F, 0xFF, 0x7E, 0x14, 0x28, 0x50};
@@ -1191,7 +1193,9 @@ inline bool weather_night(const Frame &f) {
 
 inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid) {
   ViewportCanvas panel(canvas, x, 24);
-  draw_temperature_text(panel, value, valid);
+  // Side panels are deliberately one visual family: compact digits remain
+  // readable beside the icon and never compete with the six-module clock.
+  draw_micro_temperature(panel, value, valid);
 }
 
 // The fixed three-module right panel holds an icon, a temperature, or both.
@@ -1206,7 +1210,7 @@ inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_
   } else if (show_icon) {
     draw_weather_icon(panel, 8, top, f.weather_condition, weather_night(f));
   } else {
-    draw_temperature_text(panel, f.outdoor_temperature, f.outdoor_temperature_valid);
+    draw_micro_temperature(panel, f.outdoor_temperature, f.outdoor_temperature_valid);
   }
 }
 
