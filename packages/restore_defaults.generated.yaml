@@ -25,6 +25,7 @@ script:
       option: Clock only
   - switch.turn_off: date_show_weather_icon
   - switch.turn_off: date_show_outdoor_temperature
+  - switch.turn_on: show_temperature_degree
   - select.set:
       id: date_format
       option: DD.MM

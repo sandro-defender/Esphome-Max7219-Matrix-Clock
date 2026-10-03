@@ -22,6 +22,7 @@ switch:
   - platform: template
     name: "Show temperature degree symbol"
     id: show_temperature_degree
+    internal: ${ha_hide_show_temperature_degree}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON

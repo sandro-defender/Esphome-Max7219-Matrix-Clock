@@ -7,6 +7,7 @@ frame.seconds_mode = max7219_clock::seconds_from_option(S(values.at("secondsMode
 frame.clock_layout = max7219_clock::clock_layout_from_option(S(values.at("clockLayout")));
 frame.date_show_weather_icon = N(values.at("dateShowWeatherIcon"));
 frame.date_show_outdoor_temperature = N(values.at("dateShowOutdoorTemperature"));
+frame.show_temperature_degree = N(values.at("showTemperatureDegree"));
 frame.date_format = max7219_clock::date_format_from_option(S(values.at("dateFormat")));
 frame.use_12h = S(values.at("hourFormat")) == "12 hour";
 frame.blink_colon = N(values.at("blinkColon"));

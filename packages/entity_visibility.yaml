@@ -8,6 +8,7 @@ substitutions:
   ha_hide_time_format: "false"
   ha_hide_seconds_display: "false"
   ha_hide_clock_layout: "false"
+  ha_hide_show_temperature_degree: "false"
   ha_hide_date_show_weather_icon: "false"
   ha_hide_date_show_outdoor_temperature: "false"
   ha_hide_date_format: "false"
