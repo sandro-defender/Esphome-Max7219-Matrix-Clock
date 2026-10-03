@@ -1046,19 +1046,13 @@ inline void format_temperature_text(float value, bool valid, int width, char *ou
     snprintf(out, out_size, "--.-");
     return;
   }
-  const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
-  const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
+  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
   char candidate[16];
-  if (magnitude % 10U == 0)
-    snprintf(candidate, sizeof(candidate), "%s%u", tenths < 0 ? "-" : "", (unsigned) (magnitude / 10U));
-  else
-    snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
-             (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
   if (font.text_width(candidate) <= width) {
     snprintf(out, out_size, "%s", candidate);
     return;
   }
-  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
   snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
   if (font.text_width(candidate) <= width)
     snprintf(out, out_size, "%s", candidate);

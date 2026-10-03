@@ -1216,6 +1216,10 @@ static void test_fixed_weather_panels_and_bitmap_categories() {
   CHECK(strcmp(text, "21") == 0);
   format_micro_temperature(-4.0f, true, 16, text, sizeof(text));
   CHECK(strcmp(text, "-4") == 0);
+  format_micro_temperature(12.8f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "13") == 0);
+  format_micro_temperature(21.5f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "22") == 0);
   format_micro_temperature(0.0f, false, 16, text, sizeof(text));
   CHECK(strcmp(text, "--.-") == 0);
 
