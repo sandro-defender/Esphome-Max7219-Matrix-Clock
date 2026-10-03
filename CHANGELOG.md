@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.13 - 2026-10-03
+
+### Changed
+- Add a compact degree ring after every whole-number side-panel temperature.
+
 ## 0.7.12 - 2026-10-03
 
 ### Changed

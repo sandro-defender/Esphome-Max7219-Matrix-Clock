@@ -92,15 +92,17 @@ class SettingsCoverageTests(unittest.TestCase):
 
         date_controls = load(ROOT / "packages/date_controls.yaml")
         switches = {item["id"]: item for item in date_controls["switch"]}
-        self.assertEqual(set(switches), {"date_show_weather_icon", "date_show_outdoor_temperature"})
-        for entity in switches.values():
+        self.assertEqual(set(switches), {"show_temperature_degree", "date_show_weather_icon", "date_show_outdoor_temperature"})
+        self.assertEqual(switches["show_temperature_degree"]["restore_mode"], "RESTORE_DEFAULT_ON")
+        for key, entity in switches.items():
             self.assertTrue(entity["optimistic"])
-            self.assertEqual(entity["restore_mode"], "RESTORE_DEFAULT_OFF")
+            if key != "show_temperature_degree":
+                self.assertEqual(entity["restore_mode"], "RESTORE_DEFAULT_OFF")
             self.assertEqual(entity["turn_on_action"], [{"script.execute": "request_matrix_refresh"}])
             self.assertEqual(entity["turn_off_action"], [{"script.execute": "request_matrix_refresh"}])
         self.assertEqual({
             BINDINGS["entities"][key]["target"]
-            for key in ("clockLayout", "dateShowWeatherIcon", "dateShowOutdoorTemperature")
+            for key in ("clockLayout", "dateShowWeatherIcon", "dateShowOutdoorTemperature", "showTemperatureDegree")
         }, {"clock_layout", *switches})
 
     def test_every_named_entity_has_a_unique_internal_flag_including_nested_diagnostics(self):
