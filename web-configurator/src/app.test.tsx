@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import App from "./App";
 import { FONT_CATALOG } from "./fontCatalog";
 import { DEFAULT_FONTS, EXTRA_FONTS, addExtraFontAndSelect } from "./fontSelection";
-import { DEFAULT_CONFIG } from "./types";
+import { DEFAULT_CONFIG, WEATHER_PREVIEW_OPTIONS } from "./types";
 import { FIRMWARE, PROJECT } from "./firmware";
 import { TuneSection } from "./sections";
 import { geometry } from "./render";
@@ -45,6 +45,13 @@ describe("App", () => {
     expect(selected?.[1]).toBe(FIRMWARE.hardwareTargets.find((target) => target.id === FIRMWARE.defaultTarget)!.label);
     expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
     expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(2);
+  });
+  it("offers preview-only indoor/outdoor samples and every weather icon without querying Home Assistant", () => {
+    for (const id of ["preview-weather-condition", "preview-home-temperature", "preview-outdoor-temperature", "preview-weather-temperature"])
+      expect(markup).toContain(`id=\"${id}\"`);
+    for (const option of WEATHER_PREVIEW_OPTIONS) expect(markup).toContain(option.label);
+    expect(markup).toContain("never query Home Assistant or enter installer YAML");
+    expect(markup).toContain("blank or invalid temperatures show the safe placeholder");
   });
   it("shows the newest-release check and disables installer actions until verified", () => {
     expect(markup).toContain("Newest published release:");

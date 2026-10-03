@@ -245,8 +245,8 @@ function drawHomeTemperaturePanel(frame: Frame, x: number, value: number | null)
   drawTemperatureText(viewport(frame, x, 24), value);
 }
 
-function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeatherCondition, night: boolean,
-                          temperature: number | null, showIcon: boolean, showTemperature: boolean): void {
+export function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeatherCondition, night: boolean,
+                                 temperature: number | null, showIcon: boolean, showTemperature: boolean): void {
   if (!showIcon && !showTemperature) return;
   const panel = viewport(frame, x, 24);
   const top = Math.max(0, Math.trunc((panel.height - 8) / 2));
