@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.7.9 - 2026-10-03
+
+### Added
+- Restored **Clock layout** selection for the 12-module display: clock only,
+  indoor temperature + clock + weather icon, or indoor temperature + clock +
+  weather icon and outdoor temperature. The preview includes sample values and
+  icons without querying Home Assistant or adding installer credentials.
+- Independent restored Date-screen switches for the weather icon and outdoor
+  temperature. Either or both reserve the right three-module panel while date
+  text remains clipped and scrollable in its safe area.
+- Install-time Home Assistant entity sources for indoor temperature, dedicated
+  outdoor temperature and a `weather.*` entity. The weather state selects the
+  icon, its temperature attribute is a fallback, and a valid dedicated outdoor
+  sensor takes priority. Unavailable or malformed readings use a safe
+  placeholder.
+- Compact clear/day and clear/night, partly cloudy, cloudy, fog, rain, snow,
+  thunderstorm, windy and unknown weather icons, including common OpenWeatherMap
+  state names. The legacy Temperature screen entity remains compatible.
+
+### Changed
+- The renderer confines the clock, date scrolling and digit animation to their
+  panel regions; the legacy six-module clock layout retains its original
+  full-width behavior.
+- The installer validates Home Assistant entity-ID syntax and gives examples;
+  its static configurator does not claim to browse a live entity registry.
+
 ## 0.7.8 - 2026-10-02
 
 ### Added
