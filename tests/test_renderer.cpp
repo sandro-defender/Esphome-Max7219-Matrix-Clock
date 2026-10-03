@@ -1166,6 +1166,89 @@ static void test_date_formats() {
   CHECK(strcmp(out, "THU MAR.05") == 0);
 }
 
+static void test_weather_condition_normalization() {
+  struct Case { const char *state; uint8_t expected; };
+  const Case cases[] = {
+      {"sunny", WEATHER_CLEAR}, {"clear sky", WEATHER_CLEAR}, {"clear-night", WEATHER_CLEAR_NIGHT},
+      {"partlycloudy", WEATHER_PARTLY_CLOUDY}, {"few clouds", WEATHER_PARTLY_CLOUDY},
+      {"overcast clouds", WEATHER_CLOUDY}, {"mist", WEATHER_FOG}, {"haze", WEATHER_FOG},
+      {"moderate rain", WEATHER_RAIN}, {"pouring", WEATHER_RAIN}, {"snowy-rainy", WEATHER_SNOW},
+      {"thunderstorm with heavy rain", WEATHER_THUNDERSTORM}, {"lightning-rainy", WEATHER_THUNDERSTORM},
+      {"windy-variant", WEATHER_WINDY}, {"squalls", WEATHER_WINDY},
+      {"unavailable", WEATHER_UNKNOWN}, {"unknown", WEATHER_UNKNOWN}, {"exceptional", WEATHER_UNKNOWN},
+  };
+  for (const auto &item : cases) CHECK_EQ(weather_from_condition(item.state), item.expected);
+  CHECK_EQ(weather_from_condition(nullptr), WEATHER_UNKNOWN);
+  CHECK_EQ(weather_from_condition(" "), WEATHER_UNKNOWN);
+}
+
+static void test_weather_temperature_values_are_explicit_and_prioritized() {
+  float value = 9.0f;
+  CHECK(parse_temperature_text("21.5", value));
+  CHECK_EQ(value, 21.5f);
+  CHECK(parse_temperature_text("  -0.4 ", value));
+  CHECK_EQ(value, -0.4f);
+  const char *invalid[] = {"", "unknown", "unavailable", "NaN", "inf", "22 C", "21.5x"};
+  for (const char *text : invalid) {
+    value = 9.0f;
+    CHECK(!parse_temperature_text(text, value));
+    CHECK_EQ(value, 9.0f);  // an invalid source never reuses a changed value
+  }
+  float selected = 0.0f;
+  CHECK(choose_outdoor_temperature(true, 17.3f, true, 12.4f, selected));
+  CHECK_EQ(selected, 17.3f);  // dedicated entity wins
+  CHECK(choose_outdoor_temperature(false, 0.0f, true, 12.4f, selected));
+  CHECK_EQ(selected, 12.4f);  // weather.temperature is the fallback
+  CHECK(!choose_outdoor_temperature(false, 0.0f, false, 0.0f, selected));
+}
+
+static void test_fixed_weather_panels_and_bitmap_categories() {
+  char text[16];
+  format_temperature_text(21.5f, true, 24, text, sizeof(text));
+  CHECK(strcmp(text, "21.5") == 0);
+  format_temperature_text(-12.3f, true, 24, text, sizeof(text));
+  CHECK(strcmp(text, "-12") == 0);  // keep a safe fixed-width fallback
+  format_temperature_text(0.0f, false, 24, text, sizeof(text));
+  CHECK(strcmp(text, "--.-") == 0);
+  format_micro_temperature(21.5f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "21.5") == 0);
+  format_micro_temperature(0.0f, false, 16, text, sizeof(text));
+  CHECK(strcmp(text, "--.-") == 0);
+
+  FakeCanvas canvas(96, 8);
+  draw_home_temperature_panel(canvas, 0, 21.5f, true);
+  int x0, y0, x1, y1;
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 0 && x1 < 24);
+  canvas.clear();
+  draw_home_temperature_panel(canvas, 0, 0.0f, false);
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 0 && x1 < 24);
+
+  Frame f = base_frame();
+  f.weather_condition = WEATHER_RAIN;
+  f.outdoor_temperature = 13.2f;
+  f.outdoor_temperature_valid = true;
+  canvas.clear();
+  draw_weather_panel(canvas, 72, f, true, true);
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 72 && x1 < 96);
+  CHECK(canvas.on_count() > 0);
+
+  const uint8_t categories[] = {WEATHER_UNKNOWN, WEATHER_CLEAR, WEATHER_CLEAR_NIGHT, WEATHER_PARTLY_CLOUDY,
+                                WEATHER_CLOUDY, WEATHER_FOG, WEATHER_RAIN, WEATHER_SNOW,
+                                WEATHER_THUNDERSTORM, WEATHER_WINDY};
+  std::vector<std::string> patterns;
+  for (uint8_t category : categories) {
+    FakeCanvas icon(8, 8);
+    draw_weather_icon(icon, 0, 0, category, false);
+    std::string bits;
+    for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) bits += icon.get(x, y) ? '1' : '0';
+    if (std::find(patterns.begin(), patterns.end(), bits) == patterns.end()) patterns.push_back(bits);
+  }
+  CHECK_EQ(patterns.size(), sizeof(categories) / sizeof(categories[0]));
+}
+
 static void test_temperature_content() {
   Frame f = base_frame();
   char out[24];
@@ -1547,6 +1630,9 @@ int main() {
   test_report_publishes_only_on_change();
   test_alignment();
   test_date_formats();
+  test_weather_condition_normalization();
+  test_weather_temperature_values_are_explicit_and_prioritized();
+  test_fixed_weather_panels_and_bitmap_categories();
   test_temperature_content();
   test_12_hour_clock_blanks_leading_zero();
   test_deadline_rollover();

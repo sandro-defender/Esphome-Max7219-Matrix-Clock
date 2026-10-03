@@ -108,6 +108,12 @@ template<typename Option> inline uint8_t seconds_from_option(const Option &optio
   return SECONDS_DIGITS;
 }
 
+template<typename Option> inline uint8_t clock_layout_from_option(const Option &option) {
+  if (option == "Clock + weather icon") return CLOCK_LAYOUT_WEATHER_ICON;
+  if (option == "Clock + home and outdoor weather") return CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  return CLOCK_LAYOUT_ONLY;
+}
+
 template<typename Option> inline uint8_t date_format_from_option(const Option &option) {
   if (option == "MM/DD")
     return DATE_MM_DD;
