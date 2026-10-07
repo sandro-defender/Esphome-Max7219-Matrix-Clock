@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "ed035a69f7775e3586a9aa519a06a552f11b85621ff6ef6daa930ccb02f6f258",
+  "sourceHash": "78ecade31d646ef7dd04b2eb0fc48c5e890abd618d06e108e3b7cc6eafb44d1b",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.17",
+  "releaseVersion": "0.7.18",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- Add a restored Screen transition animation selector: retain the horizontal\n  Slide left transition or choose Slide up, matching the clock digits' motion.",
+  "releaseNotes": "### Changed\n\n- Render Georgian weekday and month labels with wider cells and a bolder\n  eight-row centre stroke. Long labels continue to scroll instead of shrinking.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

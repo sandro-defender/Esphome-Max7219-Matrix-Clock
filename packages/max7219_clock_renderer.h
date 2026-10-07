@@ -368,6 +368,37 @@ class BuiltinFont : public GlyphFont {
   }
 };
 
+// Georgian month and weekday labels use wider cells and all eight matrix rows.
+// Longer dates scroll, so readable strokes matter more than a fixed width.
+class GeorgianDateFont : public GlyphFont {
+ public:
+  int advance(char c) const override {
+    const unsigned char code = (unsigned char) c;
+    return code >= 0x80 && code < 0x80 + 21 ? 7 : builtin::advance(c);
+  }
+  int ink_height() const override { return 8; }
+  int ink_top() const override { return 0; }
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    const uint8_t *rows = builtin::glyph(ch);
+    const unsigned char code = (unsigned char) ch;
+    if (code < 0x80 || code >= 0x80 + 21) {
+      for (int row = 0; row < 7; row++) for (int col = 0; col < 5; col++)
+        if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
+      return;
+    }
+    for (int row = 0; row < 7; row++) {
+      const int y = box_top + row + (row > 3 ? 1 : 0);
+      for (int col = 0; col < 5; col++) {
+        if (!(rows[row] & (1 << (4 - col)))) continue;
+        c.pixel(x + col, y, true);
+        // Expand the centre stroke to use the eighth matrix row without
+        // making the character look stretched or leaving a blank gap.
+        if (row == 3) c.pixel(x + col, y + 1, true);
+      }
+    }
+  }
+};
+
 // --------------------------------------------------------------------------
 // Frame: everything the renderer needs for one redraw, filled from Home
 // Assistant entities and the clock source. No pointers are owned.
@@ -1013,11 +1044,12 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   const int width = content_canvas.width();
   const int height = content_canvas.height();
   const GlyphFont *active = &font;
+  GeorgianDateFont georgian_date_font;
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
-    active = &fallback;
+    active = &georgian_date_font;
   else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
@@ -1054,7 +1086,9 @@ inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
                                       const GlyphFont &fallback, int width) {
   char content[24] = {0};
   if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
-  const GlyphFont &text_font = font_for_text(primary, fallback, content);
+  GeorgianDateFont georgian_date_font;
+  const GlyphFont &text_font = f.date_language == DATE_LANGUAGE_GEORGIAN
+      ? static_cast<const GlyphFont &>(georgian_date_font) : font_for_text(primary, fallback, content);
   return text_font.text_width(content) > width;
 }
 
@@ -1471,6 +1505,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   housekeeping(f, report);
   const uint8_t mode = effective_mode(f);
   const GlyphFont *active = &font;
+  GeorgianDateFont georgian_date_font;
 
   // Report the mode/OTA/countdown changes once, so the YAML side can publish.
   if ((int) mode != state.reported_mode) {
@@ -1607,7 +1642,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
-    active = &fallback;
+    active = &georgian_date_font;
   else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > layout_width) {

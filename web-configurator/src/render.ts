@@ -3,6 +3,7 @@ import { fitForPanel, fontSpec, previewFont, type FontFit } from "./fontCatalog"
 import {
   alignStart,
   BUILTIN_FONT,
+  GEORGIAN_DATE_FONT,
   drawTextLine,
   normalizeMessage,
   setPixel,
@@ -548,7 +549,7 @@ export function renderScene(
   let content = "";
 
   if (cfg.displayPower) {
-    let font = page === "date" && cfg.dateLanguage === "Georgian" ? BUILTIN_FONT : selected;
+    let font = page === "date" && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {

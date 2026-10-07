@@ -1702,6 +1702,16 @@ static void test_builtin_font_renders_every_required_glyph() {
   }
 }
 
+static void test_georgian_date_font_is_wider_and_uses_all_rows() {
+  GeorgianDateFont georgian;
+  FakeCanvas canvas(8, 8);
+  const char letter = static_cast<char>(0x80);
+  georgian.draw_glyph(canvas, letter, 0, 0);
+  CHECK_EQ(georgian.advance(letter), 7);
+  CHECK_EQ(georgian.ink_height(), 8);
+  CHECK(canvas.row_on(7) > 0);
+}
+
 static void test_default_layout_matches_readme() {
   // 6 modules of 8x8 in one row: 48x8 is the documented default.
   FakeCanvas canvas(48, 8);
@@ -1882,6 +1892,7 @@ int main() {
   test_message_uses_selected_font_metrics();
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
+  test_georgian_date_font_is_wider_and_uses_all_rows();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();

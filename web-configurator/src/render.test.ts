@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { FONT_CATALOG, previewFont } from "./fontCatalog";
+import { GEORGIAN_DATE_FONT } from "./fonts";
 import {
   choosePreviewOutdoorTemperature, clockContent, dateContent, drawWeatherPanel, driverTransform, formatMicroTemperature, formatPreviewTemperature,
   geometry, parsePreviewTemperature, renderScene, weatherFromCondition, weatherIconRows, weatherPanelGeometry, type Frame,
@@ -138,6 +139,13 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday MMM.DD" })).toBe("FRI JAN.02");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8C\x87\x84 02. \x82\x87\x8E 26");
+  });
+
+  it("uses wider eight-row lettering for Georgian date labels", () => {
+    const letter = "\x80";
+    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(7);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 7 });
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
   });
 });
 

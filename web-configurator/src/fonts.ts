@@ -113,8 +113,8 @@ export function textCells(text: string): string[] {
 }
 
 class BuiltinPreviewFont implements PreviewFont {
-  readonly id = "builtin";
-  readonly label = "Compact 5x7";
+  readonly id: string = "builtin";
+  readonly label: string = "Compact 5x7";
   readonly builtin = true;
   readonly inkHeight = BUILTIN_METRICS.inkHeight;
   readonly inkTop = BUILTIN_METRICS.inkTop;
@@ -141,6 +141,37 @@ class BuiltinPreviewFont implements PreviewFont {
 
   drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
     drawGlyphRows(target, this.glyph(ch), x, boxTop);
+  }
+}
+
+/** Wider, eight-row rendering used by the firmware for Georgian date labels. */
+class GeorgianDatePreviewFont extends BuiltinPreviewFont {
+  readonly id = "georgian-date";
+  readonly label = "Georgian date";
+  readonly inkHeight = 8;
+  readonly maxDigitHeight = 8;
+
+  glyph(ch: string): Glyph {
+    const base = super.glyph(ch);
+    const code = ch.charCodeAt(0);
+    if (code < 0x80 || code >= 0x80 + 21) return base;
+    return {
+      ...base,
+      h: 8,
+      rows: [base.rows[0], base.rows[1], base.rows[2], base.rows[3], base.rows[3], base.rows[4], base.rows[5], base.rows[6]],
+      advance: 7,
+    };
+  }
+
+  advance(ch: string): number {
+    const code = ch.charCodeAt(0);
+    return code >= 0x80 && code < 0x80 + 21 ? 7 : super.advance(ch);
+  }
+
+  measure(text: string): number {
+    let width = 0;
+    for (const ch of textCells(text)) width += this.advance(ch);
+    return width;
   }
 }
 
@@ -206,6 +237,9 @@ const cache = new Map<string, PreviewFont>();
 
 /** Built-in 5x7 fallback font; never missing, never downloads anything. */
 export const BUILTIN_FONT: PreviewFont = new BuiltinPreviewFont();
+
+/** Matches the firmware's larger Georgian weekday and month lettering. */
+export const GEORGIAN_DATE_FONT: PreviewFont = new GeorgianDatePreviewFont();
 
 /** Preview font for an ESPHome font id such as `font_tiny5_source`. */
 export function generatedFont(id: string, label: string): PreviewFont | null {
