@@ -368,35 +368,46 @@ class BuiltinFont : public GlyphFont {
   }
 };
 
-// Georgian month and weekday labels use wider cells and all eight matrix rows.
-// Longer dates scroll, so readable strokes matter more than a fixed width.
+// Georgian month and weekday labels use the bundled Noto Sans Georgian source
+// rasterised at 8 px with its heaviest weight. Each character owns a 9-pixel
+// cell; lengthy date labels scroll instead of being squeezed.
 class GeorgianDateFont : public GlyphFont {
  public:
   int advance(char c) const override {
     const unsigned char code = (unsigned char) c;
-    return code >= 0x80 && code < 0x80 + 21 ? 7 : builtin::advance(c);
+    return code >= 0x80 && code < 0x80 + 21 ? 9 : builtin::advance(c);
   }
   int ink_height() const override { return 8; }
   int ink_top() const override { return 0; }
   void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
-    const uint8_t *rows = builtin::glyph(ch);
     const unsigned char code = (unsigned char) ch;
-    if (code < 0x80 || code >= 0x80 + 21) {
-      for (int row = 0; row < 7; row++) for (int col = 0; col < 5; col++)
-        if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
+    if (code >= 0x80 && code < 0x80 + 21) {
+      const uint16_t *rows = NOTO_BOLD_ROWS[code - 0x80];
+      for (int row = 0; row < 8; row++) for (int col = 0; col < 9; col++)
+        if (rows[row] & (1 << (8 - col))) c.pixel(x + col, box_top + row, true);
       return;
     }
-    for (int row = 0; row < 7; row++) {
-      const int y = box_top + row + (row > 3 ? 1 : 0);
-      for (int col = 0; col < 5; col++) {
-        if (!(rows[row] & (1 << (4 - col)))) continue;
-        c.pixel(x + col, y, true);
-        // Expand the centre stroke to use the eighth matrix row without
-        // making the character look stretched or leaving a blank gap.
-        if (row == 3) c.pixel(x + col, y + 1, true);
-      }
-    }
+    const uint8_t *rows = builtin::glyph(ch);
+    for (int row = 0; row < 7; row++) for (int col = 0; col < 5; col++)
+      if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
   }
+
+ private:
+  // U+10D9, U+10D5, ... U+10D3 follow the private byte order in builtin::GEORGIAN.
+  // Generated from Noto Sans Georgian variable font, wght=900, size=8, bpp=1.
+  static constexpr uint16_t NOTO_BOLD_ROWS[21][8] = {
+      {0x040,0x060,0x020,0x060,0x030,0x1B0,0x0E0,0x000}, {0x040,0x0E0,0x1B0,0x060,0x030,0x1B0,0x0E0,0x000},
+      {0x040,0x0E0,0x1B0,0x1B0,0x0A0,0x000,0x000,0x000}, {0x050,0x0FC,0x1AC,0x1AC,0x088,0x000,0x000,0x000},
+      {0x070,0x080,0x1F8,0x1AC,0x1AC,0x088,0x000,0x000}, {0x1E0,0x0F0,0x0F0,0x1B0,0x1B0,0x0E0,0x000,0x000},
+      {0x180,0x180,0x1A0,0x1B0,0x0B0,0x0E0,0x000,0x000}, {0x060,0x020,0x1B0,0x0E0,0x000,0x000,0x000,0x000},
+      {0x0E0,0x030,0x0F0,0x1B0,0x1B0,0x0E0,0x000,0x000}, {0x048,0x0FC,0x1B4,0x1B4,0x0EC,0x000,0x000,0x000},
+      {0x180,0x1A0,0x1F0,0x1B0,0x0B0,0x0E0,0x000,0x000}, {0x020,0x1F0,0x0F0,0x030,0x1B0,0x1B0,0x0E0,0x000},
+      {0x060,0x020,0x060,0x020,0x1B0,0x0E0,0x000,0x000}, {0x0C0,0x040,0x0E0,0x1B0,0x1B0,0x0E0,0x000,0x000},
+      {0x0E0,0x180,0x1E0,0x1B0,0x0B0,0x0E0,0x000,0x000}, {0x040,0x0E0,0x1B0,0x030,0x1B0,0x1A0,0x0E0,0x000},
+      {0x052,0x0FF,0x1AD,0x1AD,0x0C3,0x0F8,0x008,0x000}, {0x040,0x0E0,0x020,0x0E0,0x1B0,0x1B0,0x0E0,0x000},
+      {0x030,0x0B0,0x0F0,0x1B0,0x030,0x1B0,0x1A0,0x0E0}, {0x060,0x0F0,0x1F8,0x1F8,0x198,0x098,0x0F0,0x000},
+      {0x048,0x0FC,0x1A4,0x1B4,0x0D8,0x0F0,0x098,0x000},
+  };
 };
 
 // --------------------------------------------------------------------------
