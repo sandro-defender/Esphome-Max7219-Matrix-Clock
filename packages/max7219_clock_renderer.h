@@ -387,8 +387,14 @@ class GeorgianDateFont : public GlyphFont {
       return;
     }
     for (int row = 0; row < 7; row++) {
-      const int y = box_top + row + (row >= 3 ? 1 : 0);
-      for (int col = 0; col < 5; col++) if (rows[row] & (1 << (4 - col))) c.pixel(x + col, y, true);
+      const int y = box_top + row + (row > 3 ? 1 : 0);
+      for (int col = 0; col < 5; col++) {
+        if (!(rows[row] & (1 << (4 - col)))) continue;
+        c.pixel(x + col, y, true);
+        // Expand the centre stroke to use the eighth matrix row without
+        // making the character look stretched or leaving a blank gap.
+        if (row == 3) c.pixel(x + col, y + 1, true);
+      }
     }
   }
 };
