@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "78ecade31d646ef7dd04b2eb0fc48c5e890abd618d06e108e3b7cc6eafb44d1b",
+  "sourceHash": "3793b576f1cfc61dc01b055357605eac75e78257db00a97841920486441fb948",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.18",
+  "releaseVersion": "0.7.19",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n\n- Render Georgian weekday and month labels with wider cells and a bolder\n  eight-row centre stroke. Long labels continue to scroll instead of shrinking.",
+  "releaseNotes": "### Changed\n\n- Render Georgian weekday and month labels using a bold 8 px Noto Sans Georgian\n  raster in nine-pixel cells. Long labels continue to scroll instead of shrinking.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

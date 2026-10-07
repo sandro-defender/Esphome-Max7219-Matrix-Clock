@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.19 - 2026-10-08
+
+### Changed
+
+- Render Georgian weekday and month labels using a bold 8 px Noto Sans Georgian
+  raster in nine-pixel cells. Long labels continue to scroll instead of shrinking.
+
 ## 0.7.18 - 2026-10-08
 
 ### Changed
