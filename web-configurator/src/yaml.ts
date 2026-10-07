@@ -37,7 +37,7 @@ export function entityMap(cfg: Config) {
   };
   return {
     node, slug: deviceSlug(cfg.deviceName), screen: byTarget("screen_mode"), alignment: byTarget("clock_alignment"),
-    font: byTarget("clock_font"), seconds: byTarget("seconds_display"), dateFormat: byTarget("date_format"),
+    font: byTarget("clock_font"), seconds: byTarget("seconds_display"), dateFormat: byTarget("date_format"), dateLanguage: byTarget("date_language"),
     scroll: byTarget("message_scroll_behavior"), brightness: byTarget("matrix_brightness"),
     duration: byTarget("default_message_duration"), scrollSpeed: byTarget("message_scroll_speed"),
     mode: byTarget("display_mode"), ota: byTarget("ota_state"), showAction: action("show_message"),

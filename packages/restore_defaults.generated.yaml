@@ -30,6 +30,9 @@ script:
       id: date_format
       option: DD.MM
   - select.set:
+      id: date_language
+      option: English
+  - select.set:
       id: message_scroll_behavior
       option: Scroll
   - number.set:

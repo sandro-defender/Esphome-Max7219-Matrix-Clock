@@ -90,11 +90,25 @@ export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: n
 export const BUILTIN_DIGITS = Array.from({ length: 10 }, (_, i) => BUILTIN_GLYPHS[String(i)]);
 export const BUILTIN_LETTERS = Array.from({ length: 26 }, (_, i) => BUILTIN_GLYPHS[String.fromCharCode(65 + i)]);
 
-function builtinRows(ch: string): number[] { return BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
+const GEORGIAN_GLYPHS: Record<string, number[]> = {
+  "\x80": [0b00110,0b00001,0b00100,0b00001,0b10001,0b10001,0b01100], "\x81": [0b00110,0b10001,0b00001,0b00100,0b00001,0b10001,0b01100],
+  "\x82": [0b00110,0b10001,0b10001,0b10001,0b10001,0b00000,0b00000], "\x83": [0b00111,0b11000,0b11011,0b10101,0b10101,0b10000,0b10000],
+  "\x84": [0b10110,0b01010,0b01110,0b10001,0b10001,0b10001,0b01100], "\x85": [0b10000,0b10000,0b10100,0b10010,0b10010,0b10010,0b01100],
+  "\x86": [0b01000,0b00100,0b10010,0b10010,0b01100,0b00000,0b00000], "\x87": [0b00110,0b10001,0b01110,0b10001,0b10001,0b10001,0b01100],
+  "\x88": [0b01101,0b10010,0b10010,0b10010,0b10010,0b01101,0b00000], "\x89": [0b10000,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100],
+  "\x8A": [0b10110,0b01010,0b01010,0b00010,0b10010,0b10010,0b01100], "\x8B": [0b01000,0b00110,0b00001,0b00100,0b00001,0b10001,0b11100],
+  "\x8C": [0b01000,0b00100,0b11100,0b10010,0b10010,0b10010,0b01100], "\x8D": [0b11100,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100],
+  "\x8E": [0b00110,0b10001,0b10001,0b00001,0b10001,0b10001,0b01100], "\x8F": [0b11011,0b10100,0b10100,0b10100,0b10110,0b00100,0b01010],
+  "\x90": [0b01110,0b01010,0b00100,0b11010,0b10001,0b10001,0b01100], "\x91": [0b11011,0b10101,0b10101,0b10101,0b10001,0b00100,0b01100],
+  "\x92": [0b00001,0b00001,0b11110,0b10001,0b10001,0b00001,0b01100], "\x93": [0b10010,0b10001,0b10110,0b10001,0b10001,0b11001,0b01110],
+  "\x94": [0b01110,0b10001,0b01000,0b00100,0b00010,0b10001,0b01110],
+};
+function builtinRows(ch: string): number[] { return GEORGIAN_GLYPHS[ch] ?? BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
 function builtinAdvance(ch: string): number { return BUILTIN_ADVANCES[ch] ?? BUILTIN_METRICS.defaultAdvance; }
 
 /** C++ walks UTF-8 bytes, not JavaScript Unicode code points. */
 export function textCells(text: string): string[] {
+  if ([...text].every((ch) => ch.charCodeAt(0) <= 0xff)) return [...text];
   return [...new TextEncoder().encode(text)].map((byte) => String.fromCharCode(byte));
 }
 

@@ -103,6 +103,11 @@ enum DateFormat : uint8_t {
   DATE_WEEKDAY_MMM_DD,     // THU DEC.31
 };
 
+enum DateLanguage : uint8_t {
+  DATE_LANGUAGE_ENGLISH = 0,
+  DATE_LANGUAGE_GEORGIAN,
+};
+
 // --------------------------------------------------------------------------
 // Drawing interface implemented by the ESPHome display adapter.
 // --------------------------------------------------------------------------
@@ -269,6 +274,36 @@ inline const uint8_t *glyph(char c) {
   static const uint8_t EXCLAMATION[7] = {0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00000, 0b00100};
   static const uint8_t QUESTION[7] = {0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b00000, 0b00100};
   static const uint8_t PLUS[7] = {0b00000, 0b00100, 0b00100, 0b01110, 0b00100, 0b00100, 0b00000};
+  // Private single-byte codes 0x80..0x94 represent the Georgian letters
+  // required by the compact weekday and month abbreviations below. Keeping
+  // them as one byte lets the existing character-at-a-time renderer work on
+  // an ESP8266 without a UTF-8 decoder or a large Unicode font.
+  static const uint8_t GEORGIAN[21][7] = {
+      {0b00110,0b00001,0b00100,0b00001,0b10001,0b10001,0b01100},
+      {0b00110,0b10001,0b00001,0b00100,0b00001,0b10001,0b01100},
+      {0b00110,0b10001,0b10001,0b10001,0b10001,0b00000,0b00000},
+      {0b00111,0b11000,0b11011,0b10101,0b10101,0b10000,0b10000},
+      {0b10110,0b01010,0b01110,0b10001,0b10001,0b10001,0b01100},
+      {0b10000,0b10000,0b10100,0b10010,0b10010,0b10010,0b01100},
+      {0b01000,0b00100,0b10010,0b10010,0b01100,0b00000,0b00000},
+      {0b00110,0b10001,0b01110,0b10001,0b10001,0b10001,0b01100},
+      {0b01101,0b10010,0b10010,0b10010,0b10010,0b01101,0b00000},
+      {0b10000,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100},
+      {0b10110,0b01010,0b01010,0b00010,0b10010,0b10010,0b01100},
+      {0b01000,0b00110,0b00001,0b00100,0b00001,0b10001,0b11100},
+      {0b01000,0b00100,0b11100,0b10010,0b10010,0b10010,0b01100},
+      {0b11100,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100},
+      {0b00110,0b10001,0b10001,0b00001,0b10001,0b10001,0b01100},
+      {0b11011,0b10100,0b10100,0b10100,0b10110,0b00100,0b01010},
+      {0b01110,0b01010,0b00100,0b11010,0b10001,0b10001,0b01100},
+      {0b11011,0b10101,0b10101,0b10101,0b10001,0b00100,0b01100},
+      {0b00001,0b00001,0b11110,0b10001,0b10001,0b00001,0b01100},
+      {0b10010,0b10001,0b10110,0b10001,0b10001,0b11001,0b01110},
+      {0b01110,0b10001,0b01000,0b00100,0b00010,0b10001,0b01110},
+  };
+
+  const unsigned char code = (unsigned char) c;
+  if (code >= 0x80 && code < 0x80 + 21) return GEORGIAN[code - 0x80];
 
   if (c >= '0' && c <= '9') return DIGITS[c - '0'];
   if (c >= 'A' && c <= 'Z') return LETTERS[c - 'A'];
@@ -361,6 +396,7 @@ struct Frame {
   bool date_show_outdoor_temperature = false;
   bool show_temperature_degree = true;
   int date_format = DATE_DD_MM;
+  int date_language = DATE_LANGUAGE_ENGLISH;
   bool use_12h = false;
   bool blink_colon = true;
   bool animate = true;
@@ -832,16 +868,32 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
           static const char *const weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
           static const char *const months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                                                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+          static const char georgian_weekdays[][4] = {
+              {char(0x80), char(0x81), char(0x82), 0}, {char(0x83), char(0x84), char(0x85), 0},
+              {char(0x86), char(0x87), char(0x88), 0}, {char(0x89), char(0x8A), char(0x8B), 0},
+              {char(0x89), char(0x8A), char(0x8C), 0}, {char(0x8D), char(0x87), char(0x83), 0},
+              {char(0x85), char(0x87), char(0x8E), 0},
+          };
+          static const char georgian_months[][4] = {
+              {char(0x82), char(0x87), char(0x8F), 0}, {char(0x89), char(0x8F), char(0x8D), 0},
+              {char(0x88), char(0x87), char(0x83), 0}, {char(0x87), char(0x8D), char(0x83), 0},
+              {char(0x88), char(0x87), char(0x82), 0}, {char(0x82), char(0x81), char(0x8F), 0},
+              {char(0x82), char(0x81), char(0x91), 0}, {char(0x87), char(0x92), char(0x81), 0},
+              {char(0x86), char(0x8F), char(0x93), 0}, {char(0x94), char(0x8A), char(0x94), 0},
+              {char(0x8F), char(0x83), char(0x8F), 0}, {char(0x8D), char(0x8F), char(0x90), 0},
+          };
           static const int month_offsets[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
           const int adjusted_year = f.year - (f.month < 3 ? 1 : 0);
           const int weekday = (adjusted_year + adjusted_year / 4 - adjusted_year / 100 +
                                adjusted_year / 400 + month_offsets[f.month - 1] + f.day) % 7;
+          const char *weekday_name = f.date_language == DATE_LANGUAGE_GEORGIAN ? georgian_weekdays[weekday] : weekdays[weekday];
+          const char *month_name = f.date_language == DATE_LANGUAGE_GEORGIAN ? georgian_months[f.month - 1] : months[f.month - 1];
           if (f.date_format == DATE_WEEKDAY_DD_MM_YY)
-            snprintf(out, out_size, "%s %02d.%02d.%02d", weekdays[weekday], f.day, f.month, f.year % 100);
+            snprintf(out, out_size, "%s %02d.%02d.%02d", weekday_name, f.day, f.month, f.year % 100);
           else if (f.date_format == DATE_WEEKDAY_DD_MMM_YY)
-            snprintf(out, out_size, "%s %02d. %s %02d", weekdays[weekday], f.day, months[f.month - 1], f.year % 100);
+            snprintf(out, out_size, "%s %02d. %s %02d", weekday_name, f.day, month_name, f.year % 100);
           else
-            snprintf(out, out_size, "%s %s.%02d", weekdays[weekday], months[f.month - 1], f.day);
+            snprintf(out, out_size, "%s %s.%02d", weekday_name, month_name, f.day);
           break;
         }
         default:
@@ -957,7 +1009,9 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
+    active = &fallback;
+  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
@@ -1537,7 +1591,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
+    active = &fallback;
+  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar

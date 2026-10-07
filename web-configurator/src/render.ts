@@ -301,8 +301,12 @@ export function dateContent(now: Date, cfg: Config): string {
   const day = pad(now.getDate());
   const month = pad(now.getMonth() + 1);
   const year = pad(now.getFullYear() % 100);
-  const weekday = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
-  const monthName = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
+  const weekday = cfg.dateLanguage === "Georgian"
+    ? ["\x80\x81\x82", "\x83\x84\x85", "\x86\x87\x88", "\x89\x8A\x8B", "\x89\x8A\x8C", "\x8D\x87\x83", "\x85\x87\x8E"][now.getDay()]
+    : ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
+  const monthName = cfg.dateLanguage === "Georgian"
+    ? ["\x82\x87\x8F", "\x89\x8F\x8D", "\x88\x87\x83", "\x87\x8D\x83", "\x88\x87\x82", "\x82\x81\x8F", "\x82\x81\x91", "\x87\x92\x81", "\x86\x8F\x93", "\x94\x8A\x94", "\x8F\x83\x8F", "\x8D\x8F\x90"][now.getMonth()]
+    : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
   if (cfg.dateFormat === "MM/DD") return `${month}/${day}`;
   if (cfg.dateFormat === "DD/MM") return `${day}/${month}`;
   if (cfg.dateFormat === "DD.MM.YY") return `${day}.${month}.${year}`;
@@ -544,7 +548,7 @@ export function renderScene(
   let content = "";
 
   if (cfg.displayPower) {
-    let font = selected;
+    let font = page === "date" && cfg.dateLanguage === "Georgian" ? BUILTIN_FONT : selected;
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {

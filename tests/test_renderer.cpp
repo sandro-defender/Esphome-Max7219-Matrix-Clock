@@ -1164,6 +1164,11 @@ static void test_date_formats() {
   f.date_format = DATE_WEEKDAY_MMM_DD;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "THU MAR.05") == 0);
+  f.date_language = DATE_LANGUAGE_GEORGIAN;
+  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  const char expected_georgian[] = {char(0x89), char(0x8A), char(0x8B), ' ', '0', '5', '.', ' ', char(0x88), char(0x87), char(0x83), ' ', '2', '6', 0};
+  CHECK(strcmp(out, expected_georgian) == 0);
 }
 
 static void test_weather_condition_normalization() {

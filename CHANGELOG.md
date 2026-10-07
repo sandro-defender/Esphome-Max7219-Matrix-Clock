@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.16 - 2026-10-07
+
+### Added
+- Add a restored Date language selector with English and Georgian compact
+  weekday and month abbreviations for every weekday date format.
+
 ## 0.7.15 - 2026-10-07
 
 ### Fixed

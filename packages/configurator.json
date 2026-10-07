@@ -284,6 +284,10 @@
       "target": "date_format",
       "group": "Screens"
     },
+    "dateLanguage": {
+      "target": "date_language",
+      "group": "Screens"
+    },
     "scrollMode": {
       "target": "message_scroll_behavior",
       "group": "Messages"
