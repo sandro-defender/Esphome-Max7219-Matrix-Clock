@@ -1705,7 +1705,8 @@ static void test_builtin_font_renders_every_required_glyph() {
 static void test_georgian_date_font_uses_noto_nine_pixel_cells() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  const char letter = static_cast<char>(0x80);
+  // The Georgian code 0x92 (ქ) reaches the eighth row in the Noto raster.
+  const char letter = static_cast<char>(0x92);
   georgian.draw_glyph(canvas, letter, 0, 0);
   CHECK_EQ(georgian.advance(letter), 9);
   CHECK_EQ(georgian.ink_height(), 8);
