@@ -312,6 +312,10 @@
       "group": "Clock",
       "input": "range"
     },
+    "screenTransitionStyle": {
+      "target": "screen_transition_style",
+      "group": "Clock"
+    },
     "scrollSpeed": {
       "target": "message_scroll_speed",
       "group": "Messages",

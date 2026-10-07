@@ -139,6 +139,21 @@ select:
       - component.update: matrix
 
   - platform: template
+    name: "Screen transition animation"
+    id: screen_transition_style
+    internal: ${ha_hide_screen_transition_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Slide left"
+    options:
+      - "Slide left"
+      - "Slide up"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Clock font"
     id: clock_font
     internal: ${ha_hide_clock_font}

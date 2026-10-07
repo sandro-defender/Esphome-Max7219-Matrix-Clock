@@ -19,6 +19,7 @@ substitutions:
   ha_hide_night_brightness: "false"
   ha_hide_animation_duration: "false"
   ha_hide_animation_row_gap: "false"
+  ha_hide_screen_transition_style: "false"
   ha_hide_message_scroll_speed: "false"
   ha_hide_default_message_duration: "false"
   ha_hide_countdown_duration: "false"

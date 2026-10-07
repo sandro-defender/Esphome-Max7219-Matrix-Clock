@@ -108,6 +108,11 @@ enum DateLanguage : uint8_t {
   DATE_LANGUAGE_GEORGIAN,
 };
 
+enum ScreenTransitionStyle : uint8_t {
+  SCREEN_TRANSITION_SLIDE_LEFT = 0,
+  SCREEN_TRANSITION_SLIDE_UP,
+};
+
 // --------------------------------------------------------------------------
 // Drawing interface implemented by the ESPHome display adapter.
 // --------------------------------------------------------------------------
@@ -165,13 +170,14 @@ class ViewportCanvas : public Canvas {
 
 class TranslatedCanvas : public Canvas {
  public:
-  TranslatedCanvas(Canvas &parent, int x_offset) : parent_(parent), x_offset_(x_offset) {}
-  void pixel(int x, int y, bool on) override { parent_.pixel(x + x_offset_, y, on); }
+  TranslatedCanvas(Canvas &parent, int x_offset, int y_offset = 0)
+      : parent_(parent), x_offset_(x_offset), y_offset_(y_offset) {}
+  void pixel(int x, int y, bool on) override { parent_.pixel(x + x_offset_, y + y_offset_, on); }
   int width() const override { return parent_.width(); }
   int height() const override { return parent_.height(); }
  private:
   Canvas &parent_;
-  int x_offset_;
+  int x_offset_, y_offset_;
 };
 
 // --------------------------------------------------------------------------
@@ -402,6 +408,7 @@ struct Frame {
   bool animate = true;
   uint32_t animation_ms = 600;
   uint8_t animation_row_gap = 1;
+  int screen_transition_style = SCREEN_TRANSITION_SLIDE_LEFT;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
   uint32_t date_scroll_ms_per_px = 60;
@@ -1558,11 +1565,19 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
         if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width))
           state.date_scroll_started_ms = f.now_ms;
       } else {
-        const int offset = (int) (progress * width);
-        TranslatedCanvas outgoing(canvas, -offset);
-        TranslatedCanvas incoming(canvas, width - offset);
-        draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-        draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        if (f.screen_transition_style == SCREEN_TRANSITION_SLIDE_UP) {
+          const int offset = (int) (progress * height);
+          TranslatedCanvas outgoing(canvas, 0, -offset);
+          TranslatedCanvas incoming(canvas, 0, height - offset);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        } else {
+          const int offset = (int) (progress * width);
+          TranslatedCanvas outgoing(canvas, -offset);
+          TranslatedCanvas incoming(canvas, width - offset);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        }
         state.reset_animation();
         return;
       }

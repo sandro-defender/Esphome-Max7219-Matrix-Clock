@@ -1034,6 +1034,34 @@ static void test_selected_screen_change_starts_slide_transition() {
   CHECK(state.screen_transition_active);
 }
 
+static void test_selected_screen_can_slide_up_like_changing_digits() {
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 200;
+  f.screen_transition_style = SCREEN_TRANSITION_SLIDE_UP;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+  reset_state();
+
+  render(canvas, font, compact, f, r);  // Clock baseline
+  canvas.clear();
+  f.screen = SCREEN_DATE;
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, r);  // Start the selected-screen transition.
+  canvas.clear();
+  f.now_ms = 1100;                       // Half way: 4 rows of vertical travel.
+  render(canvas, font, compact, f, r);
+
+  CHECK(state.screen_transition_active);
+  // The outgoing screen occupies rows 0..2 and the incoming screen rows 4..7,
+  // leaving the middle row blank. A horizontal slide would still light row 3.
+  CHECK_EQ(canvas.row_on(3), 0);
+  CHECK(canvas.row_on(0) > 0);
+  CHECK(canvas.row_on(7) > 0);
+}
+
 static void test_scrolling_date_starts_after_screen_slide_transition() {
   Frame f = base_frame();
   f.seconds_mode = SECONDS_OFF;
@@ -1831,6 +1859,7 @@ int main() {
   test_auto_cycle_clock_date();
   test_date_screen_duration_is_independent();
   test_selected_screen_change_starts_slide_transition();
+  test_selected_screen_can_slide_up_like_changing_digits();
   test_scrolling_date_starts_after_screen_slide_transition();
   test_alarm_mode_flashes_twice_per_second();
   test_bitmap_test_screens();

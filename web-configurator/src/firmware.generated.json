@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "1669a8ec2a553d280d4aeb4284d9e044b8289a284e4bdfdb055708d7df5c0c90",
+  "sourceHash": "6e10f6b2800ea06eedd1bac3e22dd1335aeb8a59b85f1a2c0f51e9099149ce95",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.16",
+  "releaseVersion": "0.7.17",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- Add a restored Date language selector with English and Georgian compact\n  weekday and month abbreviations for every weekday date format.",
+  "releaseNotes": "### Added\n- Add a restored Screen transition animation selector: retain the horizontal\n  Slide left transition or choose Slide up, matching the clock digits' motion.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2809,6 +2809,19 @@
       "substitution": "animation_row_gap"
     },
     {
+      "key": "screenTransitionStyle",
+      "kind": "select",
+      "target": "screen_transition_style",
+      "group": "Clock",
+      "label": "Screen transition animation",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "default": "Slide left",
+      "input": "select"
+    },
+    {
       "key": "scrollSpeed",
       "kind": "number",
       "target": "message_scroll_speed",
@@ -3498,6 +3511,7 @@
     "nightBrightness": 1.0,
     "animationMs": 600.0,
     "animationRowGap": 1.0,
+    "screenTransitionStyle": "Slide left",
     "scrollSpeed": 60.0,
     "dateScrollSpeed": 60.0,
     "messageHold": 15.0,
@@ -3676,6 +3690,22 @@
       "visibleByDefault": true,
       "recommended": false,
       "group": "Screens"
+    },
+    {
+      "id": "screen_transition_style",
+      "name": "Screen transition animation",
+      "entity_category": "config",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "initial_option": "Slide left",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_screen_transition_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "clock_font",
