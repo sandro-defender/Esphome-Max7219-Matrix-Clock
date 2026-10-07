@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "aa216fbc9e6116a5fc8709ed7c57b771f2e14c20e86505ba00693cd82715f677",
+  "sourceHash": "3793b576f1cfc61dc01b055357605eac75e78257db00a97841920486441fb948",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.18",
+  "releaseVersion": "0.7.19",
   "esphomeVersion": "2026.9.1",
   "releaseNotes": "### Changed\n\n- Render Georgian weekday and month labels using a bold 8 px Noto Sans Georgian\n  raster in nine-pixel cells. Long labels continue to scroll instead of shrinking.",
   "packageFiles": [
