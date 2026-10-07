@@ -61,6 +61,8 @@ class WorkflowTests(unittest.TestCase):
         python = next(step for step in self.steps if step.get("uses", "").startswith("actions/setup-python@"))
         node = next(step for step in self.steps if step.get("uses", "").startswith("actions/setup-node@"))
         self.assertEqual(python["with"]["python-version"], "3.12")
+        self.assertEqual(python["with"]["cache"], "pip")
+        self.assertEqual(python["with"]["cache-dependency-path"], "requirements-validation.txt")
         self.assertEqual(node["with"]["node-version"], "22")
         self.assertEqual(node["with"]["cache-dependency-path"], "web-configurator/package-lock.json")
         runs = [step.get("run") for step in self.steps]
