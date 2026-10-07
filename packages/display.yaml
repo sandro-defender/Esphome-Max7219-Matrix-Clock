@@ -70,11 +70,13 @@ display:
       frame.date_show_outdoor_temperature = id(date_show_outdoor_temperature).state;
       frame.show_temperature_degree = id(show_temperature_degree).state;
       frame.date_format = max7219_clock::date_format_from_option(id(date_format).current_option());
+      frame.date_language = max7219_clock::date_language_from_option(id(date_language).current_option());
       frame.use_12h = id(time_format).current_option() == "12 hour";
       frame.blink_colon = id(clock_blink).state;
       frame.animate = id(clock_animate).state;
       frame.animation_ms = max7219_clock::clamp_u32((int) id(animation_duration).state, 0, 2000);
       frame.animation_row_gap = max7219_clock::clamp_u8((int) id(animation_row_gap).state, 0, 2);
+      frame.screen_transition_style = max7219_clock::screen_transition_style_from_option(id(screen_transition_style).current_option());
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
       frame.date_scroll_ms_per_px = max7219_clock::clamp_u32((int) id(date_scroll_speed).state, 20, 200);

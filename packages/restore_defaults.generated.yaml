@@ -30,6 +30,9 @@ script:
       id: date_format
       option: DD.MM
   - select.set:
+      id: date_language
+      option: English
+  - select.set:
       id: message_scroll_behavior
       option: Scroll
   - number.set:
@@ -44,6 +47,9 @@ script:
   - number.set:
       id: animation_row_gap
       value: 1.0
+  - select.set:
+      id: screen_transition_style
+      option: Slide left
   - number.set:
       id: message_scroll_speed
       value: 60.0

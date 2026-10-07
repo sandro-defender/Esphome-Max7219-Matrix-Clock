@@ -4,6 +4,8 @@ export type Wiring = "snake" | "zigzag";
 export type Alignment = "Left" | "Center" | "Right";
 export type HourFormat = "24-hour" | "12-hour";
 export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM" | "DD.MM.YY" | "Weekday DD.MM.YY" | "Weekday DD. MMM YY" | "Weekday MMM.DD";
+export type DateLanguage = "English" | "Georgian";
+export type ScreenTransitionStyle = "Slide left" | "Slide up";
 export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
 
@@ -85,6 +87,7 @@ export interface Config {
   alignment: Alignment;
   hourFormat: HourFormat;
   dateFormat: DateFormat;
+  dateLanguage: DateLanguage;
   clockLayout: string;
   dateShowWeatherIcon: boolean;
   dateShowOutdoorTemperature: boolean;
@@ -94,6 +97,7 @@ export interface Config {
   digitAnimation: boolean;
   animationMs: number;
   animationRowGap: number;
+  screenTransitionStyle: ScreenTransitionStyle;
   clockFont: ClockFont;
   /** Included external faces: Pixel Clock 6x8 ships by default; other faces are optional. */
   fonts: ClockFont[];

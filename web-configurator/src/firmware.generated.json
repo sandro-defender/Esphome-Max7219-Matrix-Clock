@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "ee05b2f66c0b466ca821d00546fd4e1e1518df9b2698107a0ecb83c1d65dbc17",
+  "sourceHash": "ed035a69f7775e3586a9aa519a06a552f11b85621ff6ef6daa930ccb02f6f258",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.15",
+  "releaseVersion": "0.7.17",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n- Animate Time-to-Date and Date-to-Time transitions on 12-module displays.",
+  "releaseNotes": "### Added\n- Add a restored Screen transition animation selector: retain the horizontal\n  Slide left transition or choose Slide up, matching the clock digits' motion.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2727,6 +2727,19 @@
       "input": "select"
     },
     {
+      "key": "dateLanguage",
+      "kind": "select",
+      "target": "date_language",
+      "group": "Screens",
+      "label": "Date language",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "default": "English",
+      "input": "select"
+    },
+    {
       "key": "scrollMode",
       "kind": "select",
       "target": "message_scroll_behavior",
@@ -2794,6 +2807,19 @@
       "unit": "rows",
       "input": "range",
       "substitution": "animation_row_gap"
+    },
+    {
+      "key": "screenTransitionStyle",
+      "kind": "select",
+      "target": "screen_transition_style",
+      "group": "Clock",
+      "label": "Screen transition animation",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "default": "Slide left",
+      "input": "select"
     },
     {
       "key": "scrollSpeed",
@@ -3479,11 +3505,13 @@
     "dateShowOutdoorTemperature": false,
     "showTemperatureDegree": true,
     "dateFormat": "DD.MM",
+    "dateLanguage": "English",
     "scrollMode": "Scroll",
     "brightness": 3.0,
     "nightBrightness": 1.0,
     "animationMs": 600.0,
     "animationRowGap": 1.0,
+    "screenTransitionStyle": "Slide left",
     "scrollSpeed": 60.0,
     "dateScrollSpeed": 60.0,
     "messageHold": 15.0,
@@ -3646,6 +3674,38 @@
       "visibleByDefault": true,
       "recommended": false,
       "group": "Screens"
+    },
+    {
+      "id": "date_language",
+      "name": "Date language",
+      "entity_category": "config",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "initial_option": "English",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_language",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "screen_transition_style",
+      "name": "Screen transition animation",
+      "entity_category": "config",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "initial_option": "Slide left",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_screen_transition_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "clock_font",

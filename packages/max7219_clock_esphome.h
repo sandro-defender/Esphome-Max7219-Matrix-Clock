@@ -130,6 +130,14 @@ template<typename Option> inline uint8_t date_format_from_option(const Option &o
   return DATE_DD_MM;
 }
 
+template<typename Option> inline uint8_t date_language_from_option(const Option &option) {
+  return option == "Georgian" ? DATE_LANGUAGE_GEORGIAN : DATE_LANGUAGE_ENGLISH;
+}
+
+template<typename Option> inline uint8_t screen_transition_style_from_option(const Option &option) {
+  return option == "Slide up" ? SCREEN_TRANSITION_SLIDE_UP : SCREEN_TRANSITION_SLIDE_LEFT;
+}
+
 inline const char *option_for_screen(uint8_t screen) {
   switch (screen) {
     case SCREEN_DATE:

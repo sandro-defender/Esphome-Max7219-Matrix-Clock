@@ -284,6 +284,10 @@
       "target": "date_format",
       "group": "Screens"
     },
+    "dateLanguage": {
+      "target": "date_language",
+      "group": "Screens"
+    },
     "scrollMode": {
       "target": "message_scroll_behavior",
       "group": "Messages"
@@ -307,6 +311,10 @@
       "target": "animation_row_gap",
       "group": "Clock",
       "input": "range"
+    },
+    "screenTransitionStyle": {
+      "target": "screen_transition_style",
+      "group": "Clock"
     },
     "scrollSpeed": {
       "target": "message_scroll_speed",
