@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.15 - 2026-10-07
+
+### Fixed
+- Animate Time-to-Date and Date-to-Time transitions on 12-module displays.
+
 ## 0.7.14 - 2026-10-04
 
 ### Fixed

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "3436f3d0c776d2960b54889a278ae1242c07dbfab73c1a5a6345e657ffd09fd1",
+  "sourceHash": "ee05b2f66c0b466ca821d00546fd4e1e1518df9b2698107a0ecb83c1d65dbc17",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.14",
+  "releaseVersion": "0.7.15",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n- Use a compact, high-contrast sun icon for clear weather on 8×8 panels.",
+  "releaseNotes": "### Fixed\n- Animate Time-to-Date and Date-to-Time transitions on 12-module displays.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
