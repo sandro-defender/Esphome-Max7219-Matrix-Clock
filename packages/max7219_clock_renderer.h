@@ -288,6 +288,7 @@ inline const uint8_t *glyph(char c) {
       {0b00110,0b00001,0b00100,0b00001,0b10001,0b10001,0b01100},
       {0b00110,0b10001,0b00001,0b00100,0b00001,0b10001,0b01100},
       {0b00110,0b10001,0b10001,0b10001,0b10001,0b00000,0b00000},
+      {0b01011,0b10101,0b10101,0b10001,0b10001,0b00000,0b00000},
       {0b00111,0b11000,0b11011,0b10101,0b10101,0b10000,0b10000},
       {0b10110,0b01010,0b01110,0b10001,0b10001,0b10001,0b01100},
       {0b10000,0b10000,0b10100,0b10010,0b10010,0b10010,0b01100},
@@ -305,7 +306,6 @@ inline const uint8_t *glyph(char c) {
       {0b11011,0b10101,0b10101,0b10101,0b10001,0b00100,0b01100},
       {0b00001,0b00001,0b11110,0b10001,0b10001,0b00001,0b01100},
       {0b10010,0b10001,0b10110,0b10001,0b10001,0b11001,0b01110},
-      {0b01110,0b10001,0b01000,0b00100,0b00010,0b10001,0b01110},
   };
 
   const unsigned char code = (unsigned char) c;
@@ -877,17 +877,17 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
                                                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
           static const char georgian_weekdays[][4] = {
               {char(0x80), char(0x81), char(0x82), 0}, {char(0x83), char(0x84), char(0x85), 0},
-              {char(0x86), char(0x87), char(0x88), 0}, {char(0x89), char(0x8A), char(0x8B), 0},
-              {char(0x89), char(0x8A), char(0x8C), 0}, {char(0x8D), char(0x87), char(0x83), 0},
-              {char(0x85), char(0x87), char(0x8E), 0},
+              {char(0x86), char(0x87), char(0x88), 0}, {char(0x83), char(0x89), char(0x8A), 0},
+              {char(0x8A), char(0x8B), char(0x89), 0}, {char(0x8C), char(0x87), char(0x84), 0},
+              {char(0x85), char(0x87), char(0x8D), 0},
           };
           static const char georgian_months[][4] = {
-              {char(0x82), char(0x87), char(0x8F), 0}, {char(0x89), char(0x8F), char(0x8D), 0},
-              {char(0x88), char(0x87), char(0x83), 0}, {char(0x87), char(0x8D), char(0x83), 0},
+              {char(0x82), char(0x87), char(0x8E), 0}, {char(0x89), char(0x8F), char(0x8D), 0},
+              {char(0x88), char(0x87), char(0x84), 0}, {char(0x87), char(0x8C), char(0x84), 0},
               {char(0x88), char(0x87), char(0x82), 0}, {char(0x82), char(0x81), char(0x8F), 0},
-              {char(0x82), char(0x81), char(0x91), 0}, {char(0x87), char(0x92), char(0x81), 0},
-              {char(0x86), char(0x8F), char(0x93), 0}, {char(0x94), char(0x8A), char(0x94), 0},
-              {char(0x8F), char(0x83), char(0x8F), 0}, {char(0x8D), char(0x8F), char(0x90), 0},
+              {char(0x82), char(0x81), char(0x8E), 0}, {char(0x87), char(0x91), char(0x81), 0},
+              {char(0x86), char(0x8F), char(0x93), 0}, {char(0x83), char(0x93), char(0x94), 0},
+              {char(0x8E), char(0x83), char(0x8F), 0}, {char(0x90), char(0x8F), char(0x80), 0},
           };
           static const int month_offsets[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
           const int adjusted_year = f.year - (f.month < 3 ? 1 : 0);

@@ -137,7 +137,7 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD.MM.YY" })).toBe("FRI 02.01.26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday MMM.DD" })).toBe("FRI JAN.02");
-    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8D\x87\x83 02. \x82\x87\x8F 26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8C\x87\x84 02. \x82\x87\x8E 26");
   });
 });
 
