@@ -1022,7 +1022,7 @@ static void test_selected_screen_change_starts_slide_transition() {
   f.animate = true;
   f.animation_ms = 250;
   Report r;
-  FakeCanvas canvas;
+  FakeCanvas canvas(96, 8);
   FakeFont font(6);
   reset_state();
 

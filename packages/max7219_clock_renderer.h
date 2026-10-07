@@ -1484,16 +1484,15 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   // Slide only between user-selected normal screens. Priority screens above
   // intentionally return before this point so an OTA/error/message is never
-  // delayed by an animation. On the 12-module layout the panel regions stay
-  // stationary, so skip the whole-screen slide and animate only within the
-  // allocated clock/date viewport.
+  // delayed by an animation. The slide covers the full matrix on every
+  // supported layout, including the 12-module Time/Date screen transition.
   if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_TEMPERATURE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
       if (f.screen == SCREEN_DATE) state.date_scroll_started_ms = 0;
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
-                                       f.animate && f.animation_ms > 0 && !panels.available;
+                                       f.animate && f.animation_ms > 0;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
     }
