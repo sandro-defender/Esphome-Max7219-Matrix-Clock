@@ -331,112 +331,6 @@ static const Glyph font_mg_minecraft_georgian_source_glyphs[] = {
   Glyph(4335, font_mg_minecraft_georgian_source_4335_data, 6, 0, 0, 5, 8),
   Glyph(4336, font_mg_minecraft_georgian_source_4336_data, 6, 0, 0, 5, 8)
 };
-static const uint8_t font_georgian_mkhedruli_8x8_source_32_data[] = {0};
-static const uint8_t font_georgian_mkhedruli_8x8_source_33_data[] = {250};
-static const uint8_t font_georgian_mkhedruli_8x8_source_37_data[] = {107,68,68,90,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_43_data[] = {75,164};
-static const uint8_t font_georgian_mkhedruli_8x8_source_45_data[] = {224};
-static const uint8_t font_georgian_mkhedruli_8x8_source_46_data[] = {240};
-static const uint8_t font_georgian_mkhedruli_8x8_source_47_data[] = {8,136,136,0};
-static const uint8_t font_georgian_mkhedruli_8x8_source_48_data[] = {116,103,92,197,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_49_data[] = {89,36,184};
-static const uint8_t font_georgian_mkhedruli_8x8_source_50_data[] = {116,66,34,35,224};
-static const uint8_t font_georgian_mkhedruli_8x8_source_51_data[] = {240,66,224,135,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_52_data[] = {17,149,47,136,64};
-static const uint8_t font_georgian_mkhedruli_8x8_source_53_data[] = {252,33,224,135,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_54_data[] = {50,33,232,197,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_55_data[] = {248,68,68,33,0};
-static const uint8_t font_georgian_mkhedruli_8x8_source_56_data[] = {116,98,232,197,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_57_data[] = {116,98,240,139,128};
-static const uint8_t font_georgian_mkhedruli_8x8_source_58_data[] = {243,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_63_data[] = {116,66,34,0,128};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4304_data[] = {116,106,160};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4305_data[] = {233,159};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4306_data[] = {116,97,120,197,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4307_data[] = {57,24,97,133,240,65};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4308_data[] = {116,97,232,69,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4309_data[] = {134,20,140,49,40,97};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4310_data[] = {248,68,68,67,224};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4311_data[] = {33,29,82,17,136};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4312_data[] = {228,146,120};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4313_data[] = {140,169,138,74,32};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4314_data[] = {133,35,12,74,24,127};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4315_data[] = {131,142,172,152,48,96,193};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4316_data[] = {140,115,89,198,32};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4317_data[] = {116,99,24,197,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4318_data[] = {252,99,24,198,49};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4319_data[] = {40,83,249,69,80,95,0};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4320_data[] = {244,99,234,74,32};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4321_data[] = {124,32,224,135,192};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4322_data[] = {249,8,66,16,128};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4323_data[] = {140,99,24,168,128};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4324_data[] = {56,138,12,152,40,142,16};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4325_data[] = {140,169,138,74,48};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4326_data[] = {122,24,109,150,23,130};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4327_data[] = {138,136,66,16,132};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4328_data[] = {147,38,237,219,183,127,193};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4329_data[] = {134,24,127,4,16,65};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4330_data[] = {122,24,32,133,240,65};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4331_data[] = {122,24,95,4,33,8};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4332_data[] = {131,6,77,92,112,96,193};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4333_data[] = {32,7,161,134,23,193};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4334_data[] = {138,136,69,70,32};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4335_data[] = {8,67,24,197,194};
-static const uint8_t font_georgian_mkhedruli_8x8_source_4336_data[] = {140,99,248,198,32};
-static const Glyph font_georgian_mkhedruli_8x8_source_glyphs[] = {
-  Glyph(32, font_georgian_mkhedruli_8x8_source_32_data, 3, 0, 7, 1, 1),
-  Glyph(33, font_georgian_mkhedruli_8x8_source_33_data, 3, 0, 0, 1, 7),
-  Glyph(37, font_georgian_mkhedruli_8x8_source_37_data, 6, 0, 0, 5, 7),
-  Glyph(43, font_georgian_mkhedruli_8x8_source_43_data, 4, 0, 1, 3, 5),
-  Glyph(45, font_georgian_mkhedruli_8x8_source_45_data, 4, 0, 3, 3, 1),
-  Glyph(46, font_georgian_mkhedruli_8x8_source_46_data, 3, 0, 5, 2, 2),
-  Glyph(47, font_georgian_mkhedruli_8x8_source_47_data, 6, 0, 0, 5, 5),
-  Glyph(48, font_georgian_mkhedruli_8x8_source_48_data, 6, 0, 0, 5, 7),
-  Glyph(49, font_georgian_mkhedruli_8x8_source_49_data, 4, 0, 0, 3, 7),
-  Glyph(50, font_georgian_mkhedruli_8x8_source_50_data, 6, 0, 0, 5, 7),
-  Glyph(51, font_georgian_mkhedruli_8x8_source_51_data, 6, 0, 0, 5, 7),
-  Glyph(52, font_georgian_mkhedruli_8x8_source_52_data, 6, 0, 0, 5, 7),
-  Glyph(53, font_georgian_mkhedruli_8x8_source_53_data, 6, 0, 0, 5, 7),
-  Glyph(54, font_georgian_mkhedruli_8x8_source_54_data, 6, 0, 0, 5, 7),
-  Glyph(55, font_georgian_mkhedruli_8x8_source_55_data, 6, 0, 0, 5, 7),
-  Glyph(56, font_georgian_mkhedruli_8x8_source_56_data, 6, 0, 0, 5, 7),
-  Glyph(57, font_georgian_mkhedruli_8x8_source_57_data, 6, 0, 0, 5, 7),
-  Glyph(58, font_georgian_mkhedruli_8x8_source_58_data, 3, 0, 1, 2, 5),
-  Glyph(63, font_georgian_mkhedruli_8x8_source_63_data, 6, 0, 0, 5, 7),
-  Glyph(4304, font_georgian_mkhedruli_8x8_source_4304_data, 6, 0, 2, 5, 4),
-  Glyph(4305, font_georgian_mkhedruli_8x8_source_4305_data, 6, 0, 2, 4, 4),
-  Glyph(4306, font_georgian_mkhedruli_8x8_source_4306_data, 6, 0, 0, 5, 7),
-  Glyph(4307, font_georgian_mkhedruli_8x8_source_4307_data, 7, 0, 0, 6, 8),
-  Glyph(4308, font_georgian_mkhedruli_8x8_source_4308_data, 6, 0, 0, 5, 7),
-  Glyph(4309, font_georgian_mkhedruli_8x8_source_4309_data, 7, 0, 0, 6, 8),
-  Glyph(4310, font_georgian_mkhedruli_8x8_source_4310_data, 6, 0, 0, 5, 7),
-  Glyph(4311, font_georgian_mkhedruli_8x8_source_4311_data, 6, 0, 0, 5, 8),
-  Glyph(4312, font_georgian_mkhedruli_8x8_source_4312_data, 4, 0, 0, 3, 7),
-  Glyph(4313, font_georgian_mkhedruli_8x8_source_4313_data, 6, 0, 0, 5, 7),
-  Glyph(4314, font_georgian_mkhedruli_8x8_source_4314_data, 7, 0, 0, 6, 8),
-  Glyph(4315, font_georgian_mkhedruli_8x8_source_4315_data, 8, 0, 0, 7, 8),
-  Glyph(4316, font_georgian_mkhedruli_8x8_source_4316_data, 6, 0, 0, 5, 7),
-  Glyph(4317, font_georgian_mkhedruli_8x8_source_4317_data, 6, 0, 0, 5, 7),
-  Glyph(4318, font_georgian_mkhedruli_8x8_source_4318_data, 6, 0, 0, 5, 8),
-  Glyph(4319, font_georgian_mkhedruli_8x8_source_4319_data, 8, 0, 0, 7, 7),
-  Glyph(4320, font_georgian_mkhedruli_8x8_source_4320_data, 6, 0, 0, 5, 7),
-  Glyph(4321, font_georgian_mkhedruli_8x8_source_4321_data, 6, 0, 0, 5, 7),
-  Glyph(4322, font_georgian_mkhedruli_8x8_source_4322_data, 6, 0, 0, 5, 7),
-  Glyph(4323, font_georgian_mkhedruli_8x8_source_4323_data, 6, 0, 0, 5, 7),
-  Glyph(4324, font_georgian_mkhedruli_8x8_source_4324_data, 8, 0, 0, 7, 8),
-  Glyph(4325, font_georgian_mkhedruli_8x8_source_4325_data, 6, 0, 0, 5, 8),
-  Glyph(4326, font_georgian_mkhedruli_8x8_source_4326_data, 7, 0, 0, 6, 8),
-  Glyph(4327, font_georgian_mkhedruli_8x8_source_4327_data, 6, 0, 0, 5, 8),
-  Glyph(4328, font_georgian_mkhedruli_8x8_source_4328_data, 8, 0, 0, 7, 8),
-  Glyph(4329, font_georgian_mkhedruli_8x8_source_4329_data, 7, 0, 0, 6, 8),
-  Glyph(4330, font_georgian_mkhedruli_8x8_source_4330_data, 7, 0, 0, 6, 8),
-  Glyph(4331, font_georgian_mkhedruli_8x8_source_4331_data, 7, 0, 0, 6, 8),
-  Glyph(4332, font_georgian_mkhedruli_8x8_source_4332_data, 8, 0, 0, 7, 8),
-  Glyph(4333, font_georgian_mkhedruli_8x8_source_4333_data, 7, 0, 0, 6, 8),
-  Glyph(4334, font_georgian_mkhedruli_8x8_source_4334_data, 6, 0, 0, 5, 7),
-  Glyph(4335, font_georgian_mkhedruli_8x8_source_4335_data, 6, 0, 0, 5, 8),
-  Glyph(4336, font_georgian_mkhedruli_8x8_source_4336_data, 6, 0, 0, 5, 7)
-};
 struct FixtureFont { const char *id; const Glyph *glyphs; int count; int height; };
 static const FixtureFont FIXTURE_FONTS[] = {
   {"font_pixel_clock_6x8_source", font_pixel_clock_6x8_source_glyphs, 19, 8},
@@ -444,7 +338,6 @@ static const FixtureFont FIXTURE_FONTS[] = {
   {"font_md_parola_numeric_7seg_source", font_md_parola_numeric_7seg_source_glyphs, 19, 8},
   {"font_md_max72xx_system_source", font_md_max72xx_system_source_glyphs, 19, 8},
   {"font_dot_matrix_source", font_dot_matrix_source_glyphs, 19, 8},
-  {"font_mg_minecraft_georgian_source", font_mg_minecraft_georgian_source_glyphs, 52, 8},
-  {"font_georgian_mkhedruli_8x8_source", font_georgian_mkhedruli_8x8_source_glyphs, 52, 8}
+  {"font_mg_minecraft_georgian_source", font_mg_minecraft_georgian_source_glyphs, 52, 8}
 };
 }}  // namespace esphome::font
