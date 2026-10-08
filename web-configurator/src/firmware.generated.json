@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "d39b5f2e8879cfd0a7e7afb1c0ac576f2345189e025b95e21a006db85e95d5e7",
+  "sourceHash": "69a1db89ed5658a0441572bde3850a0d90c89569a5c627203715838bf605c262",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.8.1",
   "esphomeVersion": "2026.9.1",
@@ -2662,6 +2662,39 @@
       ]
     },
     {
+      "key": "dateFont",
+      "kind": "select",
+      "target": "date_font",
+      "group": "Screens",
+      "label": "Date font",
+      "options": [
+        "compact",
+        "pixel-clock-6x8",
+        "matrix-2px",
+        "md-parola-numeric-7seg",
+        "md-max72xx-system",
+        "dot-matrix",
+        "mg-minecraft-georgian",
+        "georgian-mkhedruli-8x8",
+        "matrix-sans-screen",
+        "sevenish-mono-8"
+      ],
+      "default": "compact",
+      "input": "font",
+      "firmwareOptions": [
+        "Compact 5x7",
+        "Pixel Clock 6x8",
+        "Matrix 2px",
+        "MD Parola Numeric 7-Segment",
+        "MD MAX72XX System",
+        "Dot Matrix",
+        "MG Minecraft Georgian",
+        "Georgian Mkhedruli 8x8",
+        "Matrix Sans Screen",
+        "Sevenish Mono 8"
+      ]
+    },
+    {
       "key": "screen",
       "kind": "select",
       "target": "screen_mode",
@@ -3552,6 +3585,7 @@
   ],
   "defaults": {
     "clockFont": "pixel-clock-6x8",
+    "dateFont": "compact",
     "screen": "Clock",
     "alignment": "Center",
     "hourFormat": "24-hour",
@@ -4153,6 +4187,21 @@
       "visibleByDefault": true,
       "recommended": true,
       "group": "Buttons"
+    },
+    {
+      "id": "date_font",
+      "name": "Date font",
+      "entity_category": "config",
+      "options": [
+        "Compact 5x7"
+      ],
+      "initial_option": "Compact 5x7",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_font",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
       "id": "date_scroll_speed",
