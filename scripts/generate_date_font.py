@@ -50,7 +50,9 @@ def glyph_rows(face: freetype.Face, codepoint: int) -> tuple[list[int], int]:
     advance = (glyph.metrics.horiAdvance + 63) // 64
     if advance % CELL_PX:
         raise ValueError(f"{FONT}: U+{codepoint:04X} advance is not aligned to {CELL_PX}px hand-drawn cells")
-    return (rows + [0] * 8)[:8], advance // CELL_PX
+    # The Date screen uses one eight-row baseline: shorter letters get their
+    # blank bearing above the ink, never below it.
+    return ([0] * (8 - height) + rows)[:8], advance // CELL_PX
 
 
 def build() -> dict[Path, str]:

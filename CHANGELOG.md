@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.9 - 2026-10-09
+
+### Fixed
+
+- Bottom-align short Georgian Date glyphs on the 8-row matrix without changing
+  their hand-drawn pixels or stroke weight.
+
 ## 0.8.8 - 2026-10-09
 
 ### Changed

@@ -147,6 +147,7 @@ describe("clock and date text", () => {
     expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
     expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
     expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows.filter((row) => row !== 0)).toHaveLength(7);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[7]).not.toBe(0);
   });
 });
 

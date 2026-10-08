@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "a3d3b1037121d21df99ce5fe1334dcdc952263ce95c53f8d7b5f5f2da670f508",
+  "sourceHash": "b8c02b15846c7bceb17e227fe6b3c3b7c303158f8977e30cf0a599d03a6173e9",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.8",
+  "releaseVersion": "0.8.9",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n\n- Keep the Windows Date-font generator window open after every run, preserving\n  its full log and reporting success or failure before it closes.",
+  "releaseNotes": "### Fixed\n\n- Bottom-align short Georgian Date glyphs on the 8-row matrix without changing\n  their hand-drawn pixels or stroke weight.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
