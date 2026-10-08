@@ -1702,14 +1702,15 @@ static void test_builtin_font_renders_every_required_glyph() {
   }
 }
 
-static void test_georgian_date_font_normalizes_every_glyph_to_eight_rows() {
+static void test_georgian_date_font_uses_max7219_rows() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  // კ is six source rows tall; the renderer expands it to all eight rows.
+  // კ is sourced from max7219.ttf and scaled to the full eight-row panel.
   const char letter = static_cast<char>(0x80);
   georgian.draw_glyph(canvas, letter, 0, 0);
   CHECK_EQ(georgian.advance(letter), 6);
   CHECK_EQ(georgian.ink_height(), 8);
+  CHECK(canvas.get(2, 7));
   CHECK(canvas.row_on(7) > 0);
 }
 
@@ -1893,7 +1894,7 @@ int main() {
   test_message_uses_selected_font_metrics();
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
-  test_georgian_date_font_normalizes_every_glyph_to_eight_rows();
+  test_georgian_date_font_uses_max7219_rows();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();
