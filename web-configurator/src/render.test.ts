@@ -143,10 +143,10 @@ describe("clock and date text", () => {
 
   it("uses the MAX7219 Georgian date lettering at all eight rows", () => {
     const letter = "\x80";
-    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(6);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
+    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(5);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 5 });
     expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[7]).toBe(0x18);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[5]).toBe(0x18);
   });
 });
 

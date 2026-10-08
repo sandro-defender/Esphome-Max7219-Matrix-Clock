@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.6 - 2026-10-09
+
+### Fixed
+
+- Render Georgian Date glyphs at the native `max7219.ttf` pixel rows and
+  advances, without vertical stretching.
+
 ## 0.8.5 - 2026-10-08
 
 ### Fixed
