@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.23 - 2026-10-08
+
+### Added
+
+- Add Matrix Sans Screen and Sevenish Mono 8 as optional Georgian pixel-font
+  packages for trying alternate 8-row matrix appearances.
+
 ## 0.7.22 - 2026-10-08
 
 ### Added

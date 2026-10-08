@@ -140,6 +140,8 @@ FONT_OPTION_BY_ID = {
     "font_dot_matrix_source": "Dot Matrix",
     "font_mg_minecraft_georgian_source": "MG Minecraft Georgian",
     "font_georgian_mkhedruli_8x8_source": "Georgian Mkhedruli 8x8",
+    "font_matrix_sans_screen_source": "Matrix Sans Screen",
+    "font_sevenish_mono_8_source": "Sevenish Mono 8",
 }
 
 # Clock-first faces compile the status set; the project Georgian face also
@@ -654,7 +656,7 @@ class ConfigContractTests(unittest.TestCase):
                     0,
                     f"{entry['id']} has no '{char}' glyph in its source file",
                 )
-            if entry["id"] == "font_georgian_mkhedruli_8x8_source":
+            if entry["id"] in ("font_georgian_mkhedruli_8x8_source", "font_matrix_sans_screen_source", "font_sevenish_mono_8_source"):
                 for char in GEORGIAN_MKHEDRULI:
                     self.assertIn(char, declared, f"{entry['id']} does not compile '{char}'")
                     self.assertNotEqual(face.get_char_index(ord(char)), 0, f"{entry['id']} has no '{char}' glyph")
@@ -695,7 +697,7 @@ class ConfigContractTests(unittest.TestCase):
             face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
             face.set_pixel_sizes(entry["size"], 0)
             digit_heights = []
-            measured_chars = "0123456789:-" + (GEORGIAN_MKHEDRULI if entry["id"] == "font_georgian_mkhedruli_8x8_source" else "")
+            measured_chars = "0123456789:-" + (GEORGIAN_MKHEDRULI if entry["id"] in ("font_georgian_mkhedruli_8x8_source", "font_matrix_sans_screen_source", "font_sevenish_mono_8_source") else "")
             for char in measured_chars:
                 face.load_char(ord(char), freetype.FT_LOAD_RENDER)
                 if char.isdigit():
@@ -706,7 +708,9 @@ class ConfigContractTests(unittest.TestCase):
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
             expected_height = (
-                MATRIX_ROW_HEIGHT - 1
+                6 if entry["id"] == "font_matrix_sans_screen_source"
+                else 5 if entry["id"] == "font_sevenish_mono_8_source"
+                else MATRIX_ROW_HEIGHT - 1
                 if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source", "font_mg_minecraft_georgian_source", "font_georgian_mkhedruli_8x8_source")
                 else MATRIX_ROW_HEIGHT
             )
@@ -964,7 +968,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 7)
+        self.assertEqual(len(faces), 9)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))

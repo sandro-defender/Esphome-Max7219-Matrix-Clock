@@ -1,0 +1,17 @@
+# GENERATED from the corresponding fonts/ release package; do not edit.
+font:
+- id: font_matrix_sans_screen_source
+  file:
+    type: local
+    path: ../../fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
+esphome:
+  build_flags:
+  - -DMAX7219_FONT_MATRIX_SANS_SCREEN
+select:
+- id: !extend 'clock_font'
+  options:
+  - Matrix Sans Screen

@@ -418,6 +418,16 @@
       "label": "Georgian Mkhedruli 8x8",
       "license": "Project-generated",
       "source": "scripts/generate_georgian_mkhedruli_font.py"
+    },
+    "matrix-sans-screen": {
+      "label": "Matrix Sans Screen",
+      "license": "SIL OFL-1.1",
+      "source": "fonts/matrix-sans-screen/OFL.txt"
+    },
+    "sevenish-mono-8": {
+      "label": "Sevenish Mono 8",
+      "license": "MIT",
+      "source": "fonts/sevenish-mono-8/LICENSE.txt"
     }
   },
   "groups": [

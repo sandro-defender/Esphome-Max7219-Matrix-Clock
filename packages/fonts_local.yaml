@@ -56,6 +56,22 @@ font:
   bpp: 1
   glyphs:
   - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
+- id: font_matrix_sans_screen_source
+  file:
+    type: local
+    path: ../fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
+- id: font_sevenish_mono_8_source
+  file:
+    type: local
+    path: ../fonts/sevenish-mono-8/SevenishMono8.ttf
+  size: 5
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
 esphome:
   build_flags:
   - -DMAX7219_FONT_PIXEL_CLOCK_6X8
@@ -65,6 +81,8 @@ esphome:
   - -DMAX7219_FONT_DOT_MATRIX
   - -DMAX7219_FONT_MG_MINECRAFT_GEORGIAN
   - -DMAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
+  - -DMAX7219_FONT_MATRIX_SANS_SCREEN
+  - -DMAX7219_FONT_SEVENISH_MONO_8
 select:
 - id: !extend 'clock_font'
   initial_option: Pixel Clock 6x8
@@ -76,3 +94,5 @@ select:
   - Dot Matrix
   - MG Minecraft Georgian
   - Georgian Mkhedruli 8x8
+  - Matrix Sans Screen
+  - Sevenish Mono 8

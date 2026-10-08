@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "cb0bb98ab92dc3b9ab55d68dd982ab4545e83cadf4ec1183226aa024dcc31002",
+  "sourceHash": "448555a122359d8cf9fc14575d390aa7eb814d06951a59f93cf997ae14989257",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.22",
+  "releaseVersion": "0.7.23",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n\n- Add an optional project-generated Georgian Mkhedruli bitmap font with all 33\n  letters and clock glyphs. Render Georgian UTF-8 code points as single glyphs,\n  use Georgian weekday/month names, and marquee long Georgian dates.",
+  "releaseNotes": "### Added\n\n- Add Matrix Sans Screen and Sevenish Mono 8 as optional Georgian pixel-font\n  packages for trying alternate 8-row matrix appearances.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2601,6 +2601,30 @@
       "source": "scripts/generate_georgian_mkhedruli_font.py",
       "file": "fonts/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf",
       "package": "packages/fonts/georgian-mkhedruli-8x8.yaml"
+    },
+    {
+      "id": "matrix-sans-screen",
+      "option": "Matrix Sans Screen",
+      "label": "Matrix Sans Screen",
+      "family": "Matrix Sans Screen",
+      "firmwareId": "font_matrix_sans_screen_source",
+      "size": 8,
+      "license": "SIL OFL-1.1",
+      "source": "fonts/matrix-sans-screen/OFL.txt",
+      "file": "fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf",
+      "package": "packages/fonts/matrix-sans-screen.yaml"
+    },
+    {
+      "id": "sevenish-mono-8",
+      "option": "Sevenish Mono 8",
+      "label": "Sevenish Mono 8",
+      "family": "SevenishMono8",
+      "firmwareId": "font_sevenish_mono_8_source",
+      "size": 5,
+      "license": "MIT",
+      "source": "fonts/sevenish-mono-8/LICENSE.txt",
+      "file": "fonts/sevenish-mono-8/SevenishMono8.ttf",
+      "package": "packages/fonts/sevenish-mono-8.yaml"
     }
   ],
   "settings": [
@@ -2618,7 +2642,9 @@
         "md-max72xx-system",
         "dot-matrix",
         "mg-minecraft-georgian",
-        "georgian-mkhedruli-8x8"
+        "georgian-mkhedruli-8x8",
+        "matrix-sans-screen",
+        "sevenish-mono-8"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2630,7 +2656,9 @@
         "MD MAX72XX System",
         "Dot Matrix",
         "MG Minecraft Georgian",
-        "Georgian Mkhedruli 8x8"
+        "Georgian Mkhedruli 8x8",
+        "Matrix Sans Screen",
+        "Sevenish Mono 8"
       ]
     },
     {
