@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-10-08
+
+### Changed
+
+- Publish the Georgian pixel-font catalogue under a new minor release version.
+
 ## 0.7.23 - 2026-10-08
 
 ### Added

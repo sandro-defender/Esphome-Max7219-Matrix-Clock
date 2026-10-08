@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "448555a122359d8cf9fc14575d390aa7eb814d06951a59f93cf997ae14989257",
+  "sourceHash": "52b1cc0249850baa579d84ef34c791c68973a3ff1e08346a73608a2ddaa23dba",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.23",
+  "releaseVersion": "0.8.0",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n\n- Add Matrix Sans Screen and Sevenish Mono 8 as optional Georgian pixel-font\n  packages for trying alternate 8-row matrix appearances.",
+  "releaseNotes": "### Changed\n\n- Publish the Georgian pixel-font catalogue under a new minor release version.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
