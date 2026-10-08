@@ -173,7 +173,7 @@ class GeorgianDatePreviewFont extends BuiltinPreviewFont {
       w: 6,
       h: 8,
       top: 0,
-      rows: MAX7219_GEORGIAN_ROWS[code - 0x80],
+      rows: [...MAX7219_GEORGIAN_ROWS[code - 0x80]],
       advance: MAX7219_GEORGIAN_ADVANCES[code - 0x80],
     };
   }
