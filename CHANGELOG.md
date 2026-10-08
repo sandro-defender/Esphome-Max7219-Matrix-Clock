@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.4 - 2026-10-08
+
+### Fixed
+
+- change builin font
+
+
 ## 0.8.3 - 2026-10-08
 
 ### Fixed
