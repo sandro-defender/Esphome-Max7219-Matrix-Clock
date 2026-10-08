@@ -12,6 +12,7 @@ esphome:
     # directory, so these are fetched with the package.
     - max7219_clock_renderer.h
     - max7219_clock_esphome.h
+    - georgian_bitmap_font.generated.h
 
 script:
   # Factory reset actions are generated from controls + selected default fonts

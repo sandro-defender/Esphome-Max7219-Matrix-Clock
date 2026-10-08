@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.23 - 2026-10-08
+
+### Fixed
+
+- Decode and measure UTF-8 by Unicode code point, keep Georgian weekday/month
+  names as real UTF-8, and fail safely on malformed or truncated text.
+- Preserve the optional project-owned 8×8 Mkhedruli face and scroll long
+  Georgian dates without changing the default font pair.
+
 ## 0.7.21 - 2026-10-08
 
 ### Fixed
