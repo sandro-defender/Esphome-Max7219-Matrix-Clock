@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "4e49c0cc1b0169603bc1c5acb1b068ec8b0073c18eed8e6fcc7ef6257ca41538",
+  "sourceHash": "cb0bb98ab92dc3b9ab55d68dd982ab4545e83cadf4ec1183226aa024dcc31002",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.21",
+  "releaseVersion": "0.7.22",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Expand every MG Minecraft Georgian date glyph to the same full eight-row\n  height and correct the final month-letter code mapping.",
+  "releaseNotes": "### Added\n\n- Add an optional project-generated Georgian Mkhedruli bitmap font with all 33\n  letters and clock glyphs. Render Georgian UTF-8 code points as single glyphs,\n  use Georgian weekday/month names, and marquee long Georgian dates.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2589,6 +2589,18 @@
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
       "file": "fonts/mg-minecraft-georgian-regular.ttf",
       "package": "packages/fonts/mg-minecraft-georgian.yaml"
+    },
+    {
+      "id": "georgian-mkhedruli-8x8",
+      "option": "Georgian Mkhedruli 8x8",
+      "label": "Georgian Mkhedruli 8x8",
+      "family": "Georgian Mkhedruli 8x8",
+      "firmwareId": "font_georgian_mkhedruli_8x8_source",
+      "size": 8,
+      "license": "Project-generated",
+      "source": "scripts/generate_georgian_mkhedruli_font.py",
+      "file": "fonts/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf",
+      "package": "packages/fonts/georgian-mkhedruli-8x8.yaml"
     }
   ],
   "settings": [
@@ -2605,7 +2617,8 @@
         "md-parola-numeric-7seg",
         "md-max72xx-system",
         "dot-matrix",
-        "mg-minecraft-georgian"
+        "mg-minecraft-georgian",
+        "georgian-mkhedruli-8x8"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2616,7 +2629,8 @@
         "MD Parola Numeric 7-Segment",
         "MD MAX72XX System",
         "Dot Matrix",
-        "MG Minecraft Georgian"
+        "MG Minecraft Georgian",
+        "Georgian Mkhedruli 8x8"
       ]
     },
     {

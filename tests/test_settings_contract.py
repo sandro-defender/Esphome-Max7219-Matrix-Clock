@@ -161,7 +161,7 @@ class InstallerMergeTests(unittest.TestCase):
         cls.addClassCleanup(cls.temp.cleanup)
         cls.work = Path(cls.temp.name)
         cls.bundle = cls.work / "installer.cjs"
-        subprocess.run(["node", str(ESBUILD), "web-configurator/scripts/installer.ts", "--bundle", "--platform=node",
+        subprocess.run([str(ESBUILD), "web-configurator/scripts/installer.ts", "--bundle", "--platform=node",
                         "--format=cjs", "--define:import.meta.env={}", "--outfile=" + str(cls.bundle)],
                        cwd=ROOT, check=True, capture_output=True, text=True)
 
