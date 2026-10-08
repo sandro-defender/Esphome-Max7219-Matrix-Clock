@@ -1,0 +1,19 @@
+# Optional project-owned MD_MAX72XX-style Georgian bitmap face.
+font:
+  - id: font_georgian_mkhedruli_8x8_source
+    file:
+      type: web
+      url: ${fonts_base_url}/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - '0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ'
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
+
+select:
+  - id: !extend clock_font
+    options:
+      - "Georgian Mkhedruli 8x8"

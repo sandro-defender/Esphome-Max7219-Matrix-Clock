@@ -43,8 +43,8 @@ class DisplayCanvas : public Canvas {
 class SourceFont : public GlyphFont {
  public:
   SourceFont(font::Font *font, display::Display *) : font_(font) {}
-  int advance(char c) const override {
-    const font::Glyph *glyph = this->font_->find_glyph((uint32_t) (uint8_t) c);
+  int advance(uint32_t codepoint) const override {
+    const font::Glyph *glyph = this->font_->find_glyph(codepoint);
     return glyph != nullptr ? glyph->advance : 0;
   }
   // Ink height/top of a digit: the clock/countdown text is centred on digits.
@@ -57,11 +57,11 @@ class SourceFont : public GlyphFont {
     return glyph != nullptr ? glyph->offset_y : 0;
   }
   const void *identity() const override { return this->font_; }
-  void draw_glyph(Canvas &canvas, char ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &canvas, uint32_t codepoint, int x, int box_top) const override {
     // All supported faces are bpp: 1. Read ESPHome's compiled, packed glyph
     // through Canvas so per-cell clipping also applies to external fonts.
     // Font::print draws straight into Display and bypasses that clip window.
-    const font::Glyph *glyph = this->font_->find_glyph((uint32_t) (uint8_t) ch);
+    const font::Glyph *glyph = this->font_->find_glyph(codepoint);
     if (glyph == nullptr) return;
     for (int row = 0; row < glyph->height; row++) {
       for (int col = 0; col < glyph->width; col++) {
