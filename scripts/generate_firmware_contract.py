@@ -240,7 +240,7 @@ def build():
     limits = {"matrix_chips": range_of(driver_schema["num_chips"]), "matrix_rows": range_of(driver_schema["num_chip_lines"]),
               "ota_display_intensity": range_of(driver_schema["intensity"]), "ota_port": range_of(cv.port),
               "web_server_port": range_of(cv.port)}
-    renderer = (ROOT / "packages/max7219_clock_renderer.h").read_text(encoding="utf8")
+    renderer = (ROOT / "packages/max7219_clock_renderer.h").read_text()
     # Pin catalogues keep ESPHome's own board tables instead of one expanded
     # map per board: per-board aliases (including the SDK's string references),
     # the shared alias base and the output-capable GPIO numbers per variant.

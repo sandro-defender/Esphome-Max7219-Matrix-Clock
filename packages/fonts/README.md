@@ -4,15 +4,14 @@
 
 Default firmware and configurator builds compile exactly **Pixel Clock 6×8 +
 Matrix 2px**; **Compact 5×7** is always built in. MD Parola Numeric 7-Segment,
-MD MAX72XX System, Dot Matrix, MG Minecraft Georgian, Georgian Mkhedruli 8×8,
-Matrix Sans Screen and Sevenish Mono 8 are optional. There is no cap on
-compatible extra faces, and the nine-face catalogue is not the default build.
+MD MAX72XX System and Dot Matrix are optional. There is no cap on compatible
+extra faces, and the five-face catalogue is not the default build.
 
 | File | Purpose |
 | --- | --- |
 | `fonts_web.yaml` | default two-face remote wrapper (Pixel Clock 6×8 + Matrix 2px) |
 | `fonts_default_local.yaml` | generated local wrapper for the same default pair, used by `dev.yaml` |
-| `fonts_local.yaml` | generated nine-face catalogue for metrics and all-font validation |
+| `fonts_local.yaml` | generated five-face catalogue for metrics and all-font validation |
 | `fonts/*.yaml` | individually selectable remote face packages |
 | `local_fonts/*.yaml` | generated local equivalents with local source paths |
 
@@ -36,9 +35,9 @@ raw pointers, so ESPHome does not resolve omitted font IDs. `SourceFont` is
 protected by `USE_FONT`; built-in-only firmware needs no external font namespace.
 Packed 1 bpp glyphs are drawn through the clipped Canvas, not `Font.print`.
 
-Current checks exercise the tagged resolver over all **512 subsets** of nine
-faces and the exact default order, and the browser rasterisation is compared
-with packed-glyph/MAX7219 writer/SPI fixtures from the same tagged SDK. The Matrix 2px
+Current checks exercise the tagged resolver over all **32 subsets** of five faces
+and the exact default order, and the browser rasterisation is compared with
+packed-glyph/MAX7219 writer/SPI fixtures from the same tagged SDK. The Matrix 2px
 zero's upper-left 2×2 stroke is repaired without changing its two-pixel style or
 advance.
 
@@ -66,9 +65,8 @@ strings fall back to Compact; omitted faces are never referenced by the renderer
 "Seven-segment" is a digit design on an LED matrix, not a separate display type.
 The double-height variant is not used. Both are opt-in and retain their
 LGPL-2.1-or-later source/conversion notices
-(`fonts/md-max72xx-system/LICENSE.txt`). Matrix Sans Screen is SIL OFL-1.1 and
-Sevenish Mono 8 is MIT; both retain their upstream license beside the source
-font. Pixel Clock 6×8, Matrix 2px and Dot Matrix retain their project generation scripts. Each external face restricts
+(`fonts/md-max72xx-system/LICENSE.txt`). Pixel Clock 6×8, Matrix 2px and Dot
+Matrix retain their project generation scripts. Each external face restricts
 compilation to the clock/status glyph set at `bpp: 1`; full licence and source
 information stays with the assets in [fonts/README.md](../../fonts/README.md).
 
@@ -77,7 +75,7 @@ information stays with the assets in [fonts/README.md](../../fonts/README.md).
 Measured on ESPHome **2026.9.0** (`d1_mini`, 1,044,464 B flash / 81,920 B RAM) at
 release `0.4.0`, whose ten-face catalogue also included Jersey 15, Teko,
 Rajdhani Bold, Kdam Thmor Pro, Rationale, Handjet, Oxanium and Share Tech Mono
-(since removed; the current catalogue has seven faces). The font policy and
+(since removed; the current catalogue has five faces). The font policy and
 default pair have changed since.
 
 - **Built-in only (0 external faces):** 501,589 B flash (48.0%), 40,088 B RAM (48.9%)

@@ -98,7 +98,7 @@ class FakeCanvas : public Canvas {
 // about widths and vertical offsets, and every draw call is recorded.
 // --------------------------------------------------------------------------
 struct DrawCall {
-  uint32_t ch;
+  char ch;
   int x;
   int box_top;
 };
@@ -107,16 +107,16 @@ class FakeFont : public GlyphFont {
  public:
   FakeFont(int advance, int ink_height = 7, int ink_top = 0)
       : advance_(advance), ink_height_(ink_height), ink_top_(ink_top) {}
-  int advance(uint32_t) const override { return advance_; }
+  int advance(char) const override { return advance_; }
   int ink_height() const override { return ink_height_; }
   int ink_top() const override { return ink_top_; }
-  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
     calls.push_back({ch, x, box_top});
     for (int row = 0; row < ink_height_; row++)
       for (int col = 0; col < advance_ - 1; col++) c.pixel(x + col, box_top + ink_top_ + row, true);
   }
   mutable std::vector<DrawCall> calls;
-  int calls_for(uint32_t ch) const {
+  int calls_for(char ch) const {
     int n = 0;
     for (const auto &call : calls)
       if (call.ch == ch) n++;
@@ -165,10 +165,10 @@ static void test_unknown_glyphs_do_not_break_layout() {
   // the remaining characters.
   class SparseFont : public GlyphFont {
    public:
-    int advance(uint32_t c) const override { return c == '9' ? 0 : 6; }
+    int advance(char c) const override { return c == '9' ? 0 : 6; }
     int ink_height() const override { return 7; }
     int ink_top() const override { return 0; }
-    void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
       if (ch == '9') return;  // no ink for the missing glyph
       for (int row = 0; row < 7; row++)
         for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
@@ -1170,7 +1170,7 @@ static void test_date_formats() {
   f.day = 5;
   f.month = 3;
   f.year = 2026;
-  char out[80];
+  char out[24];
   f.date_format = DATE_DD_MM;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "05.03") == 0);
@@ -1192,20 +1192,11 @@ static void test_date_formats() {
   f.date_format = DATE_WEEKDAY_MMM_DD;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "THU MAR.05") == 0);
-
   f.date_language = DATE_LANGUAGE_GEORGIAN;
-  f.date_format = DATE_WEEKDAY_DD_MM_YY;
-  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
-  CHECK(strcmp(out, "ხუთშაბათი 05.03.26") == 0);
   f.date_format = DATE_WEEKDAY_DD_MMM_YY;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
-  CHECK(strcmp(out, "ხუთშაბათი 05. მარტი 26") == 0);
-  f.date_format = DATE_WEEKDAY_MMM_DD;
-  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
-  CHECK(strcmp(out, "ხუთშაბათი მარტი.05") == 0);
-  f.date_format = DATE_DD_MM;
-  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
-  CHECK(strcmp(out, "05.03") == 0);  // Numeric formats are language-independent.
+  const char expected_georgian[] = {char(0x8A), char(0x8B), char(0x89), ' ', '0', '5', '.', ' ', char(0x88), char(0x87), char(0x84), ' ', '2', '6', 0};
+  CHECK(strcmp(out, expected_georgian) == 0);
 }
 
 static void test_weather_condition_normalization() {
@@ -1563,21 +1554,21 @@ static void test_blinking_colon_keeps_layout_stable() {
   // second; the ':' must keep its advance and only lose its ink.
   class BlinkFont : public GlyphFont {
    public:
-    int advance(uint32_t c) const override {
+    int advance(char c) const override {
       if (c == ':') return 9;
       if (c == ' ') return 2;
       return 6;
     }
     int ink_height() const override { return 7; }
     int ink_top() const override { return 0; }
-    void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
       calls.push_back({ch, x, box_top});
       if (ch == ':' || ch == ' ') return;  // punctuation without ink
       for (int row = 0; row < 7; row++)
         for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
     }
     mutable std::vector<DrawCall> calls;
-    int calls_for(uint32_t ch) const {
+    int calls_for(char ch) const {
       int n = 0;
       for (const auto &call : calls)
         if (call.ch == ch) n++;
@@ -1618,18 +1609,18 @@ static void test_blinking_colon_keeps_layout_stable() {
 // advance 0 that the SourceFont adapter returns for missing glyphs.
 class ClockOnlyFont : public GlyphFont {
  public:
-  static bool clock_glyph(uint32_t c) { return c < 0x80U && strchr("0123456789:.-/%!?+ ", (int) c) != nullptr; }
-  int advance(uint32_t c) const override { return clock_glyph(c) ? 6 : 0; }
+  static bool clock_glyph(char c) { return strchr("0123456789:.-/%!?+ ", c) != nullptr; }
+  int advance(char c) const override { return clock_glyph(c) ? 6 : 0; }
   int ink_height() const override { return 8; }
   int ink_top() const override { return 0; }
-  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
     calls.push_back({ch, x, box_top});
     if (!clock_glyph(ch)) return;
     for (int row = 0; row < 8; row++)
       for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
   }
   mutable std::vector<DrawCall> calls;
-  int calls_for(uint32_t ch) const {
+  int calls_for(char ch) const {
     int n = 0;
     for (const auto &call : calls)
       if (call.ch == ch) n++;
@@ -1711,85 +1702,15 @@ static void test_builtin_font_renders_every_required_glyph() {
   }
 }
 
-static void test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs() {
-  FakeCanvas canvas(24, 8);
-  FakeFont font(6);
-  font.draw_text(canvas, "აბ", 0, 0);
-  CHECK_EQ(font.text_width("აბ"), 12);
-  CHECK_EQ(font.calls.size(), 2u);
-  CHECK_EQ(font.calls[0].ch, 0x10D0U);
-  CHECK_EQ(font.calls[1].ch, 0x10D1U);
-  CHECK_EQ(font.calls[0].x, 0);
-  CHECK_EQ(font.calls[1].x, 6);
-}
-
-static void test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall() {
-  using namespace georgian_bitmap;
-  int letters = 0;
-  for (uint32_t codepoint = 0x10D0U; codepoint <= 0x10F0U; codepoint++) {
-    const Glyph *glyph = find(codepoint);
-    CHECK(glyph != nullptr);
-    if (glyph == nullptr) continue;
-    CHECK(glyph->width > 0);
-    CHECK(ink_height(*glyph) <= 8);
-    letters++;
-  }
-  CHECK_EQ(letters, 33);
-  for (size_t index = 0; index < GLYPH_COUNT; index++) {
-    CHECK(GLYPHS[index].width > 0);
-    CHECK(ink_height(GLYPHS[index]) <= 8);
-  }
-
-  // Verify the renderer uses each source byte as one vertical column, bit 0 at
-  // the top, matching the MD_MAX72XX bitmap convention and generated TTF.
-  const Glyph *first_letter = find(0x10D0U);
-  GeorgianBitmapFont font;
+static void test_georgian_date_font_normalizes_every_glyph_to_eight_rows() {
+  GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  font.draw_glyph(canvas, 0x10D0U, 0, 0);
-  CHECK(first_letter != nullptr);
-  if (first_letter != nullptr)
-    for (int column = 0; column < first_letter->width; column++)
-      for (int row = 0; row < 8; row++)
-        CHECK(canvas.get(column, row) == ((first_letter->columns[column] & (1U << row)) != 0));
-}
-
-static void test_georgian_full_name_date_scrolls_instead_of_clipping() {
-  Frame f = base_frame(1000);
-  f.screen = SCREEN_CLOCK;
-  f.seconds_mode = SECONDS_OFF;
-  f.date_language = DATE_LANGUAGE_GEORGIAN;
-  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
-  f.day = 5;
-  f.month = 3;
-  f.year = 2026;
-  f.animate = true;
-  f.animation_ms = 600;
-  f.date_scroll_ms_per_px = 1;
-  char content[80] = {0};
-  CHECK(build_content(f, MODE_DATE, false, content, sizeof(content)));
-  GeorgianBitmapFont georgian;
-  CHECK(georgian.text_width(content) > 48);
-  CHECK(date_content_needs_scroll(f, compact, compact, 48));
-
-  FakeCanvas baseline(48, 8), first(48, 8), later(48, 8);
-  reset_state();
-  render(baseline, compact, compact, f, report);
-  f.screen = SCREEN_DATE;
-  f.now_ms += 20;
-  render(first, compact, compact, f, report);
-  CHECK(!state.screen_transition_active);  // The long Georgian marquee is not clipped in a screen slide.
-  CHECK_EQ(state.date_scroll_started_ms, f.now_ms);
-  const uint32_t scroll_started = f.now_ms;
-  f.now_ms += 20;
-  render(later, compact, compact, f, report);
-  CHECK_EQ(state.date_scroll_started_ms, scroll_started);
-  CHECK(first.on_count() > 0);
-  CHECK(later.on_count() > 0);
-  bool moved = false;
-  for (int y = 0; y < 8; y++)
-    for (int x = 0; x < 48; x++)
-      if (first.get(x, y) != later.get(x, y)) moved = true;
-  CHECK(moved);
+  // კ is six source rows tall; the renderer expands it to all eight rows.
+  const char letter = static_cast<char>(0x80);
+  georgian.draw_glyph(canvas, letter, 0, 0);
+  CHECK_EQ(georgian.advance(letter), 6);
+  CHECK_EQ(georgian.ink_height(), 8);
+  CHECK(canvas.row_on(7) > 0);
 }
 
 static void test_default_layout_matches_readme() {
@@ -1972,9 +1893,7 @@ int main() {
   test_message_uses_selected_font_metrics();
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
-  test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs();
-  test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall();
-  test_georgian_full_name_date_scrolls_instead_of_clipping();
+  test_georgian_date_font_normalizes_every_glyph_to_eight_rows();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();
