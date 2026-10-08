@@ -49,9 +49,7 @@ def pinned_dependencies(root=ROOT):
 
 
 def check_plan(python, npm, skip_sdk_checks=False):
-    checks = [
-        ("Georgian bitmap font freshness", [python, "scripts/generate_georgian_mkhedruli_font.py", "--check"]),
-    ]
+    checks = []
     if not skip_sdk_checks:
         checks.extend([
             ("Firmware contract freshness (SDK imports only)", [python, "scripts/generate_firmware_contract.py", "--check"]),
@@ -78,7 +76,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     print("Code-only checks: no ESPHome/PlatformIO CLI or firmware compilation.", flush=True)
     if args.skip_sdk_checks:
-        print("REDUCED COVERAGE: exact SDK dependencies and SDK-generated freshness NOT checked; Georgian bitmap freshness is still checked.", flush=True)
+        print("REDUCED COVERAGE: exact SDK dependencies and generated freshness NOT checked.", flush=True)
     else:
         pinned_dependencies()
     npm = "npm.cmd" if os.name == "nt" else "npm"

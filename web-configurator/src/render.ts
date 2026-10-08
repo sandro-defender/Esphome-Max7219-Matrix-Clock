@@ -303,10 +303,10 @@ export function dateContent(now: Date, cfg: Config): string {
   const month = pad(now.getMonth() + 1);
   const year = pad(now.getFullYear() % 100);
   const weekday = cfg.dateLanguage === "Georgian"
-    ? ["კვირა", "ორშაბათი", "სამშაბათი", "ოთხშაბათი", "ხუთშაბათი", "პარასკევი", "შაბათი"][now.getDay()]
+    ? ["\x80\x81\x82", "\x83\x84\x85", "\x86\x87\x88", "\x83\x89\x8A", "\x8A\x8B\x89", "\x8C\x87\x84", "\x85\x87\x8D"][now.getDay()]
     : ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
   const monthName = cfg.dateLanguage === "Georgian"
-    ? ["იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი", "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"][now.getMonth()]
+    ? ["\x82\x87\x8E", "\x89\x8F\x8D", "\x88\x87\x84", "\x87\x8C\x84", "\x88\x87\x82", "\x82\x81\x8E", "\x82\x81\x92", "\x87\x91\x81", "\x86\x8F\x93", "\x83\x93\x94", "\x8E\x83\x8F", "\x90\x8F\x80"][now.getMonth()]
     : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
   if (cfg.dateFormat === "MM/DD") return `${month}/${day}`;
   if (cfg.dateFormat === "DD/MM") return `${day}/${month}`;
@@ -549,19 +549,14 @@ export function renderScene(
   let content = "";
 
   if (cfg.displayPower) {
-    const namedDate = page === "date" && cfg.dateFormat.startsWith("Weekday");
-    let font = namedDate && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
+    let font = page === "date" && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {
       const shown = text.length > 0 ? text : "";
       if (shown) {
         if (font.measure(shown) === null) {
-          const containsGeorgian = [...shown].some((character) => {
-            const codepoint = character.codePointAt(0) ?? 0;
-            return codepoint >= 0x10d0 && codepoint <= 0x10f0;
-          });
-          font = containsGeorgian ? GEORGIAN_DATE_FONT : BUILTIN_FONT;
+          font = BUILTIN_FONT;
           usedFallback = true;
         }
         drawFreeText(frame, font, shown, cfg, age);
@@ -595,8 +590,7 @@ export function renderScene(
         droppedSeconds = true;
         content = build();
       }
-      const measuredWidth = font.measure(content);
-      if (measuredWidth === null || (measuredWidth > contentFrame.width && !namedDate)) {
+      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width) {
         font = BUILTIN_FONT;
         usedFallback = true;
       }
