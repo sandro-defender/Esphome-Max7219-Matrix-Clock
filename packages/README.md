@@ -10,11 +10,11 @@ the package list; everything else lives here.
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant time and SNTP fallback, both using `${timezone}` |
 | `renderer.yaml` | C++ include list, restore-defaults script, OTA error/success timeouts |
 | `display.yaml` | SPI bus, MAX7219 panel, the lambda that feeds the renderer and publishes changes |
-| `fonts/*.yaml` | nine per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
+| `fonts/*.yaml` | five per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
 | `fonts_web.yaml` | wrapper for the default pair: Pixel Clock 6×8 + Matrix 2px |
 | `fonts_default_local.yaml` | generated local wrapper for the same default pair, used by `dev.yaml` |
-| `fonts_local.yaml` | generated nine-face catalogue for offline metrics and glyph generation |
-| `local_fonts/*.yaml` | generated local equivalents of the nine face packages |
+| `fonts_local.yaml` | generated five-face catalogue for offline metrics and glyph generation |
+| `local_fonts/*.yaml` | generated local equivalents of the five face packages |
 | `controls.yaml` | restored selects, numbers and switches |
 | `buttons.yaml` | convenience and recovery buttons (stable IDs, shared action scripts) |
 | `entity_visibility.yaml` | per-entity `internal` substitution defaults; all controls/diagnostics exposed by default |

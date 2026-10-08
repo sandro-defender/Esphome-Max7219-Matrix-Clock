@@ -1,8 +1,8 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome **2026.9.1** firmware for a MAX7219 LED matrix clock on an
-ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, seven
-selectable 8-row clock faces plus a built-in fallback, per-digit slide-up
+ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, five
+optional 8-row clock faces plus a built-in fallback, per-digit slide-up
 animation, and OTA progress shown on the panel.
 
 Small package modules keep your YAML short: credentials, substitutions, packages.
@@ -212,13 +212,10 @@ unavailable the SNTP fallback is used; with no time at all the panel shows
 
 Default builds compile exactly **Pixel Clock 6×8** (initial face) and
 **Matrix 2px**; **Compact 5×7** is always built in. Dot Matrix, MD Parola
-Numeric 7-Segment, MD MAX72XX System, MG Minecraft Georgian, and the
-project-generated **Georgian Mkhedruli 8×8** are optional per-face packages.
-The generated bitmap covers all 33 modern Georgian letters and the clock/status
-glyph set; Georgian weekday and month names use the full Unicode names and
-scroll when they exceed the panel. ESPHome restores the Clock font **index**,
-not its name, so re-select the face after flashing a changed font subset;
-unmatched options fall back to Compact.
+Numeric 7-Segment and MD MAX72XX System are optional per-face packages with no
+selection cap. ESPHome restores the Clock font **index**, not its name, so
+re-select the face after flashing a changed font subset; unmatched options fall
+back to Compact.
 
 Licences, generated-font sources and the add-a-font checklist are in
 [fonts/README.md](fonts/README.md); the package policy is in

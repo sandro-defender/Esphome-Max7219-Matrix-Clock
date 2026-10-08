@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "663383730cb93f07553910caeb577690cc229fbb718b579affaf3df894469b44",
+  "sourceHash": "963bce7f8ef9a80adff17bb0208ce317b2f88ee369d5c9aa11aa445b9b235bec",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.2",
+  "releaseVersion": "0.8.3",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Publish the independent Date font selector in a fresh immutable release.",
+  "releaseNotes": "### Fixed\n\n- Restore the firmware, configurator, bundled fonts, and renderer behavior to\n  the known-good 0.7.21 implementation.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2589,42 +2589,6 @@
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
       "file": "fonts/mg-minecraft-georgian-regular.ttf",
       "package": "packages/fonts/mg-minecraft-georgian.yaml"
-    },
-    {
-      "id": "georgian-mkhedruli-8x8",
-      "option": "Georgian Mkhedruli 8x8",
-      "label": "Georgian Mkhedruli 8x8",
-      "family": "Georgian Mkhedruli 8x8",
-      "firmwareId": "font_georgian_mkhedruli_8x8_source",
-      "size": 8,
-      "license": "Project-generated",
-      "source": "scripts/generate_georgian_mkhedruli_font.py",
-      "file": "fonts/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf",
-      "package": "packages/fonts/georgian-mkhedruli-8x8.yaml"
-    },
-    {
-      "id": "matrix-sans-screen",
-      "option": "Matrix Sans Screen",
-      "label": "Matrix Sans Screen",
-      "family": "Matrix Sans Screen",
-      "firmwareId": "font_matrix_sans_screen_source",
-      "size": 8,
-      "license": "SIL OFL-1.1",
-      "source": "fonts/matrix-sans-screen/OFL.txt",
-      "file": "fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf",
-      "package": "packages/fonts/matrix-sans-screen.yaml"
-    },
-    {
-      "id": "sevenish-mono-8",
-      "option": "Sevenish Mono 8",
-      "label": "Sevenish Mono 8",
-      "family": "SevenishMono8",
-      "firmwareId": "font_sevenish_mono_8_source",
-      "size": 5,
-      "license": "MIT",
-      "source": "fonts/sevenish-mono-8/LICENSE.txt",
-      "file": "fonts/sevenish-mono-8/SevenishMono8.ttf",
-      "package": "packages/fonts/sevenish-mono-8.yaml"
     }
   ],
   "settings": [
@@ -2641,10 +2605,7 @@
         "md-parola-numeric-7seg",
         "md-max72xx-system",
         "dot-matrix",
-        "mg-minecraft-georgian",
-        "georgian-mkhedruli-8x8",
-        "matrix-sans-screen",
-        "sevenish-mono-8"
+        "mg-minecraft-georgian"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2655,10 +2616,7 @@
         "MD Parola Numeric 7-Segment",
         "MD MAX72XX System",
         "Dot Matrix",
-        "MG Minecraft Georgian",
-        "Georgian Mkhedruli 8x8",
-        "Matrix Sans Screen",
-        "Sevenish Mono 8"
+        "MG Minecraft Georgian"
       ]
     },
     {

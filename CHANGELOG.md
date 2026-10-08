@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.3 - 2026-10-08
+
+### Fixed
+
+- Restore the firmware, configurator, bundled fonts, and renderer behavior to
+  the known-good 0.7.21 implementation.
+
 ## 0.8.2 - 2026-10-08
 
 ### Fixed
