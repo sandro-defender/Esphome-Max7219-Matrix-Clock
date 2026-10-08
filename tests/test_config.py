@@ -64,6 +64,7 @@ REQUIRED_MODULES = [
     "fonts_local.yaml",
     "max7219_clock_renderer.h",
     "max7219_clock_esphome.h",
+    "max7219_date_font.generated.h",
 ]
 
 REQUIRED_ENTITIES = {
@@ -259,6 +260,12 @@ class ConfigContractTests(unittest.TestCase):
             450,
             f"{biggest.name} grows back into a monolith",
         )
+
+    def test_renderer_package_includes_every_renderer_header(self):
+        includes = load_yaml(PACKAGES / "renderer.yaml")["esphome"]["includes"]
+        self.assertIn("max7219_clock_renderer.h", includes)
+        self.assertIn("max7219_clock_esphome.h", includes)
+        self.assertIn("max7219_date_font.generated.h", includes)
 
     def test_min_version_is_the_target_release(self):
         base = load_yaml(PACKAGES / "base.yaml")
