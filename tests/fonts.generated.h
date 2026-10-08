@@ -226,110 +226,110 @@ static const Glyph font_dot_matrix_source_glyphs[] = {
   Glyph(63, font_dot_matrix_source_63_data, 6, 0, 0, 6, 8)
 };
 static const uint8_t font_mg_minecraft_georgian_source_32_data[] = {0};
-static const uint8_t font_mg_minecraft_georgian_source_33_data[] = {244};
-static const uint8_t font_mg_minecraft_georgian_source_37_data[] = {26,4,73};
-static const uint8_t font_mg_minecraft_georgian_source_43_data[] = {39,200,64};
-static const uint8_t font_mg_minecraft_georgian_source_45_data[] = {240};
-static const uint8_t font_mg_minecraft_georgian_source_46_data[] = {128};
-static const uint8_t font_mg_minecraft_georgian_source_47_data[] = {18,4,72};
-static const uint8_t font_mg_minecraft_georgian_source_48_data[] = {105,189,150};
-static const uint8_t font_mg_minecraft_georgian_source_49_data[] = {35,8,66,124};
-static const uint8_t font_mg_minecraft_georgian_source_50_data[] = {105,6,143};
-static const uint8_t font_mg_minecraft_georgian_source_51_data[] = {105,7,150};
-static const uint8_t font_mg_minecraft_georgian_source_52_data[] = {53,159,17};
-static const uint8_t font_mg_minecraft_georgian_source_53_data[] = {248,225,150};
-static const uint8_t font_mg_minecraft_georgian_source_54_data[] = {36,143,150};
-static const uint8_t font_mg_minecraft_georgian_source_55_data[] = {249,16,34};
-static const uint8_t font_mg_minecraft_georgian_source_56_data[] = {105,15,150};
-static const uint8_t font_mg_minecraft_georgian_source_57_data[] = {105,23,36};
-static const uint8_t font_mg_minecraft_georgian_source_58_data[] = {136};
-static const uint8_t font_mg_minecraft_georgian_source_63_data[] = {105,6,4};
-static const uint8_t font_mg_minecraft_georgian_source_4304_data[] = {66,150};
-static const uint8_t font_mg_minecraft_georgian_source_4305_data[] = {68,6,150};
-static const uint8_t font_mg_minecraft_georgian_source_4306_data[] = {24,10,128};
-static const uint8_t font_mg_minecraft_georgian_source_4307_data[] = {79,192,67};
-static const uint8_t font_mg_minecraft_georgian_source_4308_data[] = {105,25,96};
-static const uint8_t font_mg_minecraft_georgian_source_4309_data[] = {105,41,96};
-static const uint8_t font_mg_minecraft_georgian_source_4310_data[] = {197,56,114,140};
-static const uint8_t font_mg_minecraft_georgian_source_4311_data[] = {90,186,211};
-static const uint8_t font_mg_minecraft_georgian_source_4312_data[] = {116,98,160};
-static const uint8_t font_mg_minecraft_georgian_source_4313_data[] = {16,41,96};
-static const uint8_t font_mg_minecraft_georgian_source_4314_data[] = {105,132,194};
-static const uint8_t font_mg_minecraft_georgian_source_4315_data[] = {105,23,150};
-static const uint8_t font_mg_minecraft_georgian_source_4316_data[] = {104,142,150};
-static const uint8_t font_mg_minecraft_georgian_source_4317_data[] = {122,184,210};
-static const uint8_t font_mg_minecraft_georgian_source_4318_data[] = {66,18,150};
-static const uint8_t font_mg_minecraft_georgian_source_4319_data[] = {51,121,96};
-static const uint8_t font_mg_minecraft_georgian_source_4320_data[] = {72,142,154};
-static const uint8_t font_mg_minecraft_georgian_source_4321_data[] = {136,138,150};
-static const uint8_t font_mg_minecraft_georgian_source_4322_data[] = {66,153,96};
-static const uint8_t font_mg_minecraft_georgian_source_4323_data[] = {109,25,96};
-static const uint8_t font_mg_minecraft_georgian_source_4324_data[] = {109,105,96};
-static const uint8_t font_mg_minecraft_georgian_source_4325_data[] = {23,81,150};
-static const uint8_t font_mg_minecraft_georgian_source_4326_data[] = {107,74,32};
-static const uint8_t font_mg_minecraft_georgian_source_4327_data[] = {145,121,96};
-static const uint8_t font_mg_minecraft_georgian_source_4328_data[] = {109,23,150};
-static const uint8_t font_mg_minecraft_georgian_source_4329_data[] = {106,238,154};
-static const uint8_t font_mg_minecraft_georgian_source_4330_data[] = {105,169,96};
-static const uint8_t font_mg_minecraft_georgian_source_4331_data[] = {17,23,150};
-static const uint8_t font_mg_minecraft_georgian_source_4332_data[] = {109,142,150};
-static const uint8_t font_mg_minecraft_georgian_source_4333_data[] = {103,98,150};
-static const uint8_t font_mg_minecraft_georgian_source_4334_data[] = {136,142,150};
-static const uint8_t font_mg_minecraft_georgian_source_4335_data[] = {70,2,150};
-static const uint8_t font_mg_minecraft_georgian_source_4336_data[] = {22,22,150};
+static const uint8_t font_mg_minecraft_georgian_source_33_data[] = {250};
+static const uint8_t font_mg_minecraft_georgian_source_37_data[] = {140,132,68,38,32};
+static const uint8_t font_mg_minecraft_georgian_source_43_data[] = {33,62,66,0};
+static const uint8_t font_mg_minecraft_georgian_source_45_data[] = {248};
+static const uint8_t font_mg_minecraft_georgian_source_46_data[] = {192};
+static const uint8_t font_mg_minecraft_georgian_source_47_data[] = {8,132,68,34,0};
+static const uint8_t font_mg_minecraft_georgian_source_48_data[] = {116,103,92,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_49_data[] = {35,8,66,19,224};
+static const uint8_t font_mg_minecraft_georgian_source_50_data[] = {116,66,100,67,224};
+static const uint8_t font_mg_minecraft_georgian_source_51_data[] = {116,66,96,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_52_data[] = {25,83,31,132,32};
+static const uint8_t font_mg_minecraft_georgian_source_53_data[] = {252,60,16,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_54_data[] = {50,33,232,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_55_data[] = {252,66,34,16,128};
+static const uint8_t font_mg_minecraft_georgian_source_56_data[] = {116,98,232,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_57_data[] = {116,98,240,137,128};
+static const uint8_t font_mg_minecraft_georgian_source_58_data[] = {204};
+static const uint8_t font_mg_minecraft_georgian_source_63_data[] = {116,66,34,0,128};
+static const uint8_t font_mg_minecraft_georgian_source_4304_data[] = {32,131,23,0};
+static const uint8_t font_mg_minecraft_georgian_source_4305_data[] = {67,8,168,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4306_data[] = {69,8,168,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4307_data[] = {116,108,138,8};
+static const uint8_t font_mg_minecraft_georgian_source_4308_data[] = {116,66,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4309_data[] = {116,68,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4310_data[] = {69,16,100,164,192};
+static const uint8_t font_mg_minecraft_georgian_source_4311_data[] = {85,107,84,128};
+static const uint8_t font_mg_minecraft_georgian_source_4312_data[] = {116,99,21,0};
+static const uint8_t font_mg_minecraft_georgian_source_4313_data[] = {8,68,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4314_data[] = {116,98,138,8};
+static const uint8_t font_mg_minecraft_georgian_source_4315_data[] = {116,66,248,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4316_data[] = {116,33,232,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4317_data[] = {85,99,21,0};
+static const uint8_t font_mg_minecraft_georgian_source_4318_data[] = {32,130,32,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4319_data[] = {25,90,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4320_data[] = {68,33,232,198,64};
+static const uint8_t font_mg_minecraft_georgian_source_4321_data[] = {132,33,40,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4322_data[] = {33,171,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4323_data[] = {85,66,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4324_data[] = {85,82,40,184};
+static const uint8_t font_mg_minecraft_georgian_source_4325_data[] = {8,78,144,134,46};
+static const uint8_t font_mg_minecraft_georgian_source_4326_data[] = {85,96,138,8};
+static const uint8_t font_mg_minecraft_georgian_source_4327_data[] = {140,94,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4328_data[] = {85,66,248,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4329_data[] = {100,185,15,70,64};
+static const uint8_t font_mg_minecraft_georgian_source_4330_data[] = {84,101,24,184};
+static const uint8_t font_mg_minecraft_georgian_source_4331_data[] = {8,66,248,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4332_data[] = {85,97,232,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4333_data[] = {17,150,97,6,46};
+static const uint8_t font_mg_minecraft_georgian_source_4334_data[] = {132,41,232,197,192};
+static const uint8_t font_mg_minecraft_georgian_source_4335_data[] = {35,12,65,6,46};
+static const uint8_t font_mg_minecraft_georgian_source_4336_data[] = {48,68,17,6,46};
 static const Glyph font_mg_minecraft_georgian_source_glyphs[] = {
-  Glyph(32, font_mg_minecraft_georgian_source_32_data, 5, 0, 5, 1, 1),
-  Glyph(33, font_mg_minecraft_georgian_source_33_data, 2, 0, 0, 1, 6),
-  Glyph(37, font_mg_minecraft_georgian_source_37_data, 5, 0, 0, 4, 6),
-  Glyph(43, font_mg_minecraft_georgian_source_43_data, 4, -1, 2, 5, 4),
-  Glyph(45, font_mg_minecraft_georgian_source_45_data, 5, 0, 3, 4, 1),
-  Glyph(46, font_mg_minecraft_georgian_source_46_data, 2, 0, 5, 1, 1),
-  Glyph(47, font_mg_minecraft_georgian_source_47_data, 5, 0, 0, 4, 6),
-  Glyph(48, font_mg_minecraft_georgian_source_48_data, 5, 0, 0, 4, 6),
-  Glyph(49, font_mg_minecraft_georgian_source_49_data, 5, -1, 0, 5, 6),
-  Glyph(50, font_mg_minecraft_georgian_source_50_data, 5, 0, 0, 4, 6),
-  Glyph(51, font_mg_minecraft_georgian_source_51_data, 5, 0, 0, 4, 6),
-  Glyph(52, font_mg_minecraft_georgian_source_52_data, 5, 0, 0, 4, 6),
-  Glyph(53, font_mg_minecraft_georgian_source_53_data, 5, 0, 0, 4, 6),
-  Glyph(54, font_mg_minecraft_georgian_source_54_data, 5, 0, 0, 4, 6),
-  Glyph(55, font_mg_minecraft_georgian_source_55_data, 5, 0, 0, 4, 6),
-  Glyph(56, font_mg_minecraft_georgian_source_56_data, 5, 0, 0, 4, 6),
-  Glyph(57, font_mg_minecraft_georgian_source_57_data, 5, 0, 0, 4, 6),
-  Glyph(58, font_mg_minecraft_georgian_source_58_data, 2, 0, 1, 1, 5),
-  Glyph(63, font_mg_minecraft_georgian_source_63_data, 5, 0, 0, 4, 6),
-  Glyph(4304, font_mg_minecraft_georgian_source_4304_data, 5, 0, 2, 4, 4),
-  Glyph(4305, font_mg_minecraft_georgian_source_4305_data, 5, 0, 0, 4, 6),
-  Glyph(4306, font_mg_minecraft_georgian_source_4306_data, 4, 0, 0, 3, 6),
-  Glyph(4307, font_mg_minecraft_georgian_source_4307_data, 5, 0, 0, 4, 6),
-  Glyph(4308, font_mg_minecraft_georgian_source_4308_data, 5, 0, 1, 4, 5),
-  Glyph(4309, font_mg_minecraft_georgian_source_4309_data, 5, 0, 1, 4, 5),
-  Glyph(4310, font_mg_minecraft_georgian_source_4310_data, 6, 0, 0, 5, 6),
-  Glyph(4311, font_mg_minecraft_georgian_source_4311_data, 6, 0, 2, 6, 4),
-  Glyph(4312, font_mg_minecraft_georgian_source_4312_data, 6, 0, 2, 5, 4),
-  Glyph(4313, font_mg_minecraft_georgian_source_4313_data, 5, 0, 1, 4, 5),
-  Glyph(4314, font_mg_minecraft_georgian_source_4314_data, 5, 0, 0, 4, 6),
-  Glyph(4315, font_mg_minecraft_georgian_source_4315_data, 5, 0, 0, 4, 6),
-  Glyph(4316, font_mg_minecraft_georgian_source_4316_data, 5, 0, 0, 4, 6),
-  Glyph(4317, font_mg_minecraft_georgian_source_4317_data, 6, 0, 2, 6, 4),
-  Glyph(4318, font_mg_minecraft_georgian_source_4318_data, 5, 0, 0, 4, 6),
-  Glyph(4319, font_mg_minecraft_georgian_source_4319_data, 5, 0, 1, 4, 5),
-  Glyph(4320, font_mg_minecraft_georgian_source_4320_data, 5, 0, 0, 4, 6),
-  Glyph(4321, font_mg_minecraft_georgian_source_4321_data, 5, 0, 0, 4, 6),
-  Glyph(4322, font_mg_minecraft_georgian_source_4322_data, 5, 0, 1, 4, 5),
-  Glyph(4323, font_mg_minecraft_georgian_source_4323_data, 5, 0, 1, 4, 5),
-  Glyph(4324, font_mg_minecraft_georgian_source_4324_data, 5, 0, 1, 4, 5),
-  Glyph(4325, font_mg_minecraft_georgian_source_4325_data, 5, 0, 0, 4, 6),
-  Glyph(4326, font_mg_minecraft_georgian_source_4326_data, 5, 0, 1, 4, 5),
-  Glyph(4327, font_mg_minecraft_georgian_source_4327_data, 5, 0, 1, 4, 5),
-  Glyph(4328, font_mg_minecraft_georgian_source_4328_data, 5, 0, 0, 4, 6),
-  Glyph(4329, font_mg_minecraft_georgian_source_4329_data, 5, 0, 0, 4, 6),
-  Glyph(4330, font_mg_minecraft_georgian_source_4330_data, 5, 0, 1, 4, 5),
-  Glyph(4331, font_mg_minecraft_georgian_source_4331_data, 5, 0, 0, 4, 6),
-  Glyph(4332, font_mg_minecraft_georgian_source_4332_data, 5, 0, 0, 4, 6),
-  Glyph(4333, font_mg_minecraft_georgian_source_4333_data, 5, 0, 0, 4, 6),
-  Glyph(4334, font_mg_minecraft_georgian_source_4334_data, 5, 0, 0, 4, 6),
-  Glyph(4335, font_mg_minecraft_georgian_source_4335_data, 5, 0, 1, 4, 6),
-  Glyph(4336, font_mg_minecraft_georgian_source_4336_data, 5, 0, 0, 4, 6)
+  Glyph(32, font_mg_minecraft_georgian_source_32_data, 6, 0, 6, 1, 1),
+  Glyph(33, font_mg_minecraft_georgian_source_33_data, 2, 0, 0, 1, 7),
+  Glyph(37, font_mg_minecraft_georgian_source_37_data, 6, 0, 0, 5, 7),
+  Glyph(43, font_mg_minecraft_georgian_source_43_data, 6, 0, 2, 5, 5),
+  Glyph(45, font_mg_minecraft_georgian_source_45_data, 6, 0, 4, 5, 1),
+  Glyph(46, font_mg_minecraft_georgian_source_46_data, 2, 0, 5, 1, 2),
+  Glyph(47, font_mg_minecraft_georgian_source_47_data, 6, 0, 0, 5, 7),
+  Glyph(48, font_mg_minecraft_georgian_source_48_data, 6, 0, 0, 5, 7),
+  Glyph(49, font_mg_minecraft_georgian_source_49_data, 6, 0, 0, 5, 7),
+  Glyph(50, font_mg_minecraft_georgian_source_50_data, 6, 0, 0, 5, 7),
+  Glyph(51, font_mg_minecraft_georgian_source_51_data, 6, 0, 0, 5, 7),
+  Glyph(52, font_mg_minecraft_georgian_source_52_data, 6, 0, 0, 5, 7),
+  Glyph(53, font_mg_minecraft_georgian_source_53_data, 6, 0, 0, 5, 7),
+  Glyph(54, font_mg_minecraft_georgian_source_54_data, 6, 0, 0, 5, 7),
+  Glyph(55, font_mg_minecraft_georgian_source_55_data, 6, 0, 0, 5, 7),
+  Glyph(56, font_mg_minecraft_georgian_source_56_data, 6, 0, 0, 5, 7),
+  Glyph(57, font_mg_minecraft_georgian_source_57_data, 6, 0, 0, 5, 7),
+  Glyph(58, font_mg_minecraft_georgian_source_58_data, 2, 0, 1, 1, 6),
+  Glyph(63, font_mg_minecraft_georgian_source_63_data, 6, 0, 0, 5, 7),
+  Glyph(4304, font_mg_minecraft_georgian_source_4304_data, 6, 0, 2, 5, 5),
+  Glyph(4305, font_mg_minecraft_georgian_source_4305_data, 6, 0, 0, 5, 7),
+  Glyph(4306, font_mg_minecraft_georgian_source_4306_data, 6, 0, 1, 5, 7),
+  Glyph(4307, font_mg_minecraft_georgian_source_4307_data, 6, 0, 2, 5, 6),
+  Glyph(4308, font_mg_minecraft_georgian_source_4308_data, 6, 0, 2, 5, 6),
+  Glyph(4309, font_mg_minecraft_georgian_source_4309_data, 6, 0, 2, 5, 6),
+  Glyph(4310, font_mg_minecraft_georgian_source_4310_data, 6, 0, 0, 5, 7),
+  Glyph(4311, font_mg_minecraft_georgian_source_4311_data, 6, 0, 2, 5, 5),
+  Glyph(4312, font_mg_minecraft_georgian_source_4312_data, 6, 0, 2, 5, 5),
+  Glyph(4313, font_mg_minecraft_georgian_source_4313_data, 6, 0, 2, 5, 6),
+  Glyph(4314, font_mg_minecraft_georgian_source_4314_data, 6, 0, 2, 5, 6),
+  Glyph(4315, font_mg_minecraft_georgian_source_4315_data, 6, 0, 0, 5, 7),
+  Glyph(4316, font_mg_minecraft_georgian_source_4316_data, 6, 0, 0, 5, 7),
+  Glyph(4317, font_mg_minecraft_georgian_source_4317_data, 6, 0, 2, 5, 5),
+  Glyph(4318, font_mg_minecraft_georgian_source_4318_data, 6, 0, 0, 5, 7),
+  Glyph(4319, font_mg_minecraft_georgian_source_4319_data, 6, 0, 2, 5, 6),
+  Glyph(4320, font_mg_minecraft_georgian_source_4320_data, 6, 0, 0, 5, 7),
+  Glyph(4321, font_mg_minecraft_georgian_source_4321_data, 6, 0, 0, 5, 7),
+  Glyph(4322, font_mg_minecraft_georgian_source_4322_data, 6, 0, 2, 5, 6),
+  Glyph(4323, font_mg_minecraft_georgian_source_4323_data, 6, 0, 2, 5, 6),
+  Glyph(4324, font_mg_minecraft_georgian_source_4324_data, 6, 0, 2, 5, 6),
+  Glyph(4325, font_mg_minecraft_georgian_source_4325_data, 6, 0, 0, 5, 8),
+  Glyph(4326, font_mg_minecraft_georgian_source_4326_data, 6, 0, 2, 5, 6),
+  Glyph(4327, font_mg_minecraft_georgian_source_4327_data, 6, 0, 2, 5, 6),
+  Glyph(4328, font_mg_minecraft_georgian_source_4328_data, 6, 0, 0, 5, 7),
+  Glyph(4329, font_mg_minecraft_georgian_source_4329_data, 6, 0, 0, 5, 7),
+  Glyph(4330, font_mg_minecraft_georgian_source_4330_data, 6, 0, 2, 5, 6),
+  Glyph(4331, font_mg_minecraft_georgian_source_4331_data, 6, 0, 0, 5, 7),
+  Glyph(4332, font_mg_minecraft_georgian_source_4332_data, 6, 0, 0, 5, 7),
+  Glyph(4333, font_mg_minecraft_georgian_source_4333_data, 6, 0, 0, 5, 8),
+  Glyph(4334, font_mg_minecraft_georgian_source_4334_data, 6, 0, 0, 5, 7),
+  Glyph(4335, font_mg_minecraft_georgian_source_4335_data, 6, 0, 0, 5, 8),
+  Glyph(4336, font_mg_minecraft_georgian_source_4336_data, 6, 0, 0, 5, 8)
 };
 struct FixtureFont { const char *id; const Glyph *glyphs; int count; int height; };
 static const FixtureFont FIXTURE_FONTS[] = {
