@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "d39b5f2e8879cfd0a7e7afb1c0ac576f2345189e025b95e21a006db85e95d5e7",
+  "sourceHash": "663383730cb93f07553910caeb577690cc229fbb718b579affaf3df894469b44",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.1",
+  "releaseVersion": "0.8.2",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Publish the merged independent Date font selector under a fresh immutable\n  release version.",
+  "releaseNotes": "### Fixed\n\n- Publish the independent Date font selector in a fresh immutable release.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
