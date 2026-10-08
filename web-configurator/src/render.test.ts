@@ -165,6 +165,17 @@ describe("clock and date text", () => {
     expect(later.layout).toBeNull();
     expect(later.frame.pixels).not.toEqual(first.frame.pixels);
   });
+
+  it("labels the dedicated Georgian date face instead of the selected clock face", () => {
+    const scene = renderScene({
+      ...DEFAULT_CONFIG,
+      clockFont: "sevenish-mono-8",
+      screen: "Date",
+      dateLanguage: "Georgian",
+      dateFormat: "Weekday DD. MMM YY",
+    }, NOON, 0, undefined, 0);
+    expect(scene.summary).toBe("Showing the date in Georgian Mkhedruli 8x8.");
+  });
 });
 
 describe("renderScene", () => {

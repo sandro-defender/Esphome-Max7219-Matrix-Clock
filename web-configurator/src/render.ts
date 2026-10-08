@@ -638,8 +638,11 @@ export function renderScene(
         cfg.secondsMode === "Bar" ? "seconds as a bottom-row bar" : withSeconds ? "seconds as digits" : "seconds off"
       }.`;
     } else {
-      summary = `Showing ${pageLabel(page)} in ${spec.label}.`;
-      detail = `${cfg.dateFormat} date format, ${cfg.alignment.toLowerCase()} aligned.`;
+      const usesGeorgianDateFace = page === "date" && cfg.dateLanguage === "Georgian" && cfg.dateFormat.startsWith("Weekday");
+      summary = usesGeorgianDateFace
+        ? "Showing the date in Georgian Mkhedruli 8x8."
+        : `Showing ${pageLabel(page)} in ${spec.label}.`;
+      detail = `${cfg.dateFormat} date format, ${cfg.dateLanguage} labels, ${cfg.alignment.toLowerCase()} aligned.`;
     }
   }
 
