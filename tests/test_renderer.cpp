@@ -1705,8 +1705,8 @@ static void test_builtin_font_renders_every_required_glyph() {
 static void test_georgian_date_font_uses_minecraft_six_pixel_cells() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  // The Georgian code 0x92 (ქ) reaches the eighth row in the Noto raster.
-  const char letter = static_cast<char>(0x92);
+  // The Georgian code 0x93 (ქ) is used by the October abbreviation "ოქტ".
+  const char letter = static_cast<char>(0x93);
   georgian.draw_glyph(canvas, letter, 0, 0);
   CHECK_EQ(georgian.advance(letter), 6);
   CHECK_EQ(georgian.ink_height(), 8);

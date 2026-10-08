@@ -142,10 +142,12 @@ describe("clock and date text", () => {
   });
 
   it("uses six-pixel Minecraft lettering for Georgian date labels", () => {
-    const letter = "\x80";
+    // 0x93 is ქ in the October label "ოქტ".
+    const letter = "\x93";
     expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(6);
     expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
     expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[7]).toBe(0x1C);
   });
 });
 

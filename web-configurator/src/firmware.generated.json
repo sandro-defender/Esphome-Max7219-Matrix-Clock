@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "4537a927fc7dd813eea5a0234c42a6d6b0349a5f96ecd028c439ca6f7c6ce6c1",
+  "sourceHash": "540a4aa04fe89f0d9db51de0e20590a5cba38bc10f60305bd3b919eaacbe313b",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.7.20",
   "esphomeVersion": "2026.9.1",
