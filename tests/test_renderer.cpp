@@ -98,7 +98,7 @@ class FakeCanvas : public Canvas {
 // about widths and vertical offsets, and every draw call is recorded.
 // --------------------------------------------------------------------------
 struct DrawCall {
-  char ch;
+  uint32_t ch;
   int x;
   int box_top;
 };
@@ -107,10 +107,10 @@ class FakeFont : public GlyphFont {
  public:
   FakeFont(int advance, int ink_height = 7, int ink_top = 0)
       : advance_(advance), ink_height_(ink_height), ink_top_(ink_top) {}
-  int advance(char) const override { return advance_; }
+  int advance(uint32_t) const override { return advance_; }
   int ink_height() const override { return ink_height_; }
   int ink_top() const override { return ink_top_; }
-  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
     calls.push_back({ch, x, box_top});
     for (int row = 0; row < ink_height_; row++)
       for (int col = 0; col < advance_ - 1; col++) c.pixel(x + col, box_top + ink_top_ + row, true);
@@ -133,6 +133,17 @@ class FakeFont : public GlyphFont {
 // Helpers
 // --------------------------------------------------------------------------
 static BuiltinFont compact;
+
+TEST(utf8_text_is_decoded_into_single_georgian_glyphs) {
+  FakeCanvas canvas(48, 8);
+  FakeFont font(5);
+  const char *text = "აბ";
+  CHECK(font.text_width(text) == 10);
+  font.draw_text(canvas, text, 0, 0);
+  CHECK(font.calls.size() == 2);
+  CHECK(font.calls[0].ch == 0x10D0);
+  CHECK(font.calls[1].ch == 0x10D1);
+}
 
 static void reset_state() {
   state = Runtime();
@@ -165,10 +176,10 @@ static void test_unknown_glyphs_do_not_break_layout() {
   // the remaining characters.
   class SparseFont : public GlyphFont {
    public:
-    int advance(char c) const override { return c == '9' ? 0 : 6; }
+    int advance(uint32_t c) const override { return c == '9' ? 0 : 6; }
     int ink_height() const override { return 7; }
     int ink_top() const override { return 0; }
-    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
       if (ch == '9') return;  // no ink for the missing glyph
       for (int row = 0; row < 7; row++)
         for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
@@ -1236,14 +1247,14 @@ static void test_blinking_colon_keeps_layout_stable() {
   // second; the ':' must keep its advance and only lose its ink.
   class BlinkFont : public GlyphFont {
    public:
-    int advance(char c) const override {
+    int advance(uint32_t c) const override {
       if (c == ':') return 9;
       if (c == ' ') return 2;
       return 6;
     }
     int ink_height() const override { return 7; }
     int ink_top() const override { return 0; }
-    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
       calls.push_back({ch, x, box_top});
       if (ch == ':' || ch == ' ') return;  // punctuation without ink
       for (int row = 0; row < 7; row++)
@@ -1292,10 +1303,11 @@ static void test_blinking_colon_keeps_layout_stable() {
 class ClockOnlyFont : public GlyphFont {
  public:
   static bool clock_glyph(char c) { return strchr("0123456789:.-/%!?+ ", c) != nullptr; }
-  int advance(char c) const override { return clock_glyph(c) ? 6 : 0; }
+  int advance(uint32_t c) const override { return c <= 0x7F && clock_glyph((char) c) ? 6 : 0; }
   int ink_height() const override { return 8; }
   int ink_top() const override { return 0; }
-  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+    if (ch > 0x7F) return;
     calls.push_back({ch, x, box_top});
     if (!clock_glyph(ch)) return;
     for (int row = 0; row < 8; row++)

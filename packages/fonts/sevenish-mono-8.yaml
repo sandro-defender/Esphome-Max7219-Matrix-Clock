@@ -1,0 +1,20 @@
+# Sevenish Mono 8 (MIT). Its Georgian descenders rasterise within 8 matrix rows
+# at ESPHome size 6; size 7 would produce 9-pixel glyphs.
+font:
+  - id: font_sevenish_mono_8_source
+    file:
+      type: web
+      url: ${fonts_base_url}/sevenish-mono-8/SevenishMono8.ttf
+    size: 6
+    bpp: 1
+    glyphs:
+      - '0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ'
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_SEVENISH_MONO_8
+
+select:
+  - id: !extend clock_font
+    options:
+      - "Sevenish Mono 8"

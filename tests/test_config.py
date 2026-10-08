@@ -135,15 +135,24 @@ FONT_OPTION_BY_ID = {
     "font_md_max72xx_system_source": "MD MAX72XX System",
     "font_matrix_2px_source": "Matrix 2px",
     "font_dot_matrix_source": "Dot Matrix",
+    "font_mg_minecraft_georgian_source": "MG Minecraft Georgian",
+    "font_matrix_sans_screen_source": "Matrix Sans Screen",
+    "font_sevenish_mono_8_source": "Sevenish Mono 8",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
-# in every face, while the renderer's compact built-in font remains the Latin
-# message fallback. Compiling a bounded face catalogue (five faces) preserves
-# ESP8266 RAM headroom while the other licensed source files stay in fonts/.
+# in every face. MG Minecraft Georgian additionally includes the full
+# Mkhedruli alphabet for Georgian messages. Compiling a bounded face catalogue
+# (eight faces) preserves ESP8266 RAM headroom while the other licensed source
+# files stay in fonts/.
 FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
 
 GEORGIAN_MKHEDRULI = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+GEORGIAN_FONT_IDS = {
+    "font_mg_minecraft_georgian_source",
+    "font_matrix_sans_screen_source",
+    "font_sevenish_mono_8_source",
+}
 GEORGIAN_MTAVRULI = "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
 
 # Height of one 8x8 module row; digits must never be taller than the panel.
@@ -571,8 +580,13 @@ class ConfigContractTests(unittest.TestCase):
                     entry["id"] == "font_md_parola_numeric_7seg_source"
                     and (REPO / "fonts" / "md-max72xx-system" / "LICENSE.txt").is_file()
                 )
+                mg_minecraft_license = (
+                    entry["id"] == "font_mg_minecraft_georgian_source"
+                    and (REPO / "fonts" / "mg-minecraft-georgian-LICENSE.txt").is_file()
+                )
                 self.assertTrue(
-                    shared_lgpl or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
+                    shared_lgpl or mg_minecraft_license
+                    or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
                     f"{entry['id']} must retain its source license",
                 )
             self.assertEqual("local", entry["file"]["type"])
@@ -643,6 +657,22 @@ class ConfigContractTests(unittest.TestCase):
                     f"{font_id} has no '{char}' glyph in its source file",
                 )
 
+    def test_selectable_georgian_pixel_faces_include_every_mkhedruli_letter(self):
+        """Every selectable Georgian pixel face can display Georgian months."""
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]:
+            if entry["id"] not in GEORGIAN_FONT_IDS:
+                continue
+            declared = "".join(entry["glyphs"])
+            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
+            for char in GEORGIAN_MKHEDRULI:
+                self.assertIn(char, declared, f"{entry['id']} does not compile '{char}'")
+                self.assertNotEqual(face.get_char_index(ord(char)), 0, f"{entry['id']} has no '{char}'")
+
     def test_font_ink_is_not_taller_than_the_matrix(self):
         """Digits taller than the panel would be clipped on the real display.
 
@@ -668,11 +698,13 @@ class ConfigContractTests(unittest.TestCase):
                     MATRIX_ROW_HEIGHT,
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
-            expected_height = (
-                MATRIX_ROW_HEIGHT - 1
-                if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source")
-                else MATRIX_ROW_HEIGHT
-            )
+            expected_height = {
+                "font_md_max72xx_system_source": 7,
+                "font_md_parola_numeric_7seg_source": 7,
+                "font_mg_minecraft_georgian_source": 7,
+                "font_matrix_sans_screen_source": 6,
+                "font_sevenish_mono_8_source": 6,
+            }.get(entry["id"], MATRIX_ROW_HEIGHT)
             self.assertEqual(
                 expected_height,
                 max(digit_heights),
@@ -885,7 +917,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 5)
+        self.assertEqual(len(faces), 8)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))

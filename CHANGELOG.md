@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.8 - 2026-10-08
+
+### Added
+- **MG Minecraft Georgian** is an optional 8 px pixel clock face with the full
+  modern Georgian Mkhedruli alphabet, so Georgian messages can use the same
+  LED-pixel style as the clock. The bundled source retains attribution to
+  giomjava and its CC BY-SA 3.0 licence.
+- **Matrix Sans Screen** and **Sevenish Mono 8** are optional Georgian pixel
+  faces in Font Lab and the generated installer. Matrix Sans uses a full 8 px
+  render; Sevenish is intentionally rendered at 6 px so its Georgian
+  descenders never exceed the matrix's eight rows.
+
 ## 0.7.7 - 2026-10-02
 
 ### Fixed

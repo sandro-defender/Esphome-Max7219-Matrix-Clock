@@ -296,6 +296,21 @@
       "label": "MD MAX72XX System",
       "license": "LGPL-2.1-or-later",
       "source": "fonts/md-max72xx-system/LICENSE.txt"
+    },
+    "mg-minecraft-georgian": {
+      "label": "MG Minecraft Georgian",
+      "license": "CC BY-SA 3.0",
+      "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
+    },
+    "matrix-sans-screen": {
+      "label": "Matrix Sans Screen",
+      "license": "SIL OFL 1.1",
+      "source": "fonts/matrix-sans-screen/OFL.txt"
+    },
+    "sevenish-mono-8": {
+      "label": "Sevenish Mono 8",
+      "license": "MIT",
+      "source": "fonts/sevenish-mono-8/LICENSE.txt"
     }
   }
 }

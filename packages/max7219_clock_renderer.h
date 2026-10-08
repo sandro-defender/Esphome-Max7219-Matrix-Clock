@@ -142,19 +142,32 @@ class GlyphFont {
  public:
   virtual ~GlyphFont() {}
   // Horizontal step for one character, in pixels.
-  virtual int advance(char c) const = 0;
+  virtual int advance(uint32_t c) const = 0;
   virtual const void *identity() const { return this; }
   // Ink height and the ink offset from the text box top, measured on a digit.
   // The renderer uses both to centre the ink inside the display.
   virtual int ink_height() const = 0;
   virtual int ink_top() const = 0;
   // Draw a single character with its text box top at `box_top`.
-  virtual void draw_glyph(Canvas &c, char ch, int x, int box_top) const = 0;
+  virtual void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const = 0;
+
+  static uint32_t next_codepoint(const char *&p) {
+    const uint8_t first = (uint8_t) *p++;
+    if (first < 0x80) return first;
+    const uint8_t count = first < 0xE0 ? 1 : first < 0xF0 ? 2 : first < 0xF8 ? 3 : 0;
+    uint32_t codepoint = first & ((1U << (6 - count)) - 1U);
+    for (uint8_t i = 0; i < count && *p; i++) {
+      const uint8_t next = (uint8_t) *p++;
+      if ((next & 0xC0) != 0x80) return 0xFFFD;
+      codepoint = (codepoint << 6) | (next & 0x3F);
+    }
+    return codepoint;
+  }
 
   int text_width(const char *s) const {
     int w = 0;
     if (s != nullptr)
-      for (const char *p = s; *p != '\0'; p++) w += this->advance(*p);
+      for (const char *p = s; *p != '\0';) w += this->advance(next_codepoint(p));
     return w;
   }
   // Text box top that puts the digit ink in the vertical middle of the display.
@@ -164,9 +177,10 @@ class GlyphFont {
   void draw_text(Canvas &c, const char *s, int x, int box_top) const {
     if (s == nullptr) return;
     int cursor = x;
-    for (const char *p = s; *p != '\0'; p++) {
-      this->draw_glyph(c, *p, cursor, box_top);
-      cursor += this->advance(*p);
+    for (const char *p = s; *p != '\0';) {
+      const uint32_t codepoint = next_codepoint(p);
+      this->draw_glyph(c, codepoint, cursor, box_top);
+      cursor += this->advance(codepoint);
     }
   }
 };
@@ -281,10 +295,11 @@ inline int advance(char c) {
 
 class BuiltinFont : public GlyphFont {
  public:
-  int advance(char c) const override { return builtin::advance(c); }
+  int advance(uint32_t c) const override { return c <= 0x7F ? builtin::advance((char) c) : 0; }
   int ink_height() const override { return 7; }
   int ink_top() const override { return 0; }
-  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
+    if (ch > 0x7F) return;
     const uint8_t *rows = builtin::glyph(ch);
     for (int row = 0; row < 7; row++)
       for (int col = 0; col < 5; col++)
@@ -805,8 +820,8 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
 // the OTA texts would otherwise collapse onto zero-advance missing glyphs.
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text) {
   if (text != nullptr)
-    for (const char *p = text; *p != '\0'; p++)
-      if (primary.advance(*p) == 0) return fallback;
+    for (const char *p = text; *p != '\0';)
+      if (primary.advance(GlyphFont::next_codepoint(p)) == 0) return fallback;
   return primary;
 }
 
@@ -892,9 +907,10 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
   const uint32_t offset = (elapsed_ms / ms_per_px) % loop_width;
   const int origin_x = offset < (uint32_t) text_width ? -(int) offset : width - (int) (offset - (uint32_t) text_width);
   int cursor = origin_x;
-  for (const char *p = text; *p != '\0'; p++) {
-    const int step = font.advance(*p);
-    if (cursor + step > 0 && cursor < width) font.draw_glyph(c, *p, cursor, box_top);
+  for (const char *p = text; *p != '\0';) {
+    const uint32_t codepoint = GlyphFont::next_codepoint(p);
+    const int step = font.advance(codepoint);
+    if (cursor + step > 0 && cursor < width) font.draw_glyph(c, codepoint, cursor, box_top);
     cursor += step;
   }
 }

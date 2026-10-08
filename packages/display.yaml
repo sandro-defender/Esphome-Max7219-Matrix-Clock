@@ -99,6 +99,18 @@ display:
       max7219_clock::SourceFont dot_matrix_font(font_dot_matrix_source, &it);
       if (font_option == "Dot Matrix") selected = &dot_matrix_font;
       #endif
+      #ifdef MAX7219_FONT_MG_MINECRAFT_GEORGIAN
+      max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
+      if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
+      #endif
+      #ifdef MAX7219_FONT_MATRIX_SANS_SCREEN
+      max7219_clock::SourceFont matrix_sans_screen_font(font_matrix_sans_screen_source, &it);
+      if (font_option == "Matrix Sans Screen") selected = &matrix_sans_screen_font;
+      #endif
+      #ifdef MAX7219_FONT_SEVENISH_MONO_8
+      max7219_clock::SourceFont sevenish_mono_8_font(font_sevenish_mono_8_source, &it);
+      if (font_option == "Sevenish Mono 8") selected = &sevenish_mono_8_font;
+      #endif
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 
       // ----- Publish only what changed (keeps API traffic low) ------------

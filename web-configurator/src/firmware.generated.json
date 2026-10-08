@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "sourceHash": "8587d9bb133c45beb1369b6c55b2e7b4a34a15bfb23210ab91bf644e66e03c9b",
+  "sourceHash": "c048673be7e1299f0940c981e61aa1739d87b57e488c223dbb276d06347bc191",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.7",
+  "releaseVersion": "0.7.8",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n- Selecting **180°** rotation in the configurator now also reverses the\n  MAX7219 chip chain, so digits move to the correct module positions instead\n  of only rotating within each 8×8 module.",
+  "releaseNotes": "### Added\n- **MG Minecraft Georgian** is an optional 8 px pixel clock face with the full\n  modern Georgian Mkhedruli alphabet, so Georgian messages can use the same\n  LED-pixel style as the clock. The bundled source retains attribution to\n  giomjava and its CC BY-SA 3.0 licence.\n- **Matrix Sans Screen** and **Sevenish Mono 8** are optional Georgian pixel\n  faces in Font Lab and the generated installer. Matrix Sans uses a full 8 px\n  render; Sevenish is intentionally rendered at 6 px so its Georgian\n  descenders never exceed the matrix's eight rows.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2571,6 +2571,42 @@
       "source": "scripts/generate_dot_matrix_font.py",
       "file": "fonts/dot-matrix/DotMatrix.ttf",
       "package": "packages/fonts/dot-matrix.yaml"
+    },
+    {
+      "id": "mg-minecraft-georgian",
+      "option": "MG Minecraft Georgian",
+      "label": "MG Minecraft Georgian",
+      "family": "MG Minecraft Georgian",
+      "firmwareId": "font_mg_minecraft_georgian_source",
+      "size": 8,
+      "license": "CC BY-SA 3.0",
+      "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
+      "file": "fonts/mg-minecraft-georgian-regular.ttf",
+      "package": "packages/fonts/mg-minecraft-georgian.yaml"
+    },
+    {
+      "id": "matrix-sans-screen",
+      "option": "Matrix Sans Screen",
+      "label": "Matrix Sans Screen",
+      "family": "Matrix Sans Screen",
+      "firmwareId": "font_matrix_sans_screen_source",
+      "size": 8,
+      "license": "SIL OFL 1.1",
+      "source": "fonts/matrix-sans-screen/OFL.txt",
+      "file": "fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf",
+      "package": "packages/fonts/matrix-sans-screen.yaml"
+    },
+    {
+      "id": "sevenish-mono-8",
+      "option": "Sevenish Mono 8",
+      "label": "Sevenish Mono 8",
+      "family": "SevenishMono8",
+      "firmwareId": "font_sevenish_mono_8_source",
+      "size": 6,
+      "license": "MIT",
+      "source": "fonts/sevenish-mono-8/LICENSE.txt",
+      "file": "fonts/sevenish-mono-8/SevenishMono8.ttf",
+      "package": "packages/fonts/sevenish-mono-8.yaml"
     }
   ],
   "settings": [
@@ -2586,7 +2622,10 @@
         "matrix-2px",
         "md-parola-numeric-7seg",
         "md-max72xx-system",
-        "dot-matrix"
+        "dot-matrix",
+        "mg-minecraft-georgian",
+        "matrix-sans-screen",
+        "sevenish-mono-8"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2596,7 +2635,10 @@
         "Matrix 2px",
         "MD Parola Numeric 7-Segment",
         "MD MAX72XX System",
-        "Dot Matrix"
+        "Dot Matrix",
+        "MG Minecraft Georgian",
+        "Matrix Sans Screen",
+        "Sevenish Mono 8"
       ]
     },
     {

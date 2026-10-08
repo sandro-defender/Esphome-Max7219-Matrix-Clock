@@ -9,11 +9,11 @@ the package list; everything else lives here.
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant time and SNTP fallback, both using `${timezone}` |
 | `renderer.yaml` | C++ include list, restore-defaults script, OTA error/success timeouts |
 | `display.yaml` | SPI bus, MAX7219 panel, the lambda that feeds the renderer and publishes changes |
-| `fonts/*.yaml` | five per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
+| `fonts/*.yaml` | eight per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
 | `fonts_web.yaml` | wrapper for the default pair: Pixel Clock 6×8 + Matrix 2px |
 | `fonts_default_local.yaml` | generated local wrapper for the same default pair, used by `dev.yaml` |
-| `fonts_local.yaml` | generated five-face catalogue for offline metrics and glyph generation |
-| `local_fonts/*.yaml` | generated local equivalents of the five face packages |
+| `fonts_local.yaml` | generated eight-face catalogue for offline metrics and glyph generation |
+| `local_fonts/*.yaml` | generated local equivalents of the eight face packages |
 | `controls.yaml` | selects, numbers, switches and buttons exposed to Home Assistant |
 | `date_controls.yaml` | date-specific Home Assistant controls, including weekday-date scroll speed |
 | `actions.yaml` | `api.actions` (`show_message`, `clear_message`, `start_countdown`, `cancel_countdown`, `show_status`, `get_status`) and the shared button scripts |
@@ -89,6 +89,7 @@ renderer on the host (`make -C tests test fixture`).
 ## Font subsets
 
 Default build: Pixel Clock 6×8 + Matrix 2px, with Compact 5×7 always built in.
-Dot Matrix, MD Parola Numeric 7-Segment and MD MAX72XX System are optional and
-individually selectable without a cap. See
+Dot Matrix, MD Parola Numeric 7-Segment, MD MAX72XX System, MG Minecraft
+Georgian, Matrix Sans Screen and Sevenish Mono 8 are optional and individually
+selectable without a cap. See
 [font package design and validation](fonts/README.md).
