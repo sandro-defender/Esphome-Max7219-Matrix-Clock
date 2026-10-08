@@ -122,6 +122,10 @@ display:
       max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
       if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
       #endif
+      #ifdef MAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
+      max7219_clock::SourceFont georgian_mkhedruli_8x8_font(font_georgian_mkhedruli_8x8_source, &it);
+      if (font_option == "Georgian Mkhedruli 8x8") selected = &georgian_mkhedruli_8x8_font;
+      #endif
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 
       // ----- Publish only what changed (keeps API traffic low) ------------
