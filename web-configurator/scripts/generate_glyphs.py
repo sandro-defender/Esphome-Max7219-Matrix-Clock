@@ -52,7 +52,7 @@ def font_records(entry):
 
 
 def builtin_records():
-    text = (ROOT / "packages/max7219_clock_renderer.h").read_text()
+    text = (ROOT / "packages/max7219_clock_renderer.h").read_text(encoding="utf8")
     section = text.split("namespace builtin {", 1)[1].split("}  // namespace builtin", 1)[0]
     clean = re.sub(r"//[^\n]*", "", section)
     def values(rows):
@@ -81,7 +81,7 @@ def builtin_records():
 
 
 def cpp_fixture(entries):
-    official_header = Path(esphome_font.__file__).with_name("font.h").read_text()
+    official_header = Path(esphome_font.__file__).with_name("font.h").read_text(encoding="utf8")
     glyph_class = re.search(r"class Glyph final \{.*?\n\};", official_header, re.S)[0]
     lines = ["// GENERATED test data: official ESPHome glyph API and packed bpp: 1 data.",
              "// Regenerate with web-configurator/scripts/generate_glyphs.py.", "#pragma once",
@@ -135,8 +135,8 @@ export interface GeneratedFont {
         "export const BUILTIN_ADVANCES: Record<string, number> = " + json.dumps(advances, indent=2) + ";\n" + \
         "export const BUILTIN_METRICS = " + json.dumps(metrics) + ";\n"
     esphome_root = Path(esphome_font.__file__).parent.parent.parent
-    string_ref = (esphome_root / "core/string_ref.h").read_text().replace('#include "esphome/core/defines.h"', "")
-    driver_cpp = (esphome_root / "components/max7219digit/max7219digit.cpp").read_text()
+    string_ref = (esphome_root / "core/string_ref.h").read_text(encoding="utf8").replace('#include "esphome/core/defines.h"', "")
+    driver_cpp = (esphome_root / "components/max7219digit/max7219digit.cpp").read_text(encoding="utf8")
     driver_method = re.search(r"void MAX7219Component::send64pixels.*?\n}[^\n]*", driver_cpp, re.S)[0].replace("MAX7219Component::", "StockDriver::")
     return {OUTPUT: text, CPP_OUTPUT: cpp_fixture(entries), ROOT / "tests/frame.generated.h": frame_fixture(),
             ROOT / "tests/string_ref.generated.h": "// GENERATED exact ESPHome StringRef API (host, without platform defines).\n" + string_ref,
@@ -152,7 +152,7 @@ def main():
     outputs = build()
     for path, content in outputs.items():
         if args.check:
-            if not path.is_file() or path.read_text() != content:
+            if not path.is_file() or path.read_text(encoding="utf8") != content:
                 raise SystemExit(f"Firmware/preview glyph drift: regenerate {path.relative_to(ROOT)} in the same commit")
         else:
             path.write_text(content)

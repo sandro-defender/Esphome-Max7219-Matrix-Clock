@@ -1,16 +1,134 @@
 # Changelog
 
-## 0.7.8 - 2026-10-08
+## 0.7.23 - 2026-10-08
 
 ### Added
-- **MG Minecraft Georgian** is an optional 8 px pixel clock face with the full
-  modern Georgian Mkhedruli alphabet, so Georgian messages can use the same
-  LED-pixel style as the clock. The bundled source retains attribution to
-  giomjava and its CC BY-SA 3.0 licence.
-- **Matrix Sans Screen** and **Sevenish Mono 8** are optional Georgian pixel
-  faces in Font Lab and the generated installer. Matrix Sans uses a full 8 px
-  render; Sevenish is intentionally rendered at 6 px so its Georgian
-  descenders never exceed the matrix's eight rows.
+
+- Add Matrix Sans Screen and Sevenish Mono 8 as optional Georgian pixel-font
+  packages for trying alternate 8-row matrix appearances.
+
+## 0.7.22 - 2026-10-08
+
+### Added
+
+- Add an optional project-generated Georgian Mkhedruli bitmap font with all 33
+  letters and clock glyphs. Render Georgian UTF-8 code points as single glyphs,
+  use Georgian weekday/month names, and marquee long Georgian dates.
+
+## 0.7.21 - 2026-10-08
+
+### Fixed
+
+- Expand every MG Minecraft Georgian date glyph to the same full eight-row
+  height and correct the final month-letter code mapping.
+
+## 0.7.20 - 2026-10-08
+
+### Changed
+
+- Use the bundled MG Minecraft Georgian 8 px pixel font for Georgian date
+  labels and offer it as an optional Clock font.
+
+## 0.7.19 - 2026-10-08
+
+### Changed
+
+- Render Georgian weekday and month labels using a bold 8 px Noto Sans Georgian
+  raster in nine-pixel cells. Long labels continue to scroll instead of shrinking.
+
+## 0.7.18 - 2026-10-08
+
+### Changed
+
+- Render Georgian weekday and month labels with wider cells and a bolder
+  eight-row centre stroke. Long labels continue to scroll instead of shrinking.
+
+## 0.7.17 - 2026-10-07
+
+### Added
+- Add a restored Screen transition animation selector: retain the horizontal
+  Slide left transition or choose Slide up, matching the clock digits' motion.
+
+## 0.7.16 - 2026-10-07
+
+### Added
+- Add a restored Date language selector with English and Georgian compact
+  weekday and month abbreviations for every weekday date format.
+
+## 0.7.15 - 2026-10-07
+
+### Fixed
+- Animate Time-to-Date and Date-to-Time transitions on 12-module displays.
+
+## 0.7.14 - 2026-10-04
+
+### Fixed
+- Use a compact, high-contrast sun icon for clear weather on 8×8 panels.
+
+## 0.7.13 - 2026-10-03
+
+### Changed
+- Add a compact degree ring after every whole-number side-panel temperature.
+
+## 0.7.12 - 2026-10-03
+
+### Changed
+- Round both side-panel temperatures to whole numbers; no decimal values are
+  shown on the 12-module clock or Date screen weather panel.
+
+## 0.7.11 - 2026-10-03
+
+### Fixed
+- Publish the current 8×8 weather-icon and compact side-temperature fixes
+  under a new version after `0.7.10` was already released.
+
+## 0.7.10 - 2026-10-03
+
+### Fixed
+- Draw clear, distinct 8×8 icons for every supported weather condition and
+  use the same compact temperature digits on both side panels; whole values no
+  longer show a trailing `.0`.
+
+## 0.7.9 - 2026-10-03
+
+### Added
+- Restored **Clock layout** selection for the 12-module display: clock only,
+  indoor temperature + clock + weather icon, or indoor temperature + clock +
+  weather icon and outdoor temperature. The preview includes sample values and
+  icons without querying Home Assistant or adding installer credentials.
+- Independent restored Date-screen switches for the weather icon and outdoor
+  temperature. Either or both reserve the right three-module panel while date
+  text remains clipped and scrollable in its safe area.
+- Install-time Home Assistant entity sources for indoor temperature, dedicated
+  outdoor temperature and a `weather.*` entity. The weather state selects the
+  icon, its temperature attribute is a fallback, and a valid dedicated outdoor
+  sensor takes priority. Unavailable or malformed readings use a safe
+  placeholder.
+- Compact clear/day and clear/night, partly cloudy, cloudy, fog, rain, snow,
+  thunderstorm, windy and unknown weather icons, including common OpenWeatherMap
+  state names. The legacy Temperature screen entity remains compatible.
+
+### Changed
+- The renderer confines the clock, date scrolling and digit animation to their
+  panel regions; the legacy six-module clock layout retains its original
+  full-width behavior.
+- The installer validates Home Assistant entity-ID syntax and gives examples;
+  its static configurator does not claim to browse a live entity registry.
+
+## 0.7.8 - 2026-10-02
+
+### Added
+- Compact, aligned configurator cards with complete firmware bindings, expandable
+  explanations, safe network options and an optional authenticated web server.
+- Per-entity Home Assistant exposure using compile-time `internal` substitutions.
+  Hidden entities keep their firmware IDs, defaults and actions; diagnostics and
+  recovery controls remain exposed by default.
+
+### Changed
+- Automatic timezone follows the browser on load and tab return, including saved
+  and shared profiles. Disable Automatic timezone to keep an explicit manual zone.
+- Installer, preview and saved/shared settings use one validated model for both
+  ESP8266 and ESP-WROOM-32, without accepting or storing credentials.
 
 ## 0.7.7 - 2026-10-02
 

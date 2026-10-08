@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "description": "UI bindings only. Defaults, entity names/options/ranges, fonts, package files, version and release notes are extracted from the actual firmware, never repeated here. A hardware target binds one real base package; its board, pin, package and version data is read from that package and the installed ESPHome board tables.",
   "defaultTarget": "esp8266",
   "hardwareTargets": [
@@ -49,14 +49,32 @@
     },
     "temperatureEntity": {
       "target": "temperature_entity",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Temperature sensor entity",
+      "input": "text"
+    },
+    "homeTemperatureEntity": {
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text"
+    },
+    "outdoorTemperatureEntity": {
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text"
+    },
+    "weatherEntity": {
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
       "input": "text"
     },
     "board": {
       "target": "board",
       "group": "Hardware",
-      "label": "ESP8266 board",
+      "label": "Board",
       "input": "text"
     },
     "clkPin": {
@@ -118,67 +136,157 @@
     },
     "displayUpdateMs": {
       "target": "display_update_interval",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Display redraw interval (ms)",
       "input": "milliseconds"
     },
     "bootVersionMs": {
       "target": "boot_version_duration",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Boot version duration (ms)",
       "input": "integer"
     },
     "otaBrightness": {
       "target": "ota_display_intensity",
-      "group": "Device",
+      "group": "Advanced",
       "label": "OTA brightness",
       "input": "integer"
     },
     "otaPort": {
       "target": "ota_port",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Native OTA port",
       "input": "integer"
     },
     "logLevel": {
       "target": "log_level",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Log level",
       "input": "logger-option"
     },
     "fallbackSsid": {
       "target": "fallback_ap_ssid",
-      "group": "Device",
+      "group": "Network",
       "label": "Fallback hotspot name",
       "input": "text"
+    },
+    "fallbackApTimeout": {
+      "target": "fallback_ap_timeout",
+      "group": "Network",
+      "label": "Fallback hotspot delay (s)",
+      "input": "seconds"
+    },
+    "wifiRebootTimeout": {
+      "target": "wifi_reboot_timeout",
+      "group": "Network",
+      "label": "Wi-Fi reboot timeout (s)",
+      "input": "seconds"
+    },
+    "wifiPowerSave": {
+      "target": "wifi_power_save_mode",
+      "group": "Network",
+      "label": "Wi-Fi power saving",
+      "input": "wifi-power-save-option"
+    },
+    "apiRebootTimeout": {
+      "target": "api_reboot_timeout",
+      "group": "Network",
+      "label": "API reboot timeout (s)",
+      "input": "seconds"
+    },
+    "sntpServer1": {
+      "target": "sntp_server_1",
+      "group": "Network",
+      "label": "SNTP server 1",
+      "input": "hostname"
+    },
+    "sntpServer2": {
+      "target": "sntp_server_2",
+      "group": "Network",
+      "label": "SNTP server 2",
+      "input": "hostname"
+    },
+    "sntpUpdateInterval": {
+      "target": "sntp_update_interval",
+      "group": "Network",
+      "label": "SNTP update interval (s)",
+      "input": "seconds"
+    },
+    "webServerPort": {
+      "target": "web_server_port",
+      "group": "Web server",
+      "label": "Web-server port",
+      "input": "integer",
+      "requires": "webServer"
+    },
+    "webServerVersion": {
+      "target": "web_server_version",
+      "group": "Web server",
+      "label": "Web UI version",
+      "input": "web-server-version-option",
+      "requires": "webServer"
+    },
+    "webServerAuthType": {
+      "target": "web_server_auth_type",
+      "group": "Web server",
+      "label": "Authentication method",
+      "input": "web-auth-option",
+      "requires": "webServer"
+    },
+    "webServerLog": {
+      "target": "web_server_log",
+      "group": "Web server",
+      "label": "Web-server logs",
+      "input": "boolean",
+      "requires": "webServer"
     }
   },
   "entities": {
     "clockFont": {
       "target": "clock_font",
-      "group": "Clock face",
+      "group": "Clock",
       "input": "font"
     },
     "screen": {
       "target": "screen_mode",
-      "group": "Screen"
+      "group": "Screens"
     },
     "alignment": {
       "target": "clock_alignment",
-      "group": "Screen"
+      "group": "Clock"
     },
     "hourFormat": {
       "target": "time_format",
-      "group": "Screen",
+      "group": "Clock",
       "transform": "hour-format"
     },
     "secondsMode": {
       "target": "seconds_display",
-      "group": "Screen"
+      "group": "Clock"
+    },
+    "clockLayout": {
+      "target": "clock_layout",
+      "group": "Clock"
+    },
+    "dateShowWeatherIcon": {
+      "target": "date_show_weather_icon",
+      "group": "Screens"
+    },
+    "dateShowOutdoorTemperature": {
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens"
+    },
+    "showTemperatureDegree": {
+      "target": "show_temperature_degree",
+      "group": "Clock"
     },
     "dateFormat": {
       "target": "date_format",
-      "group": "Screen"
+      "group": "Screens"
+    },
+    "dateLanguage": {
+      "target": "date_language",
+      "group": "Screens"
     },
     "scrollMode": {
       "target": "message_scroll_behavior",
@@ -196,13 +304,17 @@
     },
     "animationMs": {
       "target": "animation_duration",
-      "group": "Screen",
+      "group": "Clock",
       "input": "range"
     },
     "animationRowGap": {
       "target": "animation_row_gap",
-      "group": "Screen",
+      "group": "Clock",
       "input": "range"
+    },
+    "screenTransitionStyle": {
+      "target": "screen_transition_style",
+      "group": "Clock"
     },
     "scrollSpeed": {
       "target": "message_scroll_speed",
@@ -211,7 +323,7 @@
     },
     "dateScrollSpeed": {
       "target": "date_scroll_speed",
-      "group": "Screen",
+      "group": "Screens",
       "input": "range"
     },
     "messageHold": {
@@ -220,15 +332,15 @@
     },
     "countdownDuration": {
       "target": "countdown_duration",
-      "group": "Screen"
+      "group": "Screens"
     },
     "cycleInterval": {
       "target": "screen_cycle_interval",
-      "group": "Screen"
+      "group": "Screens"
     },
     "dateScreenDuration": {
       "target": "date_screen_duration",
-      "group": "Screen"
+      "group": "Screens"
     },
     "nightStart": {
       "target": "night_start_hour",
@@ -244,15 +356,15 @@
     },
     "blinkColon": {
       "target": "clock_blink",
-      "group": "Screen"
+      "group": "Clock"
     },
     "digitAnimation": {
       "target": "clock_animate",
-      "group": "Screen"
+      "group": "Clock"
     },
     "autoCycle": {
       "target": "auto_cycle",
-      "group": "Screen"
+      "group": "Screens"
     },
     "nightManual": {
       "target": "night_mode",
@@ -302,9 +414,14 @@
       "license": "CC BY-SA 3.0",
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
     },
+    "georgian-mkhedruli-8x8": {
+      "label": "Georgian Mkhedruli 8x8",
+      "license": "Project-generated",
+      "source": "scripts/generate_georgian_mkhedruli_font.py"
+    },
     "matrix-sans-screen": {
       "label": "Matrix Sans Screen",
-      "license": "SIL OFL 1.1",
+      "license": "SIL OFL-1.1",
       "source": "fonts/matrix-sans-screen/OFL.txt"
     },
     "sevenish-mono-8": {
@@ -312,5 +429,66 @@
       "license": "MIT",
       "source": "fonts/sevenish-mono-8/LICENSE.txt"
     }
-  }
+  },
+  "groups": [
+    {
+      "id": "Device",
+      "description": "Identity and local time. Automatic timezone follows this browser, not the device location."
+    },
+    {
+      "id": "Clock",
+      "description": "Clock face, time format and digit transitions. Preferences below are first-boot defaults; saved device preferences win after an update."
+    },
+    {
+      "id": "Screens",
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
+    },
+    {
+      "id": "Light",
+      "description": "Brightness 0 is the dimmest MAX7219 level, not power off. Night scheduling follows the configured timezone; OTA and boot overlays stay visible."
+    },
+    {
+      "id": "Messages",
+      "description": "Scroll speed is milliseconds per pixel: larger values are slower. A default duration of 0 keeps a message until cleared. Preview text is not installed."
+    },
+    {
+      "id": "Hardware",
+      "description": "Rebuild after changing wiring or board. Modules must divide evenly into rows. Selecting 180° also reverses the chip chain; change the chain switch separately for unusual wiring."
+    },
+    {
+      "id": "Network",
+      "description": "Non-secret options only. SSID and credentials stay in your local secret file. A timeout of 0 disables that automatic reboot or fallback-hotspot timer; this can make recovery harder. Keep the default SNTP interval unless your time server permits more frequent polling."
+    },
+    {
+      "id": "Web server",
+      "description": "Optional authenticated device page. Disable it to save flash; native API and encrypted OTA remain available, but the fallback hotspot then has no browser page. Hidden entities stay hidden here too. Web OTA and internal-entity listing remain disabled. HTTP is unencrypted with either authentication method: use a trusted LAN. Digest avoids sending the password directly. Web UI version 1 is deprecated by ESPHome."
+    },
+    {
+      "id": "Advanced",
+      "description": "Firmware timing, logs and OTA. A longer redraw interval reduces update frequency and can make animation less smooth. Firmware compilation, flash size and on-device behavior remain unverified."
+    }
+  ],
+  "packages": {
+    "webServer": {
+      "target": "packages/web_server.yaml",
+      "group": "Web server",
+      "label": "Device web server",
+      "input": "boolean"
+    }
+  },
+  "recommendedEntities": [
+    "device_status",
+    "esphome_version",
+    "reset_reason",
+    "ip_address",
+    "wifi_signal_db",
+    "uptime_sensor",
+    "free_heap",
+    "ota_state",
+    "restart_device",
+    "button_return_to_clock",
+    "button_restore_defaults",
+    "matrix_display_power",
+    "screen_mode"
+  ]
 }

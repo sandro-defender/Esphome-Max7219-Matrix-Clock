@@ -9,10 +9,16 @@
 # Remove this file from the `files:` list (or the local `packages:` list) if you
 # need the flash back; the clock works without it.
 
+substitutions:
+  web_server_port: "80"
+  web_server_version: "2"
+  web_server_auth_type: basic
+  web_server_log: "false"
+
 web_server:
-  port: 80
+  port: ${web_server_port}
   # version 2 is the lighter built-in UI; version 3 serves the newer frontend.
-  version: 2
+  version: ${web_server_version}
   # Plaintext firmware upload over the web server is intentionally disabled.
   ota: false
   auth:
@@ -20,6 +26,6 @@ web_server:
     password: ${web_server_password}
     # Set explicitly: the default changes from basic to digest in 2027.1.0 and
     # relying on the default logs a deprecation warning.
-    type: basic
+    type: ${web_server_auth_type}
   include_internal: false
-  log: false
+  log: ${web_server_log}

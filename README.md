@@ -1,8 +1,8 @@
 # ESPHome MAX7219 Matrix Clock
 
 A modular ESPHome **2026.9.1** firmware for a MAX7219 LED matrix clock on an
-ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, five
-optional 8-row clock faces plus a built-in fallback, per-digit slide-up
+ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, seven
+selectable 8-row clock faces plus a built-in fallback, per-digit slide-up
 animation, and OTA progress shown on the panel.
 
 Small package modules keep your YAML short: credentials, substitutions, packages.
@@ -19,12 +19,18 @@ unavailable — a paused or unverified release never enables the installer.
 Nothing but anonymous GitHub release lookups leaves the page: no credential, no
 telemetry, no IP lookup — see [web-configurator/README.md](web-configurator/README.md).
 
-On a first visit the **Timezone** field is pre-filled with your browser's IANA
-zone (read locally, never sent); **Use my timezone** re-applies it. A saved
-configuration, a shared link or a failed detection keeps its own timezone
-(firmware default `Europe/Berlin`).
+**Automatic timezone** follows your browser's IANA zone on load and tab return,
+including saved/shared profiles. Turn it off to enter and preserve a manual
+zone. Detection is local; failure keeps the current zone (the firmware default
+on a first visit). Reset re-enables automatic mode.
 
-**Hardware target** in Tune selects the controller: **ESP8266 Wemos D1 mini**
+Related settings share compact, aligned cards. **Home Assistant visibility**
+controls entity exposure in the installed firmware; the Web server card can
+omit the optional authenticated device page. The
+[settings audit](docs/CONFIGURATOR_SETTINGS.md) covers every binding and the
+security/implementation options deliberately kept fixed.
+
+**Hardware target** in Configure → Settings selects the controller: **ESP8266 Wemos D1 mini**
 (`examples/release.yaml` wiring) or **ESP-WROOM-32 DevKit**. The board and pin
 lists, the base package the installer loads and the OTA port all follow the
 target, so an ESP32 installer never contains an ESP8266 pin alias such as `D8`.
@@ -83,7 +89,7 @@ substitutions:
 
 ## Features
 
-* **Clock and date screens** — `HH:MM:SS` on 48×8, 12/24-hour modes, three date
+* **Clock and date screens** — `HH:MM:SS` on 48×8, 12/24-hour modes, compact and weekday date
   formats, three seconds modes (digits, bottom-row bar, off), left/centre/right
   alignment.
 * **Five optional 8-row faces plus a built-in fallback** — see
@@ -105,19 +111,41 @@ substitutions:
 
 ## Home Assistant
 
-All entities appear automatically through the ESPHome integration.
+Entities are exposed by default through the ESPHome integration. In Configure
+→ **Home Assistant visibility**, choose which ones to expose. The installer
+uses ESPHome `internal` flags, not entity removal. **Rebuild and install** to
+apply changes; this is not a live Home Assistant UI preference. Hidden entities
+keep their restored state and firmware dependencies, but are not advertised to
+Home Assistant or the device web server. Diagnostics and recovery controls stay
+available by default. Old registry entries may need cleanup after flashing.
 
 ### Selects
 
 | Entity | Options |
 |---|---|
-| Screen | Clock, Date, Message, Module grid test, Pixel checkerboard |
+| Screen | Clock, Date, Temperature, Message, Module grid test, Pixel checkerboard |
 | Clock alignment | Left, Center, Right |
 | Time format | 24 hour, 12 hour |
+| Clock layout | Clock only, Clock + weather icon, Clock + home and outdoor weather |
 | Seconds display | Off, Digits, Bar |
-| Date format | DD.MM, MM/DD, DD/MM |
+| Date format | DD.MM, MM/DD, DD/MM, DD.MM.YY, Weekday DD.MM.YY, Weekday DD. MMM YY, Weekday MMM.DD |
 | Clock font | included external faces plus Compact 5×7 |
 | Message scroll | Scroll, Static |
+
+### Weather panels for 12-module rows
+
+With **12 modules in one row** (96×8 pixels), the restored **Clock layout** select offers Clock only, Clock + weather icon, or indoor temperature + Clock + weather icon/outdoor temperature. The clock stays in the middle six modules; each side panel uses three modules. On a six-module row the existing clock layout is unchanged. On Date, the restored **Show weather icon on date** and **Show outdoor temperature on date** switches work independently; either reserves the right three-module area. Changes redraw immediately and saved Home Assistant preferences survive restart.
+
+Enter the Home Assistant entity IDs when installing:
+
+```yaml
+substitutions:
+  home_temperature_entity: sensor.living_room_temperature
+  outdoor_temperature_entity: sensor.openweathermap_temperature
+  weather_entity: weather.openweathermap
+```
+
+Use a numeric sensor for indoor/outdoor temperature. The dedicated outdoor sensor wins when it has a valid reading; otherwise the weather entity's `temperature` attribute is used. Its state supplies the condition/icon. The configurator is a static page and cannot browse your Home Assistant entity list, so these IDs must already exist in Home Assistant. The older `temperature_entity` substitution remains the source for the existing Temperature screen. Unavailable or invalid readings render as placeholders, never stale numbers. Supported weather conditions include clear/day/night, partly cloudy, cloudy, fog, rain, snow, thunderstorm, windy and unknown.
 
 ### Numbers
 
@@ -130,13 +158,16 @@ All entities appear automatically through the ESPHome integration.
 | Message scroll speed | 20-200 ms/px | scrolling speed |
 | Default message duration | 0-3600 s | used when an action passes 0 |
 | Countdown duration | 10-3599 s | used by the "Start countdown" button |
-| Screen cycle interval | 5-300 s | automatic clock/date cycling |
+| Screen cycle interval | 5-300 s | clock dwell time while cycling |
+| Date screen duration | 5-300 s | date dwell time while cycling |
+| Date scroll speed | 20-200 ms/px | weekday-date scrolling speed |
 | Night start / end hour | 0-23 | schedule bounds |
 
 ### Switches, buttons and diagnostics
 
 Switches: Matrix display, Blinking colon, Digit animation, Automatic screen
-cycling, Night mode, Night schedule, Display inversion.
+cycling, **Show weather icon on date**, **Show outdoor temperature on date**,
+Night mode, Night schedule, Alarm mode, Display inversion.
 Buttons: `Restart device`, `Return to clock`, `Clear message`, `Start countdown`,
 `Cancel countdown`, `Run module grid test`, `Run pixel test`,
 `Restore display defaults`.
@@ -170,7 +201,7 @@ The renderer decides what to show, in this priority order:
    `ERROR <code>` on failure.
 2. **Alerts and messages** — short static notes, then messages.
 3. **Countdown** — `MM:SS` until it finishes, then a five-second `DONE` note.
-4. **Selected screen** — clock, date or a test pattern.
+4. **Selected screen** — clock, date, temperature or a test pattern.
 
 Clock layout degrades instead of clipping: full `HH:MM:SS` → `HH:MM` plus the
 seconds bar → built-in 5×7 font (always fits). If Home Assistant time is
@@ -181,10 +212,13 @@ unavailable the SNTP fallback is used; with no time at all the panel shows
 
 Default builds compile exactly **Pixel Clock 6×8** (initial face) and
 **Matrix 2px**; **Compact 5×7** is always built in. Dot Matrix, MD Parola
-Numeric 7-Segment and MD MAX72XX System are optional per-face packages with no
-selection cap. ESPHome restores the Clock font **index**, not its name, so
-re-select the face after flashing a changed font subset; unmatched options fall
-back to Compact.
+Numeric 7-Segment, MD MAX72XX System, MG Minecraft Georgian, and the
+project-generated **Georgian Mkhedruli 8×8** are optional per-face packages.
+The generated bitmap covers all 33 modern Georgian letters and the clock/status
+glyph set; Georgian weekday and month names use the full Unicode names and
+scroll when they exceed the panel. ESPHome restores the Clock font **index**,
+not its name, so re-select the face after flashing a changed font subset;
+unmatched options fall back to Compact.
 
 Licences, generated-font sources and the add-a-font checklist are in
 [fonts/README.md](fonts/README.md); the package policy is in

@@ -5,23 +5,26 @@ the package list; everything else lives here.
 
 | Module | Contents |
 |---|---|
-| `base.yaml` | device identity, `min_version: "2026.9.1"`, project metadata (`project_ref`), ESP8266 board, boot defaults, logger, all substitution defaults |
+| `base.yaml` | device identity, `min_version: "2026.9.1"`, project metadata (`project_ref`), ESP8266 board, boot defaults, logger, display substitution defaults |
+| `base-esp32.yaml` | ESP-WROOM-32 counterpart: board, pins, framework, OTA port and the same display defaults |
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant time and SNTP fallback, both using `${timezone}` |
 | `renderer.yaml` | C++ include list, restore-defaults script, OTA error/success timeouts |
 | `display.yaml` | SPI bus, MAX7219 panel, the lambda that feeds the renderer and publishes changes |
-| `fonts/*.yaml` | eight per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
+| `fonts/*.yaml` | nine per-face release packages (`type: web`, `-DMAX7219_FONT_*`, `!extend clock_font`) |
 | `fonts_web.yaml` | wrapper for the default pair: Pixel Clock 6×8 + Matrix 2px |
 | `fonts_default_local.yaml` | generated local wrapper for the same default pair, used by `dev.yaml` |
-| `fonts_local.yaml` | generated eight-face catalogue for offline metrics and glyph generation |
-| `local_fonts/*.yaml` | generated local equivalents of the eight face packages |
-| `controls.yaml` | selects, numbers, switches and buttons exposed to Home Assistant |
+| `fonts_local.yaml` | generated nine-face catalogue for offline metrics and glyph generation |
+| `local_fonts/*.yaml` | generated local equivalents of the nine face packages |
+| `controls.yaml` | restored selects, numbers and switches |
+| `buttons.yaml` | convenience and recovery buttons (stable IDs, shared action scripts) |
+| `entity_visibility.yaml` | per-entity `internal` substitution defaults; all controls/diagnostics exposed by default |
 | `date_controls.yaml` | date-specific Home Assistant controls, including weekday-date scroll speed |
 | `actions.yaml` | `api.actions` (`show_message`, `clear_message`, `start_countdown`, `cancel_countdown`, `show_status`, `get_status`) and the shared button scripts |
 | `diagnostics.yaml` | Wi-Fi/uptime/heap/version diagnostics plus display-mode, OTA-state and countdown sensors |
 | `ota_ui.yaml` | encrypted native OTA platform and the on-screen upload status callbacks |
 | `boot_ui.yaml` | installed-version splash at boot |
-| `web_server.yaml` | optional browser UI with mandatory authentication and `ota: false` |
-| `configurator.json` | UI bindings only (labels, groups, input kinds); defaults/options/entities are generated from the YAML above |
+| `web_server.yaml` | optional browser UI with safe port/version/auth-method/log substitutions, mandatory authentication, `ota: false` and `include_internal: false` |
+| `configurator.json` | UI bindings only (labels, groups, input kinds, optional packages, recommended entities); defaults/options/entities are generated from the YAML above |
 | `max7219_clock_renderer.h` | display state machine, layout, slide-up animation, scrolling, countdown and OTA screens (pure C++17, host-testable) |
 | `max7219_clock_esphome.h` | adapters between the renderer and ESPHome's display/font components |
 
@@ -29,6 +32,12 @@ Generated files: `restore_defaults.generated.yaml`, `fonts_default_local.yaml`,
 `fonts_local.yaml`, `local_fonts/*.yaml` and `examples/*.yaml` come from
 `scripts/generate_firmware_contract.py`; never edit them by hand
 ([AGENTS.md](../AGENTS.md)).
+
+When upgrading a hand-written `files:` list, copy the complete list from the new
+installer/example rather than changing only its tag. Version 0.7.8 adds
+`entity_visibility.yaml` and `buttons.yaml`; the configurator, generated examples
+and `dev.yaml` already include both. Hiding an entity never means removing its
+module from this list.
 
 ## How a user YAML loads them
 
@@ -89,7 +98,6 @@ renderer on the host (`make -C tests test fixture`).
 ## Font subsets
 
 Default build: Pixel Clock 6×8 + Matrix 2px, with Compact 5×7 always built in.
-Dot Matrix, MD Parola Numeric 7-Segment, MD MAX72XX System, MG Minecraft
-Georgian, Matrix Sans Screen and Sevenish Mono 8 are optional and individually
-selectable without a cap. See
+Dot Matrix, MD Parola Numeric 7-Segment and MD MAX72XX System are optional and
+individually selectable without a cap. See
 [font package design and validation](fonts/README.md).

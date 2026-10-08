@@ -48,6 +48,14 @@ font:
   bpp: 1
   glyphs:
   - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
+- id: font_georgian_mkhedruli_8x8_source
+  file:
+    type: local
+    path: ../fonts/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
 - id: font_matrix_sans_screen_source
   file:
     type: local
@@ -60,7 +68,7 @@ font:
   file:
     type: local
     path: ../fonts/sevenish-mono-8/SevenishMono8.ttf
-  size: 6
+  size: 5
   bpp: 1
   glyphs:
   - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
@@ -72,6 +80,7 @@ esphome:
   - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
   - -DMAX7219_FONT_DOT_MATRIX
   - -DMAX7219_FONT_MG_MINECRAFT_GEORGIAN
+  - -DMAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
   - -DMAX7219_FONT_MATRIX_SANS_SCREEN
   - -DMAX7219_FONT_SEVENISH_MONO_8
 select:
@@ -84,5 +93,6 @@ select:
   - MD MAX72XX System
   - Dot Matrix
   - MG Minecraft Georgian
+  - Georgian Mkhedruli 8x8
   - Matrix Sans Screen
   - Sevenish Mono 8

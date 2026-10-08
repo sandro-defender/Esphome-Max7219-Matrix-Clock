@@ -15,6 +15,10 @@ export interface PixelTarget {
   height: number;
   pixels: Uint8Array;
   clip?: { x: number; y: number; width: number; height: number };
+  /** Optional local view into a larger row-major frame. */
+  offsetX?: number;
+  offsetY?: number;
+  stride?: number;
 }
 
 export interface Glyph {
@@ -59,7 +63,13 @@ export function setPixel(target: PixelTarget, x: number, y: number, value = 1): 
   const py = Math.round(y);
   if (px < 0 || py < 0 || px >= target.width || py >= target.height) return;
   if (target.clip && (px < target.clip.x || py < target.clip.y || px >= target.clip.x + target.clip.width || py >= target.clip.y + target.clip.height)) return;
-  target.pixels[py * target.width + px] = value;
+  const absoluteX = (target.offsetX ?? 0) + px;
+  const absoluteY = (target.offsetY ?? 0) + py;
+  const stride = target.stride ?? target.width;
+  if (absoluteX < 0 || absoluteY < 0 || absoluteX >= stride) return;
+  const index = absoluteY * stride + absoluteX;
+  if (index < 0 || index >= target.pixels.length) return;
+  target.pixels[index] = value;
 }
 
 export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: number): void {
@@ -80,34 +90,46 @@ export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: n
 export const BUILTIN_DIGITS = Array.from({ length: 10 }, (_, i) => BUILTIN_GLYPHS[String(i)]);
 export const BUILTIN_LETTERS = Array.from({ length: 26 }, (_, i) => BUILTIN_GLYPHS[String.fromCharCode(65 + i)]);
 
-function builtinRows(ch: string): number[] { return BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
+function builtinRows(ch: string): number[] {
+  return BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "];
+}
 function builtinAdvance(ch: string): number { return BUILTIN_ADVANCES[ch] ?? BUILTIN_METRICS.defaultAdvance; }
 
-/** C++ walks UTF-8 bytes, not JavaScript Unicode code points. */
+function isMkhedruli(ch: string): boolean {
+  const codepoint = ch.codePointAt(0) ?? 0;
+  return codepoint >= 0x10d0 && codepoint <= 0x10f0;
+}
+
+/** Firmware text walks UTF-8 by Unicode code point, not by encoded byte. */
 export function textCells(text: string): string[] {
-  return [...new TextEncoder().encode(text)].map((byte) => String.fromCharCode(byte));
+  return [...text];
 }
 
 class BuiltinPreviewFont implements PreviewFont {
-  readonly id = "builtin";
-  readonly label = "Compact 5x7";
-  readonly builtin = true;
+  readonly id: string = "builtin";
+  readonly label: string = "Compact 5x7";
+  readonly builtin: boolean = true;
   readonly inkHeight = BUILTIN_METRICS.inkHeight;
   readonly inkTop = BUILTIN_METRICS.inkTop;
   readonly clockWidth = BUILTIN_METRICS.clockWidth;
   readonly maxDigitHeight = BUILTIN_METRICS.maxDigitHeight;
 
-  glyph(ch: string): Glyph {
+  glyph(ch: string): Glyph | null {
+    if (isMkhedruli(ch)) return null;
     return { w: 5, h: 7, rows: builtinRows(ch), top: 0, advance: builtinAdvance(ch) };
   }
 
   advance(ch: string): number {
-    return builtinAdvance(ch);
+    return isMkhedruli(ch) ? 0 : builtinAdvance(ch);
   }
 
-  measure(text: string): number {
+  measure(text: string): number | null {
     let width = 0;
-    for (const ch of textCells(text)) width += builtinAdvance(ch);
+    for (const ch of textCells(text)) {
+      const advance = this.advance(ch);
+      if (advance === 0) return null;
+      width += advance;
+    }
     return width;
   }
 
@@ -116,7 +138,8 @@ class BuiltinPreviewFont implements PreviewFont {
   }
 
   drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
-    drawGlyphRows(target, this.glyph(ch), x, boxTop);
+    const glyph = this.glyph(ch);
+    if (glyph) drawGlyphRows(target, glyph, x, boxTop);
   }
 }
 
@@ -178,10 +201,56 @@ class GeneratedPreviewFont implements PreviewFont {
   }
 }
 
+
+const GEORGIAN_FONT_ID = "font_georgian_mkhedruli_8x8_source";
+
+/**
+ * The generated source-table face handles every clock glyph and Mkhedruli
+ * letter. Compact 5x7 supplies Latin for mixed free-text messages.
+ */
+class GeorgianBitmapPreviewFont extends BuiltinPreviewFont {
+  readonly id = "georgian-mkhedruli-8x8";
+  readonly label = "Georgian Mkhedruli 8x8";
+  readonly builtin = false;
+  readonly inkHeight = 8;
+  readonly maxDigitHeight = 8;
+  private readonly source = new GeneratedPreviewFont(
+    GEORGIAN_FONT_ID,
+    "Georgian Mkhedruli 8x8",
+    GENERATED_FONTS[GEORGIAN_FONT_ID],
+  );
+
+  glyph(ch: string): Glyph | null {
+    return this.source.glyph(ch) ?? super.glyph(ch);
+  }
+
+  advance(ch: string): number {
+    return this.source.advance(ch) || super.advance(ch);
+  }
+
+  measure(text: string): number | null {
+    let width = 0;
+    for (const ch of textCells(text)) {
+      const advance = this.advance(ch);
+      if (advance === 0) return null;
+      width += advance;
+    }
+    return width;
+  }
+
+  drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
+    if (this.source.glyph(ch)) this.source.drawGlyph(target, ch, x, boxTop);
+    else super.drawGlyph(target, ch, x, boxTop);
+  }
+}
+
 const cache = new Map<string, PreviewFont>();
 
 /** Built-in 5x7 fallback font; never missing, never downloads anything. */
 export const BUILTIN_FONT: PreviewFont = new BuiltinPreviewFont();
+
+/** Matches the firmware's larger Georgian weekday and month lettering. */
+export const GEORGIAN_DATE_FONT: PreviewFont = new GeorgianBitmapPreviewFont();
 
 /** Preview font for an ESPHome font id such as `font_tiny5_source`. */
 export function generatedFont(id: string, label: string): PreviewFont | null {

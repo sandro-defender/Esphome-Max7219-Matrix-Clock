@@ -25,6 +25,10 @@
 #include <string.h>
 
 #include <algorithm>
+#include <float.h>
+#include <stdlib.h>
+
+#include "georgian_bitmap_font.generated.h"
 
 namespace max7219_clock {
 
@@ -72,6 +76,25 @@ enum SecondsMode : uint8_t {
   SECONDS_BAR,
 };
 
+enum ClockLayout : uint8_t {
+  CLOCK_LAYOUT_ONLY = 0,
+  CLOCK_LAYOUT_WEATHER_ICON,
+  CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER,
+};
+
+enum WeatherCondition : uint8_t {
+  WEATHER_UNKNOWN = 0,
+  WEATHER_CLEAR,
+  WEATHER_CLEAR_NIGHT,
+  WEATHER_PARTLY_CLOUDY,
+  WEATHER_CLOUDY,
+  WEATHER_FOG,
+  WEATHER_RAIN,
+  WEATHER_SNOW,
+  WEATHER_THUNDERSTORM,
+  WEATHER_WINDY,
+};
+
 enum DateFormat : uint8_t {
   DATE_DD_MM = 0,  // 31.12
   DATE_MM_DD,      // 12/31
@@ -80,6 +103,16 @@ enum DateFormat : uint8_t {
   DATE_WEEKDAY_DD_MM_YY,   // THU 31.12.26
   DATE_WEEKDAY_DD_MMM_YY,  // THU 31. DEC 26
   DATE_WEEKDAY_MMM_DD,     // THU DEC.31
+};
+
+enum DateLanguage : uint8_t {
+  DATE_LANGUAGE_ENGLISH = 0,
+  DATE_LANGUAGE_GEORGIAN,
+};
+
+enum ScreenTransitionStyle : uint8_t {
+  SCREEN_TRANSITION_SLIDE_LEFT = 0,
+  SCREEN_TRANSITION_SLIDE_UP,
 };
 
 // --------------------------------------------------------------------------
@@ -123,51 +156,119 @@ class ClipCanvas : public Canvas {
 
 // Draw an entire screen at an offset while retaining Canvas clipping. This is
 // used for the short horizontal slide between selected screens.
+class ViewportCanvas : public Canvas {
+ public:
+  ViewportCanvas(Canvas &parent, int x, int width) : parent_(parent), x_(x), width_(width) {}
+  void pixel(int x, int y, bool on) override {
+    if (x >= 0 && x < width_ && y >= 0 && y < parent_.height()) parent_.pixel(x_ + x, y, on);
+  }
+  int width() const override { return width_; }
+  int height() const override { return parent_.height(); }
+ private:
+  Canvas &parent_;
+  int x_;
+  int width_;
+};
+
 class TranslatedCanvas : public Canvas {
  public:
-  TranslatedCanvas(Canvas &parent, int x_offset) : parent_(parent), x_offset_(x_offset) {}
-  void pixel(int x, int y, bool on) override { parent_.pixel(x + x_offset_, y, on); }
+  TranslatedCanvas(Canvas &parent, int x_offset, int y_offset = 0)
+      : parent_(parent), x_offset_(x_offset), y_offset_(y_offset) {}
+  void pixel(int x, int y, bool on) override { parent_.pixel(x + x_offset_, y + y_offset_, on); }
   int width() const override { return parent_.width(); }
   int height() const override { return parent_.height(); }
  private:
   Canvas &parent_;
-  int x_offset_;
+  int x_offset_, y_offset_;
 };
 
+// Decode one UTF-8 code point. Invalid sequences consume one byte and become
+// U+FFFD, so malformed input cannot stall the renderer or split a valid glyph.
+inline uint32_t next_utf8_codepoint(const char *&cursor) {
+  if (cursor == nullptr || *cursor == '\0') return 0;
+  const unsigned char *bytes = (const unsigned char *) cursor;
+  const unsigned char first = bytes[0];
+  if (first < 0x80U) {
+    cursor++;
+    return first;
+  }
+
+  uint32_t codepoint = 0;
+  uint8_t length = 0;
+  uint32_t minimum = 0;
+  if (first >= 0xC2U && first <= 0xDFU) {
+    codepoint = first & 0x1FU;
+    length = 2;
+    minimum = 0x80U;
+  } else if (first >= 0xE0U && first <= 0xEFU) {
+    codepoint = first & 0x0FU;
+    length = 3;
+    minimum = 0x800U;
+  } else if (first >= 0xF0U && first <= 0xF4U) {
+    codepoint = first & 0x07U;
+    length = 4;
+    minimum = 0x10000U;
+  } else {
+    cursor++;
+    return 0xFFFDU;
+  }
+
+  for (uint8_t index = 1; index < length; index++) {
+    const unsigned char next = bytes[index];
+    if (next == '\0' || (next & 0xC0U) != 0x80U) {
+      cursor++;
+      return 0xFFFDU;
+    }
+    codepoint = (codepoint << 6) | (next & 0x3FU);
+  }
+  if (codepoint < minimum || codepoint > 0x10FFFFU ||
+      (codepoint >= 0xD800U && codepoint <= 0xDFFFU)) {
+    cursor++;
+    return 0xFFFDU;
+  }
+  cursor += length;
+  return codepoint;
+}
+
+inline size_t utf8_codepoint_count(const char *text) {
+  size_t count = 0;
+  if (text != nullptr) {
+    const char *cursor = text;
+    while (*cursor != '\0') {
+      (void) next_utf8_codepoint(cursor);
+      count++;
+    }
+  }
+  return count;
+}
+
+inline bool is_mkhedruli(uint32_t codepoint) {
+  return codepoint >= 0x10D0U && codepoint <= 0x10F0U;
+}
+
 // --------------------------------------------------------------------------
-// Font interface: one glyph cell at a time so that the renderer owns layout,
-// alignment and the per-digit slide-up animation.
+// Font interface: one Unicode code point at a time so that the renderer owns
+// layout, alignment and the per-digit slide-up animation.
 // --------------------------------------------------------------------------
 class GlyphFont {
  public:
   virtual ~GlyphFont() {}
-  // Horizontal step for one character, in pixels.
-  virtual int advance(uint32_t c) const = 0;
+  // Horizontal step for one Unicode code point, in pixels.
+  virtual int advance(uint32_t codepoint) const = 0;
   virtual const void *identity() const { return this; }
   // Ink height and the ink offset from the text box top, measured on a digit.
   // The renderer uses both to centre the ink inside the display.
   virtual int ink_height() const = 0;
   virtual int ink_top() const = 0;
-  // Draw a single character with its text box top at `box_top`.
-  virtual void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const = 0;
-
-  static uint32_t next_codepoint(const char *&p) {
-    const uint8_t first = (uint8_t) *p++;
-    if (first < 0x80) return first;
-    const uint8_t count = first < 0xE0 ? 1 : first < 0xF0 ? 2 : first < 0xF8 ? 3 : 0;
-    uint32_t codepoint = first & ((1U << (6 - count)) - 1U);
-    for (uint8_t i = 0; i < count && *p; i++) {
-      const uint8_t next = (uint8_t) *p++;
-      if ((next & 0xC0) != 0x80) return 0xFFFD;
-      codepoint = (codepoint << 6) | (next & 0x3F);
-    }
-    return codepoint;
-  }
+  // Draw one Unicode code point with its text box top at `box_top`.
+  virtual void draw_glyph(Canvas &c, uint32_t codepoint, int x, int box_top) const = 0;
 
   int text_width(const char *s) const {
     int w = 0;
-    if (s != nullptr)
-      for (const char *p = s; *p != '\0';) w += this->advance(next_codepoint(p));
+    if (s != nullptr) {
+      const char *cursor = s;
+      while (*cursor != '\0') w += this->advance(next_utf8_codepoint(cursor));
+    }
     return w;
   }
   // Text box top that puts the digit ink in the vertical middle of the display.
@@ -177,8 +278,9 @@ class GlyphFont {
   void draw_text(Canvas &c, const char *s, int x, int box_top) const {
     if (s == nullptr) return;
     int cursor = x;
-    for (const char *p = s; *p != '\0';) {
-      const uint32_t codepoint = next_codepoint(p);
+    const char *text = s;
+    while (*text != '\0') {
+      const uint32_t codepoint = next_utf8_codepoint(text);
       this->draw_glyph(c, codepoint, cursor, box_top);
       cursor += this->advance(codepoint);
     }
@@ -248,6 +350,7 @@ inline const uint8_t *glyph(char c) {
   static const uint8_t EXCLAMATION[7] = {0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00000, 0b00100};
   static const uint8_t QUESTION[7] = {0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b00000, 0b00100};
   static const uint8_t PLUS[7] = {0b00000, 0b00100, 0b00100, 0b01110, 0b00100, 0b00100, 0b00000};
+  if ((unsigned char) c >= 0x80U) return SPACE;
 
   if (c >= '0' && c <= '9') return DIGITS[c - '0'];
   if (c >= 'A' && c <= 'Z') return LETTERS[c - 'A'];
@@ -295,15 +398,43 @@ inline int advance(char c) {
 
 class BuiltinFont : public GlyphFont {
  public:
-  int advance(uint32_t c) const override { return c <= 0x7F ? builtin::advance((char) c) : 0; }
+  int advance(uint32_t codepoint) const override {
+    if (is_mkhedruli(codepoint)) return 0;
+    return codepoint <= 0x7FU ? builtin::advance((char) codepoint) : builtin::advance('?');
+  }
   int ink_height() const override { return 7; }
   int ink_top() const override { return 0; }
-  void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
-    if (ch > 0x7F) return;
+  void draw_glyph(Canvas &c, uint32_t codepoint, int x, int box_top) const override {
+    const char ch = codepoint <= 0x7FU ? (char) codepoint : ' ';
     const uint8_t *rows = builtin::glyph(ch);
     for (int row = 0; row < 7; row++)
       for (int col = 0; col < 5; col++)
         if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
+  }
+};
+
+// This fallback is generated from the same MD-style column table as the
+// optional TTF. It also delegates unsupported ASCII text to Compact 5x7, so a
+// mixed Latin/Georgian message remains one code point per glyph.
+class GeorgianBitmapFont : public GlyphFont {
+ public:
+  int advance(uint32_t codepoint) const override {
+    const georgian_bitmap::Glyph *glyph = georgian_bitmap::find(codepoint);
+    if (glyph != nullptr) return glyph->advance;
+    if (codepoint <= 0x7FU) return builtin::advance((char) codepoint);
+    return builtin::advance('?');
+  }
+  int ink_height() const override { return 8; }
+  int ink_top() const override { return 0; }
+  void draw_glyph(Canvas &c, uint32_t codepoint, int x, int box_top) const override {
+    const georgian_bitmap::Glyph *glyph = georgian_bitmap::find(codepoint);
+    if (glyph != nullptr) {
+      for (int column = 0; column < glyph->width; column++)
+        for (int row = 0; row < 8; row++)
+          if (glyph->columns[column] & (1U << row)) c.pixel(x + column, box_top + row, true);
+      return;
+    }
+    BuiltinFont().draw_glyph(c, codepoint, x, box_top);
   }
 };
 
@@ -324,17 +455,30 @@ struct Frame {
   int year = 2026;
   bool temperature_valid = false;
   float temperature_c = 0.0f;
+  // Optional panel sources are read as Home Assistant text states so invalid
+  // and unavailable values remain explicit instead of becoming zero.
+  bool home_temperature_valid = false;
+  float home_temperature = 0.0f;
+  bool outdoor_temperature_valid = false;
+  float outdoor_temperature = 0.0f;
+  uint8_t weather_condition = WEATHER_UNKNOWN;
 
   // Display preferences (entity state)
   int screen = SCREEN_CLOCK;
   int alignment = ALIGN_CENTER;
   int seconds_mode = SECONDS_DIGITS;
+  int clock_layout = CLOCK_LAYOUT_ONLY;
+  bool date_show_weather_icon = false;
+  bool date_show_outdoor_temperature = false;
+  bool show_temperature_degree = true;
   int date_format = DATE_DD_MM;
+  int date_language = DATE_LANGUAGE_ENGLISH;
   bool use_12h = false;
   bool blink_colon = true;
   bool animate = true;
   uint32_t animation_ms = 600;
   uint8_t animation_row_gap = 1;
+  int screen_transition_style = SCREEN_TRANSITION_SLIDE_LEFT;
   bool message_scroll = true;
   uint32_t scroll_ms_per_px = 60;
   uint32_t date_scroll_ms_per_px = 60;
@@ -354,6 +498,31 @@ struct Frame {
   uint32_t cycle_interval_s = 10;
   uint32_t date_cycle_interval_s = 10;
 };
+
+struct WeatherPanelGeometry {
+  bool available = false;
+  int group_x = 0;
+  int left_x = 0;
+  int clock_x = 0;
+  int right_x = 0;
+  int date_safe_width = 0;
+};
+
+inline WeatherPanelGeometry weather_panel_geometry(const Canvas &canvas) {
+  WeatherPanelGeometry layout;
+  if (canvas.width() < 96 || canvas.height() < 8) return layout;
+  layout.available = true;
+  layout.group_x = (canvas.width() - 96) / 2;
+  layout.left_x = layout.group_x;
+  layout.clock_x = layout.group_x + 24;
+  layout.right_x = layout.group_x + 72;
+  layout.date_safe_width = layout.right_x;
+  return layout;
+}
+
+inline bool date_weather_panel_enabled(const Frame &f) {
+  return f.date_show_weather_icon || f.date_show_outdoor_temperature;
+}
 
 // --------------------------------------------------------------------------
 // Runtime: everything that must survive between redraws but must not touch
@@ -388,7 +557,7 @@ struct Runtime {
   bool display_power_before_ota = true;
 
   // Slide-up animation
-  char anim_prev[24] = {0};
+  char anim_prev[80] = {0};
   int anim_prev_mode = -1;
   uint32_t anim_started_ms = 0;
   bool anim_active = false;
@@ -595,7 +764,7 @@ inline bool set_ota_progress(float percentage) {
   return true;
 }
 
-inline bool is_digit(char c) { return c >= '0' && c <= '9'; }
+inline bool is_digit(uint32_t codepoint) { return codepoint >= '0' && codepoint <= '9'; }
 
 // A temporary screen is visible while it is armed and either has no deadline
 // (duration 0 = until cleared) or has not reached it yet.
@@ -633,6 +802,92 @@ inline void upper_ascii(char *text) {
 // NaN test without <cmath>: the template sensor publishes NAN when no
 // countdown is running.
 inline bool is_nan(float value) { return value != value; }
+inline bool is_finite(float value) { return value == value && value <= FLT_MAX && value >= -FLT_MAX; }
+
+// Parse a Home Assistant state strictly. Empty, unknown, unavailable, partial
+// numeric text, NaN and infinities are all absent values, never zero readings.
+inline bool parse_temperature_text(const char *text, float &value) {
+  if (text == nullptr) return false;
+  while (*text == ' ' || *text == '\t' || *text == '\r' || *text == '\n') text++;
+  if (*text == '\0') return false;
+  char *end = nullptr;
+  const float parsed = strtof(text, &end);
+  if (end == text || !is_finite(parsed)) return false;
+  while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n') end++;
+  if (*end != '\0') return false;
+  value = parsed;
+  return true;
+}
+
+// A supplied outdoor sensor wins when it has a current numeric value. If it
+// is unset/unavailable, the weather entity's current `temperature` attribute
+// is the safe fallback; both invalid sources leave the display unavailable.
+inline bool choose_outdoor_temperature(bool dedicated_valid, float dedicated,
+                                       bool weather_valid, float weather, float &value) {
+  if (dedicated_valid && is_finite(dedicated)) {
+    value = dedicated;
+    return true;
+  }
+  if (weather_valid && is_finite(weather)) {
+    value = weather;
+    return true;
+  }
+  return false;
+}
+
+inline bool contains_text(const char *text, const char *part) {
+  return text != nullptr && part != nullptr && strstr(text, part) != nullptr;
+}
+
+// Normalize provider-specific condition spelling (HA enums or OpenWeatherMap
+// descriptions) into one of the renderer's small, fixed bitmap categories.
+inline uint8_t weather_from_condition(const char *condition) {
+  char normalized[64] = {0};
+  size_t output = 0;
+  bool previous_space = true;
+  if (condition != nullptr) {
+    for (const unsigned char *p = (const unsigned char *) condition; *p != '\0' && output + 1 < sizeof(normalized); p++) {
+      unsigned char ch = *p;
+      if (ch >= 'A' && ch <= 'Z') ch = (unsigned char) (ch - 'A' + 'a');
+      if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+        normalized[output++] = (char) ch;
+        previous_space = false;
+      } else if (!previous_space && output + 1 < sizeof(normalized)) {
+        normalized[output++] = ' ';
+        previous_space = true;
+      }
+    }
+  }
+  if (output > 0 && normalized[output - 1] == ' ') normalized[--output] = '\0';
+  if (output == 0 || contains_text(normalized, "unknown") || contains_text(normalized, "unavailable") ||
+      strcmp(normalized, "none") == 0 || contains_text(normalized, "exceptional"))
+    return WEATHER_UNKNOWN;
+  if (contains_text(normalized, "thunder") || contains_text(normalized, "lightning") ||
+      contains_text(normalized, "hail"))
+    return WEATHER_THUNDERSTORM;
+  if (contains_text(normalized, "snow") || contains_text(normalized, "sleet")) return WEATHER_SNOW;
+  if (contains_text(normalized, "wind") || contains_text(normalized, "squall") ||
+      contains_text(normalized, "tornado"))
+    return WEATHER_WINDY;
+  if (contains_text(normalized, "fog") || contains_text(normalized, "mist") ||
+      contains_text(normalized, "haze") || contains_text(normalized, "smoke") ||
+      contains_text(normalized, "dust") || contains_text(normalized, "sand") ||
+      contains_text(normalized, "ash"))
+    return WEATHER_FOG;
+  if (contains_text(normalized, "rain") || contains_text(normalized, "drizzle") ||
+      contains_text(normalized, "shower") || contains_text(normalized, "pour"))
+    return WEATHER_RAIN;
+  if (contains_text(normalized, "partly cloudy") || strcmp(normalized, "partlycloudy") == 0 ||
+      contains_text(normalized, "few clouds") || contains_text(normalized, "scattered clouds"))
+    return WEATHER_PARTLY_CLOUDY;
+  if (contains_text(normalized, "cloud") || contains_text(normalized, "overcast") ||
+      contains_text(normalized, "broken clouds"))
+    return WEATHER_CLOUDY;
+  if (contains_text(normalized, "clear night") || contains_text(normalized, "night clear"))
+    return WEATHER_CLEAR_NIGHT;
+  if (contains_text(normalized, "sunny") || contains_text(normalized, "clear")) return WEATHER_CLEAR;
+  return WEATHER_UNKNOWN;
+}
 
 inline uint32_t hash_text(const char *text) {
   uint32_t hash = 2166136261UL;
@@ -647,7 +902,12 @@ inline uint32_t hash_text(const char *text) {
 // --------------------------------------------------------------------------
 // Screen content
 // --------------------------------------------------------------------------
-// Format the clock/date/countdown content into `out` (at least 24 bytes).
+inline bool date_format_has_names(int format) {
+  return format == DATE_WEEKDAY_DD_MM_YY || format == DATE_WEEKDAY_DD_MMM_YY ||
+         format == DATE_WEEKDAY_MMM_DD;
+}
+
+// Format the clock/date/countdown content into `out` (at least 80 bytes).
 // Returns false when the mode does not have a fixed-width text content.
 inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char *out, size_t out_size) {
   switch (mode) {
@@ -690,16 +950,25 @@ inline bool build_content(const Frame &f, uint8_t mode, bool with_seconds, char 
           static const char *const weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
           static const char *const months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                                                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+          static const char *const georgian_weekdays[] = {
+              "კვირა", "ორშაბათი", "სამშაბათი", "ოთხშაბათი", "ხუთშაბათი", "პარასკევი", "შაბათი"};
+          static const char *const georgian_months[] = {
+              "იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი",
+              "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"};
           static const int month_offsets[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
           const int adjusted_year = f.year - (f.month < 3 ? 1 : 0);
-          const int weekday = (adjusted_year + adjusted_year / 4 - adjusted_year / 100 +
-                               adjusted_year / 400 + month_offsets[f.month - 1] + f.day) % 7;
+          int weekday = (adjusted_year + adjusted_year / 4 - adjusted_year / 100 +
+                         adjusted_year / 400 + month_offsets[f.month - 1] + f.day) % 7;
+          if (weekday < 0) weekday += 7;
+          const bool georgian = f.date_language == DATE_LANGUAGE_GEORGIAN;
+          const char *weekday_name = georgian ? georgian_weekdays[weekday] : weekdays[weekday];
+          const char *month_name = georgian ? georgian_months[f.month - 1] : months[f.month - 1];
           if (f.date_format == DATE_WEEKDAY_DD_MM_YY)
-            snprintf(out, out_size, "%s %02d.%02d.%02d", weekdays[weekday], f.day, f.month, f.year % 100);
+            snprintf(out, out_size, "%s %02d.%02d.%02d", weekday_name, f.day, f.month, f.year % 100);
           else if (f.date_format == DATE_WEEKDAY_DD_MMM_YY)
-            snprintf(out, out_size, "%s %02d. %s %02d", weekdays[weekday], f.day, months[f.month - 1], f.year % 100);
+            snprintf(out, out_size, "%s %02d. %s %02d", weekday_name, f.day, month_name, f.year % 100);
           else
-            snprintf(out, out_size, "%s %s.%02d", weekdays[weekday], months[f.month - 1], f.day);
+            snprintf(out, out_size, "%s %s.%02d", weekday_name, month_name, f.day);
           break;
         }
         default:
@@ -764,6 +1033,8 @@ inline void draw_bitmap_test(Canvas &c, uint8_t mode) {
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons, uint8_t animation_row_gap);
 inline void draw_seconds_bar(Canvas &c, int second);
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid, bool show_degree = true);
+inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature);
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
 inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
@@ -790,48 +1061,86 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
     return;
   }
 
-  const int width = canvas.width();
-  const int height = canvas.height();
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+  int content_x = 0;
+  int content_width = canvas.width();
+  if (screen == SCREEN_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid, f.show_temperature_degree);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (screen == SCREEN_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int width = content_canvas.width();
+  const int height = content_canvas.height();
   const GlyphFont *active = &font;
-  char content[24] = {0};
+  GeorgianBitmapFont georgian_bitmap_font;
+  char content[80] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  const bool georgian_named_date = has_content && mode == MODE_DATE &&
+      f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format);
+  if (georgian_named_date)
+    active = &georgian_bitmap_font;
+  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
       with_seconds = false;
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
-    if (has_content && active->text_width(content) > width) active = &fallback;
+    if (has_content && active->text_width(content) > width && !georgian_named_date) active = &fallback;
   }
   if (!has_content) {
     snprintf(content, sizeof(content), "--:--");
     active = &fallback;
   }
   const bool blank_colons = mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
-  draw_line(canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  draw_line(content_canvas, *active, content, nullptr, 1.0f, f.alignment, active->centered_box_top(height), blank_colons, 0);
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
-// Choose the face for a free-text string (message, alert, OTA): the selected
-// font when it has every glyph, otherwise the built-in fallback. The external
-// faces only compile clock glyphs (see fonts_*.yaml), so Latin messages and
-// the OTA texts would otherwise collapse onto zero-advance missing glyphs.
+// Choose the selected face when it contains every code point. If an external
+// face is missing Mkhedruli, the shared bitmap fallback keeps Georgian and
+// basic ASCII in one UTF-8-aware line; other missing text uses Compact 5x7.
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text) {
-  if (text != nullptr)
-    for (const char *p = text; *p != '\0';)
-      if (primary.advance(GlyphFont::next_codepoint(p)) == 0) return fallback;
-  return primary;
+  if (text == nullptr) return primary;
+  bool missing = false;
+  bool has_mkhedruli = false;
+  const char *cursor = text;
+  while (*cursor != '\0') {
+    const uint32_t codepoint = next_utf8_codepoint(cursor);
+    if (is_mkhedruli(codepoint)) has_mkhedruli = true;
+    if (primary.advance(codepoint) == 0) missing = true;
+  }
+  if (!missing) return primary;
+  if (has_mkhedruli) {
+    static const GeorgianBitmapFont georgian_fallback;
+    cursor = text;
+    while (*cursor != '\0')
+      if (georgian_fallback.advance(next_utf8_codepoint(cursor)) == 0) return fallback;
+    return georgian_fallback;
+  }
+  return fallback;
 }
 
-// A weekday date is its own marquee. Do not combine that continuous movement
+// A named date is its own marquee. Do not combine that continuous movement
 // with the one-off whole-screen slide used by short fixed screens.
 inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
                                       const GlyphFont &fallback, int width) {
-  char content[24] = {0};
+  char content[80] = {0};
   if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
-  const GlyphFont &text_font = font_for_text(primary, fallback, content);
+  GeorgianBitmapFont georgian_bitmap_font;
+  const GlyphFont &text_font = f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format)
+      ? static_cast<const GlyphFont &>(georgian_bitmap_font) : font_for_text(primary, fallback, content);
   return text_font.text_width(content) > width;
 }
 
@@ -843,7 +1152,6 @@ inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
 inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, const char *animate_from, float progress,
                       int alignment, int box_top, bool blank_colons = false, uint8_t animation_row_gap = 0) {
   const int width = c.width();
-  const int len = content == nullptr ? 0 : (int) strlen(content);
   int text_width = font.text_width(content);
 
   int start_x = 0;
@@ -853,29 +1161,206 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
     start_x = width - text_width;
   if (start_x < 0) start_x = 0;
 
-  const bool animate = animate_from != nullptr && progress < 1.0f && (int) strlen(animate_from) == len;
+  const bool animate = animate_from != nullptr && progress < 1.0f &&
+                       utf8_codepoint_count(animate_from) == utf8_codepoint_count(content);
   // Integer LED rows are the only real positions. Use ink height + the HA
   // row-gap setting, sampled at 20 ms by the display package (not 150 ms).
   const int slide = font.ink_height();
   const int travel = slide + animation_row_gap;
 
   int cursor = start_x;
-  for (int i = 0; i < len; i++) {
-    const int step = font.advance(content[i]);
-    const bool changed = animate && is_digit(content[i]) && is_digit(animate_from[i]) &&
-                         content[i] != animate_from[i];
+  const char *current = content == nullptr ? "" : content;
+  const char *previous = animate ? animate_from : nullptr;
+  while (*current != '\0') {
+    const uint32_t codepoint = next_utf8_codepoint(current);
+    const uint32_t old_codepoint = animate ? next_utf8_codepoint(previous) : 0;
+    const int step = font.advance(codepoint);
+    const bool changed = animate && is_digit(codepoint) && is_digit(old_codepoint) &&
+                         codepoint != old_codepoint;
     if (cursor + step > 0 && cursor < width) {
       if (changed) {
         // Old digit slides up, new digit enters from below.
         const int offset = (int) (progress * travel);
         ClipCanvas cell(c, cursor, box_top + font.ink_top(), step, slide);
-        font.draw_glyph(cell, animate_from[i], cursor, box_top - offset);
-        font.draw_glyph(cell, content[i], cursor, box_top + travel - offset);
-      } else if (!(blank_colons && content[i] == ':')) {
-        font.draw_glyph(c, content[i], cursor, box_top);
+        font.draw_glyph(cell, old_codepoint, cursor, box_top - offset);
+        font.draw_glyph(cell, codepoint, cursor, box_top + travel - offset);
+      } else if (!(blank_colons && codepoint == ':')) {
+        font.draw_glyph(c, codepoint, cursor, box_top);
       }
     }
     cursor += step;
+  }
+}
+
+inline void format_temperature_text(float value, bool valid, int width, char *out, size_t out_size) {
+  BuiltinFont font;
+  if (!valid || !is_finite(value) || value < -999.9f || value > 999.9f) {
+    snprintf(out, out_size, "--.-");
+    return;
+  }
+  const int32_t tenths = (int32_t) (value * 10.0f + (value >= 0.0f ? 0.5f : -0.5f));
+  const uint32_t magnitude = (uint32_t) (tenths < 0 ? -tenths : tenths);
+  char candidate[16];
+  snprintf(candidate, sizeof(candidate), "%s%u.%u", tenths < 0 ? "-" : "",
+           (unsigned) (magnitude / 10U), (unsigned) (magnitude % 10U));
+  if (font.text_width(candidate) <= width) {
+    snprintf(out, out_size, "%s", candidate);
+    return;
+  }
+  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
+  snprintf(candidate, sizeof(candidate), "%ld", (long) whole);
+  if (font.text_width(candidate) <= width)
+    snprintf(out, out_size, "%s", candidate);
+  else
+    snprintf(out, out_size, "--.-");
+}
+
+inline void draw_temperature_text(Canvas &c, float value, bool valid) {
+  char text[16];
+  format_temperature_text(value, valid, c.width(), text, sizeof(text));
+  BuiltinFont font;
+  draw_line(c, font, text, nullptr, 1.0f, ALIGN_CENTER, font.centered_box_top(c.height()));
+}
+
+inline int micro_text_width(const char *text) {
+  int width = 0;
+  if (text != nullptr)
+    for (const char *p = text; *p != '\0'; p++) width += *p == '.' ? 2 : *p == '^' ? 3 : 4;
+  return width;
+}
+
+inline void format_micro_temperature(float value, bool valid, int width, char *out, size_t out_size) {
+  if (!valid || !is_finite(value) || value < -999.9f || value > 999.9f) {
+    snprintf(out, out_size, "--.-");
+    return;
+  }
+  const int32_t whole = (int32_t) (value + (value >= 0.0f ? 0.5f : -0.5f));
+  char candidate[16];
+  // '^' is the compact renderer's internal degree-ring marker. It draws as a
+  // 2x2 ring and avoids adding UTF-8 handling to this fixed-size buffer.
+  snprintf(candidate, sizeof(candidate), "%ld^", (long) whole);
+  if (micro_text_width(candidate) <= width) {
+    snprintf(out, out_size, "%s", candidate);
+    return;
+  }
+  snprintf(out, out_size, "----");
+}
+
+inline uint8_t micro_glyph_row(char ch, int row) {
+  static const uint8_t DIGITS[10][5] = {
+      {0b111, 0b101, 0b101, 0b101, 0b111}, {0b010, 0b110, 0b010, 0b010, 0b111},
+      {0b111, 0b001, 0b111, 0b100, 0b111}, {0b111, 0b001, 0b111, 0b001, 0b111},
+      {0b101, 0b101, 0b111, 0b001, 0b001}, {0b111, 0b100, 0b111, 0b001, 0b111},
+      {0b111, 0b100, 0b111, 0b101, 0b111}, {0b111, 0b001, 0b010, 0b010, 0b010},
+      {0b111, 0b101, 0b111, 0b101, 0b111}, {0b111, 0b101, 0b111, 0b001, 0b111},
+  };
+  if (row < 0 || row >= 5) return 0;
+  if (ch >= '0' && ch <= '9') return DIGITS[ch - '0'][row];
+  if (ch == '-') return row == 2 ? 0b111 : 0;
+  if (ch == '.') return row >= 3 ? 0b010 : 0;
+  if (ch == '^') return row < 2 ? 0b110 : 0;
+  return 0;
+}
+
+inline void draw_micro_temperature(Canvas &c, float value, bool valid, bool show_degree = true) {
+  char text[16];
+  format_micro_temperature(value, valid, c.width(), text, sizeof(text));
+  if (!show_degree && text[strlen(text) - 1] == '^') text[strlen(text) - 1] = '\0';
+  const int total_width = micro_text_width(text);
+  int cursor = std::max(0, (c.width() - total_width) / 2);
+  const int top = std::max(0, (c.height() - 5) / 2);
+  for (const char *p = text; *p != '\0'; p++) {
+    if (*p == '.') {
+      for (int row = 0; row < 5; row++)
+        for (int col = 0; col < 3; col++)
+          if (micro_glyph_row(*p, row) & (1U << (2 - col))) c.pixel(cursor + col, top + row, true);
+      cursor += 2;
+    } else {
+      for (int row = 0; row < 5; row++)
+        for (int col = 0; col < 3; col++)
+          if (micro_glyph_row(*p, row) & (1U << (2 - col))) c.pixel(cursor + col, top + row, true);
+      cursor += 4;
+    }
+  }
+}
+
+inline void draw_weather_icon(Canvas &c, int x, int y, uint8_t condition, bool night) {
+  // High-contrast 8x8 glyphs: each weather category has one unmistakable
+  // feature (rays, crescent, cloud, fog bands, drops, flakes, bolt or wind).
+  // Detailed vector weather icons become indistinct at this physical size.
+  static const uint8_t CLEAR_DAY[8] = {0x24, 0x5A, 0x3C, 0x3C, 0x3C, 0x5A, 0x24, 0x00};
+  static const uint8_t CLEAR_NIGHT[8] = {0x1C, 0x38, 0x70, 0xE0, 0xE0, 0x70, 0x38, 0x1C};
+  static const uint8_t PARTLY_CLOUDY[8] = {0x24, 0x18, 0x3C, 0x18, 0x00, 0x3C, 0x7E, 0x3C};
+  static const uint8_t CLOUDY[8] = {0x00, 0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x00, 0x00};
+  static const uint8_t FOG[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x55, 0x2A, 0x55};
+  static const uint8_t RAIN[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x24, 0x12, 0x09};
+  static const uint8_t SNOW[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x00, 0x2A, 0x1C};
+  static const uint8_t THUNDERSTORM[8] = {0x18, 0x3C, 0x7E, 0x42, 0x7E, 0x18, 0x30, 0x18};
+  static const uint8_t WINDY[8] = {0x7E, 0x01, 0x00, 0x3E, 0x40, 0x00, 0x7E, 0x01};
+  static const uint8_t UNKNOWN[8] = {0x3C, 0x42, 0x02, 0x0C, 0x10, 0x00, 0x10, 0x00};
+  const uint8_t *rows = UNKNOWN;
+  switch (condition) {
+    case WEATHER_CLEAR:
+      rows = night ? CLEAR_NIGHT : CLEAR_DAY;
+      break;
+    case WEATHER_CLEAR_NIGHT:
+      rows = CLEAR_NIGHT;
+      break;
+    case WEATHER_PARTLY_CLOUDY:
+      rows = PARTLY_CLOUDY;
+      break;
+    case WEATHER_CLOUDY:
+      rows = CLOUDY;
+      break;
+    case WEATHER_FOG:
+      rows = FOG;
+      break;
+    case WEATHER_RAIN:
+      rows = RAIN;
+      break;
+    case WEATHER_SNOW:
+      rows = SNOW;
+      break;
+    case WEATHER_THUNDERSTORM:
+      rows = THUNDERSTORM;
+      break;
+    case WEATHER_WINDY:
+      rows = WINDY;
+      break;
+    default:
+      rows = UNKNOWN;
+      break;
+  }
+  for (int row = 0; row < 8; row++)
+    for (int col = 0; col < 8; col++)
+      if (rows[row] & (0x80U >> col)) c.pixel(x + col, y + row, true);
+}
+
+inline bool weather_night(const Frame &f) {
+  return f.weather_condition == WEATHER_CLEAR_NIGHT ||
+         (f.weather_condition == WEATHER_CLEAR && f.time_valid && (f.hour < 6 || f.hour >= 19));
+}
+
+inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool valid, bool show_degree) {
+  ViewportCanvas panel(canvas, x, 24);
+  // Side panels are deliberately one visual family: compact digits remain
+  // readable beside the icon and never compete with the six-module clock.
+  draw_micro_temperature(panel, value, valid, show_degree);
+}
+
+// The fixed three-module right panel holds an icon, a temperature, or both.
+inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature) {
+  if (!show_icon && !show_temperature) return;
+  ViewportCanvas panel(canvas, x, 24);
+  const int top = std::max(0, (panel.height() - 8) / 2);
+  if (show_icon && show_temperature) {
+    draw_weather_icon(panel, 0, top, f.weather_condition, weather_night(f));
+    ViewportCanvas value(panel, 8, 16);
+    draw_micro_temperature(value, f.outdoor_temperature, f.outdoor_temperature_valid, f.show_temperature_degree);
+  } else if (show_icon) {
+    draw_weather_icon(panel, 8, top, f.weather_condition, weather_night(f));
+  } else {
+    draw_micro_temperature(panel, f.outdoor_temperature, f.outdoor_temperature_valid, f.show_temperature_degree);
   }
 }
 
@@ -907,8 +1392,9 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
   const uint32_t offset = (elapsed_ms / ms_per_px) % loop_width;
   const int origin_x = offset < (uint32_t) text_width ? -(int) offset : width - (int) (offset - (uint32_t) text_width);
   int cursor = origin_x;
-  for (const char *p = text; *p != '\0';) {
-    const uint32_t codepoint = GlyphFont::next_codepoint(p);
+  const char *text_cursor = text;
+  while (*text_cursor != '\0') {
+    const uint32_t codepoint = next_utf8_codepoint(text_cursor);
     const int step = font.advance(codepoint);
     if (cursor + step > 0 && cursor < width) font.draw_glyph(c, codepoint, cursor, box_top);
     cursor += step;
@@ -1077,6 +1563,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   housekeeping(f, report);
   const uint8_t mode = effective_mode(f);
   const GlyphFont *active = &font;
+  GeorgianBitmapFont georgian_bitmap_font;
 
   // Report the mode/OTA/countdown changes once, so the YAML side can publish.
   if ((int) mode != state.reported_mode) {
@@ -1147,18 +1634,30 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
     return;
   }
 
+  const WeatherPanelGeometry panels = weather_panel_geometry(canvas);
+
   // Slide only between user-selected normal screens. Priority screens above
   // intentionally return before this point so an OTA/error/message is never
-  // delayed by an animation.
+  // delayed by an animation. The slide covers the full matrix on every
+  // supported layout, including the 12-module Time/Date screen transition.
   if (mode == MODE_CLOCK || mode == MODE_DATE || mode == MODE_TEMPERATURE || mode == MODE_GRID_TEST || mode == MODE_PIXEL_TEST) {
     if (state.selected_screen != f.screen) {
       const int previous = state.selected_screen;
       state.selected_screen = f.screen;
       if (f.screen == SCREEN_DATE) state.date_scroll_started_ms = 0;
+      const bool transition_touches_date = f.screen == SCREEN_DATE || previous == SCREEN_DATE;
+      const bool georgian_named_date = f.date_language == DATE_LANGUAGE_GEORGIAN &&
+          date_format_has_names(f.date_format);
+      const int date_viewport_width = panels.available && date_weather_panel_enabled(f) ? panels.date_safe_width : width;
+      const bool date_needs_marquee = transition_touches_date && georgian_named_date &&
+          date_content_needs_scroll(f, font, fallback, date_viewport_width);
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
-                                       f.animate && f.animation_ms > 0;
+                                       f.animate && f.animation_ms > 0 && !date_needs_marquee;
       state.screen_transition_previous = previous;
       state.screen_transition_started_ms = f.now_ms;
+      // A long date owns the horizontal ticker immediately rather than being
+      // drawn clipped inside a selected-screen slide, incoming or outgoing.
+      if (f.screen == SCREEN_DATE && date_needs_marquee) state.date_scroll_started_ms = f.now_ms;
     }
     if (!f.animate || f.animation_ms == 0) state.screen_transition_active = false;
     if (state.screen_transition_active) {
@@ -1168,31 +1667,64 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
         if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width))
           state.date_scroll_started_ms = f.now_ms;
       } else {
-        const int offset = (int) (progress * width);
-        TranslatedCanvas outgoing(canvas, -offset);
-        TranslatedCanvas incoming(canvas, width - offset);
-        draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-        draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        if (f.screen_transition_style == SCREEN_TRANSITION_SLIDE_UP) {
+          const int offset = (int) (progress * height);
+          TranslatedCanvas outgoing(canvas, 0, -offset);
+          TranslatedCanvas incoming(canvas, 0, height - offset);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        } else {
+          const int offset = (int) (progress * width);
+          TranslatedCanvas outgoing(canvas, -offset);
+          TranslatedCanvas incoming(canvas, width - offset);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+        }
         state.reset_animation();
         return;
       }
     }
   }
 
-  // Fixed-width text screens (clock, date, countdown).
-  char content[24] = {0};
+  int content_x = 0;
+  int content_width = width;
+  if (mode == MODE_CLOCK && panels.available) {
+    content_x = panels.clock_x;
+    content_width = 48;  // exactly six modules, regardless of the outer panel width
+    if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_home_temperature_panel(canvas, panels.left_x, f.home_temperature, f.home_temperature_valid, f.show_temperature_degree);
+    if (f.clock_layout == CLOCK_LAYOUT_WEATHER_ICON)
+      draw_weather_panel(canvas, panels.right_x, f, true, false);
+    else if (f.clock_layout == CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER)
+      draw_weather_panel(canvas, panels.right_x, f, true, true);
+  } else if (mode == MODE_DATE && panels.available && date_weather_panel_enabled(f)) {
+    content_width = panels.date_safe_width;
+    draw_weather_panel(canvas, panels.right_x, f, f.date_show_weather_icon, f.date_show_outdoor_temperature);
+  }
+  ViewportCanvas content_canvas(canvas, content_x, content_width);
+  const int layout_width = content_canvas.width();
+
+  // Fixed-width text screens (clock, date, countdown). Full Georgian weekday
+  // and month names fit in 65 UTF-8 bytes; retain room for the terminator.
+  char content[80] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  const bool georgian_named_date = has_content && mode == MODE_DATE &&
+      f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format);
+  if (georgian_named_date)
+    active = &georgian_bitmap_font;
+  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
     active = &font_for_text(*active, fallback, content);
-  if (has_content && active->text_width(content) > width) {
+  if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
       with_seconds = false;
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
-    // 2. fall back to the built-in font, which always fits the default layout
-    if (has_content && active->text_width(content) > width) active = &fallback;
+    // Keep named dates in their Unicode-aware face; the marquee below owns
+    // overflow instead of shrinking or clipping Georgian weekday/month text.
+    if (has_content && active->text_width(content) > layout_width && !georgian_named_date)
+      active = &fallback;
   }
   if (!has_content) {
     // No valid time yet: keep a readable, non-empty placeholder.
@@ -1202,23 +1734,22 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
   // The weekday formats are intentionally longer than one 48-pixel row. Use
   // the same deterministic ticker as messages instead of clipping them.
-  if (mode == MODE_DATE && active->text_width(content) > width) {
+  if (mode == MODE_DATE && active->text_width(content) > layout_width) {
     state.reset_animation();
     if (state.date_scroll_started_ms == 0) state.date_scroll_started_ms = f.now_ms;
-    draw_free_text(canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
-                   f.date_scroll_ms_per_px,
-                   active->centered_box_top(height));
+    draw_free_text(content_canvas, *active, content, (uint32_t) (f.now_ms - state.date_scroll_started_ms), true,
+                   f.date_scroll_ms_per_px, active->centered_box_top(height));
     return;
   }
 
   // Slide-up animation: only for unchanged layouts (same mode and length).
   const bool same_layout = state.anim_prev_mode == (int) mode &&
-                           strlen(state.anim_prev) == strlen(content) &&
+                           utf8_codepoint_count(state.anim_prev) == utf8_codepoint_count(content) &&
                            state.anim_font_identity == active->identity() &&
-                           state.anim_width == width && state.anim_height == height &&
+                           state.anim_width == layout_width && state.anim_height == height &&
                            state.anim_alignment == f.alignment;
   state.anim_font_identity = active->identity();
-  state.anim_width = width;
+  state.anim_width = layout_width;
   state.anim_height = height;
   state.anim_alignment = f.alignment;
   if (!same_layout) {
@@ -1255,11 +1786,12 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       mode == MODE_CLOCK && f.blink_colon && f.time_valid && (f.second % 2) != 0;
 
   const int box_top = active->centered_box_top(height);
-  draw_line(canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
+  draw_line(content_canvas, *active, content, state.anim_active ? state.anim_prev : nullptr, progress, f.alignment,
             box_top, blank_colons, f.animation_row_gap);
 
-  // Seconds alternative: full-width progress bar on the bottom row.
-  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid) draw_seconds_bar(canvas, f.second);
+  // Seconds bar follows the clock's six-module viewport, never the side panels.
+  if (mode == MODE_CLOCK && f.seconds_mode == SECONDS_BAR && f.time_valid)
+    draw_seconds_bar(content_canvas, f.second);
 }
 
 // Convenience overload used by the YAML display lambda.

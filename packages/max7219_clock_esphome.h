@@ -43,8 +43,8 @@ class DisplayCanvas : public Canvas {
 class SourceFont : public GlyphFont {
  public:
   SourceFont(font::Font *font, display::Display *) : font_(font) {}
-  int advance(uint32_t c) const override {
-    const font::Glyph *glyph = this->font_->find_glyph(c);
+  int advance(uint32_t codepoint) const override {
+    const font::Glyph *glyph = this->font_->find_glyph(codepoint);
     return glyph != nullptr ? glyph->advance : 0;
   }
   // Ink height/top of a digit: the clock/countdown text is centred on digits.
@@ -57,11 +57,11 @@ class SourceFont : public GlyphFont {
     return glyph != nullptr ? glyph->offset_y : 0;
   }
   const void *identity() const override { return this->font_; }
-  void draw_glyph(Canvas &canvas, uint32_t ch, int x, int box_top) const override {
+  void draw_glyph(Canvas &canvas, uint32_t codepoint, int x, int box_top) const override {
     // All supported faces are bpp: 1. Read ESPHome's compiled, packed glyph
     // through Canvas so per-cell clipping also applies to external fonts.
     // Font::print draws straight into Display and bypasses that clip window.
-    const font::Glyph *glyph = this->font_->find_glyph(ch);
+    const font::Glyph *glyph = this->font_->find_glyph(codepoint);
     if (glyph == nullptr) return;
     for (int row = 0; row < glyph->height; row++) {
       for (int col = 0; col < glyph->width; col++) {
@@ -108,6 +108,12 @@ template<typename Option> inline uint8_t seconds_from_option(const Option &optio
   return SECONDS_DIGITS;
 }
 
+template<typename Option> inline uint8_t clock_layout_from_option(const Option &option) {
+  if (option == "Clock + weather icon") return CLOCK_LAYOUT_WEATHER_ICON;
+  if (option == "Clock + home and outdoor weather") return CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  return CLOCK_LAYOUT_ONLY;
+}
+
 template<typename Option> inline uint8_t date_format_from_option(const Option &option) {
   if (option == "MM/DD")
     return DATE_MM_DD;
@@ -122,6 +128,14 @@ template<typename Option> inline uint8_t date_format_from_option(const Option &o
   if (option == "Weekday MMM.DD")
     return DATE_WEEKDAY_MMM_DD;
   return DATE_DD_MM;
+}
+
+template<typename Option> inline uint8_t date_language_from_option(const Option &option) {
+  return option == "Georgian" ? DATE_LANGUAGE_GEORGIAN : DATE_LANGUAGE_ENGLISH;
+}
+
+template<typename Option> inline uint8_t screen_transition_style_from_option(const Option &option) {
+  return option == "Slide up" ? SCREEN_TRANSITION_SLIDE_UP : SCREEN_TRANSITION_SLIDE_LEFT;
 }
 
 inline const char *option_for_screen(uint8_t screen) {

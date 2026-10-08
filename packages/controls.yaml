@@ -10,6 +10,7 @@ select:
   - platform: template
     name: "Screen"
     id: screen_mode
+    internal: ${ha_hide_screen_mode}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -42,6 +43,7 @@ select:
   - platform: template
     name: "Clock alignment"
     id: clock_alignment
+    internal: ${ha_hide_clock_alignment}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -57,6 +59,7 @@ select:
   - platform: template
     name: "Time format"
     id: time_format
+    internal: ${ha_hide_time_format}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -71,6 +74,7 @@ select:
   - platform: template
     name: "Seconds display"
     id: seconds_display
+    internal: ${ha_hide_seconds_display}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -84,8 +88,25 @@ select:
       - component.update: matrix
 
   - platform: template
+    name: "Clock layout"
+    id: clock_layout
+    internal: ${ha_hide_clock_layout}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Clock only"
+    options:
+      - "Clock only"
+      - "Clock + weather icon"
+      - "Clock + home and outdoor weather"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Date format"
     id: date_format
+    internal: ${ha_hide_date_format}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -103,8 +124,39 @@ select:
       - component.update: matrix
 
   - platform: template
+    name: "Date language"
+    id: date_language
+    internal: ${ha_hide_date_language}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "English"
+    options:
+      - "English"
+      - "Georgian"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Screen transition animation"
+    id: screen_transition_style
+    internal: ${ha_hide_screen_transition_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Slide left"
+    options:
+      - "Slide left"
+      - "Slide up"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
     name: "Clock font"
     id: clock_font
+    internal: ${ha_hide_clock_font}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -119,6 +171,7 @@ select:
   - platform: template
     name: "Message scroll"
     id: message_scroll_behavior
+    internal: ${ha_hide_message_scroll_behavior}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -134,6 +187,7 @@ number:
   - platform: template
     name: "Matrix brightness"
     id: matrix_brightness
+    internal: ${ha_hide_matrix_brightness}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -148,6 +202,7 @@ number:
   - platform: template
     name: "Night brightness"
     id: night_brightness
+    internal: ${ha_hide_night_brightness}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -162,6 +217,7 @@ number:
   - platform: template
     name: "Animation duration"
     id: animation_duration
+    internal: ${ha_hide_animation_duration}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -177,6 +233,7 @@ number:
   - platform: template
     name: "Animation row gap"
     id: animation_row_gap
+    internal: ${ha_hide_animation_row_gap}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -192,6 +249,7 @@ number:
   - platform: template
     name: "Message scroll speed"
     id: message_scroll_speed
+    internal: ${ha_hide_message_scroll_speed}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -207,6 +265,7 @@ number:
   - platform: template
     name: "Default message duration"
     id: default_message_duration
+    internal: ${ha_hide_default_message_duration}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -220,6 +279,7 @@ number:
   - platform: template
     name: "Countdown duration"
     id: countdown_duration
+    internal: ${ha_hide_countdown_duration}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -233,6 +293,7 @@ number:
   - platform: template
     name: "Screen cycle interval"
     id: screen_cycle_interval
+    internal: ${ha_hide_screen_cycle_interval}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -248,6 +309,7 @@ number:
   - platform: template
     name: "Date screen duration"
     id: date_screen_duration
+    internal: ${ha_hide_date_screen_duration}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -263,6 +325,7 @@ number:
   - platform: template
     name: "Night start hour"
     id: night_start_hour
+    internal: ${ha_hide_night_start_hour}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -276,6 +339,7 @@ number:
   - platform: template
     name: "Night end hour"
     id: night_end_hour
+    internal: ${ha_hide_night_end_hour}
     entity_category: config
     optimistic: true
     restore_value: true
@@ -290,6 +354,7 @@ switch:
   - platform: template
     name: "Matrix display"
     id: matrix_display_power
+    internal: ${ha_hide_matrix_display_power}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
@@ -301,6 +366,7 @@ switch:
   - platform: template
     name: "Blinking colon"
     id: clock_blink
+    internal: ${ha_hide_clock_blink}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
@@ -312,6 +378,7 @@ switch:
   - platform: template
     name: "Digit animation"
     id: clock_animate
+    internal: ${ha_hide_clock_animate}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
@@ -323,6 +390,7 @@ switch:
   - platform: template
     name: "Automatic screen cycling"
     id: auto_cycle
+    internal: ${ha_hide_auto_cycle}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -334,6 +402,7 @@ switch:
   - platform: template
     name: "Night mode"
     id: night_mode
+    internal: ${ha_hide_night_mode}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -345,6 +414,7 @@ switch:
   - platform: template
     name: "Alarm mode"
     id: alarm_mode
+    internal: ${ha_hide_alarm_mode}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -356,6 +426,7 @@ switch:
   - platform: template
     name: "Night schedule"
     id: night_schedule_enabled
+    internal: ${ha_hide_night_schedule_enabled}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -367,6 +438,7 @@ switch:
   - platform: template
     name: "Display inversion"
     id: display_inversion
+    internal: ${ha_hide_display_inversion}
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -374,70 +446,3 @@ switch:
       - script.execute: request_matrix_refresh
     turn_off_action:
       - script.execute: request_matrix_refresh
-
-button:
-  - platform: restart
-    name: "Restart device"
-    entity_category: config
-
-  - platform: template
-    name: "Return to clock"
-    id: button_return_to_clock
-    entity_category: config
-    on_press:
-      - select.set:
-          id: screen_mode
-          option: "Clock"
-      - lambda: |-
-          max7219_clock::state.clear_message();
-          max7219_clock::state.clear_alert();
-          max7219_clock::state.cancel_countdown();
-      - component.update: matrix
-
-  - platform: template
-    name: "Clear message"
-    id: button_clear_message
-    entity_category: config
-    on_press:
-      - script.execute: clear_message_action
-
-  - platform: template
-    name: "Start countdown"
-    id: button_start_countdown
-    entity_category: config
-    on_press:
-      - script.execute: start_countdown_action
-
-  - platform: template
-    name: "Cancel countdown"
-    id: button_cancel_countdown
-    entity_category: config
-    on_press:
-      - lambda: |-
-          max7219_clock::state.cancel_countdown();
-      - component.update: matrix
-
-  - platform: template
-    name: "Run module grid test"
-    id: button_grid_test
-    entity_category: config
-    on_press:
-      - select.set:
-          id: screen_mode
-          option: "Module grid test"
-
-  - platform: template
-    name: "Run pixel test"
-    id: button_pixel_test
-    entity_category: config
-    on_press:
-      - select.set:
-          id: screen_mode
-          option: "Pixel checkerboard"
-
-  - platform: template
-    name: "Restore display defaults"
-    id: button_restore_defaults
-    entity_category: config
-    on_press:
-      - script.execute: restore_display_defaults

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { addExtraFontAndSelect, DEFAULT_FONTS, EXTRA_FONTS, toggleExtraFont, withFonts } from "./fontSelection";
-import { DEFAULT_CONFIG, PREVIEW_DEFAULTS } from "./types";
+import { CONFIGURATOR_DEFAULTS, DEFAULT_CONFIG, PREVIEW_DEFAULTS } from "./types";
 import { FIRMWARE, firmwareOption, releaseBody } from "./firmware";
 import { boardsFor, pinNamesFor, switchTarget, targetDefault } from "./hardware";
 import { sanitizeConfig } from "./storage";
@@ -18,7 +18,7 @@ const yaml = buildYaml(DEFAULT_CONFIG, FIRMWARE.releaseVersion);
 describe("single-source firmware / UI / installer parity", () => {
   it("uses every firmware default with preview-only preferences explicitly separated", () => {
     for (const item of FIRMWARE.settings) expect(DEFAULT_CONFIG[item.key], item.key).toEqual(item.default);
-    expect(Object.keys(DEFAULT_CONFIG).sort()).toEqual([...Object.keys(FIRMWARE.defaults), ...Object.keys(PREVIEW_DEFAULTS), "fonts"].sort());
+    expect(Object.keys(DEFAULT_CONFIG).sort()).toEqual([...Object.keys(FIRMWARE.defaults), ...Object.keys(PREVIEW_DEFAULTS), ...Object.keys(CONFIGURATOR_DEFAULTS), "fonts"].sort());
     const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
     const lock = JSON.parse(readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
     expect(pkg.version).toBe(FIRMWARE.releaseVersion);
@@ -69,13 +69,14 @@ describe("single-source firmware / UI / installer parity", () => {
   it("writes each and every adjustable entity, option and substitution from firmware bindings", () => {
     for (const item of FIRMWARE.settings) {
       if (item.kind === "substitution") expect(yaml, item.key).toContain(`  ${item.target}:`);
+      else if (item.kind === "package") expect(packageFiles(yaml)).toContain(item.target);
       else {
         expect(yaml, item.key).toContain(`  - id: !extend ${item.target}`);
         const expected = item.kind === "select" ? firmwareOption(item.key, String(item.default)) : item.kind === "switch" ? item.default ? "RESTORE_DEFAULT_ON" : "RESTORE_DEFAULT_OFF" : item.default;
         expect(yaml, item.key).toContain(JSON.stringify(expected));
       }
     }
-    for (const key of Object.keys(PREVIEW_DEFAULTS)) expect(yaml).not.toMatch(new RegExp(`^\\s*${key}:`, "m"));
+    for (const key of [...Object.keys(PREVIEW_DEFAULTS), ...Object.keys(CONFIGURATOR_DEFAULTS)]) expect(yaml).not.toMatch(new RegExp(`^\\s*${key}:`, "m"));
   });
 
   it("uses !secret names only, and never accepts substitution injection into public text", () => {

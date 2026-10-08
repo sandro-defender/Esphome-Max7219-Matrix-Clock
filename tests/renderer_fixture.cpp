@@ -128,6 +128,18 @@ static void fill_clock(Frame &frame, const Values &values) {
   frame.second = std::stoi(values.at("second"));
   frame.day = std::stoi(values.at("day"));
   frame.month = std::stoi(values.at("month"));
+  if (has(values, "previewHomeTemperature"))
+    frame.home_temperature_valid = parse_temperature_text(values.at("previewHomeTemperature").c_str(), frame.home_temperature);
+  if (has(values, "previewOutdoorTemperature") && has(values, "previewWeatherTemperature")) {
+    float dedicated_outdoor = 0.0f, weather_attribute = 0.0f;
+    const bool dedicated_valid = parse_temperature_text(values.at("previewOutdoorTemperature").c_str(), dedicated_outdoor);
+    const bool weather_valid = parse_temperature_text(values.at("previewWeatherTemperature").c_str(), weather_attribute);
+    frame.outdoor_temperature_valid = choose_outdoor_temperature(dedicated_valid, dedicated_outdoor,
+                                                                  weather_valid, weather_attribute,
+                                                                  frame.outdoor_temperature);
+  }
+  if (has(values, "previewWeatherCondition"))
+    frame.weather_condition = weather_from_condition(values.at("previewWeatherCondition").c_str());
 }
 
 static void emit_single(const Values &values) {

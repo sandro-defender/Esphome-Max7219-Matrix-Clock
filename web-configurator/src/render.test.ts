@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import { FONT_CATALOG, previewFont } from "./fontCatalog";
-import { clockContent, dateContent, driverTransform, geometry, renderScene, type Frame } from "./render";
-import { DEFAULT_CONFIG, type Config } from "./types";
+import { GEORGIAN_DATE_FONT } from "./fonts";
+import {
+  choosePreviewOutdoorTemperature, clockContent, dateContent, drawWeatherPanel, driverTransform, formatMicroTemperature, formatPreviewTemperature,
+  geometry, parsePreviewTemperature, renderScene, weatherFromCondition, weatherIconRows, weatherPanelGeometry, type Frame,
+} from "./render";
+import { DEFAULT_CONFIG, WEATHER_PREVIEW_OPTIONS, type Config } from "./types";
 
 const at = (frame: Frame, x: number, y: number) => (y * frame.width + x < frame.pixels.length ? frame.pixels[y * frame.width + x] : 0);
 const lit = (frame: Frame) => frame.pixels.reduce((total, value) => total + (value > 0 ? 1 : 0), 0);
+const columns = (frame: Frame, x0: number, x1: number) => {
+  const pixels: number[] = [];
+  for (let y = 0; y < frame.height; y++) for (let x = x0; x < x1; x++) pixels.push(at(frame, x, y));
+  return pixels;
+};
 
 const NOON = new Date(2026, 0, 2, 12, 34, 56);
 const MORNING = new Date(2026, 0, 2, 9, 5, 7);
@@ -23,6 +32,76 @@ describe("geometry", () => {
   it("flags a module count that does not divide into rows", () => {
     expect(geometry(7, 2).valid).toBe(false);
     expect(geometry(7, 2).width).toBe(56);
+  });
+});
+
+describe("weather parsing and fixed panels", () => {
+  it("maps common Home Assistant and OpenWeatherMap conditions into all ten distinct bitmaps", () => {
+    const cases: [string, string][] = [
+      ["sunny", "clear"], ["clear sky", "clear"], ["clear-night", "clear-night"],
+      ["partlycloudy", "partlycloudy"], ["few clouds", "partlycloudy"], ["scattered clouds", "partlycloudy"],
+      ["overcast clouds", "cloudy"], ["mist", "fog"], ["moderate rain", "rain"], ["snowy-rainy", "snow"],
+      ["thunderstorm with heavy rain", "thunderstorm"], ["windy-variant", "windy"], ["unavailable", "unknown"],
+    ];
+    for (const [state, expected] of cases) expect(weatherFromCondition(state), state).toBe(expected);
+    const patterns = WEATHER_PREVIEW_OPTIONS.map(({ value }) => weatherIconRows(value, false).join(","));
+    expect(new Set(patterns).size).toBe(WEATHER_PREVIEW_OPTIONS.length);
+    expect(weatherIconRows("clear", true)).toEqual(weatherIconRows("clear-night"));
+  });
+
+  it("strictly parses sensor text, prefers the dedicated outdoor reading and uses safe placeholders", () => {
+    expect(parsePreviewTemperature(" 21.5 ")).toBe(21.5);
+    for (const invalid of ["", "unknown", "unavailable", "NaN", "inf", "22 C", "21.5x"]) expect(parsePreviewTemperature(invalid)).toBeNull();
+    expect(choosePreviewOutdoorTemperature("17.3", "12.4")).toBe(17.3);
+    expect(choosePreviewOutdoorTemperature("unavailable", "12.4")).toBe(12.4);
+    expect(choosePreviewOutdoorTemperature("unknown", "NaN")).toBeNull();
+    expect(formatPreviewTemperature(null, 24)).toBe("--.-");
+    expect(formatPreviewTemperature(-12.3, 24)).toBe("-12");
+    expect(formatMicroTemperature(21, 16)).toBe("21°");
+    expect(formatMicroTemperature(-4, 16)).toBe("-4°");
+    expect(formatMicroTemperature(12.8, 16)).toBe("13°");
+    expect(formatMicroTemperature(21.5, 16)).toBe("22°");
+  });
+
+  it("centres the clock in six modules, keeps 6-module output unchanged and draws all three 12-module layouts", () => {
+    expect(weatherPanelGeometry(48, 8).available).toBe(false);
+    expect(weatherPanelGeometry(96, 8)).toMatchObject({ available: true, groupX: 0, leftX: 0, clockX: 24, rightX: 72, dateSafeWidth: 72 });
+    const reference = sceneWith({ chips: 6, rows: 1, secondsMode: "Off" });
+    for (const clockLayout of ["Clock only", "Clock + weather icon", "Clock + home and outdoor weather"]) {
+      const sixModule = sceneWith({ chips: 6, rows: 1, secondsMode: "Off", clockLayout });
+      expect(sixModule.frame.pixels).toEqual(reference.frame.pixels);
+      const wide = sceneWith({ chips: 12, rows: 1, secondsMode: "Off", clockLayout });
+      expect(wide.clockViewportWidth).toBe(48);
+      expect(columns(wide.frame, 24, 72)).toEqual(columns(reference.frame, 0, 48));
+      if (clockLayout === "Clock only") {
+        expect(columns(wide.frame, 0, 24).some((pixel) => pixel > 0)).toBe(false);
+        expect(columns(wide.frame, 72, 96).some((pixel) => pixel > 0)).toBe(false);
+      } else if (clockLayout === "Clock + weather icon") {
+        expect(columns(wide.frame, 0, 24).some((pixel) => pixel > 0)).toBe(false);
+        expect(columns(wide.frame, 72, 96).some((pixel) => pixel > 0)).toBe(true);
+      } else {
+        expect(columns(wide.frame, 0, 24).some((pixel) => pixel > 0)).toBe(true);
+        expect(columns(wide.frame, 72, 96).some((pixel) => pixel > 0)).toBe(true);
+      }
+    }
+  });
+
+  it("reserves the Date right panel for either switch or both, independently", () => {
+    for (const [dateShowWeatherIcon, dateShowOutdoorTemperature] of [[false, false], [true, false], [false, true], [true, true]]) {
+      const cfg = { ...DEFAULT_CONFIG, chips: 12, rows: 1, screen: "Date" as const,
+        dateFormat: "Weekday DD. MMM YY" as const, dateShowWeatherIcon, dateShowOutdoorTemperature,
+        previewWeatherCondition: "cloudy" as const, previewOutdoorTemperature: "14.6" };
+      const scene = renderScene(cfg, NOON, 0, undefined, 1000);
+      expect(columns(scene.frame, 0, 72).some((pixel) => pixel > 0)).toBe(true);
+      if (dateShowWeatherIcon || dateShowOutdoorTemperature) {
+        const expected: Frame = { width: 96, height: 8, pixels: new Uint8Array(96 * 8) };
+        drawWeatherPanel(expected, 72, "cloudy", false, 14.6, dateShowWeatherIcon, dateShowOutdoorTemperature);
+        expect(columns(scene.frame, 72, 96)).toEqual(columns(expected, 72, 96));
+      } else {
+        // Without either restored switch the date can use the full width.
+        expect(columns(scene.frame, 72, 96).some((pixel) => pixel > 0)).toBe(true);
+      }
+    }
   });
 });
 
@@ -59,6 +138,32 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD.MM.YY" })).toBe("FRI 02.01.26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday MMM.DD" })).toBe("FRI JAN.02");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD.MM.YY" })).toBe("პარასკევი 02.01.26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("პარასკევი 02. იანვარი 26");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday MMM.DD" })).toBe("პარასკევი იანვარი.02");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "DD.MM" })).toBe("02.01");
+  });
+
+  it("uses one generated glyph for each Georgian Unicode code point", () => {
+    const letters = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ";
+    expect([...letters]).toHaveLength(33);
+    for (const letter of letters) {
+      const glyph = GEORGIAN_DATE_FONT.glyph(letter);
+      expect(glyph, letter).not.toBeNull();
+      expect(glyph!.h, letter).toBeLessThanOrEqual(8);
+    }
+    expect(GEORGIAN_DATE_FONT.measure("აბ")).toBe(12);
+  });
+
+  it("scrolls long Georgian weekday/month dates across the panel", () => {
+    const cfg = { ...DEFAULT_CONFIG, screen: "Date" as const, dateLanguage: "Georgian" as const,
+      dateFormat: "Weekday DD. MMM YY" as const, dateScrollSpeed: 1 };
+    const first = renderScene(cfg, NOON, 0, undefined, 0);
+    const later = renderScene(cfg, NOON, 0, undefined, 20);
+    expect(GEORGIAN_DATE_FONT.measure(first.content)).toBeGreaterThan(48);
+    expect(first.layout).toBeNull();
+    expect(later.layout).toBeNull();
+    expect(later.frame.pixels).not.toEqual(first.frame.pixels);
   });
 });
 

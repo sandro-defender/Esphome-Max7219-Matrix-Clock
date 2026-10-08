@@ -116,7 +116,7 @@ class FakeFont : public GlyphFont {
       for (int col = 0; col < advance_ - 1; col++) c.pixel(x + col, box_top + ink_top_ + row, true);
   }
   mutable std::vector<DrawCall> calls;
-  int calls_for(char ch) const {
+  int calls_for(uint32_t ch) const {
     int n = 0;
     for (const auto &call : calls)
       if (call.ch == ch) n++;
@@ -133,17 +133,6 @@ class FakeFont : public GlyphFont {
 // Helpers
 // --------------------------------------------------------------------------
 static BuiltinFont compact;
-
-TEST(utf8_text_is_decoded_into_single_georgian_glyphs) {
-  FakeCanvas canvas(48, 8);
-  FakeFont font(5);
-  const char *text = "აბ";
-  CHECK(font.text_width(text) == 10);
-  font.draw_text(canvas, text, 0, 0);
-  CHECK(font.calls.size() == 2);
-  CHECK(font.calls[0].ch == 0x10D0);
-  CHECK(font.calls[1].ch == 0x10D1);
-}
 
 static void reset_state() {
   state = Runtime();
@@ -1033,7 +1022,7 @@ static void test_selected_screen_change_starts_slide_transition() {
   f.animate = true;
   f.animation_ms = 250;
   Report r;
-  FakeCanvas canvas;
+  FakeCanvas canvas(96, 8);
   FakeFont font(6);
   reset_state();
 
@@ -1043,6 +1032,34 @@ static void test_selected_screen_change_starts_slide_transition() {
   f.now_ms = 1000;
   render(canvas, font, compact, f, r);
   CHECK(state.screen_transition_active);
+}
+
+static void test_selected_screen_can_slide_up_like_changing_digits() {
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 200;
+  f.screen_transition_style = SCREEN_TRANSITION_SLIDE_UP;
+  Report r;
+  FakeCanvas canvas;
+  FakeFont font(6);
+  reset_state();
+
+  render(canvas, font, compact, f, r);  // Clock baseline
+  canvas.clear();
+  f.screen = SCREEN_DATE;
+  f.now_ms = 1000;
+  render(canvas, font, compact, f, r);  // Start the selected-screen transition.
+  canvas.clear();
+  f.now_ms = 1100;                       // Half way: 4 rows of vertical travel.
+  render(canvas, font, compact, f, r);
+
+  CHECK(state.screen_transition_active);
+  // The outgoing screen occupies rows 0..2 and the incoming screen rows 4..7,
+  // leaving the middle row blank. A horizontal slide would still light row 3.
+  CHECK_EQ(canvas.row_on(3), 0);
+  CHECK(canvas.row_on(0) > 0);
+  CHECK(canvas.row_on(7) > 0);
 }
 
 static void test_scrolling_date_starts_after_screen_slide_transition() {
@@ -1063,12 +1080,12 @@ static void test_scrolling_date_starts_after_screen_slide_transition() {
   f.now_ms = 1000;
   render(canvas, font, compact, f, r);
   CHECK(state.screen_transition_active);
-  CHECK_EQ(state.date_scroll_started_ms, 0);
+  CHECK_EQ(state.date_scroll_started_ms, 0U);
 
   f.now_ms = 1600;
   render(canvas, font, compact, f, r);
   CHECK(!state.screen_transition_active);
-  CHECK_EQ(state.date_scroll_started_ms, 1600);
+  CHECK_EQ(state.date_scroll_started_ms, 1600U);
 }
 
 static void test_bitmap_test_screens() {
@@ -1153,7 +1170,7 @@ static void test_date_formats() {
   f.day = 5;
   f.month = 3;
   f.year = 2026;
-  char out[24];
+  char out[80];
   f.date_format = DATE_DD_MM;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "05.03") == 0);
@@ -1175,6 +1192,305 @@ static void test_date_formats() {
   f.date_format = DATE_WEEKDAY_MMM_DD;
   CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
   CHECK(strcmp(out, "THU MAR.05") == 0);
+
+  f.date_language = DATE_LANGUAGE_GEORGIAN;
+  f.date_format = DATE_WEEKDAY_DD_MM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "ხუთშაბათი 05.03.26") == 0);
+  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "ხუთშაბათი 05. მარტი 26") == 0);
+  f.date_format = DATE_WEEKDAY_MMM_DD;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "ხუთშაბათი მარტი.05") == 0);
+  f.date_format = DATE_DD_MM;
+  CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+  CHECK(strcmp(out, "05.03") == 0);  // Numeric formats are language-independent.
+}
+
+static void test_weather_condition_normalization() {
+  struct Case { const char *state; uint8_t expected; };
+  const Case cases[] = {
+      {"sunny", WEATHER_CLEAR}, {"clear sky", WEATHER_CLEAR}, {"clear-night", WEATHER_CLEAR_NIGHT},
+      {"partlycloudy", WEATHER_PARTLY_CLOUDY}, {"few clouds", WEATHER_PARTLY_CLOUDY},
+      {"overcast clouds", WEATHER_CLOUDY}, {"mist", WEATHER_FOG}, {"haze", WEATHER_FOG},
+      {"moderate rain", WEATHER_RAIN}, {"pouring", WEATHER_RAIN}, {"snowy-rainy", WEATHER_SNOW},
+      {"thunderstorm with heavy rain", WEATHER_THUNDERSTORM}, {"lightning-rainy", WEATHER_THUNDERSTORM},
+      {"windy-variant", WEATHER_WINDY}, {"squalls", WEATHER_WINDY},
+      {"unavailable", WEATHER_UNKNOWN}, {"unknown", WEATHER_UNKNOWN}, {"exceptional", WEATHER_UNKNOWN},
+  };
+  for (const auto &item : cases) CHECK_EQ(weather_from_condition(item.state), item.expected);
+  CHECK_EQ(weather_from_condition(nullptr), WEATHER_UNKNOWN);
+  CHECK_EQ(weather_from_condition(" "), WEATHER_UNKNOWN);
+}
+
+static void test_weather_temperature_values_are_explicit_and_prioritized() {
+  float value = 9.0f;
+  CHECK(parse_temperature_text("21.5", value));
+  CHECK_EQ(value, 21.5f);
+  CHECK(parse_temperature_text("  -0.4 ", value));
+  CHECK_EQ(value, -0.4f);
+  const char *invalid[] = {"", "unknown", "unavailable", "NaN", "inf", "22 C", "21.5x"};
+  for (const char *text : invalid) {
+    value = 9.0f;
+    CHECK(!parse_temperature_text(text, value));
+    CHECK_EQ(value, 9.0f);  // an invalid source never reuses a changed value
+  }
+  float selected = 0.0f;
+  CHECK(choose_outdoor_temperature(true, 17.3f, true, 12.4f, selected));
+  CHECK_EQ(selected, 17.3f);  // dedicated entity wins
+  CHECK(choose_outdoor_temperature(false, 0.0f, true, 12.4f, selected));
+  CHECK_EQ(selected, 12.4f);  // weather.temperature is the fallback
+  CHECK(!choose_outdoor_temperature(false, 0.0f, false, 0.0f, selected));
+}
+
+static void test_fixed_weather_panels_and_bitmap_categories() {
+  char text[16];
+  format_temperature_text(21.5f, true, 24, text, sizeof(text));
+  CHECK(strcmp(text, "21.5") == 0);
+  format_temperature_text(-12.3f, true, 24, text, sizeof(text));
+  CHECK(strcmp(text, "-12") == 0);  // keep a safe fixed-width fallback
+  format_temperature_text(0.0f, false, 24, text, sizeof(text));
+  CHECK(strcmp(text, "--.-") == 0);
+  format_micro_temperature(21.5f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "22^") == 0);
+  format_micro_temperature(21.0f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "21^") == 0);
+  format_micro_temperature(-4.0f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "-4^") == 0);
+  format_micro_temperature(12.8f, true, 16, text, sizeof(text));
+  CHECK(strcmp(text, "13^") == 0);
+  format_micro_temperature(0.0f, false, 16, text, sizeof(text));
+  CHECK(strcmp(text, "--.-") == 0);
+
+  FakeCanvas canvas(96, 8);
+  draw_home_temperature_panel(canvas, 0, 21.5f, true);
+  int x0, y0, x1, y1;
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 0 && x1 < 24);
+  // Both side temperatures use the same compact 3x5 digits.  The left panel
+  // must not silently switch to the larger built-in face when its value fits.
+  FakeCanvas expected_home(24, 8);
+  FakeCanvas actual_home(24, 8);
+  draw_micro_temperature(expected_home, 21.5f, true);
+  draw_home_temperature_panel(actual_home, 0, 21.5f, true);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 24; x++)
+    CHECK_EQ(actual_home.get(x, y), expected_home.get(x, y));
+  canvas.clear();
+  draw_home_temperature_panel(canvas, 0, 0.0f, false);
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 0 && x1 < 24);
+
+  Frame f = base_frame();
+  f.weather_condition = WEATHER_RAIN;
+  f.outdoor_temperature = 13.2f;
+  f.outdoor_temperature_valid = true;
+  canvas.clear();
+  draw_weather_panel(canvas, 72, f, true, true);
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 72 && x1 < 96);
+  CHECK(canvas.on_count() > 0);
+
+  // The right panel also keeps compact digits when the Date screen enables
+  // only outdoor temperature (without the icon).
+  FakeCanvas expected_outdoor(24, 8);
+  FakeCanvas actual_outdoor(24, 8);
+  draw_micro_temperature(expected_outdoor, 13.2f, true);
+  draw_weather_panel(actual_outdoor, 0, f, false, true);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 24; x++)
+    CHECK_EQ(actual_outdoor.get(x, y), expected_outdoor.get(x, y));
+
+  const uint8_t categories[] = {WEATHER_UNKNOWN, WEATHER_CLEAR, WEATHER_CLEAR_NIGHT, WEATHER_PARTLY_CLOUDY,
+                                WEATHER_CLOUDY, WEATHER_FOG, WEATHER_RAIN, WEATHER_SNOW,
+                                WEATHER_THUNDERSTORM, WEATHER_WINDY};
+  std::vector<std::string> patterns;
+  for (uint8_t category : categories) {
+    FakeCanvas icon(8, 8);
+    draw_weather_icon(icon, 0, 0, category, false);
+    std::string bits;
+    for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) bits += icon.get(x, y) ? '1' : '0';
+    if (std::find(patterns.begin(), patterns.end(), bits) == patterns.end()) patterns.push_back(bits);
+  }
+  CHECK_EQ(patterns.size(), sizeof(categories) / sizeof(categories[0]));
+
+  // Partly cloudy must retain a visible sun above a separate cloud. These
+  // checks protect the visual language of the one-module (8x8) icon.
+  FakeCanvas partly_cloudy(8, 8);
+  draw_weather_icon(partly_cloudy, 0, 0, WEATHER_PARTLY_CLOUDY, false);
+  CHECK(partly_cloudy.get(2, 0));   // sun ray
+  CHECK(partly_cloudy.get(3, 2));   // sun disc
+  CHECK(!partly_cloudy.get(0, 4));  // gap between sun and cloud
+  CHECK(partly_cloudy.get(3, 6));   // cloud body
+
+  // Rain and snow use intentionally different lower-half marks, so the
+  // forecast remains understandable on a single 8x8 MAX7219 module.
+  FakeCanvas rain(8, 8), snow(8, 8);
+  draw_weather_icon(rain, 0, 0, WEATHER_RAIN, false);
+  draw_weather_icon(snow, 0, 0, WEATHER_SNOW, false);
+  CHECK(rain.get(2, 5));
+  CHECK(!snow.get(2, 5));
+  CHECK(snow.get(2, 6));
+}
+
+static bool region_has_pixels(const FakeCanvas &canvas, int x0, int x1) {
+  for (int y = 0; y < canvas.height(); y++)
+    for (int x = x0; x < x1; x++)
+      if (canvas.get(x, y)) return true;
+  return false;
+}
+
+static void test_twelve_module_clock_layouts_keep_clock_in_middle_six() {
+  FakeCanvas clock_only(96, 8), icon_layout(96, 8), home_weather(96, 8);
+  const int layouts[] = {CLOCK_LAYOUT_ONLY, CLOCK_LAYOUT_WEATHER_ICON, CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER};
+  FakeCanvas *canvases[] = {&clock_only, &icon_layout, &home_weather};
+  for (int i = 0; i < 3; i++) {
+    Frame f = base_frame(1000);
+    f.seconds_mode = SECONDS_OFF;
+    f.clock_layout = layouts[i];
+    f.home_temperature = 21.5f;
+    f.home_temperature_valid = true;
+    f.outdoor_temperature = 13.2f;
+    f.outdoor_temperature_valid = true;
+    f.weather_condition = WEATHER_CLEAR;
+    reset_state();
+    render(*canvases[i], compact, compact, f, report);
+    CHECK(region_has_pixels(*canvases[i], 24, 72));
+    for (int y = 0; y < 8; y++) for (int x = 24; x < 72; x++)
+      CHECK_EQ(canvases[i]->get(x, y), clock_only.get(x, y));
+  }
+  CHECK(!region_has_pixels(clock_only, 0, 24));
+  CHECK(!region_has_pixels(clock_only, 72, 96));
+  CHECK(!region_has_pixels(icon_layout, 0, 24));
+  CHECK(region_has_pixels(icon_layout, 72, 96));
+  CHECK(region_has_pixels(home_weather, 0, 24));
+  CHECK(region_has_pixels(home_weather, 72, 96));
+
+  const WeatherPanelGeometry layout = weather_panel_geometry(clock_only);
+  CHECK(layout.available);
+  CHECK_EQ(layout.left_x, 0);
+  CHECK_EQ(layout.clock_x, 24);
+  CHECK_EQ(layout.right_x, 72);
+  CHECK_EQ(layout.date_safe_width, 72);
+}
+
+static void test_six_module_clock_ignores_weather_panels_for_compatibility() {
+  FakeCanvas plain(48, 8), selected(48, 8);
+  Frame f = base_frame(1000);
+  f.seconds_mode = SECONDS_OFF;
+  reset_state();
+  render(plain, compact, compact, f, report);
+  f.clock_layout = CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  f.home_temperature_valid = true;
+  f.home_temperature = 22.0f;
+  f.outdoor_temperature_valid = true;
+  f.outdoor_temperature = 12.0f;
+  f.weather_condition = WEATHER_RAIN;
+  reset_state();
+  render(selected, compact, compact, f, report);
+  CHECK(!weather_panel_geometry(selected).available);
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 48; x++) CHECK_EQ(selected.get(x, y), plain.get(x, y));
+}
+
+static void test_date_weather_switches_reserve_the_right_panel_and_scroll_inside_safe_width() {
+  struct SwitchCase { bool icon; bool temperature; };
+  const SwitchCase cases[] = {{false, false}, {true, false}, {false, true}, {true, true}};
+  for (const auto &item : cases) {
+    FakeCanvas canvas(96, 8);
+    Frame f = base_frame(1000);
+    f.screen = SCREEN_DATE;
+    f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+    f.date_show_weather_icon = item.icon;
+    f.date_show_outdoor_temperature = item.temperature;
+    f.weather_condition = WEATHER_CLOUDY;
+    f.outdoor_temperature_valid = true;
+    f.outdoor_temperature = 14.6f;
+    f.animate = false;
+    reset_state();
+    render(canvas, compact, compact, f, report);
+    CHECK(region_has_pixels(canvas, 0, 72));
+    if (item.icon || item.temperature) {
+      FakeCanvas expected(96, 8);
+      draw_weather_panel(expected, 72, f, item.icon, item.temperature);
+      for (int y = 0; y < 8; y++) for (int x = 72; x < 96; x++)
+        CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+    }
+  }
+
+  // Exercise a narrower safe viewport where even the built-in longest date
+  // must marquee; both marquee frames remain clipped before the reserved side.
+  FakeCanvas first(96, 8), later(96, 8);
+  ViewportCanvas safe_first(first, 0, 64), safe_later(later, 0, 64);
+  draw_free_text(safe_first, compact, "THU 31. DEC 26", 0, true, 20, compact.centered_box_top(8));
+  draw_free_text(safe_later, compact, "THU 31. DEC 26", 80, true, 20, compact.centered_box_top(8));
+  CHECK(region_has_pixels(first, 0, 64));
+  CHECK(region_has_pixels(later, 0, 64));
+  CHECK(!region_has_pixels(first, 64, 96));
+  CHECK(!region_has_pixels(later, 64, 96));
+  bool changed = false;
+  for (int y = 0; y < 8; y++) for (int x = 0; x < 64; x++) changed |= first.get(x, y) != later.get(x, y);
+  CHECK(changed);
+}
+
+static void test_clock_and_date_digit_animation_stay_inside_allocated_regions() {
+  const auto check_clock_side_panels = [](const FakeCanvas &canvas, const Frame &f) {
+    FakeCanvas expected(96, 8);
+    draw_home_temperature_panel(expected, 0, f.home_temperature, f.home_temperature_valid);
+    draw_weather_panel(expected, 72, f, true, true);
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 24; x++) CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+      for (int x = 72; x < 96; x++) CHECK_EQ(canvas.get(x, y), expected.get(x, y));
+    }
+  };
+
+  FakeCanvas clock(96, 8), clock_reference(48, 8);
+  Frame f = base_frame(1000);
+  f.clock_layout = CLOCK_LAYOUT_HOME_AND_OUTDOOR_WEATHER;
+  f.home_temperature = 22.4f;
+  f.home_temperature_valid = true;
+  f.outdoor_temperature = 12.6f;
+  f.outdoor_temperature_valid = true;
+  f.weather_condition = WEATHER_RAIN;
+  f.seconds_mode = SECONDS_OFF;
+  f.animate = true;
+  f.animation_ms = 600;
+  reset_state();
+  render(clock, compact, compact, f, report);
+  reset_state();
+  render(clock_reference, compact, compact, f, report);
+  f.now_ms = 1200;
+  f.hour = 0;
+  f.minute = 0;
+  render(clock, compact, compact, f, report);
+  render(clock_reference, compact, compact, f, report);
+  check_clock_side_panels(clock, f);
+  for (int y = 0; y < 8; y++) for (int x = 24; x < 72; x++) CHECK_EQ(clock.get(x, y), clock_reference.get(x - 24, y));
+
+  FakeCanvas date(96, 8), date_reference(72, 8);
+  f = base_frame(1000);
+  f.screen = SCREEN_DATE;
+  f.date_format = DATE_DD_MM;
+  f.date_show_weather_icon = true;
+  f.date_show_outdoor_temperature = true;
+  f.weather_condition = WEATHER_SNOW;
+  f.outdoor_temperature = -4.2f;
+  f.outdoor_temperature_valid = true;
+  f.animate = true;
+  f.animation_ms = 600;
+  f.day = 1;
+  reset_state();
+  render(date, compact, compact, f, report);
+  reset_state();
+  render(date_reference, compact, compact, f, report);
+  f.now_ms = 1200;
+  f.day = 2;
+  render(date, compact, compact, f, report);
+  render(date_reference, compact, compact, f, report);
+  FakeCanvas expected(96, 8);
+  draw_weather_panel(expected, 72, f, true, true);
+  for (int y = 0; y < 8; y++) {
+    for (int x = 0; x < 72; x++) CHECK_EQ(date.get(x, y), date_reference.get(x, y));
+    for (int x = 72; x < 96; x++) CHECK_EQ(date.get(x, y), expected.get(x, y));
+  }
 }
 
 static void test_temperature_content() {
@@ -1261,7 +1577,7 @@ static void test_blinking_colon_keeps_layout_stable() {
         for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
     }
     mutable std::vector<DrawCall> calls;
-    int calls_for(char ch) const {
+    int calls_for(uint32_t ch) const {
       int n = 0;
       for (const auto &call : calls)
         if (call.ch == ch) n++;
@@ -1302,19 +1618,18 @@ static void test_blinking_colon_keeps_layout_stable() {
 // advance 0 that the SourceFont adapter returns for missing glyphs.
 class ClockOnlyFont : public GlyphFont {
  public:
-  static bool clock_glyph(char c) { return strchr("0123456789:.-/%!?+ ", c) != nullptr; }
-  int advance(uint32_t c) const override { return c <= 0x7F && clock_glyph((char) c) ? 6 : 0; }
+  static bool clock_glyph(uint32_t c) { return c < 0x80U && strchr("0123456789:.-/%!?+ ", (int) c) != nullptr; }
+  int advance(uint32_t c) const override { return clock_glyph(c) ? 6 : 0; }
   int ink_height() const override { return 8; }
   int ink_top() const override { return 0; }
   void draw_glyph(Canvas &c, uint32_t ch, int x, int box_top) const override {
-    if (ch > 0x7F) return;
     calls.push_back({ch, x, box_top});
     if (!clock_glyph(ch)) return;
     for (int row = 0; row < 8; row++)
       for (int col = 0; col < 5; col++) c.pixel(x + col, box_top + row, true);
   }
   mutable std::vector<DrawCall> calls;
-  int calls_for(char ch) const {
+  int calls_for(uint32_t ch) const {
     int n = 0;
     for (const auto &call : calls)
       if (call.ch == ch) n++;
@@ -1394,6 +1709,87 @@ static void test_builtin_font_renders_every_required_glyph() {
     CHECK(compact.advance(*text) > 0);
     if (*text != ' ') CHECK(canvas.on_count() > 0);  // space is intentionally blank
   }
+}
+
+static void test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs() {
+  FakeCanvas canvas(24, 8);
+  FakeFont font(6);
+  font.draw_text(canvas, "აბ", 0, 0);
+  CHECK_EQ(font.text_width("აბ"), 12);
+  CHECK_EQ(font.calls.size(), 2u);
+  CHECK_EQ(font.calls[0].ch, 0x10D0U);
+  CHECK_EQ(font.calls[1].ch, 0x10D1U);
+  CHECK_EQ(font.calls[0].x, 0);
+  CHECK_EQ(font.calls[1].x, 6);
+}
+
+static void test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall() {
+  using namespace georgian_bitmap;
+  int letters = 0;
+  for (uint32_t codepoint = 0x10D0U; codepoint <= 0x10F0U; codepoint++) {
+    const Glyph *glyph = find(codepoint);
+    CHECK(glyph != nullptr);
+    if (glyph == nullptr) continue;
+    CHECK(glyph->width > 0);
+    CHECK(ink_height(*glyph) <= 8);
+    letters++;
+  }
+  CHECK_EQ(letters, 33);
+  for (size_t index = 0; index < GLYPH_COUNT; index++) {
+    CHECK(GLYPHS[index].width > 0);
+    CHECK(ink_height(GLYPHS[index]) <= 8);
+  }
+
+  // Verify the renderer uses each source byte as one vertical column, bit 0 at
+  // the top, matching the MD_MAX72XX bitmap convention and generated TTF.
+  const Glyph *first_letter = find(0x10D0U);
+  GeorgianBitmapFont font;
+  FakeCanvas canvas(8, 8);
+  font.draw_glyph(canvas, 0x10D0U, 0, 0);
+  CHECK(first_letter != nullptr);
+  if (first_letter != nullptr)
+    for (int column = 0; column < first_letter->width; column++)
+      for (int row = 0; row < 8; row++)
+        CHECK(canvas.get(column, row) == ((first_letter->columns[column] & (1U << row)) != 0));
+}
+
+static void test_georgian_full_name_date_scrolls_instead_of_clipping() {
+  Frame f = base_frame(1000);
+  f.screen = SCREEN_CLOCK;
+  f.seconds_mode = SECONDS_OFF;
+  f.date_language = DATE_LANGUAGE_GEORGIAN;
+  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+  f.day = 5;
+  f.month = 3;
+  f.year = 2026;
+  f.animate = true;
+  f.animation_ms = 600;
+  f.date_scroll_ms_per_px = 1;
+  char content[80] = {0};
+  CHECK(build_content(f, MODE_DATE, false, content, sizeof(content)));
+  GeorgianBitmapFont georgian;
+  CHECK(georgian.text_width(content) > 48);
+  CHECK(date_content_needs_scroll(f, compact, compact, 48));
+
+  FakeCanvas baseline(48, 8), first(48, 8), later(48, 8);
+  reset_state();
+  render(baseline, compact, compact, f, report);
+  f.screen = SCREEN_DATE;
+  f.now_ms += 20;
+  render(first, compact, compact, f, report);
+  CHECK(!state.screen_transition_active);  // The long Georgian marquee is not clipped in a screen slide.
+  CHECK_EQ(state.date_scroll_started_ms, f.now_ms);
+  const uint32_t scroll_started = f.now_ms;
+  f.now_ms += 20;
+  render(later, compact, compact, f, report);
+  CHECK_EQ(state.date_scroll_started_ms, scroll_started);
+  CHECK(first.on_count() > 0);
+  CHECK(later.on_count() > 0);
+  bool moved = false;
+  for (int y = 0; y < 8; y++)
+    for (int x = 0; x < 48; x++)
+      if (first.get(x, y) != later.get(x, y)) moved = true;
+  CHECK(moved);
 }
 
 static void test_default_layout_matches_readme() {
@@ -1553,12 +1949,20 @@ int main() {
   test_auto_cycle_clock_date();
   test_date_screen_duration_is_independent();
   test_selected_screen_change_starts_slide_transition();
+  test_selected_screen_can_slide_up_like_changing_digits();
   test_scrolling_date_starts_after_screen_slide_transition();
   test_alarm_mode_flashes_twice_per_second();
   test_bitmap_test_screens();
   test_report_publishes_only_on_change();
   test_alignment();
   test_date_formats();
+  test_weather_condition_normalization();
+  test_weather_temperature_values_are_explicit_and_prioritized();
+  test_fixed_weather_panels_and_bitmap_categories();
+  test_twelve_module_clock_layouts_keep_clock_in_middle_six();
+  test_six_module_clock_ignores_weather_panels_for_compatibility();
+  test_date_weather_switches_reserve_the_right_panel_and_scroll_inside_safe_width();
+  test_clock_and_date_digit_animation_stay_inside_allocated_regions();
   test_temperature_content();
   test_12_hour_clock_blanks_leading_zero();
   test_deadline_rollover();
@@ -1568,6 +1972,9 @@ int main() {
   test_message_uses_selected_font_metrics();
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
+  test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs();
+  test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall();
+  test_georgian_full_name_date_scrolls_instead_of_clipping();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();

@@ -1,17 +1,19 @@
 {
-  "schemaVersion": 1,
-  "sourceHash": "c048673be7e1299f0940c981e61aa1739d87b57e488c223dbb276d06347bc191",
+  "schemaVersion": 2,
+  "sourceHash": "448555a122359d8cf9fc14575d390aa7eb814d06951a59f93cf997ae14989257",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.8",
+  "releaseVersion": "0.7.23",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n- **MG Minecraft Georgian** is an optional 8 px pixel clock face with the full\n  modern Georgian Mkhedruli alphabet, so Georgian messages can use the same\n  LED-pixel style as the clock. The bundled source retains attribution to\n  giomjava and its CC BY-SA 3.0 licence.\n- **Matrix Sans Screen** and **Sevenish Mono 8** are optional Georgian pixel\n  faces in Font Lab and the generated installer. Matrix Sans uses a full 8 px\n  render; Sevenish is intentionally rendered at 6 px so its Georgian\n  descenders never exceed the matrix's eight rows.",
+  "releaseNotes": "### Added\n\n- Add Matrix Sans Screen and Sevenish Mono 8 as optional Georgian pixel-font\n  packages for trying alternate 8-row matrix appearances.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
     "packages/renderer.yaml",
     "packages/restore_defaults.generated.yaml",
     "packages/display.yaml",
+    "packages/entity_visibility.yaml",
     "packages/controls.yaml",
+    "packages/buttons.yaml",
     "packages/date_controls.yaml",
     "packages/actions.yaml",
     "packages/diagnostics.yaml",
@@ -34,7 +36,9 @@
         "packages/renderer.yaml",
         "packages/restore_defaults.generated.yaml",
         "packages/display.yaml",
+        "packages/entity_visibility.yaml",
         "packages/controls.yaml",
+        "packages/buttons.yaml",
         "packages/date_controls.yaml",
         "packages/actions.yaml",
         "packages/diagnostics.yaml",
@@ -324,7 +328,9 @@
         "packages/renderer.yaml",
         "packages/restore_defaults.generated.yaml",
         "packages/display.yaml",
+        "packages/entity_visibility.yaml",
         "packages/controls.yaml",
+        "packages/buttons.yaml",
         "packages/date_controls.yaml",
         "packages/actions.yaml",
         "packages/diagnostics.yaml",
@@ -2585,13 +2591,25 @@
       "package": "packages/fonts/mg-minecraft-georgian.yaml"
     },
     {
+      "id": "georgian-mkhedruli-8x8",
+      "option": "Georgian Mkhedruli 8x8",
+      "label": "Georgian Mkhedruli 8x8",
+      "family": "Georgian Mkhedruli 8x8",
+      "firmwareId": "font_georgian_mkhedruli_8x8_source",
+      "size": 8,
+      "license": "Project-generated",
+      "source": "scripts/generate_georgian_mkhedruli_font.py",
+      "file": "fonts/georgian-mkhedruli-8x8/GeorgianMkhedruli8x8.ttf",
+      "package": "packages/fonts/georgian-mkhedruli-8x8.yaml"
+    },
+    {
       "id": "matrix-sans-screen",
       "option": "Matrix Sans Screen",
       "label": "Matrix Sans Screen",
       "family": "Matrix Sans Screen",
       "firmwareId": "font_matrix_sans_screen_source",
       "size": 8,
-      "license": "SIL OFL 1.1",
+      "license": "SIL OFL-1.1",
       "source": "fonts/matrix-sans-screen/OFL.txt",
       "file": "fonts/matrix-sans-screen/MatrixSansScreen-Regular.ttf",
       "package": "packages/fonts/matrix-sans-screen.yaml"
@@ -2602,7 +2620,7 @@
       "label": "Sevenish Mono 8",
       "family": "SevenishMono8",
       "firmwareId": "font_sevenish_mono_8_source",
-      "size": 6,
+      "size": 5,
       "license": "MIT",
       "source": "fonts/sevenish-mono-8/LICENSE.txt",
       "file": "fonts/sevenish-mono-8/SevenishMono8.ttf",
@@ -2614,7 +2632,7 @@
       "key": "clockFont",
       "kind": "select",
       "target": "clock_font",
-      "group": "Clock face",
+      "group": "Clock",
       "label": "Clock font",
       "options": [
         "compact",
@@ -2624,6 +2642,7 @@
         "md-max72xx-system",
         "dot-matrix",
         "mg-minecraft-georgian",
+        "georgian-mkhedruli-8x8",
         "matrix-sans-screen",
         "sevenish-mono-8"
       ],
@@ -2637,6 +2656,7 @@
         "MD MAX72XX System",
         "Dot Matrix",
         "MG Minecraft Georgian",
+        "Georgian Mkhedruli 8x8",
         "Matrix Sans Screen",
         "Sevenish Mono 8"
       ]
@@ -2645,7 +2665,7 @@
       "key": "screen",
       "kind": "select",
       "target": "screen_mode",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Screen",
       "options": [
         "Clock",
@@ -2662,7 +2682,7 @@
       "key": "alignment",
       "kind": "select",
       "target": "clock_alignment",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Clock alignment",
       "options": [
         "Left",
@@ -2676,7 +2696,7 @@
       "key": "hourFormat",
       "kind": "select",
       "target": "time_format",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Time format",
       "options": [
         "24-hour",
@@ -2693,7 +2713,7 @@
       "key": "secondsMode",
       "kind": "select",
       "target": "seconds_display",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Seconds display",
       "options": [
         "Off",
@@ -2704,10 +2724,51 @@
       "input": "select"
     },
     {
+      "key": "clockLayout",
+      "kind": "select",
+      "target": "clock_layout",
+      "group": "Clock",
+      "label": "Clock layout",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "default": "Clock only",
+      "input": "select"
+    },
+    {
+      "key": "dateShowWeatherIcon",
+      "kind": "switch",
+      "target": "date_show_weather_icon",
+      "group": "Screens",
+      "label": "Show weather icon on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
+      "key": "dateShowOutdoorTemperature",
+      "kind": "switch",
+      "target": "date_show_outdoor_temperature",
+      "group": "Screens",
+      "label": "Show outdoor temperature on date",
+      "default": false,
+      "input": "boolean"
+    },
+    {
+      "key": "showTemperatureDegree",
+      "kind": "switch",
+      "target": "show_temperature_degree",
+      "group": "Clock",
+      "label": "Show temperature degree symbol",
+      "default": true,
+      "input": "boolean"
+    },
+    {
       "key": "dateFormat",
       "kind": "select",
       "target": "date_format",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Date format",
       "options": [
         "DD.MM",
@@ -2719,6 +2780,19 @@
         "Weekday MMM.DD"
       ],
       "default": "DD.MM",
+      "input": "select"
+    },
+    {
+      "key": "dateLanguage",
+      "kind": "select",
+      "target": "date_language",
+      "group": "Screens",
+      "label": "Date language",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "default": "English",
       "input": "select"
     },
     {
@@ -2766,7 +2840,7 @@
       "key": "animationMs",
       "kind": "number",
       "target": "animation_duration",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Animation duration",
       "default": 600.0,
       "min": 0,
@@ -2780,7 +2854,7 @@
       "key": "animationRowGap",
       "kind": "number",
       "target": "animation_row_gap",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Animation row gap",
       "default": 1.0,
       "min": 0,
@@ -2789,6 +2863,19 @@
       "unit": "rows",
       "input": "range",
       "substitution": "animation_row_gap"
+    },
+    {
+      "key": "screenTransitionStyle",
+      "kind": "select",
+      "target": "screen_transition_style",
+      "group": "Clock",
+      "label": "Screen transition animation",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "default": "Slide left",
+      "input": "select"
     },
     {
       "key": "scrollSpeed",
@@ -2808,7 +2895,7 @@
       "key": "dateScrollSpeed",
       "kind": "number",
       "target": "date_scroll_speed",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Date scroll speed",
       "default": 60.0,
       "min": 20,
@@ -2836,7 +2923,7 @@
       "key": "countdownDuration",
       "kind": "number",
       "target": "countdown_duration",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Countdown duration",
       "default": 300.0,
       "min": 10,
@@ -2849,7 +2936,7 @@
       "key": "cycleInterval",
       "kind": "number",
       "target": "screen_cycle_interval",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Screen cycle interval",
       "default": 10.0,
       "min": 5,
@@ -2863,7 +2950,7 @@
       "key": "dateScreenDuration",
       "kind": "number",
       "target": "date_screen_duration",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Date screen duration",
       "default": 10.0,
       "min": 5,
@@ -2912,7 +2999,7 @@
       "key": "blinkColon",
       "kind": "switch",
       "target": "clock_blink",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Blinking colon",
       "default": true,
       "input": "boolean"
@@ -2921,7 +3008,7 @@
       "key": "digitAnimation",
       "kind": "switch",
       "target": "clock_animate",
-      "group": "Screen",
+      "group": "Clock",
       "label": "Digit animation",
       "default": true,
       "input": "boolean"
@@ -2930,7 +3017,7 @@
       "key": "autoCycle",
       "kind": "switch",
       "target": "auto_cycle",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Automatic screen cycling",
       "default": false,
       "input": "boolean"
@@ -3011,17 +3098,44 @@
       "key": "temperatureEntity",
       "kind": "substitution",
       "target": "temperature_entity",
-      "group": "Screen",
+      "group": "Screens",
       "label": "Temperature sensor entity",
       "input": "text",
       "default": "sensor.outdoor_temperature"
+    },
+    {
+      "key": "homeTemperatureEntity",
+      "kind": "substitution",
+      "target": "home_temperature_entity",
+      "group": "Screens",
+      "label": "Home-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.living_room_temperature"
+    },
+    {
+      "key": "outdoorTemperatureEntity",
+      "kind": "substitution",
+      "target": "outdoor_temperature_entity",
+      "group": "Screens",
+      "label": "Outdoor-temperature sensor entity",
+      "input": "text",
+      "default": "sensor.openweathermap_temperature"
+    },
+    {
+      "key": "weatherEntity",
+      "kind": "substitution",
+      "target": "weather_entity",
+      "group": "Screens",
+      "label": "Weather entity",
+      "input": "text",
+      "default": "weather.openweathermap"
     },
     {
       "key": "board",
       "kind": "substitution",
       "target": "board",
       "group": "Hardware",
-      "label": "ESP8266 board",
+      "label": "Board",
       "input": "select",
       "default": "d1_mini",
       "options": [
@@ -3176,18 +3290,20 @@
       "key": "displayUpdateMs",
       "kind": "substitution",
       "target": "display_update_interval",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Display redraw interval (ms)",
       "input": "integer",
       "default": 20,
       "timeSuffix": "ms",
-      "min": 1
+      "min": 1,
+      "max": 2147483647,
+      "step": 1
     },
     {
       "key": "bootVersionMs",
       "kind": "substitution",
       "target": "boot_version_duration",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Boot version duration (ms)",
       "input": "integer",
       "default": 2500,
@@ -3199,7 +3315,7 @@
       "key": "otaBrightness",
       "kind": "substitution",
       "target": "ota_display_intensity",
-      "group": "Device",
+      "group": "Advanced",
       "label": "OTA brightness",
       "input": "integer",
       "default": 3,
@@ -3211,7 +3327,7 @@
       "key": "otaPort",
       "kind": "substitution",
       "target": "ota_port",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Native OTA port",
       "input": "integer",
       "default": 8266,
@@ -3223,7 +3339,7 @@
       "key": "logLevel",
       "kind": "substitution",
       "target": "log_level",
-      "group": "Device",
+      "group": "Advanced",
       "label": "Log level",
       "input": "select",
       "default": "INFO",
@@ -3241,10 +3357,197 @@
       "key": "fallbackSsid",
       "kind": "substitution",
       "target": "fallback_ap_ssid",
-      "group": "Device",
+      "group": "Network",
       "label": "Fallback hotspot name",
       "input": "text",
       "default": "MAX7219 Clock Fallback"
+    },
+    {
+      "key": "fallbackApTimeout",
+      "kind": "substitution",
+      "target": "fallback_ap_timeout",
+      "group": "Network",
+      "label": "Fallback hotspot delay (s)",
+      "input": "integer",
+      "default": 900,
+      "timeSuffix": "s",
+      "min": 0,
+      "max": 4294967,
+      "step": 1
+    },
+    {
+      "key": "wifiRebootTimeout",
+      "kind": "substitution",
+      "target": "wifi_reboot_timeout",
+      "group": "Network",
+      "label": "Wi-Fi reboot timeout (s)",
+      "input": "integer",
+      "default": 900,
+      "timeSuffix": "s",
+      "min": 0,
+      "max": 4294967,
+      "step": 1
+    },
+    {
+      "key": "wifiPowerSave",
+      "kind": "substitution",
+      "target": "wifi_power_save_mode",
+      "group": "Network",
+      "label": "Wi-Fi power saving",
+      "input": "select",
+      "default": "NONE",
+      "options": [
+        "NONE",
+        "LIGHT",
+        "HIGH"
+      ]
+    },
+    {
+      "key": "apiRebootTimeout",
+      "kind": "substitution",
+      "target": "api_reboot_timeout",
+      "group": "Network",
+      "label": "API reboot timeout (s)",
+      "input": "integer",
+      "default": 900,
+      "timeSuffix": "s",
+      "min": 0,
+      "max": 4294967,
+      "step": 1
+    },
+    {
+      "key": "sntpServer1",
+      "kind": "substitution",
+      "target": "sntp_server_1",
+      "group": "Network",
+      "label": "SNTP server 1",
+      "input": "hostname",
+      "default": "0.pool.ntp.org"
+    },
+    {
+      "key": "sntpServer2",
+      "kind": "substitution",
+      "target": "sntp_server_2",
+      "group": "Network",
+      "label": "SNTP server 2",
+      "input": "hostname",
+      "default": "1.pool.ntp.org"
+    },
+    {
+      "key": "sntpUpdateInterval",
+      "kind": "substitution",
+      "target": "sntp_update_interval",
+      "group": "Network",
+      "label": "SNTP update interval (s)",
+      "input": "integer",
+      "default": 3600,
+      "timeSuffix": "s",
+      "min": 1,
+      "max": 4294967,
+      "step": 1
+    },
+    {
+      "key": "webServerPort",
+      "kind": "substitution",
+      "target": "web_server_port",
+      "group": "Web server",
+      "label": "Web-server port",
+      "input": "integer",
+      "requires": "webServer",
+      "default": 80,
+      "min": 1,
+      "max": 65535,
+      "step": 1
+    },
+    {
+      "key": "webServerVersion",
+      "kind": "substitution",
+      "target": "web_server_version",
+      "group": "Web server",
+      "label": "Web UI version",
+      "input": "select",
+      "requires": "webServer",
+      "default": 2,
+      "options": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "key": "webServerAuthType",
+      "kind": "substitution",
+      "target": "web_server_auth_type",
+      "group": "Web server",
+      "label": "Authentication method",
+      "input": "select",
+      "requires": "webServer",
+      "default": "basic",
+      "options": [
+        "basic",
+        "digest"
+      ]
+    },
+    {
+      "key": "webServerLog",
+      "kind": "substitution",
+      "target": "web_server_log",
+      "group": "Web server",
+      "label": "Web-server logs",
+      "input": "boolean",
+      "requires": "webServer",
+      "default": false
+    },
+    {
+      "key": "webServer",
+      "kind": "package",
+      "target": "packages/web_server.yaml",
+      "group": "Web server",
+      "label": "Device web server",
+      "input": "boolean",
+      "default": true,
+      "exclusiveSecrets": [
+        "web_server_password",
+        "web_server_username"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "Device",
+      "description": "Identity and local time. Automatic timezone follows this browser, not the device location."
+    },
+    {
+      "id": "Clock",
+      "description": "Clock face, time format and digit transitions. Preferences below are first-boot defaults; saved device preferences win after an update."
+    },
+    {
+      "id": "Screens",
+      "description": "Choose any built-in screen. Automatic cycling alternates Clock and Date. Enter Home Assistant entity IDs at install time: this static configurator cannot query your entity list. Weather state provides the condition; a dedicated outdoor sensor is preferred, with the weather entity temperature attribute as fallback."
+    },
+    {
+      "id": "Light",
+      "description": "Brightness 0 is the dimmest MAX7219 level, not power off. Night scheduling follows the configured timezone; OTA and boot overlays stay visible."
+    },
+    {
+      "id": "Messages",
+      "description": "Scroll speed is milliseconds per pixel: larger values are slower. A default duration of 0 keeps a message until cleared. Preview text is not installed."
+    },
+    {
+      "id": "Hardware",
+      "description": "Rebuild after changing wiring or board. Modules must divide evenly into rows. Selecting 180° also reverses the chip chain; change the chain switch separately for unusual wiring."
+    },
+    {
+      "id": "Network",
+      "description": "Non-secret options only. SSID and credentials stay in your local secret file. A timeout of 0 disables that automatic reboot or fallback-hotspot timer; this can make recovery harder. Keep the default SNTP interval unless your time server permits more frequent polling."
+    },
+    {
+      "id": "Web server",
+      "description": "Optional authenticated device page. Disable it to save flash; native API and encrypted OTA remain available, but the fallback hotspot then has no browser page. Hidden entities stay hidden here too. Web OTA and internal-entity listing remain disabled. HTTP is unencrypted with either authentication method: use a trusted LAN. Digest avoids sending the password directly. Web UI version 1 is deprecated by ESPHome."
+    },
+    {
+      "id": "Advanced",
+      "description": "Firmware timing, logs and OTA. A longer redraw interval reduces update frequency and can make animation less smooth. Firmware compilation, flash size and on-device behavior remain unverified."
     }
   ],
   "defaults": {
@@ -3253,12 +3556,18 @@
     "alignment": "Center",
     "hourFormat": "24-hour",
     "secondsMode": "Digits",
+    "clockLayout": "Clock only",
+    "dateShowWeatherIcon": false,
+    "dateShowOutdoorTemperature": false,
+    "showTemperatureDegree": true,
     "dateFormat": "DD.MM",
+    "dateLanguage": "English",
     "scrollMode": "Scroll",
     "brightness": 3.0,
     "nightBrightness": 1.0,
     "animationMs": 600.0,
     "animationRowGap": 1.0,
+    "screenTransitionStyle": "Slide left",
     "scrollSpeed": 60.0,
     "dateScrollSpeed": 60.0,
     "messageHold": 15.0,
@@ -3280,6 +3589,9 @@
     "deviceComment": "ESP8266 MAX7219 matrix clock (packages release)",
     "timezone": "Europe/Berlin",
     "temperatureEntity": "sensor.outdoor_temperature",
+    "homeTemperatureEntity": "sensor.living_room_temperature",
+    "outdoorTemperatureEntity": "sensor.openweathermap_temperature",
+    "weatherEntity": "weather.openweathermap",
     "board": "d1_mini",
     "clkPin": "D8",
     "mosiPin": "D6",
@@ -3296,6 +3608,18 @@
     "otaPort": 8266,
     "logLevel": "INFO",
     "fallbackSsid": "MAX7219 Clock Fallback",
+    "fallbackApTimeout": 900,
+    "wifiRebootTimeout": 900,
+    "wifiPowerSave": "NONE",
+    "apiRebootTimeout": 900,
+    "sntpServer1": "0.pool.ntp.org",
+    "sntpServer2": "1.pool.ntp.org",
+    "sntpUpdateInterval": 3600,
+    "webServerPort": 80,
+    "webServerVersion": 2,
+    "webServerAuthType": "basic",
+    "webServerLog": false,
+    "webServer": true,
     "target": "esp8266"
   },
   "entities": [
@@ -3313,7 +3637,11 @@
       ],
       "initial_option": "Clock",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_screen_mode",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Screens"
     },
     {
       "id": "clock_alignment",
@@ -3326,7 +3654,11 @@
       ],
       "initial_option": "Center",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_alignment",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "time_format",
@@ -3338,7 +3670,11 @@
       ],
       "initial_option": "24 hour",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_time_format",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "seconds_display",
@@ -3351,7 +3687,28 @@
       ],
       "initial_option": "Digits",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_seconds_display",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "clock_layout",
+      "name": "Clock layout",
+      "entity_category": "config",
+      "options": [
+        "Clock only",
+        "Clock + weather icon",
+        "Clock + home and outdoor weather"
+      ],
+      "initial_option": "Clock only",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_layout",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "date_format",
@@ -3368,7 +3725,43 @@
       ],
       "initial_option": "DD.MM",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_format",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_language",
+      "name": "Date language",
+      "entity_category": "config",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "initial_option": "English",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_language",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "screen_transition_style",
+      "name": "Screen transition animation",
+      "entity_category": "config",
+      "options": [
+        "Slide left",
+        "Slide up"
+      ],
+      "initial_option": "Slide left",
+      "domain": "select",
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_screen_transition_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "clock_font",
@@ -3381,7 +3774,11 @@
       ],
       "initial_option": "Pixel Clock 6x8",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_font",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "message_scroll_behavior",
@@ -3393,7 +3790,11 @@
       ],
       "initial_option": "Scroll",
       "domain": "select",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_message_scroll_behavior",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
     },
     {
       "id": "matrix_brightness",
@@ -3404,7 +3805,11 @@
       "step": 1,
       "initial_value": 3.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_matrix_brightness",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "night_brightness",
@@ -3415,7 +3820,11 @@
       "step": 1,
       "initial_value": 1.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_night_brightness",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "animation_duration",
@@ -3427,7 +3836,11 @@
       "step": 10,
       "initial_value": 600.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_animation_duration",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "animation_row_gap",
@@ -3439,7 +3852,11 @@
       "step": 1,
       "initial_value": 1.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_animation_row_gap",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "message_scroll_speed",
@@ -3451,7 +3868,11 @@
       "step": 5,
       "initial_value": 60.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_message_scroll_speed",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
     },
     {
       "id": "default_message_duration",
@@ -3463,7 +3884,11 @@
       "step": 5,
       "initial_value": 15.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_default_message_duration",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
     },
     {
       "id": "countdown_duration",
@@ -3475,7 +3900,11 @@
       "step": 10,
       "initial_value": 300.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_countdown_duration",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
       "id": "screen_cycle_interval",
@@ -3487,7 +3916,11 @@
       "step": 5,
       "initial_value": 10.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_screen_cycle_interval",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
       "id": "date_screen_duration",
@@ -3499,7 +3932,11 @@
       "step": 5,
       "initial_value": 10.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_screen_duration",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
       "id": "night_start_hour",
@@ -3511,7 +3948,11 @@
       "step": 1,
       "initial_value": 22.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_night_start_hour",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "night_end_hour",
@@ -3523,7 +3964,11 @@
       "step": 1,
       "initial_value": 7.0,
       "domain": "number",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_night_end_hour",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "matrix_display_power",
@@ -3531,7 +3976,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_ON",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_matrix_display_power",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Light"
     },
     {
       "id": "clock_blink",
@@ -3539,7 +3988,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_ON",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_blink",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "clock_animate",
@@ -3547,7 +4000,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_ON",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_animate",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
     },
     {
       "id": "auto_cycle",
@@ -3555,7 +4012,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_OFF",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_auto_cycle",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
       "id": "night_mode",
@@ -3563,7 +4024,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_OFF",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_night_mode",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "alarm_mode",
@@ -3571,7 +4036,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_OFF",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_alarm_mode",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "night_schedule_enabled",
@@ -3579,7 +4048,11 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_OFF",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_night_schedule_enabled",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
       "id": "display_inversion",
@@ -3587,62 +4060,99 @@
       "entity_category": "config",
       "restore_mode": "RESTORE_DEFAULT_OFF",
       "domain": "switch",
-      "package": "packages/controls.yaml"
+      "package": "packages/controls.yaml",
+      "visibilitySubstitution": "ha_hide_display_inversion",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Light"
     },
     {
+      "id": "restart_device",
       "name": "Restart device",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_restart_device",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Buttons"
     },
     {
       "id": "button_return_to_clock",
       "name": "Return to clock",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_return_to_clock",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Buttons"
     },
     {
       "id": "button_clear_message",
       "name": "Clear message",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_clear_message",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Buttons"
     },
     {
       "id": "button_start_countdown",
       "name": "Start countdown",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_start_countdown",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Buttons"
     },
     {
       "id": "button_cancel_countdown",
       "name": "Cancel countdown",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_cancel_countdown",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Buttons"
     },
     {
       "id": "button_grid_test",
       "name": "Run module grid test",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_grid_test",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Buttons"
     },
     {
       "id": "button_pixel_test",
       "name": "Run pixel test",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_pixel_test",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Buttons"
     },
     {
       "id": "button_restore_defaults",
       "name": "Restore display defaults",
       "entity_category": "config",
       "domain": "button",
-      "package": "packages/controls.yaml"
+      "package": "packages/buttons.yaml",
+      "visibilitySubstitution": "ha_hide_button_restore_defaults",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Buttons"
     },
     {
       "id": "date_scroll_speed",
@@ -3654,36 +4164,99 @@
       "step": 5,
       "initial_value": 60.0,
       "domain": "number",
-      "package": "packages/date_controls.yaml"
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_scroll_speed",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
     },
     {
+      "id": "show_temperature_degree",
+      "name": "Show temperature degree symbol",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_ON",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_show_temperature_degree",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "date_show_weather_icon",
+      "name": "Show weather icon on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_weather_icon",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_show_outdoor_temperature",
+      "name": "Show outdoor temperature on date",
+      "entity_category": "config",
+      "restore_mode": "RESTORE_DEFAULT_OFF",
+      "domain": "switch",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_show_outdoor_temperature",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "wifi_signal_db",
       "name": "Wi-Fi signal",
       "entity_category": "diagnostic",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_wifi_signal_db",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
       "id": "uptime_sensor",
       "name": "Uptime",
       "entity_category": "diagnostic",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_uptime_sensor",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
       "id": "free_heap",
       "name": "Free heap",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_free_heap",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
+      "id": "largest_free_block",
       "name": "Largest free block",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_largest_free_block",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
+      "id": "heap_fragmentation",
       "name": "Heap fragmentation",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_heap_fragmentation",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
       "id": "countdown_remaining",
@@ -3691,7 +4264,11 @@
       "entity_category": "diagnostic",
       "unit_of_measurement": "s",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_countdown_remaining",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
       "id": "ota_percent",
@@ -3700,53 +4277,95 @@
       "disabled_by_default": true,
       "unit_of_measurement": "%",
       "domain": "sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_ota_percent",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
+      "id": "esphome_version",
       "name": "ESPHome version",
       "entity_category": "diagnostic",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_esphome_version",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
+      "id": "device_info",
       "name": "Device info",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_device_info",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
+      "id": "reset_reason",
       "name": "Reset reason",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_reset_reason",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
+      "id": "ip_address",
       "name": "IP address",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_ip_address",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
+      "id": "connected_ssid",
       "name": "Connected SSID",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_connected_ssid",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
       "id": "display_mode",
       "name": "Display mode",
       "entity_category": "diagnostic",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_display_mode",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Diagnostics"
     },
     {
       "id": "ota_state",
       "name": "OTA state",
       "entity_category": "diagnostic",
       "domain": "text_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_ota_state",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     },
     {
+      "id": "device_status",
       "name": "Status",
       "entity_category": "diagnostic",
       "domain": "binary_sensor",
-      "package": "packages/diagnostics.yaml"
+      "package": "packages/diagnostics.yaml",
+      "visibilitySubstitution": "ha_hide_device_status",
+      "visibleByDefault": true,
+      "recommended": true,
+      "group": "Diagnostics"
     }
   ],
   "actions": [

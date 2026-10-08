@@ -34,7 +34,7 @@
   --pin-top: 48px;
   --chassis-h: 200px;
   --pin-gap: 8px;
-  --shell-max: 1280px;
+  --shell-max: 1520px;
 }
 
 * { box-sizing: border-box; }
@@ -219,8 +219,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 1.2rem;
-  line-height: 1;
+  font-size: .84rem;
+  line-height: 1.2;
+  min-height: 36px;
   padding: 4px 8px;
 }
 
@@ -242,10 +243,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-.site-nav button { border: 0; background: transparent; color: var(--muted); padding: 8px 10px; font-weight: 650; }
-.site-nav button.on { color: var(--amber-2); border-bottom: 2px solid var(--amber); }
-.face-stepper { display: inline-flex; align-items: center; gap: 6px; }
-.face-stepper button { border: 1px solid var(--line); background: var(--bg-3); color: var(--amber-2); border-radius: var(--r-s); width: 24px; height: 24px; line-height: 1; font-size: 1.2rem; }
+.face-stepper { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.face-stepper button { border: 1px solid var(--line); background: var(--bg-3); color: var(--amber-2); border-radius: var(--r-s); min-height: 32px; padding: 4px 6px; line-height: 1.2; font-size: .75rem; }
 .info-page { grid-column: 1 / -1; }
 
 .site-nav ul {
@@ -262,8 +261,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .site-nav ul::-webkit-scrollbar { display: none; }
 
-.site-nav a {
+.site-nav a, .site-nav button {
   display: block;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
   white-space: nowrap;
   padding: 7px 11px;
   border-radius: var(--r-s);
@@ -277,7 +279,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   line-height: 1.5;
 }
 
-.site-nav a:hover { color: var(--amber-2); background: rgba(255, 159, 26, 0.08); }
+.site-nav a:hover, .site-nav button:hover { color: var(--amber-2); background: rgba(255, 159, 26, 0.08); }
+
+.site-nav button.on { color: var(--amber-2); border-color: var(--amber-dim); background: var(--bg-3); }
 
 /* ------------------------------------------------------------------ *
  * Shell: single column on phones, preview rail from 980 px
@@ -294,8 +298,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (min-width: 980px) {
   .shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.16fr) minmax(360px, 0.94fr);
-    gap: 28px;
+    grid-template-columns: minmax(280px, .7fr) minmax(0, 1.45fr);
+    gap: 20px;
     /* Both columns start at the same top edge: the matrix on the left, the
        title and the preview controls on the right, all in the first screen. */
     align-items: start;
@@ -338,7 +342,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 979px) {
   .stage { display: flex; flex-direction: column; }
-  .chassis-slot { height: 200px; }
+  .chassis-slot { height: var(--chassis-h); }
   .chassis {
     /* `--pin-top` is the measured bottom edge of the pinned chrome, so the
        matrix always sits exactly under the menu: never behind it at the top of
@@ -473,7 +477,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   margin: 12px 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--line-soft);
   border: 1px solid var(--line-soft);
@@ -498,11 +502,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .status-strip b { font-weight: 520; font-size: 0.86rem; font-family: var(--mono); }
+.status-strip li:first-child { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.status-strip .face-label { font: 500 .84rem/1.35 var(--sans); text-transform: none; letter-spacing: 0; color: var(--ink); }
 .status-strip .warn-text { color: var(--danger); }
 .status-strip .ok-text { color: var(--ok); }
 
 @media (min-width: 560px) {
-  .status-strip { grid-template-columns: repeat(4, 1fr); }
+  .status-strip { grid-template-columns: repeat(3, 1fr); }
 }
 
 .stage-warn { margin-top: 10px; }
@@ -725,7 +731,7 @@ details.panel > summary::before {
   font-weight: 500;
 }
 
-details[open] > summary::before { content: "−"; }
+details.panel[open] > summary::before { content: "−"; }
 
 details[open] > summary { border-bottom-color: var(--line-soft); }
 
@@ -788,58 +794,9 @@ input[type="range"] {
   font-size: 0.76rem;
 }
 
-.toggle-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  text-align: left;
-  padding: 10px 0;
-  border: 0;
-  border-bottom: 1px solid var(--line-soft);
-  background: transparent;
-  border-radius: 0;
-}
-
-.toggle-row em {
-  display: block;
-  margin-top: 2px;
-  font-style: normal;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.35;
-}
-
-.toggle-row i {
-  width: 36px;
-  height: 20px;
-  border-radius: 99px;
-  background: #2c261f;
-  position: relative;
-  flex: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 214, 160, 0.12);
-}
-
-.toggle-row i::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 99px;
-  background: #d9cbb8;
-  transition: transform 160ms ease;
-}
-
-.toggle-row.on i { background: var(--amber); }
-.toggle-row.on i::after { transform: translateX(16px); background: var(--ink-on-amber); }
-
 /* Reduced motion: no smooth scrolling, no thumb slide, no dot cross-fade.
    The per-digit slide is switched off in src/digitAnimation.ts. */
 @media (prefers-reduced-motion: reduce) {
-  .toggle-row i::after { transition: none; }
   .font-card { transition: none; }
   html { scroll-behavior: auto; }
 }
@@ -1155,18 +1112,94 @@ button.font-card:hover { border-color: var(--amber-dim); }
 .release-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: .8rem; line-height: 1.5; }
 .release-status .btn { padding: 4px 10px; }
 .release-status strong { overflow-wrap: anywhere; }
-.tune-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
-.control-group { min-width: 0; margin: 0 0 16px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; }
-.control-group legend { font-weight: 700; padding: 0 6px; }
-.control-group .field { margin-bottom: 12px; }
-/* Hardware target selector: two explicit radios, never a hidden default. */
+/* Compact settings: one shared label/control grid, no masonry reading order. */
+.compact-settings { --label-width: 9rem; margin-top: 24px; }
+.compact-settings :is(input, select, button, summary) { scroll-margin-top: calc(var(--nav-h) + 16px); }
+@media (max-width: 979px) {
+  .compact-settings :is(input, select, button, summary) { scroll-margin-top: calc(var(--nav-h) + var(--chassis-h) + var(--pin-gap) + 16px); }
+}
+.settings-intro { color: var(--muted); font-size: .86rem; line-height: 1.45; margin: 10px 0 12px; }
+.settings-intro strong { color: var(--ink); }
+.tune-grid, .visibility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.control-group { min-width: 0; margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--bg-2); }
+.control-group legend { font-weight: 600; font-size: .94rem; padding: 0 5px; color: var(--amber-2); }
+.tune-grid .control-group { margin: 0; }
+.settings-card .setting-row {
+  display: grid;
+  grid-template-columns: var(--label-width) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  margin: 0;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.settings-card .field-label { font: 500 .86rem/1.35 var(--sans); color: var(--ink); text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.field-control, .range-control { min-width: 0; }
+.settings-card input[type="text"], .settings-card input[type="number"], .settings-card select {
+  width: 100%; min-width: 0; min-height: 34px; margin: 0; padding: 5px 8px; border-radius: var(--r-s); font-size: .86rem;
+}
+.settings-card input[readonly] { border-style: dashed; color: var(--amber-2); }
+.settings-card :disabled { opacity: .55; cursor: not-allowed; }
+.range-control { display: grid; grid-template-columns: minmax(32px, 1fr) 4.4rem; gap: 8px; align-items: center; }
+.range-control input[type="range"] { margin: 0; min-width: 0; height: 30px; }
+.settings-card .range-control input[type="number"] { padding-inline: 4px; font-variant-numeric: tabular-nums; }
+.checkbox-control { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: .8rem; color: var(--muted); }
+.checkbox-control input { accent-color: var(--amber); width: 20px; height: 20px; margin: 0; flex: none; }
+.toggle-row { cursor: pointer; }
+.field-note, .compact-help p { color: var(--muted); font-size: .8rem; line-height: 1.5; margin: 6px 0; overflow-wrap: anywhere; }
+.field-note code { font: inherit; color: var(--amber-2); }
+.compact-help { margin-top: 6px; font-size: .8rem; }
+.compact-help > summary { cursor: pointer; padding: 6px 0; color: var(--amber-2); min-height: 32px; }
+.preview-settings { margin-top: 10px; }
+/* Hardware radios are explicit and keyboard-operable, with generated defaults. */
 .target-picker { border-color: var(--amber-dim); }
-.target-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
-.target-option { display: grid; gap: 2px; text-align: left; padding: 10px 12px; min-height: 44px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--bg-3); color: var(--ink); }
-.target-option strong { font-size: 0.9rem; }
-.target-option em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: 0.68rem; line-height: 1.5; }
-.target-option.on { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.target-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
+.target-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; min-height: 52px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--bg-3); color: var(--ink); cursor: pointer; }
+.target-option input { width: 18px; height: 18px; accent-color: var(--amber); flex: none; }
+.target-option span { min-width: 0; }
+.target-option strong { font-size: .88rem; }
+.target-option em { display: block; font-style: normal; color: var(--muted); font-size: .75rem; line-height: 1.4; }
+.target-option.on { border-color: var(--amber); }
 .target-option.on strong { color: var(--amber-2); }
-.target-picker .hint { margin-top: 10px; }
+/* Exposure choices use the same row and control widths in every disclosure. */
+.visibility-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: .84rem; }
+.visibility-help { margin-bottom: 10px; }
+.visibility-card { min-width: 0; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--bg-2); }
+.visibility-card > summary { cursor: pointer; padding: 10px 12px; min-height: 44px; font-weight: 600; font-size: .9rem; }
+.visibility-count { float: right; color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: 8px; }
+.visibility-fields { padding: 0 12px 8px; }
+.entity-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.3rem; align-items: center; gap: 10px; min-height: 44px; padding: 5px 0; border-top: 1px solid var(--line-soft); cursor: pointer; }
+.entity-label { font-size: .86rem; line-height: 1.35; overflow-wrap: anywhere; }
+.entity-label small { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; }
+/* Compact the preview demos as well, without hiding explanations or labels. */
+.preview-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; }
+.preview-controls > h1, .preview-controls > .composer, .preview-controls > .weather-preview, .preview-controls > .facts { grid-column: 1 / -1; }
+.preview-controls .panel, .preview-controls .facts { margin-top: 0; }
+.preview-controls > h1 { font-family: var(--serif); font-size: 1.8rem; margin: 0 0 4px; }
+.preview-controls input { background: #120f0c; border: 1px solid var(--line); border-radius: var(--r-s); }
+.composer input { width: 100%; min-height: 36px; margin-top: 6px; padding: 5px 8px; }
+.weather-preview label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; color: var(--muted); font-size: .8rem; }
+.weather-preview select, .weather-preview input { width: 100%; min-width: 0; min-height: 36px; padding: 5px 8px; color: var(--ink); }
+.weather-samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 8px; margin-top: 8px; }
+@media (max-width: 479px) {
+  .compact-settings { --label-width: 7.8rem; }
+  .control-group { padding: 8px 10px; }
+  .settings-card .setting-row { gap: 8px; min-height: 44px; }
+  .settings-card input[type="text"], .settings-card input[type="number"], .settings-card select { font-size: 16px; min-height: 38px; }
+  .range-control { grid-template-columns: minmax(20px, 1fr) 4.2rem; gap: 4px; }
+  .visibility-toolbar .btn { flex: 1 1 140px; }
+  .visibility-toolbar .btn-row { width: 100%; }
+}
+@media (max-width: 359px) {
+  .compact-settings { --label-width: 7rem; }
+  .settings-card .range-control { grid-template-columns: 1fr; gap: 0; }
+}
 .release-notes { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.7; }
 [hidden] { display: none !important; }

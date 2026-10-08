@@ -47,17 +47,36 @@ display:
       }
       frame.temperature_valid = !max7219_clock::is_nan(id(temperature_sensor).state);
       frame.temperature_c = id(temperature_sensor).state;
+      frame.home_temperature_valid = max7219_clock::parse_temperature_text(
+          id(home_temperature_text).state.c_str(), frame.home_temperature);
+      float dedicated_outdoor_temperature = 0.0f;
+      const bool dedicated_outdoor_valid = max7219_clock::parse_temperature_text(
+          id(outdoor_temperature_text).state.c_str(), dedicated_outdoor_temperature);
+      float weather_temperature = 0.0f;
+      const bool weather_temperature_valid = max7219_clock::parse_temperature_text(
+          id(weather_temperature_text).state.c_str(), weather_temperature);
+      frame.outdoor_temperature_valid = max7219_clock::choose_outdoor_temperature(
+          dedicated_outdoor_valid, dedicated_outdoor_temperature, weather_temperature_valid,
+          weather_temperature, frame.outdoor_temperature);
+      frame.weather_condition = max7219_clock::weather_from_condition(
+          id(weather_condition_text).state.c_str());
 
       // ----- Frame: durable preferences (restored entities) ---------------
       frame.screen = max7219_clock::screen_from_option(id(screen_mode).current_option());
       frame.alignment = max7219_clock::alignment_from_option(id(clock_alignment).current_option());
       frame.seconds_mode = max7219_clock::seconds_from_option(id(seconds_display).current_option());
+      frame.clock_layout = max7219_clock::clock_layout_from_option(id(clock_layout).current_option());
+      frame.date_show_weather_icon = id(date_show_weather_icon).state;
+      frame.date_show_outdoor_temperature = id(date_show_outdoor_temperature).state;
+      frame.show_temperature_degree = id(show_temperature_degree).state;
       frame.date_format = max7219_clock::date_format_from_option(id(date_format).current_option());
+      frame.date_language = max7219_clock::date_language_from_option(id(date_language).current_option());
       frame.use_12h = id(time_format).current_option() == "12 hour";
       frame.blink_colon = id(clock_blink).state;
       frame.animate = id(clock_animate).state;
       frame.animation_ms = max7219_clock::clamp_u32((int) id(animation_duration).state, 0, 2000);
       frame.animation_row_gap = max7219_clock::clamp_u8((int) id(animation_row_gap).state, 0, 2);
+      frame.screen_transition_style = max7219_clock::screen_transition_style_from_option(id(screen_transition_style).current_option());
       frame.message_scroll = id(message_scroll_behavior).current_option() == "Scroll";
       frame.scroll_ms_per_px = max7219_clock::clamp_u32((int) id(message_scroll_speed).state, 20, 200);
       frame.date_scroll_ms_per_px = max7219_clock::clamp_u32((int) id(date_scroll_speed).state, 20, 200);
@@ -102,6 +121,10 @@ display:
       #ifdef MAX7219_FONT_MG_MINECRAFT_GEORGIAN
       max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
       if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
+      #endif
+      #ifdef MAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
+      max7219_clock::SourceFont georgian_mkhedruli_8x8_font(font_georgian_mkhedruli_8x8_source, &it);
+      if (font_option == "Georgian Mkhedruli 8x8") selected = &georgian_mkhedruli_8x8_font;
       #endif
       #ifdef MAX7219_FONT_MATRIX_SANS_SCREEN
       max7219_clock::SourceFont matrix_sans_screen_font(font_matrix_sans_screen_source, &it);

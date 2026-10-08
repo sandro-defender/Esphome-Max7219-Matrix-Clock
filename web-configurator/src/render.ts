@@ -3,12 +3,14 @@ import { fitForPanel, fontSpec, previewFont, type FontFit } from "./fontCatalog"
 import {
   alignStart,
   BUILTIN_FONT,
+  GEORGIAN_DATE_FONT,
   drawTextLine,
   normalizeMessage,
   setPixel,
+  type PixelTarget,
   type PreviewFont,
 } from "./fonts";
-import type { Config } from "./types";
+import type { Config, PreviewWeatherCondition } from "./types";
 import type { TimelineFrame } from "./previewTimeline";
 
 export { deviceSlug, nodeId } from "./device";
@@ -31,11 +33,7 @@ export interface Geometry {
   valid: boolean;
 }
 
-export interface Frame {
-  width: number;
-  height: number;
-  pixels: Uint8Array;
-}
+export interface Frame extends PixelTarget {}
 
 export interface Notice {
   level: "info" | "warn";
@@ -82,6 +80,8 @@ export interface ClockLayout {
 export interface Scene {
   frame: Frame;
   geometry: Geometry;
+  /** Clock-area width after fixed side panels have been reserved. */
+  clockViewportWidth: number;
   page: Page;
   font: PreviewFont;
   /** The built-in 5x7 fallback took over because the font does not fit. */
@@ -104,6 +104,155 @@ export interface Scene {
   layout: ClockLayout | null;
   /** Slide distance in rows for the active face (its ink height). */
   slide: number;
+}
+
+export interface WeatherPanelGeometry {
+  available: boolean;
+  groupX: number;
+  leftX: number;
+  clockX: number;
+  rightX: number;
+  dateSafeWidth: number;
+}
+
+/** Mirrors weather_panel_geometry() in the firmware renderer. */
+export function weatherPanelGeometry(width: number, height: number): WeatherPanelGeometry {
+  if (width < 96 || height < 8) return { available: false, groupX: 0, leftX: 0, clockX: 0, rightX: 0, dateSafeWidth: width };
+  const groupX = Math.floor((width - 96) / 2);
+  return { available: true, groupX, leftX: groupX, clockX: groupX + 24, rightX: groupX + 72, dateSafeWidth: groupX + 72 };
+}
+
+/** A local-width drawing view sharing its parent pixel buffer. */
+function viewport(frame: Frame, x: number, width: number): Frame {
+  return {
+    width,
+    height: frame.height,
+    pixels: frame.pixels,
+    stride: frame.stride ?? frame.width,
+    offsetX: (frame.offsetX ?? 0) + x,
+    offsetY: frame.offsetY ?? 0,
+  };
+}
+
+/** Strict decimal parser: blanks, unavailable, partial text and infinities are missing. */
+export function parsePreviewTemperature(text: string): number | null {
+  const clean = text.trim();
+  if (!/^[+-]?(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)(?:[eE][+-]?[0-9]+)?$/.test(clean)) return null;
+  const value = Number(clean);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** The dedicated outdoor sensor wins; weather.temperature is the fallback. */
+export function choosePreviewOutdoorTemperature(preferred: string, weatherAttribute: string): number | null {
+  const dedicated = parsePreviewTemperature(preferred);
+  if (dedicated !== null) return dedicated;
+  return parsePreviewTemperature(weatherAttribute);
+}
+
+/** Maps Home Assistant enums and common OpenWeatherMap condition descriptions. */
+export function weatherFromCondition(raw: string): PreviewWeatherCondition {
+  const normalized = raw.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const has = (part: string) => normalized.includes(part);
+  if (!normalized || has("unknown") || has("unavailable") || normalized === "none" || has("exceptional")) return "unknown";
+  if (has("thunder") || has("lightning") || has("hail")) return "thunderstorm";
+  if (has("snow") || has("sleet")) return "snow";
+  if (has("wind") || has("squall") || has("tornado")) return "windy";
+  if (has("fog") || has("mist") || has("haze") || has("smoke") || has("dust") || has("sand") || has("ash")) return "fog";
+  if (has("rain") || has("drizzle") || has("shower") || has("pour")) return "rain";
+  if (has("partly cloudy") || normalized === "partlycloudy" || has("few clouds") || has("scattered clouds")) return "partlycloudy";
+  if (has("cloud") || has("overcast") || has("broken clouds")) return "cloudy";
+  if (has("clear night") || has("night clear")) return "clear-night";
+  if (has("sunny") || has("clear")) return "clear";
+  return "unknown";
+}
+
+const WEATHER_ICON_ROWS: Record<PreviewWeatherCondition, readonly number[]> = {
+  clear: [0x24, 0x5a, 0x3c, 0x3c, 0x3c, 0x5a, 0x24, 0x00],
+  "clear-night": [0x1c, 0x38, 0x70, 0xe0, 0xe0, 0x70, 0x38, 0x1c],
+  partlycloudy: [0x24, 0x18, 0x3c, 0x18, 0x00, 0x3c, 0x7e, 0x3c],
+  cloudy: [0x00, 0x18, 0x3c, 0x7e, 0x42, 0x7e, 0x00, 0x00],
+  fog: [0x18, 0x3c, 0x7e, 0x42, 0x7e, 0x55, 0x2a, 0x55],
+  rain: [0x18, 0x3c, 0x7e, 0x42, 0x7e, 0x24, 0x12, 0x09],
+  snow: [0x18, 0x3c, 0x7e, 0x42, 0x7e, 0x00, 0x2a, 0x1c],
+  thunderstorm: [0x18, 0x3c, 0x7e, 0x42, 0x7e, 0x18, 0x30, 0x18],
+  windy: [0x7e, 0x01, 0x00, 0x3e, 0x40, 0x00, 0x7e, 0x01],
+  unknown: [0x3c, 0x42, 0x02, 0x0c, 0x10, 0x00, 0x10, 0x00],
+};
+
+export function weatherIconRows(condition: PreviewWeatherCondition, night = false): readonly number[] {
+  return WEATHER_ICON_ROWS[condition === "clear" && night ? "clear-night" : condition] ?? WEATHER_ICON_ROWS.unknown;
+}
+
+function drawWeatherIcon(frame: Frame, condition: PreviewWeatherCondition, night: boolean, yOffset = 0): void {
+  const rows = weatherIconRows(condition, night);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++)
+    if (rows[y] & (0x80 >> x)) setPixel(frame, x, yOffset + y);
+}
+
+function roundedTenths(value: number): number {
+  return Math.trunc(value * 10 + (value >= 0 ? 0.5 : -0.5));
+}
+
+export function formatPreviewTemperature(value: number | null, width: number): string {
+  if (value === null || !Number.isFinite(value) || value < -999.9 || value > 999.9) return "--.-";
+  const tenths = roundedTenths(value);
+  const magnitude = Math.abs(tenths);
+  const candidate = `${tenths < 0 ? "-" : ""}${Math.floor(magnitude / 10)}.${magnitude % 10}`;
+  if ((BUILTIN_FONT.measure(candidate) ?? Number.POSITIVE_INFINITY) <= width) return candidate;
+  const whole = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
+  return (BUILTIN_FONT.measure(whole) ?? Number.POSITIVE_INFINITY) <= width ? whole : "--.-";
+}
+
+const MICRO_GLYPH_ROWS: Record<string, readonly number[]> = {
+  "0": [0b111, 0b101, 0b101, 0b101, 0b111], "1": [0b010, 0b110, 0b010, 0b010, 0b111],
+  "2": [0b111, 0b001, 0b111, 0b100, 0b111], "3": [0b111, 0b001, 0b111, 0b001, 0b111],
+  "4": [0b101, 0b101, 0b111, 0b001, 0b001], "5": [0b111, 0b100, 0b111, 0b001, 0b111],
+  "6": [0b111, 0b100, 0b111, 0b101, 0b111], "7": [0b111, 0b001, 0b010, 0b010, 0b010],
+  "8": [0b111, 0b101, 0b111, 0b101, 0b111], "9": [0b111, 0b101, 0b111, 0b001, 0b111],
+  "-": [0, 0, 0b111, 0, 0], ".": [0, 0, 0, 0b010, 0b010], "°": [0b110, 0b110, 0, 0, 0],
+};
+
+function microTextWidth(text: string): number { return [...text].reduce((sum, char) => sum + (char === "." ? 2 : char === "°" ? 3 : 4), 0); }
+
+export function formatMicroTemperature(value: number | null, width: number): string {
+  if (value === null || !Number.isFinite(value) || value < -999.9 || value > 999.9) return "--.-";
+  const candidate = `${Math.trunc(value + (value >= 0 ? 0.5 : -0.5))}°`;
+  if (microTextWidth(candidate) <= width) return candidate;
+  const whole = Math.trunc(value + (value >= 0 ? 0.5 : -0.5)).toString();
+  return microTextWidth(whole) <= width ? whole : "----";
+}
+
+function drawMicroTemperature(frame: Frame, value: number | null, showDegree = true): void {
+  const text = formatMicroTemperature(value, frame.width);
+  const rendered = showDegree ? text : text.replace("°", "");
+  let cursor = Math.max(0, Math.trunc((frame.width - microTextWidth(rendered)) / 2));
+  const top = Math.max(0, Math.trunc((frame.height - 5) / 2));
+  for (const char of rendered) {
+    const rows = MICRO_GLYPH_ROWS[char] ?? [];
+    for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++)
+      if (rows[y] & (1 << (2 - x))) setPixel(frame, cursor + x, top + y);
+    cursor += char === "." ? 2 : 4;
+  }
+}
+
+function drawHomeTemperaturePanel(frame: Frame, x: number, value: number | null, showDegree = true): void {
+  drawMicroTemperature(viewport(frame, x, 24), value, showDegree);
+}
+
+export function drawWeatherPanel(frame: Frame, x: number, condition: PreviewWeatherCondition, night: boolean,
+                                 temperature: number | null, showIcon: boolean, showTemperature: boolean, showDegree = true): void {
+  if (!showIcon && !showTemperature) return;
+  const panel = viewport(frame, x, 24);
+  const top = Math.max(0, Math.trunc((panel.height - 8) / 2));
+  if (showIcon && showTemperature) {
+    drawWeatherIcon(viewport(panel, 0, 8), condition, night, top);
+    drawMicroTemperature(viewport(panel, 8, 16), temperature, showDegree);
+  } else if (showIcon) {
+    const icon = viewport(panel, 8, 8);
+    drawWeatherIcon(icon, condition, night, top);
+  } else {
+    drawMicroTemperature(panel, temperature, showDegree);
+  }
 }
 
 export function geometry(chips: number, rows: number): Geometry {
@@ -153,8 +302,12 @@ export function dateContent(now: Date, cfg: Config): string {
   const day = pad(now.getDate());
   const month = pad(now.getMonth() + 1);
   const year = pad(now.getFullYear() % 100);
-  const weekday = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
-  const monthName = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
+  const weekday = cfg.dateLanguage === "Georgian"
+    ? ["კვირა", "ორშაბათი", "სამშაბათი", "ოთხშაბათი", "ხუთშაბათი", "პარასკევი", "შაბათი"][now.getDay()]
+    : ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][now.getDay()];
+  const monthName = cfg.dateLanguage === "Georgian"
+    ? ["იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი", "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"][now.getMonth()]
+    : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][now.getMonth()];
   if (cfg.dateFormat === "MM/DD") return `${month}/${day}`;
   if (cfg.dateFormat === "DD/MM") return `${day}/${month}`;
   if (cfg.dateFormat === "DD.MM.YY") return `${day}.${month}.${year}`;
@@ -356,7 +509,9 @@ export function renderScene(
 
   const selected = previewFont(cfg.clockFont);
   const spec = fontSpec(cfg.clockFont);
-  const fit = fitForPanel(selected, frame.width, Math.min(8, frame.height));
+  const panels = weatherPanelGeometry(frame.width, frame.height);
+  const clockViewportWidth = panels.available ? 48 : frame.width;
+  const fit = fitForPanel(selected, clockViewportWidth, Math.min(8, frame.height));
   const page = choosePage(selectedScreen, messageActive);
 
   if (!geo.valid) {
@@ -368,13 +523,13 @@ export function renderScene(
   if (fit.dropsSeconds) {
     notices.push({
       level: "warn",
-      text: `${spec.label} needs ${fit.width} px for HH:MM:SS but the panel is ${frame.width} px. The firmware drops the seconds, exactly like this preview.`,
+      text: `${spec.label} needs ${fit.width} px for HH:MM:SS but the clock area is ${clockViewportWidth} px. The firmware drops the seconds, exactly like this preview.`,
     });
   }
   if (fit.tooNarrow) {
     notices.push({
       level: "warn",
-      text: `Only ${frame.width} px wide: not even the built-in 5×7 font can show HH:MM. Add modules or pick a narrower font.`,
+      text: `Only ${clockViewportWidth} px in the clock area: not even the built-in 5×7 font can show HH:MM. Add modules or pick a narrower font.`,
     });
   }
   if (fit.usesBottomRow && cfg.secondsMode === "Bar") {
@@ -394,39 +549,65 @@ export function renderScene(
   let content = "";
 
   if (cfg.displayPower) {
-    let font = selected;
+    const namedDate = page === "date" && cfg.dateFormat.startsWith("Weekday");
+    let font = namedDate && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {
       const shown = text.length > 0 ? text : "";
       if (shown) {
         if (font.measure(shown) === null) {
-          font = BUILTIN_FONT;
+          const containsGeorgian = [...shown].some((character) => {
+            const codepoint = character.codePointAt(0) ?? 0;
+            return codepoint >= 0x10d0 && codepoint <= 0x10f0;
+          });
+          font = containsGeorgian ? GEORGIAN_DATE_FONT : BUILTIN_FONT;
           usedFallback = true;
         }
         drawFreeText(frame, font, shown, cfg, age);
       }
     } else {
+      let contentFrame = frame;
+      const condition = weatherFromCondition(cfg.previewWeatherCondition);
+      const weatherNight = condition === "clear-night" ||
+        (condition === "clear" && (now.getHours() < 6 || now.getHours() >= 19));
+      const homeTemperature = parsePreviewTemperature(cfg.previewHomeTemperature);
+      const outdoorTemperature = choosePreviewOutdoorTemperature(cfg.previewOutdoorTemperature, cfg.previewWeatherTemperature);
+      if (page === "clock" && panels.available) {
+        contentFrame = viewport(frame, panels.clockX, 48);
+        if (cfg.clockLayout === "Clock + home and outdoor weather")
+          drawHomeTemperaturePanel(frame, panels.leftX, homeTemperature, cfg.showTemperatureDegree);
+        if (cfg.clockLayout === "Clock + weather icon")
+          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, false, cfg.showTemperatureDegree);
+        else if (cfg.clockLayout === "Clock + home and outdoor weather")
+          drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature, true, true, cfg.showTemperatureDegree);
+      } else if (page === "date" && panels.available && (cfg.dateShowWeatherIcon || cfg.dateShowOutdoorTemperature)) {
+        contentFrame = viewport(frame, 0, panels.dateSafeWidth);
+        drawWeatherPanel(frame, panels.rightX, condition, weatherNight, outdoorTemperature,
+          cfg.dateShowWeatherIcon, cfg.dateShowOutdoorTemperature, cfg.showTemperatureDegree);
+      }
+
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
       const build = (): string => page === "date" ? dateContent(now, cfg) : page === "temperature" ? "--.-" : clockContent(now, cfg, withSeconds);
       content = build();
-      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width && withSeconds) {
+      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width && withSeconds) {
         withSeconds = false;
         droppedSeconds = true;
         content = build();
       }
-      if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width) {
+      const measuredWidth = font.measure(content);
+      if (measuredWidth === null || (measuredWidth > contentFrame.width && !namedDate)) {
         font = BUILTIN_FONT;
         usedFallback = true;
       }
-      if (page === "date" && (font.measure(content) ?? Number.POSITIVE_INFINITY) > frame.width) {
-        drawFreeText(frame, font, content, { ...cfg, scrollMode: "Scroll", scrollSpeed: cfg.dateScrollSpeed }, age);
+      if (page === "date" && (font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width) {
+        drawFreeText(contentFrame, font, content, { ...cfg, scrollMode: "Scroll", scrollSpeed: cfg.dateScrollSpeed }, age);
       } else {
-      const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
-      layout = clockLayout(content, font, frame, cfg.alignment, blankColons);
-      const activeSlide = cfg.digitAnimation && cfg.animationMs > 0 ? slide : { from: null, progress: 1 };
-      drawCells(frame, font, layout, activeSlide, cfg.animationRowGap);
-      if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(frame, now.getSeconds());
+        const blankColons = page === "clock" && cfg.blinkColon && now.getSeconds() % 2 === 1;
+        layout = clockLayout(content, font, contentFrame, cfg.alignment, blankColons);
+        const activeSlide = cfg.digitAnimation && cfg.animationMs > 0 ? slide : { from: null, progress: 1 };
+        drawCells(contentFrame, font, layout, activeSlide, cfg.animationRowGap);
+        if (page === "clock" && cfg.secondsMode === "Bar") drawSecondsBar(contentFrame, now.getSeconds());
       }
     }
     driverTransform(frame, cfg.rotateChip, cfg.flipX, cfg.reverseEnable);
@@ -465,6 +646,7 @@ export function renderScene(
   return {
     frame,
     geometry: geo,
+    clockViewportWidth,
     page,
     font: selected,
     usedFallback,

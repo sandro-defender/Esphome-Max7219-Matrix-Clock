@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { FIRMWARE, firmwareOption, optionsFor } from "./firmware";
 import { FONT_CATALOG, previewFont } from "./fontCatalog";
-import { DEFAULT_CONFIG, type Config } from "./types";
+import { DEFAULT_CONFIG, WEATHER_PREVIEW_OPTIONS, type Config } from "./types";
 import { renderScene, renderStatusFrame, geometry, type Frame, type SlideFrame } from "./render";
 import { normalizeMessage } from "./fonts";
 import { dateInZone, previewDate } from "./usePreview";
@@ -22,7 +22,9 @@ function oracle(cfg: Config, now = date, from = "", elapsed = 0, overlay = "none
     [item.key, typeof cfg[item.key] === "string" ? firmwareOption(item.key, String(cfg[item.key])) : String(cfg[item.key])],
   ));
   Object.assign(values, { width: geo.width, height: geo.height, font: font.firmwareId ?? "compact", hour: now.getHours(), minute: now.getMinutes(),
-    second: now.getSeconds(), day: now.getDate(), month: now.getMonth()+1, message: cfg.message, from, elapsed, overlay, percent, error, version });
+    second: now.getSeconds(), day: now.getDate(), month: now.getMonth()+1, message: cfg.message, from, elapsed, overlay, percent, error, version,
+    previewHomeTemperature: cfg.previewHomeTemperature, previewOutdoorTemperature: cfg.previewOutdoorTemperature,
+    previewWeatherTemperature: cfg.previewWeatherTemperature, previewWeatherCondition: cfg.previewWeatherCondition });
   return JSON.parse(execFileSync(binary, Object.entries(values).map(([key, value]) => `${key}=${value}`), { encoding: "utf8" })) as { pixels: string; brightness: number; badWrites: number };
 }
 function visible(frame: Frame, cfg: Config): string {
@@ -46,6 +48,30 @@ describe("exact firmware / browser pixel parity", () => {
         }
       }
     }
+  }, 30000);
+
+  it("matches the three 12-module weather Clock layouts, all icons and independent Date switches", () => {
+    const clockLayouts = optionsFor("clockLayout");
+    for (const clockLayout of clockLayouts) {
+      for (const condition of WEATHER_PREVIEW_OPTIONS.map((item) => item.value)) {
+        compare(config({ chips: 12, rows: 1, clockLayout, screen: "Clock", secondsMode: "Off", previewWeatherCondition: condition }));
+      }
+    }
+
+    for (const [dateShowWeatherIcon, dateShowOutdoorTemperature] of [[false, false], [true, false], [false, true], [true, true]]) {
+      compare(config({ chips: 12, rows: 1, clockFont: "pixel-clock-6x8", screen: "Date",
+        dateFormat: "Weekday DD. MMM YY", dateShowWeatherIcon, dateShowOutdoorTemperature,
+        previewWeatherCondition: "scattered clouds" as Config["previewWeatherCondition"] }));
+    }
+
+    // OpenWeatherMap descriptions use the same condition mapper; an invalid
+    // dedicated sensor falls back to the weather entity's temperature attribute.
+    compare(config({ chips: 12, rows: 1, clockLayout: "Clock + home and outdoor weather", screen: "Clock",
+      previewWeatherCondition: "light rain" as Config["previewWeatherCondition"],
+      previewHomeTemperature: "unavailable", previewOutdoorTemperature: "unknown", previewWeatherTemperature: "7.8" }));
+    compare(config({ chips: 12, rows: 1, clockLayout: "Clock + home and outdoor weather", screen: "Clock",
+      previewWeatherCondition: "unknown", previewHomeTemperature: "NaN", previewOutdoorTemperature: "unavailable",
+      previewWeatherTemperature: "inf" }));
   }, 30000);
 
   it("matches all changed-digit rows, gaps and fallback/narrow geometries with no ghost ink", () => {

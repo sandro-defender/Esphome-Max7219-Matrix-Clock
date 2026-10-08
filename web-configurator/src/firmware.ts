@@ -3,7 +3,7 @@ import generated from "./firmware.generated.json";
 /** Data generated from packages/ by scripts/generate_firmware_contract.py. */
 export interface FirmwareSetting {
   key: string;
-  kind: "substitution" | "select" | "number" | "switch";
+  kind: "substitution" | "select" | "number" | "switch" | "package";
   target: string;
   group: string;
   label: string;
@@ -17,6 +17,8 @@ export interface FirmwareSetting {
   unit?: string;
   substitution?: string;
   timeSuffix?: string;
+  requires?: string;
+  exclusiveSecrets?: string[];
 }
 
 export interface FirmwareFont {
@@ -60,7 +62,11 @@ export interface FirmwareHardwareTarget {
 }
 
 export interface FirmwareEntity {
-  id?: string;
+  id: string;
+  group: string;
+  visibilitySubstitution: string;
+  visibleByDefault: boolean;
+  recommended: boolean;
   name: string;
   domain: string;
   package: string;
@@ -88,6 +94,7 @@ export const FIRMWARE = generated as unknown as {
   defaultFonts: string[];
   fonts: FirmwareFont[];
   settings: FirmwareSetting[];
+  groups: { id: string; description: string }[];
   defaults: Record<string, string | number | boolean>;
   entities: FirmwareEntity[];
   renderer: { messageMaxBytes: number; alertMaxBytes: number; otaStates: Record<string, number>;

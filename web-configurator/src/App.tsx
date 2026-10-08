@@ -24,7 +24,9 @@ import { buildYaml } from "./yaml";
 import { switchTarget } from "./hardware";
 import { INSTALL_FRESH_MS, usePublishedRelease, type ReleaseState } from "./release";
 import { deviceSlug } from "./device";
-import { detectTimezone, withDetectedTimezone } from "./timezone";
+import { withDetectedTimezone } from "./timezone";
+import { useAutomaticTimezone } from "./useAutomaticTimezone";
+import { EntityVisibilitySection } from "./EntityVisibility";
 
 type Page = "configure" | "info";
 
@@ -54,6 +56,7 @@ const ConfigureColumn = memo(function ConfigureColumn({
   return (
     <>
       <TuneSection cfg={cfg} patch={patch} geo={geo} detected={detected} onTarget={onTarget} />
+      <EntityVisibilitySection cfg={cfg} patch={patch} />
       <FontLab cfg={cfg} setCfg={setCfg} panelWidth={geo.width} panelHeight={Math.min(8, geo.height)} />
     </>
   );
@@ -77,12 +80,9 @@ const InfoColumn = memo(function InfoColumn({ cfg, yaml, geo, release, getInstal
 
 export default function App({ initialPage = "configure" }: { initialPage?: Page } = {}) {
   const release = usePublishedRelease();
-  const initial = useRef(loadConfig()).current;
-  // First visit only: the browser zone pre-fills the Timezone field. A saved
-  // config or a shared link keeps its own value, and a failed detection keeps
-  // the firmware default. Detection is local and never contacts a network.
-  const detected = useMemo(() => detectTimezone(), []);
-  const [cfg, setCfg] = useState<Config>(() => withDetectedTimezone(initial.config, initial.from, detected));
+  const [initial] = useState(loadConfig);
+  const [cfg, setCfg] = useState<Config>(() => withDetectedTimezone(initial.config));
+  const detected = useAutomaticTimezone(setCfg);
   const [notice, setNotice] = useState<string | null>(initial.from === "link" ? "Settings loaded from the shared link." : null);
   const [page, setPage] = useState<Page>(initialPage);
   const topbarRef = useRef<HTMLElement>(null);
@@ -105,7 +105,10 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
   }, [initial.from]);
 
   const patch = useCallback(<K extends keyof Config>(key: K, value: Config[K]) => {
-    setCfg((current) => ({ ...current, [key]: value }));
+    setCfg((current) => {
+      const next = { ...current, [key]: value };
+      return key === "automaticTimezone" && value === true ? withDetectedTimezone(next) : next;
+    });
   }, []);
 
   const install = useMemo(() => {
@@ -146,17 +149,18 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
 
   const share = useCallback(async () => {
     const url = shareUrl(cfg, window.location.href.split("#")[0]);
-    window.history.replaceState(null, "", `#${url.split("#")[1]}`);
+    // Copy without leaving a stale profile in this tab's URL: later edits and
+    // Reset must reload the saved configuration, not revive an old override.
     if (await copyText(url)) {
-      setNotice("Share link copied — it encodes these display settings only.");
+      setNotice("Share link copied — it contains non-secret settings only.");
       window.setTimeout(() => setNotice((current) => (current?.startsWith("Share link") ? null : current)), 4000);
     }
   }, [cfg]);
 
   const reset = () => {
     clearSavedConfig();
-    setCfg(sanitizeConfig(null));
-    setNotice("Settings reset to the factory preview.");
+    setCfg(withDetectedTimezone(sanitizeConfig(null)));
+    setNotice("Settings reset; automatic timezone is on.");
   };
 
   return (
@@ -195,7 +199,7 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
         <div className="notice-bar">
           <p role="status">{notice}</p>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss notification">
-            ×
+            Dismiss
           </button>
         </div>
       ) : null}
@@ -215,7 +219,10 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
         {page === "configure" ? <>
           <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
           <div className="content-col">
-            <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion} onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)} onReplay={replay} />
+            <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion}
+              onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)}
+              onWeatherTemperature={(key, value) => patch(key, value)}
+              onWeatherCondition={(value) => patch("previewWeatherCondition", value)} onReplay={replay} />
             <ConfigureColumn cfg={cfg} patch={patch} setCfg={setCfg} geo={geo} detected={detected} />
           </div>
         </> : null}

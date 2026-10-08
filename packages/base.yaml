@@ -11,7 +11,7 @@ substitutions:
   device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
   # Version reported as the ESPHome project version. Keep this in sync with the
   # tag that the release example pins.
-  project_ref: "0.7.8"
+  project_ref: "0.7.23"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   project_version: ${project_ref}
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
@@ -21,8 +21,14 @@ substitutions:
   log_level: INFO
   # Local time zone used by both time sources. Change this to your zone.
   timezone: Europe/Berlin
-  # Home Assistant entity shown by the optional Temperature screen.
+  # Home Assistant entity shown by the optional legacy Temperature screen.
+  # Keep this substitution for compatibility with existing installations.
   temperature_entity: sensor.outdoor_temperature
+  # Install-time Home Assistant sources for the weather panels. The browser
+  # configurator validates IDs but cannot query a user's HA entity registry.
+  home_temperature_entity: sensor.living_room_temperature
+  outdoor_temperature_entity: sensor.openweathermap_temperature
+  weather_entity: weather.openweathermap
   # Native OTA port (8266 is the ESP8266 default).
   ota_port: "8266"
 

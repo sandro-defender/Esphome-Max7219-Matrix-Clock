@@ -54,6 +54,8 @@ REQUIRED_MODULES = [
     "renderer.yaml",
     "display.yaml",
     "controls.yaml",
+    "buttons.yaml",
+    "entity_visibility.yaml",
     "actions.yaml",
     "diagnostics.yaml",
     "ota_ui.yaml",
@@ -62,6 +64,7 @@ REQUIRED_MODULES = [
     "fonts_local.yaml",
     "max7219_clock_renderer.h",
     "max7219_clock_esphome.h",
+    "georgian_bitmap_font.generated.h",
 ]
 
 REQUIRED_ENTITIES = {
@@ -136,23 +139,17 @@ FONT_OPTION_BY_ID = {
     "font_matrix_2px_source": "Matrix 2px",
     "font_dot_matrix_source": "Dot Matrix",
     "font_mg_minecraft_georgian_source": "MG Minecraft Georgian",
+    "font_georgian_mkhedruli_8x8_source": "Georgian Mkhedruli 8x8",
     "font_matrix_sans_screen_source": "Matrix Sans Screen",
     "font_sevenish_mono_8_source": "Sevenish Mono 8",
 }
 
-# The selectable faces are clock-first: compile numbers and status punctuation
-# in every face. MG Minecraft Georgian additionally includes the full
-# Mkhedruli alphabet for Georgian messages. Compiling a bounded face catalogue
-# (eight faces) preserves ESP8266 RAM headroom while the other licensed source
-# files stay in fonts/.
+# Clock-first faces compile the status set; the project Georgian face also
+# includes every Mkhedruli code point. The compact built-in remains the Latin
+# message fallback; the release default still includes only its two core faces.
 FONT_REQUIRED_GLYPHS = "0123456789:.-/%!?+ "
 
 GEORGIAN_MKHEDRULI = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
-GEORGIAN_FONT_IDS = {
-    "font_mg_minecraft_georgian_source",
-    "font_matrix_sans_screen_source",
-    "font_sevenish_mono_8_source",
-}
 GEORGIAN_MTAVRULI = "ᲐᲑᲒᲓᲔᲕᲖᲗᲘᲙᲚᲛᲜᲝᲞᲟᲠᲡᲢᲣᲤᲥᲦᲧᲨᲩᲪᲫᲬᲭᲮᲯᲰ"
 
 # Height of one 8x8 module row; digits must never be taller than the panel.
@@ -355,14 +352,16 @@ class ConfigContractTests(unittest.TestCase):
         web = load_yaml(PACKAGES / "web_server.yaml")["web_server"]
         self.assertFalse(web.get("ota", True))
         self.assertIn("auth", web)
-        self.assertEqual("basic", web["auth"]["type"], "set auth type explicitly")
+        self.assertEqual("${web_server_auth_type}", web["auth"]["type"], "set auth type explicitly")
+        self.assertEqual("basic", load_yaml(PACKAGES / "web_server.yaml")["substitutions"]["web_server_auth_type"])
+        self.assertFalse(web["include_internal"], "hidden entities must not leak through the device web UI")
 
     # ------------------------------------------------------------------ #
     # Home Assistant surface
     # ------------------------------------------------------------------ #
     def test_required_entities_exist(self):
         found: dict[str, set[str]] = {}
-        for name in ("controls.yaml", "diagnostics.yaml"):
+        for name in ("controls.yaml", "buttons.yaml", "date_controls.yaml", "diagnostics.yaml"):
             config = load_yaml(PACKAGES / name)
             for platform, entries in config.items():
                 if not isinstance(entries, list):
@@ -386,7 +385,7 @@ class ConfigContractTests(unittest.TestCase):
                 )
 
     def test_controls_are_entity_category_config(self):
-        controls = load_yaml(PACKAGES / "controls.yaml")
+        controls = {**load_yaml(PACKAGES / "controls.yaml"), **load_yaml(PACKAGES / "buttons.yaml")}
         for platform in ("select", "number", "switch", "button"):
             for entry in controls[platform]:
                 self.assertEqual(
@@ -435,6 +434,30 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn("App.is_setup_complete()", renderer)
         self.assertIn("id(matrix).update()", renderer)
 
+    def test_remote_renderer_package_includes_its_generated_georgian_header(self):
+        """ESPHome resolves the renderer's relative include beside the package YAML."""
+        renderer = load_yaml(PACKAGES / "renderer.yaml")
+        includes = renderer["esphome"]["includes"]
+        self.assertIn("georgian_bitmap_font.generated.h", includes)
+        expected = (PACKAGES / "georgian_bitmap_font.generated.h").resolve()
+        self.assertTrue(expected.is_file())
+
+        # Use ESPHome's real include validator with a top-level config outside
+        # packages/. Remote package YAML carries the same declaring-document
+        # path after it is fetched, so this catches missing sibling assets.
+        from esphome import yaml_util
+        from esphome.core import CORE
+        from esphome.core.config import valid_include
+
+        previous_config_path = CORE.config_path
+        CORE.config_path = REPO / "dev.yaml"
+        try:
+            package_yaml = yaml_util.load_yaml(PACKAGES / "renderer.yaml")
+            resolved = Path(valid_include(package_yaml["esphome"]["includes"][-1])).resolve()
+        finally:
+            CORE.config_path = previous_config_path
+        self.assertEqual(expected, resolved)
+
     # ------------------------------------------------------------------ #
     # Entry points and pinning
     # ------------------------------------------------------------------ #
@@ -451,6 +474,8 @@ class ConfigContractTests(unittest.TestCase):
             "boot_ui.yaml",
             "restore_defaults.generated.yaml",
             "controls.yaml",
+            "buttons.yaml",
+            "entity_visibility.yaml",
             "date_controls.yaml",
             "actions.yaml",
             "diagnostics.yaml",
@@ -574,19 +599,14 @@ class ConfigContractTests(unittest.TestCase):
         for external, entry in zip(web, local):
             self.assertEqual(external["file"]["url"].replace("${fonts_base_url}/", ""),
                              entry["file"]["path"].removeprefix("../fonts/"))
-            if entry["id"] not in ("font_pixel_clock_6x8_source", "font_matrix_2px_source", "font_dot_matrix_source"):
+            if entry["id"] not in ("font_pixel_clock_6x8_source", "font_matrix_2px_source", "font_dot_matrix_source", "font_georgian_mkhedruli_8x8_source"):
                 font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
                 shared_lgpl = (
                     entry["id"] == "font_md_parola_numeric_7seg_source"
                     and (REPO / "fonts" / "md-max72xx-system" / "LICENSE.txt").is_file()
                 )
-                mg_minecraft_license = (
-                    entry["id"] == "font_mg_minecraft_georgian_source"
-                    and (REPO / "fonts" / "mg-minecraft-georgian-LICENSE.txt").is_file()
-                )
                 self.assertTrue(
-                    shared_lgpl or mg_minecraft_license
-                    or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
+                    shared_lgpl or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt", "mg-minecraft-georgian-LICENSE.txt")),
                     f"{entry['id']} must retain its source license",
                 )
             self.assertEqual("local", entry["file"]["type"])
@@ -636,6 +656,10 @@ class ConfigContractTests(unittest.TestCase):
                     0,
                     f"{entry['id']} has no '{char}' glyph in its source file",
                 )
+            if entry["id"] in ("font_georgian_mkhedruli_8x8_source", "font_matrix_sans_screen_source", "font_sevenish_mono_8_source"):
+                for char in GEORGIAN_MKHEDRULI:
+                    self.assertIn(char, declared, f"{entry['id']} does not compile '{char}'")
+                    self.assertNotEqual(face.get_char_index(ord(char)), 0, f"{entry['id']} has no '{char}' glyph")
 
     def test_repository_georgian_fonts_keep_both_modern_alphabets(self):
         """Optional Georgian sources remain available for a later shortlist."""
@@ -657,22 +681,6 @@ class ConfigContractTests(unittest.TestCase):
                     f"{font_id} has no '{char}' glyph in its source file",
                 )
 
-    def test_selectable_georgian_pixel_faces_include_every_mkhedruli_letter(self):
-        """Every selectable Georgian pixel face can display Georgian months."""
-        try:
-            import freetype
-        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
-            self.skipTest("freetype-py not installed")
-
-        for entry in load_yaml(PACKAGES / "fonts_local.yaml")["font"]:
-            if entry["id"] not in GEORGIAN_FONT_IDS:
-                continue
-            declared = "".join(entry["glyphs"])
-            face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
-            for char in GEORGIAN_MKHEDRULI:
-                self.assertIn(char, declared, f"{entry['id']} does not compile '{char}'")
-                self.assertNotEqual(face.get_char_index(ord(char)), 0, f"{entry['id']} has no '{char}'")
-
     def test_font_ink_is_not_taller_than_the_matrix(self):
         """Digits taller than the panel would be clipped on the real display.
 
@@ -689,7 +697,8 @@ class ConfigContractTests(unittest.TestCase):
             face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
             face.set_pixel_sizes(entry["size"], 0)
             digit_heights = []
-            for char in "0123456789:-":
+            measured_chars = "0123456789:-" + (GEORGIAN_MKHEDRULI if entry["id"] in ("font_georgian_mkhedruli_8x8_source", "font_matrix_sans_screen_source", "font_sevenish_mono_8_source") else "")
+            for char in measured_chars:
                 face.load_char(ord(char), freetype.FT_LOAD_RENDER)
                 if char.isdigit():
                     digit_heights.append(face.glyph.bitmap.rows)
@@ -698,18 +707,60 @@ class ConfigContractTests(unittest.TestCase):
                     MATRIX_ROW_HEIGHT,
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
-            expected_height = {
-                "font_md_max72xx_system_source": 7,
-                "font_md_parola_numeric_7seg_source": 7,
-                "font_mg_minecraft_georgian_source": 7,
-                "font_matrix_sans_screen_source": 6,
-                "font_sevenish_mono_8_source": 6,
-            }.get(entry["id"], MATRIX_ROW_HEIGHT)
+            expected_height = (
+                6 if entry["id"] == "font_matrix_sans_screen_source"
+                else 5 if entry["id"] == "font_sevenish_mono_8_source"
+                else MATRIX_ROW_HEIGHT - 1
+                if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source", "font_mg_minecraft_georgian_source", "font_georgian_mkhedruli_8x8_source")
+                else MATRIX_ROW_HEIGHT
+            )
             self.assertEqual(
                 expected_height,
                 max(digit_heights),
                 f"{entry['id']} has an unexpected largest digit height",
             )
+
+    def test_georgian_generated_ttf_matches_column_bitmap_source_exactly(self):
+        """The project-owned TTF must preserve each source byte as one column."""
+        try:
+            import freetype
+        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
+            self.skipTest("freetype-py not installed")
+
+        sys.path.insert(0, str(REPO / "scripts"))
+        try:
+            import generate_georgian_mkhedruli_font as design_source
+        finally:
+            sys.path.pop(0)
+
+        design_source.validate_design()
+        face = freetype.Face(str(design_source.OUTPUT))
+        face.set_pixel_sizes(8, 0)
+        for char, (width, columns) in design_source.BITMAPS.items():
+            face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            glyph = face.glyph
+            bitmap = glyph.bitmap
+            advance = (glyph.metrics.horiAdvance + 63) // 64
+            self.assertEqual(design_source.advance_for(char), advance, f"'{char}' has the wrong advance")
+            if char == " ":
+                self.assertFalse(any(bitmap.buffer), "space must remain an empty bitmap glyph")
+                continue
+
+            self.assertLessEqual(bitmap.rows, 8, f"'{char}' exceeds the eight-row matrix")
+            offset_y = (face.size.ascender + 63) // 64 - glyph.bitmap_top
+            actual = [[0] * width for _ in range(8)]
+            for y in range(bitmap.rows):
+                for x in range(bitmap.width):
+                    byte = bitmap.buffer[y * bitmap.pitch + (x // 8)]
+                    if byte & (1 << (7 - x % 8)):
+                        row, column = offset_y + y, glyph.bitmap_left + x
+                        self.assertTrue(
+                            0 <= row < 8 and 0 <= column < width,
+                            f"'{char}' ink lands outside the 8x{width} source canvas",
+                        )
+                        actual[row][column] = 1
+            expected = [[int(columns[x] & (1 << row) != 0) for x in range(width)] for row in range(8)]
+            self.assertEqual(expected, actual, f"'{char}' no longer matches its vertical-column bitmap")
 
     def test_matrix_2px_font_is_pixel_exact_with_two_pixel_lines(self):
         """Rasterise the generated Matrix 2px face exactly like ESPHome does.
@@ -917,7 +968,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 8)
+        self.assertEqual(len(faces), 9)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
