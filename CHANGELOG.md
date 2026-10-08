@@ -12,6 +12,8 @@
 ### Changed
 
 - Publish the Georgian pixel-font catalogue under a new minor release version.
+- Add an independent Date font selector so clock and date faces can be tested
+  separately; the English/Georgian selector continues to control date labels.
 
 ## 0.7.23 - 2026-10-08
 

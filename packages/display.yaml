@@ -96,45 +96,56 @@ display:
       max7219_clock::DisplayCanvas canvas(it);
       max7219_clock::BuiltinFont builtin_font;
       const StringRef font_option = id(clock_font).current_option();
+      const StringRef date_font_option = id(date_font).current_option();
       max7219_clock::GlyphFont *selected = &builtin_font;
+      max7219_clock::GlyphFont *date_selected = &builtin_font;
       // Raw generated pointers intentionally avoid id() resolution for omitted faces.
       #ifdef MAX7219_FONT_PIXEL_CLOCK_6X8
       max7219_clock::SourceFont pixel_clock_6x8_font(font_pixel_clock_6x8_source, &it);
       if (font_option == "Pixel Clock 6x8") selected = &pixel_clock_6x8_font;
+      if (date_font_option == "Pixel Clock 6x8") date_selected = &pixel_clock_6x8_font;
       #endif
       #ifdef MAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
       max7219_clock::SourceFont md_parola_numeric_7seg_font(font_md_parola_numeric_7seg_source, &it);
       if (font_option == "MD Parola Numeric 7-Segment") selected = &md_parola_numeric_7seg_font;
+      if (date_font_option == "MD Parola Numeric 7-Segment") date_selected = &md_parola_numeric_7seg_font;
       #endif
       #ifdef MAX7219_FONT_MD_MAX72XX_SYSTEM
       max7219_clock::SourceFont md_max72xx_system_font(font_md_max72xx_system_source, &it);
       if (font_option == "MD MAX72XX System") selected = &md_max72xx_system_font;
+      if (date_font_option == "MD MAX72XX System") date_selected = &md_max72xx_system_font;
       #endif
       #ifdef MAX7219_FONT_MATRIX_2PX
       max7219_clock::SourceFont matrix_2px_font(font_matrix_2px_source, &it);
       if (font_option == "Matrix 2px") selected = &matrix_2px_font;
+      if (date_font_option == "Matrix 2px") date_selected = &matrix_2px_font;
       #endif
       #ifdef MAX7219_FONT_DOT_MATRIX
       max7219_clock::SourceFont dot_matrix_font(font_dot_matrix_source, &it);
       if (font_option == "Dot Matrix") selected = &dot_matrix_font;
+      if (date_font_option == "Dot Matrix") date_selected = &dot_matrix_font;
       #endif
       #ifdef MAX7219_FONT_MG_MINECRAFT_GEORGIAN
       max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
       if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
+      if (date_font_option == "MG Minecraft Georgian") date_selected = &mg_minecraft_georgian_font;
       #endif
       #ifdef MAX7219_FONT_GEORGIAN_MKHEDRULI_8X8
       max7219_clock::SourceFont georgian_mkhedruli_8x8_font(font_georgian_mkhedruli_8x8_source, &it);
       if (font_option == "Georgian Mkhedruli 8x8") selected = &georgian_mkhedruli_8x8_font;
+      if (date_font_option == "Georgian Mkhedruli 8x8") date_selected = &georgian_mkhedruli_8x8_font;
       #endif
       #ifdef MAX7219_FONT_MATRIX_SANS_SCREEN
       max7219_clock::SourceFont matrix_sans_screen_font(font_matrix_sans_screen_source, &it);
       if (font_option == "Matrix Sans Screen") selected = &matrix_sans_screen_font;
+      if (date_font_option == "Matrix Sans Screen") date_selected = &matrix_sans_screen_font;
       #endif
       #ifdef MAX7219_FONT_SEVENISH_MONO_8
       max7219_clock::SourceFont sevenish_mono_8_font(font_sevenish_mono_8_source, &it);
       if (font_option == "Sevenish Mono 8") selected = &sevenish_mono_8_font;
+      if (date_font_option == "Sevenish Mono 8") date_selected = &sevenish_mono_8_font;
       #endif
-      max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
+      max7219_clock::render(canvas, *selected, *date_selected, builtin_font, frame, max7219_clock::report);
 
       // ----- Publish only what changed (keeps API traffic low) ------------
       if (max7219_clock::report.mode_changed) {

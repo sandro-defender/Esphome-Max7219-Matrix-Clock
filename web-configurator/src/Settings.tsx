@@ -15,7 +15,7 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
   if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} disabled={disabled}
     onChange={(next) => patch(item.key, next)} />;
   const options = item.input === "pin" ? pinNamesFor(cfg.target, cfg.board) :
-    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
+    (item.key === "clockFont" || item.key === "dateFont") ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
   if (options) return <Field id={id} label={item.label}>
     <select id={id} value={String(value)} disabled={disabled} onChange={(event) => {
       const next = typeof item.default === "number" ? Number(event.target.value) : event.target.value;
@@ -23,7 +23,7 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
       if (item.key === "rotateChip") patch("reverseEnable", next === 180);
     }}>
       {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid {item.input === "pin" ? "pin" : "option"}</option> : null}
-      {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
+      {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" || item.key === "dateFont" ? fontSpec(String(option)).label : String(option)}</option>)}
     </select>
   </Field>;
   if (typeof item.default === "number") {

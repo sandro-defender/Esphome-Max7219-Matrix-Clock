@@ -9,6 +9,9 @@ script:
 
       call.perform();'
   - select.set:
+      id: date_font
+      option: Compact 5x7
+  - select.set:
       id: screen_mode
       option: Clock
   - select.set:

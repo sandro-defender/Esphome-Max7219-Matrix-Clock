@@ -247,6 +247,11 @@
       "group": "Clock",
       "input": "font"
     },
+    "dateFont": {
+      "target": "date_font",
+      "group": "Screens",
+      "input": "font"
+    },
     "screen": {
       "target": "screen_mode",
       "group": "Screens"

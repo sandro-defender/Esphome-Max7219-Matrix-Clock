@@ -17,3 +17,6 @@ select:
   - id: !extend clock_font
     options:
       - "Dot Matrix"
+  - id: !extend date_font
+    options:
+      - "Dot Matrix"

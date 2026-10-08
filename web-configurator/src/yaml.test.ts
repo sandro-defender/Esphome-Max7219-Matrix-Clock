@@ -8,7 +8,7 @@ import { sanitizeConfig } from "./storage";
 import { buildYaml } from "./yaml";
 
 const releaseExample = readFileSync(new URL("../../examples/release.yaml", import.meta.url), "utf8");
-const changelog = readFileSync(new URL("../../CHANGELOG.md", import.meta.url), "utf8");
+const changelog = readFileSync(new URL("../../CHANGELOG.md", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 function packageFiles(text: string): string[] {
   const block = /files:\n((?:[ \t]+- [^\n]+\n)+)/.exec(text);
   return block ? block[1].trim().split("\n").map((line) => line.trim().replace(/^- /, "")) : [];

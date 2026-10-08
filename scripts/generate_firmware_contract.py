@@ -165,8 +165,12 @@ def build():
         local_catalog["esphome"]["build_flags"] += face["esphome"]["build_flags"]
     font_specs.insert(0, {"id": "compact", "option": fallback["options"][0], "label": re.sub(r"(?<=\d)x(?=\d)", "×", fallback["options"][0]),
                           "family": "built-in bitmap", "license": "Project source", "source": "packages/max7219_clock_renderer.h"})
-    local_catalog["select"] = [{"id": Tag("clock_font", "!extend"), "initial_option": font_options[initial_font],
-                                 "options": [font_options[key] for key in order]}]
+    local_catalog["select"] = [
+        {"id": Tag("clock_font", "!extend"), "initial_option": font_options[initial_font],
+         "options": [font_options[key] for key in order]},
+        {"id": Tag("date_font", "!extend"), "initial_option": font_options["compact"],
+         "options": [font_options[key] for key in order]},
+    ]
     outputs[ROOT / "packages/fonts_local.yaml"] = "# GENERATED measurement catalogue; not the default firmware entry point.\n" + dump(local_catalog)
     outputs[ROOT / "packages/fonts_default_local.yaml"] = "# GENERATED default pair from fonts_web.yaml, using local assets for validation.\n" + dump({"packages": {key.replace("-", "_"): Tag(f"local_fonts/{key}.yaml", "!include") for key in default_fonts}})
 
@@ -219,7 +223,8 @@ def build():
                 record["options"] = [s.replace(" hour", "-hour") for s in record["options"]]
                 record["default"] = record["default"].replace(" hour", "-hour")
             if binding.get("input") == "font":
-                record.update({"options": [f["id"] for f in font_specs], "firmwareOptions": [f["option"] for f in font_specs], "default": initial_font, "input": "font"})
+                record.update({"options": [f["id"] for f in font_specs], "firmwareOptions": [f["option"] for f in font_specs],
+                               "default": "compact" if record["target"] == "date_font" else initial_font, "input": "font"})
         elif domain == "number":
             record.update({"default": entity["initial_value"], "min": entity["min_value"], "max": entity["max_value"], "step": entity["step"], "unit": entity.get("unit_of_measurement", ""), "input": binding.get("input", "number")})
             source_entity = next(e for module in modules for e in module.get("number", []) if e.get("id") == entity["id"])

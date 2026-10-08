@@ -17,3 +17,6 @@ select:
   - id: !extend clock_font
     options:
       - "MG Minecraft Georgian"
+  - id: !extend date_font
+    options:
+      - "MG Minecraft Georgian"

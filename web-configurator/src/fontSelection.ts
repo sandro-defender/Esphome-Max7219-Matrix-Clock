@@ -13,7 +13,8 @@ export function normalizeFonts(input: unknown): ClockFont[] {
 export function withFonts(config: Config, input: unknown): Config {
   const fonts = normalizeFonts(input);
   const clockFont = config.clockFont === "compact" || fonts.includes(config.clockFont) ? config.clockFont : String(FIRMWARE.defaults.clockFont);
-  return { ...config, fonts, clockFont };
+  const dateFont = config.dateFont === "compact" || fonts.includes(config.dateFont) ? config.dateFont : "compact";
+  return { ...config, fonts, clockFont, dateFont };
 }
 
 export function toggleExtraFont(config: Config, font: ClockFont): Config {

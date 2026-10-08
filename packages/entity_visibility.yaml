@@ -14,6 +14,7 @@ substitutions:
   ha_hide_date_format: "false"
   ha_hide_date_language: "false"
   ha_hide_clock_font: "false"
+  ha_hide_date_font: "false"
   ha_hide_message_scroll_behavior: "false"
   ha_hide_matrix_brightness: "false"
   ha_hide_night_brightness: "false"

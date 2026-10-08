@@ -1,6 +1,21 @@
 # Date-specific controls stay separate so the general control module remains
 # focused and below the project's module-size guard.
 
+select:
+  - platform: template
+    name: "Date font"
+    id: date_font
+    internal: ${ha_hide_date_font}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Compact 5x7"
+    options:
+      - "Compact 5x7"
+    set_action:
+      - component.update: matrix
+
 number:
   - platform: template
     name: "Date scroll speed"
