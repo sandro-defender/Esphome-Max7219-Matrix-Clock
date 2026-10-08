@@ -1713,6 +1713,7 @@ static void test_georgian_date_font_uses_max7219_rows() {
   int lit_rows = 0;
   for (int row = 0; row < 8; row++) if (canvas.row_on(row) > 0) lit_rows++;
   CHECK_EQ(lit_rows, 7);
+  CHECK(canvas.row_on(7) > 0);  // short glyphs share the date baseline.
 }
 
 static void test_default_layout_matches_readme() {
