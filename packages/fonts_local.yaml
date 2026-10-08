@@ -96,3 +96,15 @@ select:
   - Georgian Mkhedruli 8x8
   - Matrix Sans Screen
   - Sevenish Mono 8
+- id: !extend 'date_font'
+  initial_option: Compact 5x7
+  options:
+  - Pixel Clock 6x8
+  - Matrix 2px
+  - MD Parola Numeric 7-Segment
+  - MD MAX72XX System
+  - Dot Matrix
+  - MG Minecraft Georgian
+  - Georgian Mkhedruli 8x8
+  - Matrix Sans Screen
+  - Sevenish Mono 8

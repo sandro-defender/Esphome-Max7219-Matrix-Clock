@@ -15,3 +15,6 @@ select:
 - id: !extend 'clock_font'
   options:
   - MD MAX72XX System
+- id: !extend 'date_font'
+  options:
+  - MD MAX72XX System

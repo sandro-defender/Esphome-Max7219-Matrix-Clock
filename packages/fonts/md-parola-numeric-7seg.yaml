@@ -17,3 +17,6 @@ select:
   - id: !extend clock_font
     options:
       - "MD Parola Numeric 7-Segment"
+  - id: !extend date_font
+    options:
+      - "MD Parola Numeric 7-Segment"

@@ -15,3 +15,6 @@ select:
 - id: !extend 'clock_font'
   options:
   - Georgian Mkhedruli 8x8
+- id: !extend 'date_font'
+  options:
+  - Georgian Mkhedruli 8x8

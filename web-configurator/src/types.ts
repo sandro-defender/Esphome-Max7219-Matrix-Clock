@@ -99,6 +99,7 @@ export interface Config {
   animationRowGap: number;
   screenTransitionStyle: ScreenTransitionStyle;
   clockFont: ClockFont;
+  dateFont: ClockFont;
   /** Included external faces: Pixel Clock 6x8 ships by default; other faces are optional. */
   fonts: ClockFont[];
   layoutPreview: LayoutPreview;

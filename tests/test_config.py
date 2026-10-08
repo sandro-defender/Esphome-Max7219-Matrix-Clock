@@ -899,19 +899,24 @@ class ConfigContractTests(unittest.TestCase):
                 return [convert(v) for v in value]
             return value
 
-        base = convert(load_yaml(PACKAGES / "controls.yaml"))
+        base = merge_config(convert(load_yaml(PACKAGES / "controls.yaml")), convert(load_yaml(PACKAGES / "date_controls.yaml")))
         faces = [convert(load_yaml(p)) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
         for mask in range(1 << len(faces)):
             merged = copy.deepcopy(base)
             expected = ["Compact 5x7"]
+            expected_dates = ["Compact 5x7"]
             for i, face in enumerate(faces):
                 if mask & (1 << i):
                     merged = merge_config(merged, copy.deepcopy(face))
                     expected += face["select"][0]["options"]
+                    expected_dates += face["select"][1]["options"]
             resolve_extend_remove(merged)
             select = next(e for e in merged["select"] if e["id"] == "clock_font")
             self.assertEqual(select["options"], expected)
             self.assertIn(select["initial_option"], expected)
+            date_select = next(e for e in merged["select"] if e["id"] == "date_font")
+            self.assertEqual(date_select["options"], expected_dates)
+            self.assertIn(date_select["initial_option"], expected_dates)
         # Enforce the requested default pair independently of the generated
         # contract, then exercise that exact order with the real tagged resolver.
         self.assertEqual(FIRMWARE["defaultFonts"], ["pixel-clock-6x8", "matrix-2px"])
@@ -922,6 +927,9 @@ class ConfigContractTests(unittest.TestCase):
         default_select = next(e for e in default_merged["select"] if e["id"] == "clock_font")
         self.assertEqual(default_select["options"], ["Compact 5x7", "Pixel Clock 6x8", "Matrix 2px"])
         self.assertEqual(default_select["initial_option"], "Pixel Clock 6x8")
+        default_date_select = next(e for e in default_merged["select"] if e["id"] == "date_font")
+        self.assertEqual(default_date_select["options"], ["Compact 5x7", "Pixel Clock 6x8", "Matrix 2px"])
+        self.assertEqual(default_date_select["initial_option"], "Compact 5x7")
         self.assertEqual(
             default_merged["esphome"]["build_flags"],
             ["-DMAX7219_FONT_PIXEL_CLOCK_6X8", "-DMAX7219_FONT_MATRIX_2PX"],
@@ -938,7 +946,7 @@ class ConfigContractTests(unittest.TestCase):
         display = read(PACKAGES / "display.yaml")
         start = display.index("      max7219_clock::BuiltinFont builtin_font;")
         end = display.index("      max7219_clock::render(", start)
-        block = display[start:end].replace("id(clock_font)", "clock_font")
+        block = display[start:end].replace("id(clock_font)", "clock_font").replace("id(date_font)", "date_font")
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
         # Zero, every single face, the public default pair, and the full catalogue.
         cases = [[], *[[f] for f in faces],

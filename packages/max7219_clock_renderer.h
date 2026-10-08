@@ -1037,7 +1037,7 @@ inline void draw_home_temperature_panel(Canvas &canvas, int x, float value, bool
 inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_icon, bool show_temperature);
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
-inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
+inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &date_font, const GlyphFont &fallback,
                                         const Frame &f, uint8_t screen) {
   uint8_t mode = MODE_CLOCK;
   switch (screen) {
@@ -1081,15 +1081,14 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   const int width = content_canvas.width();
   const int height = content_canvas.height();
   const GlyphFont *active = &font;
-  GeorgianBitmapFont georgian_bitmap_font;
   char content[80] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   const bool georgian_named_date = has_content && mode == MODE_DATE &&
       f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format);
-  if (georgian_named_date)
-    active = &georgian_bitmap_font;
-  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  if (has_content && mode == MODE_DATE)
+    active = &font_for_text(date_font, fallback, content);
+  else if (has_content && mode == MODE_TEMPERATURE)
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
@@ -1134,13 +1133,11 @@ inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont 
 
 // A named date is its own marquee. Do not combine that continuous movement
 // with the one-off whole-screen slide used by short fixed screens.
-inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
+inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &date_font,
                                       const GlyphFont &fallback, int width) {
   char content[80] = {0};
   if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
-  GeorgianBitmapFont georgian_bitmap_font;
-  const GlyphFont &text_font = f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format)
-      ? static_cast<const GlyphFont &>(georgian_bitmap_font) : font_for_text(primary, fallback, content);
+  const GlyphFont &text_font = font_for_text(date_font, fallback, content);
   return text_font.text_width(content) > width;
 }
 
@@ -1555,7 +1552,7 @@ inline void housekeeping(const Frame &f, Report &report) {
 }
 
 // Main entry point: draw one frame and report what changed.
-inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback, const Frame &f, Report &report) {
+inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &date_font, const GlyphFont &fallback, const Frame &f, Report &report) {
   report = Report();
   const int width = canvas.width();
   const int height = canvas.height();
@@ -1563,7 +1560,6 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   housekeeping(f, report);
   const uint8_t mode = effective_mode(f);
   const GlyphFont *active = &font;
-  GeorgianBitmapFont georgian_bitmap_font;
 
   // Report the mode/OTA/countdown changes once, so the YAML side can publish.
   if ((int) mode != state.reported_mode) {
@@ -1650,7 +1646,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
           date_format_has_names(f.date_format);
       const int date_viewport_width = panels.available && date_weather_panel_enabled(f) ? panels.date_safe_width : width;
       const bool date_needs_marquee = transition_touches_date && georgian_named_date &&
-          date_content_needs_scroll(f, font, fallback, date_viewport_width);
+          date_content_needs_scroll(f, date_font, fallback, date_viewport_width);
       state.screen_transition_active = previous >= SCREEN_CLOCK && previous <= SCREEN_TEMPERATURE &&
                                        f.animate && f.animation_ms > 0 && !date_needs_marquee;
       state.screen_transition_previous = previous;
@@ -1664,21 +1660,21 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       float progress = (float) (uint32_t)(f.now_ms - state.screen_transition_started_ms) / (float) f.animation_ms;
       if (progress >= 1.0f) {
         state.screen_transition_active = false;
-        if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width))
+        if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, date_font, fallback, width))
           state.date_scroll_started_ms = f.now_ms;
       } else {
         if (f.screen_transition_style == SCREEN_TRANSITION_SLIDE_UP) {
           const int offset = (int) (progress * height);
           TranslatedCanvas outgoing(canvas, 0, -offset);
           TranslatedCanvas incoming(canvas, 0, height - offset);
-          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+          draw_selected_screen_static(outgoing, font, date_font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, date_font, fallback, f, (uint8_t) f.screen);
         } else {
           const int offset = (int) (progress * width);
           TranslatedCanvas outgoing(canvas, -offset);
           TranslatedCanvas incoming(canvas, width - offset);
-          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+          draw_selected_screen_static(outgoing, font, date_font, fallback, f, (uint8_t) state.screen_transition_previous);
+          draw_selected_screen_static(incoming, font, date_font, fallback, f, (uint8_t) f.screen);
         }
         state.reset_animation();
         return;
@@ -1711,9 +1707,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
   const bool georgian_named_date = has_content && mode == MODE_DATE &&
       f.date_language == DATE_LANGUAGE_GEORGIAN && date_format_has_names(f.date_format);
-  if (georgian_named_date)
-    active = &georgian_bitmap_font;
-  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
+  if (has_content && mode == MODE_DATE)
+    active = &font_for_text(date_font, fallback, content);
+  else if (has_content && mode == MODE_TEMPERATURE)
     active = &font_for_text(*active, fallback, content);
   if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar
@@ -1796,8 +1792,16 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
 
 // Convenience overload used by the YAML display lambda.
 inline Report report;
+inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &date_font, const GlyphFont &fallback, const Frame &f) {
+  render(canvas, font, date_font, fallback, f, report);
+}
+
+// Existing callers that have no separate date face retain the clock face.
+inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback, const Frame &f, Report &output) {
+  render(canvas, font, font, fallback, f, output);
+}
 inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback, const Frame &f) {
-  render(canvas, font, fallback, f, report);
+  render(canvas, font, font, fallback, f, report);
 }
 
 }  // namespace max7219_clock

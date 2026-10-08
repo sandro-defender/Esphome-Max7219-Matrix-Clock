@@ -170,11 +170,26 @@ describe("clock and date text", () => {
     const scene = renderScene({
       ...DEFAULT_CONFIG,
       clockFont: "sevenish-mono-8",
+      dateFont: "georgian-mkhedruli-8x8",
       screen: "Date",
       dateLanguage: "Georgian",
       dateFormat: "Weekday DD. MMM YY",
     }, NOON, 0, undefined, 0);
     expect(scene.summary).toBe("Showing the date in Georgian Mkhedruli 8x8.");
+  });
+
+  it("uses the Date font independently of the Clock font", () => {
+    const base = {
+      ...DEFAULT_CONFIG,
+      clockFont: "sevenish-mono-8",
+      screen: "Date" as const,
+      dateLanguage: "English" as const,
+      dateFormat: "DD.MM" as const,
+    };
+    const matrix = renderScene({ ...base, dateFont: "matrix-2px" }, NOON, 0, undefined, 0);
+    const sevenish = renderScene({ ...base, dateFont: "sevenish-mono-8" }, NOON, 0, undefined, 0);
+    expect(matrix.summary).toBe("Showing the date in Matrix 2px.");
+    expect(matrix.frame.pixels).not.toEqual(sevenish.frame.pixels);
   });
 });
 

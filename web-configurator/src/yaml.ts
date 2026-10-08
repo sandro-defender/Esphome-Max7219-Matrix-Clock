@@ -61,7 +61,7 @@ function valueFor(item: FirmwareSetting, cfg: Config): string | number | boolean
     const range = limitsFor(item.key);
     value = clampNumber(value, range.min, range.max);
   }
-  if (item.key === "clockFont") return selectedFontOption(String(value));
+  if (item.key === "clockFont" || item.key === "dateFont") return selectedFontOption(String(value));
   if (item.options) {
     // The board is target-specific; only the target's own ids are emitted.
     const choice = String(value);

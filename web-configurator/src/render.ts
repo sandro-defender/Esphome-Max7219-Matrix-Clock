@@ -550,7 +550,8 @@ export function renderScene(
 
   if (cfg.displayPower) {
     const namedDate = page === "date" && cfg.dateFormat.startsWith("Weekday");
-    let font = namedDate && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
+    const dateSelected = previewFont(cfg.dateFont);
+    let font = page === "date" ? dateSelected : selected;
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {
@@ -590,6 +591,14 @@ export function renderScene(
       // 1. drop the seconds, 2. fall back to the built-in font (firmware order).
       const build = (): string => page === "date" ? dateContent(now, cfg) : page === "temperature" ? "--.-" : clockContent(now, cfg, withSeconds);
       content = build();
+      if (font.measure(content) === null) {
+        const containsGeorgian = [...content].some((character) => {
+          const codepoint = character.codePointAt(0) ?? 0;
+          return codepoint >= 0x10d0 && codepoint <= 0x10f0;
+        });
+        font = containsGeorgian ? GEORGIAN_DATE_FONT : BUILTIN_FONT;
+        usedFallback = true;
+      }
       if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width && withSeconds) {
         withSeconds = false;
         droppedSeconds = true;
@@ -638,10 +647,14 @@ export function renderScene(
         cfg.secondsMode === "Bar" ? "seconds as a bottom-row bar" : withSeconds ? "seconds as digits" : "seconds off"
       }.`;
     } else {
-      const usesGeorgianDateFace = page === "date" && cfg.dateLanguage === "Georgian" && cfg.dateFormat.startsWith("Weekday");
-      summary = usesGeorgianDateFace
-        ? "Showing the date in Georgian Mkhedruli 8x8."
-        : `Showing ${pageLabel(page)} in ${spec.label}.`;
+      const dateSpec = fontSpec(cfg.dateFont);
+      const hasGeorgianDateGlyph = [...content].some((character) => {
+        const codepoint = character.codePointAt(0) ?? 0;
+        return codepoint >= 0x10d0 && codepoint <= 0x10f0;
+      });
+      summary = page === "date" && usedFallback
+        ? `Showing the date in ${hasGeorgianDateGlyph ? "Georgian Mkhedruli 8x8" : "Compact 5x7"} fallback.`
+        : page === "date" ? `Showing the date in ${dateSpec.label}.` : `Showing ${pageLabel(page)} in ${spec.label}.`;
       detail = `${cfg.dateFormat} date format, ${cfg.dateLanguage} labels, ${cfg.alignment.toLowerCase()} aligned.`;
     }
   }

@@ -16,3 +16,6 @@ select:
   options:
   - Pixel Clock 6x8
   initial_option: Pixel Clock 6x8
+- id: !extend 'date_font'
+  options:
+  - Pixel Clock 6x8
