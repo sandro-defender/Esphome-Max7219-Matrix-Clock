@@ -9,14 +9,6 @@
 - Preserve the optional project-owned 8×8 Mkhedruli face and scroll long
   Georgian dates without changing the default font pair.
 
-## 0.7.22 - 2026-10-08
-
-### Added
-
-- Add an optional project-generated Georgian Mkhedruli bitmap font with all 33
-  letters and clock glyphs. Render Georgian UTF-8 code points as single glyphs,
-  use Georgian weekday/month names, and marquee long Georgian dates.
-
 ## 0.7.21 - 2026-10-08
 
 ### Fixed
