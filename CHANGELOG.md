@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.5 - 2026-10-08
+
+### Fixed
+
+- Use the bundled MAX7219 Georgian face for Georgian weekday and month labels
+  on the Date screen.
+
 ## 0.8.4 - 2026-10-08
 
 ### Fixed

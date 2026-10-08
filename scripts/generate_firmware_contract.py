@@ -444,6 +444,8 @@ def build():
     all_paths += list((ROOT / "packages").glob("*.h")) + list((ROOT / "packages/fonts").glob("*.yaml")) + [ROOT / "packages/fonts_web.yaml"]
     all_paths += [ROOT / f["file"] for f in font_specs if "file" in f]
     all_paths += [ROOT / f["source"] for f in font_specs]
+    # Georgian weekday/month rendering has its own always-bundled source face.
+    all_paths += [ROOT / "fonts/max7219.ttf"]
     digest = hashlib.sha256()
     for path in sorted(set(all_paths)):
         digest.update(path.relative_to(ROOT).as_posix().encode() + b"\0" + source_hash_bytes(path) + b"\0")

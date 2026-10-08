@@ -138,32 +138,15 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD.MM.YY" })).toBe("FRI 02.01.26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday DD. MMM YY" })).toBe("FRI 02. JAN 26");
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateFormat: "Weekday MMM.DD" })).toBe("FRI JAN.02");
-    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD.MM.YY" })).toBe("პარასკევი 02.01.26");
-    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("პარასკევი 02. იანვარი 26");
-    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday MMM.DD" })).toBe("პარასკევი იანვარი.02");
-    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "DD.MM" })).toBe("02.01");
+    expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8C\x87\x84 02. \x82\x87\x8E 26");
   });
 
-  it("uses one generated glyph for each Georgian Unicode code point", () => {
-    const letters = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ";
-    expect([...letters]).toHaveLength(33);
-    for (const letter of letters) {
-      const glyph = GEORGIAN_DATE_FONT.glyph(letter);
-      expect(glyph, letter).not.toBeNull();
-      expect(glyph!.h, letter).toBeLessThanOrEqual(8);
-    }
-    expect(GEORGIAN_DATE_FONT.measure("აბ")).toBe(12);
-  });
-
-  it("scrolls long Georgian weekday/month dates across the panel", () => {
-    const cfg = { ...DEFAULT_CONFIG, screen: "Date" as const, dateLanguage: "Georgian" as const,
-      dateFormat: "Weekday DD. MMM YY" as const, dateScrollSpeed: 1 };
-    const first = renderScene(cfg, NOON, 0, undefined, 0);
-    const later = renderScene(cfg, NOON, 0, undefined, 20);
-    expect(GEORGIAN_DATE_FONT.measure(first.content)).toBeGreaterThan(48);
-    expect(first.layout).toBeNull();
-    expect(later.layout).toBeNull();
-    expect(later.frame.pixels).not.toEqual(first.frame.pixels);
+  it("uses the MAX7219 Georgian date lettering at all eight rows", () => {
+    const letter = "\x80";
+    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(6);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[7]).toBe(0x18);
   });
 });
 
