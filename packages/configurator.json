@@ -413,6 +413,11 @@
       "label": "MG Minecraft Georgian",
       "license": "CC BY-SA 3.0",
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
+    },
+    "georgian-mkhedruli-8x8": {
+      "label": "Georgian Mkhedruli 8x8",
+      "license": "Project-generated",
+      "source": "scripts/generate_georgian_mkhedruli_font.py"
     }
   },
   "groups": [
