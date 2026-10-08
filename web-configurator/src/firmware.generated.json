@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "cb0bb98ab92dc3b9ab55d68dd982ab4545e83cadf4ec1183226aa024dcc31002",
+  "sourceHash": "707a730e38550ca865183be951f2a28632c21915b7d9eb39cd9f8f589b2e8a9a",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.22",
+  "releaseVersion": "0.7.23",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n\n- Add an optional project-generated Georgian Mkhedruli bitmap font with all 33\n  letters and clock glyphs. Render Georgian UTF-8 code points as single glyphs,\n  use Georgian weekday/month names, and marquee long Georgian dates.",
+  "releaseNotes": "### Fixed\n\n- Decode and measure UTF-8 by Unicode code point, keep Georgian weekday/month\n  names as real UTF-8, and fail safely on malformed or truncated text.\n- Preserve the optional project-owned 8×8 Mkhedruli face and scroll long\n  Georgian dates without changing the default font pair.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

@@ -659,6 +659,13 @@ class ConfigContractTests(unittest.TestCase):
                     self.assertIn(char, declared, f"{entry['id']} does not compile '{char}'")
                     self.assertNotEqual(face.get_char_index(ord(char)), 0, f"{entry['id']} has no '{char}' glyph")
 
+    def test_georgian_date_names_are_utf8_literals_not_byte_escapes(self):
+        """Date strings stay Unicode; Georgian letters are never private byte codes."""
+        renderer = read(PACKAGES / "max7219_clock_renderer.h")
+        for name in ("კვირა", "იანვარი", "თებერვალი", "დეკემბერი"):
+            self.assertIn(f'"{name}"', renderer)
+        self.assertNotRegex(renderer, r"\\x[0-9A-Fa-f]{2}")
+
     def test_repository_georgian_fonts_keep_both_modern_alphabets(self):
         """Optional Georgian sources remain available for a later shortlist."""
         try:

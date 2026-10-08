@@ -182,19 +182,21 @@ class TranslatedCanvas : public Canvas {
   int x_offset_, y_offset_;
 };
 
-// Decode one UTF-8 code point. Invalid sequences consume one byte and become
-// U+FFFD, so malformed input cannot stall the renderer or split a valid glyph.
-inline uint32_t next_utf8_codepoint(const char *&cursor) {
-  if (cursor == nullptr || *cursor == '\0') return 0;
-  const unsigned char *bytes = (const unsigned char *) cursor;
-  const unsigned char first = bytes[0];
-  if (first < 0x80U) {
-    cursor++;
-    return first;
-  }
+// A bounded UTF-8 decode result. Invalid or truncated input becomes U+FFFD;
+// `bytes` is always positive for non-empty input so iteration cannot stall.
+struct Utf8DecodeResult {
+  uint32_t codepoint;
+  size_t bytes;
+  bool valid;
+};
 
-  uint32_t codepoint = 0;
+inline Utf8DecodeResult decode_utf8_codepoint(const char *bytes, size_t available) {
+  if (bytes == nullptr || available == 0) return {0, 0, false};
+  const uint8_t first = static_cast<uint8_t>(bytes[0]);
+  if (first < 0x80U) return {first, 1, true};
+
   uint8_t length = 0;
+  uint32_t codepoint = 0;
   uint32_t minimum = 0;
   if (first >= 0xC2U && first <= 0xDFU) {
     codepoint = first & 0x1FU;
@@ -209,36 +211,67 @@ inline uint32_t next_utf8_codepoint(const char *&cursor) {
     length = 4;
     minimum = 0x10000U;
   } else {
-    cursor++;
-    return 0xFFFDU;
+    return {0xFFFDU, 1, false};
   }
 
-  for (uint8_t index = 1; index < length; index++) {
-    const unsigned char next = bytes[index];
-    if (next == '\0' || (next & 0xC0U) != 0x80U) {
-      cursor++;
-      return 0xFFFDU;
-    }
+  const size_t present = available < length ? available : length;
+  for (size_t index = 1; index < present; index++) {
+    const uint8_t next = static_cast<uint8_t>(bytes[index]);
+    if ((next & 0xC0U) != 0x80U) return {0xFFFDU, 1, false};
     codepoint = (codepoint << 6) | (next & 0x3FU);
   }
-  if (codepoint < minimum || codepoint > 0x10FFFFU ||
-      (codepoint >= 0xD800U && codepoint <= 0xDFFFU)) {
-    cursor++;
-    return 0xFFFDU;
+  if (present >= 2) {
+    const uint8_t second = static_cast<uint8_t>(bytes[1]);
+    if ((first == 0xE0U && second < 0xA0U) || (first == 0xEDU && second >= 0xA0U) ||
+        (first == 0xF0U && second < 0x90U) || (first == 0xF4U && second >= 0x90U))
+      return {0xFFFDU, 1, false};
   }
-  cursor += length;
-  return codepoint;
+  if (available < length) return {0xFFFDU, available, false};
+  if (codepoint < minimum || codepoint > 0x10FFFFU ||
+      (codepoint >= 0xD800U && codepoint <= 0xDFFFU))
+    return {0xFFFDU, 1, false};
+  return {codepoint, length, true};
 }
+
+// Iterate either a NUL-terminated string or an explicitly bounded byte range.
+// The bounded constructor is also used for API strings whose declared length
+// may end in the middle of a UTF-8 sequence.
+class Utf8Iterator {
+ public:
+  explicit Utf8Iterator(const char *text)
+      : text_(text), length_(text == nullptr ? 0 : strlen(text)) {}
+  Utf8Iterator(const char *text, size_t length)
+      : text_(text), length_(text == nullptr ? 0 : length) {}
+
+  bool next(uint32_t &codepoint) {
+    if (text_ == nullptr || offset_ >= length_) return false;
+    const Utf8DecodeResult decoded = decode_utf8_codepoint(text_ + offset_, length_ - offset_);
+    if (decoded.bytes == 0) {
+      offset_ = length_;
+      last_valid_ = false;
+      return false;
+    }
+    codepoint = decoded.codepoint;
+    offset_ += decoded.bytes;
+    last_valid_ = decoded.valid;
+    return true;
+  }
+
+  size_t position() const { return offset_; }
+  bool last_valid() const { return last_valid_; }
+
+ private:
+  const char *text_;
+  size_t length_;
+  size_t offset_ = 0;
+  bool last_valid_ = true;
+};
 
 inline size_t utf8_codepoint_count(const char *text) {
   size_t count = 0;
-  if (text != nullptr) {
-    const char *cursor = text;
-    while (*cursor != '\0') {
-      (void) next_utf8_codepoint(cursor);
-      count++;
-    }
-  }
+  Utf8Iterator cursor(text);
+  uint32_t codepoint = 0;
+  while (cursor.next(codepoint)) count++;
   return count;
 }
 
@@ -265,10 +298,9 @@ class GlyphFont {
 
   int text_width(const char *s) const {
     int w = 0;
-    if (s != nullptr) {
-      const char *cursor = s;
-      while (*cursor != '\0') w += this->advance(next_utf8_codepoint(cursor));
-    }
+    Utf8Iterator cursor(s);
+    uint32_t codepoint = 0;
+    while (cursor.next(codepoint)) w += this->advance(codepoint);
     return w;
   }
   // Text box top that puts the digit ink in the vertical middle of the display.
@@ -276,11 +308,10 @@ class GlyphFont {
     return (display_height - this->ink_height()) / 2 - this->ink_top();
   }
   void draw_text(Canvas &c, const char *s, int x, int box_top) const {
-    if (s == nullptr) return;
     int cursor = x;
-    const char *text = s;
-    while (*text != '\0') {
-      const uint32_t codepoint = next_utf8_codepoint(text);
+    Utf8Iterator text(s);
+    uint32_t codepoint = 0;
+    while (text.next(codepoint)) {
       this->draw_glyph(c, codepoint, cursor, box_top);
       cursor += this->advance(codepoint);
     }
@@ -781,11 +812,17 @@ inline size_t copy_utf8_truncated(char *dest, size_t capacity, const char *sourc
     dest[0] = '\0';
     return 0;
   }
-  size_t length = std::min(source_size, capacity - 1);
-  if (source_size > length) {
-    while (length > 0 && (((uint8_t) source[length] & 0xC0U) == 0x80U)) length--;
+  const size_t byte_limit = std::min(source_size, capacity - 1);
+  size_t length = 0;
+  Utf8Iterator cursor(source, source_size);
+  uint32_t codepoint = 0;
+  while (cursor.next(codepoint)) {
+    // Preserve only complete valid code points. Invalid or source-truncated
+    // UTF-8 ends the copied prefix instead of entering a fixed-size text buffer.
+    if (!cursor.last_valid() || cursor.position() > byte_limit) break;
+    length = cursor.position();
   }
-  memcpy(dest, source, length);
+  if (length > 0) memcpy(dest, source, length);
   dest[length] = '\0';
   return length;
 }
@@ -1115,18 +1152,18 @@ inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont 
   if (text == nullptr) return primary;
   bool missing = false;
   bool has_mkhedruli = false;
-  const char *cursor = text;
-  while (*cursor != '\0') {
-    const uint32_t codepoint = next_utf8_codepoint(cursor);
+  Utf8Iterator cursor(text);
+  uint32_t codepoint = 0;
+  while (cursor.next(codepoint)) {
     if (is_mkhedruli(codepoint)) has_mkhedruli = true;
     if (primary.advance(codepoint) == 0) missing = true;
   }
   if (!missing) return primary;
   if (has_mkhedruli) {
     static const GeorgianBitmapFont georgian_fallback;
-    cursor = text;
-    while (*cursor != '\0')
-      if (georgian_fallback.advance(next_utf8_codepoint(cursor)) == 0) return fallback;
+    cursor = Utf8Iterator(text);
+    while (cursor.next(codepoint))
+      if (georgian_fallback.advance(codepoint) == 0) return fallback;
     return georgian_fallback;
   }
   return fallback;
@@ -1169,13 +1206,14 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
   const int travel = slide + animation_row_gap;
 
   int cursor = start_x;
-  const char *current = content == nullptr ? "" : content;
-  const char *previous = animate ? animate_from : nullptr;
-  while (*current != '\0') {
-    const uint32_t codepoint = next_utf8_codepoint(current);
-    const uint32_t old_codepoint = animate ? next_utf8_codepoint(previous) : 0;
+  Utf8Iterator current(content);
+  Utf8Iterator previous(animate ? animate_from : nullptr);
+  uint32_t codepoint = 0;
+  while (current.next(codepoint)) {
+    uint32_t old_codepoint = 0;
+    const bool has_previous = animate && previous.next(old_codepoint);
     const int step = font.advance(codepoint);
-    const bool changed = animate && is_digit(codepoint) && is_digit(old_codepoint) &&
+    const bool changed = has_previous && is_digit(codepoint) && is_digit(old_codepoint) &&
                          codepoint != old_codepoint;
     if (cursor + step > 0 && cursor < width) {
       if (changed) {
@@ -1392,9 +1430,9 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
   const uint32_t offset = (elapsed_ms / ms_per_px) % loop_width;
   const int origin_x = offset < (uint32_t) text_width ? -(int) offset : width - (int) (offset - (uint32_t) text_width);
   int cursor = origin_x;
-  const char *text_cursor = text;
-  while (*text_cursor != '\0') {
-    const uint32_t codepoint = next_utf8_codepoint(text_cursor);
+  Utf8Iterator text_cursor(text);
+  uint32_t codepoint = 0;
+  while (text_cursor.next(codepoint)) {
     const int step = font.advance(codepoint);
     if (cursor + step > 0 && cursor < width) font.draw_glyph(c, codepoint, cursor, box_top);
     cursor += step;

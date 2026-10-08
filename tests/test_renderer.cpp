@@ -1208,6 +1208,40 @@ static void test_date_formats() {
   CHECK(strcmp(out, "05.03") == 0);  // Numeric formats are language-independent.
 }
 
+static void test_all_georgian_weekday_and_month_names_are_utf8() {
+  static const char *const weekdays[] = {
+      "კვირა", "ორშაბათი", "სამშაბათი", "ოთხშაბათი", "ხუთშაბათი", "პარასკევი", "შაბათი"};
+  static const char *const months[] = {
+      "იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი",
+      "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"};
+  static const int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  bool weekdays_seen[7] = {};
+  Frame f = base_frame();
+  f.date_language = DATE_LANGUAGE_GEORGIAN;
+  f.date_format = DATE_WEEKDAY_DD_MMM_YY;
+  f.year = 2026;
+  char out[80] = {0};
+
+  for (int month = 1; month <= 12; month++) {
+    f.month = month;
+    for (int day = 1; day <= days_in_month[month - 1]; day++) {
+      f.day = day;
+      CHECK(build_content(f, MODE_DATE, false, out, sizeof(out)));
+      CHECK(strstr(out, months[month - 1]) != nullptr);
+      bool matched_weekday = false;
+      for (size_t index = 0; index < 7; index++) {
+        const size_t name_length = strlen(weekdays[index]);
+        if (strncmp(out, weekdays[index], name_length) == 0 && out[name_length] == ' ') {
+          weekdays_seen[index] = true;
+          matched_weekday = true;
+        }
+      }
+      CHECK(matched_weekday);
+    }
+  }
+  for (bool seen : weekdays_seen) CHECK(seen);
+}
+
 static void test_weather_condition_normalization() {
   struct Case { const char *state; uint8_t expected; };
   const Case cases[] = {
@@ -1723,6 +1757,47 @@ static void test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs() {
   CHECK_EQ(font.calls[1].x, 6);
 }
 
+static void test_malformed_utf8_is_bounded_and_truncated_prefixes_fail_closed() {
+  // This byte range has no NUL terminator and ends mid-codepoint. The explicit
+  // length forces the decoder to stay inside the provided two-byte buffer.
+  const char truncated_georgian[] = {static_cast<char>(0xE1U), static_cast<char>(0x83U)};
+  Utf8Iterator bounded(truncated_georgian, sizeof(truncated_georgian));
+  uint32_t codepoint = 0;
+  CHECK(bounded.next(codepoint));
+  CHECK_EQ(codepoint, 0xFFFDU);
+  CHECK(!bounded.last_valid());
+  CHECK_EQ(bounded.position(), sizeof(truncated_georgian));
+  CHECK(!bounded.next(codepoint));
+
+  char copied[8] = {'x'};
+  CHECK_EQ(copy_utf8_truncated(copied, sizeof(copied), truncated_georgian, sizeof(truncated_georgian)), 0U);
+  CHECK(strcmp(copied, "") == 0);
+
+  // A bad lead followed by ordinary text consumes one byte, then continues;
+  // malformed data cannot trap the iterator or consume valid following text.
+  const char malformed_then_ascii[] = {static_cast<char>(0xE1U), 'A', 'B', '\0'};
+  FakeCanvas canvas(24, 8);
+  FakeFont font(6);
+  font.draw_text(canvas, malformed_then_ascii, 0, 0);
+  CHECK_EQ(font.calls.size(), 3U);
+  CHECK_EQ(font.calls[0].ch, 0xFFFDU);
+  CHECK_EQ(font.calls[1].ch, static_cast<uint32_t>('A'));
+  CHECK_EQ(font.calls[2].ch, static_cast<uint32_t>('B'));
+
+  // An illegal overlong sequence also advances one byte at a time, never
+  // reading past the explicitly supplied three-byte view.
+  const char overlong[] = {static_cast<char>(0xE0U), static_cast<char>(0x80U), static_cast<char>(0x80U)};
+  Utf8Iterator invalid(overlong, sizeof(overlong));
+  int replacements = 0;
+  while (invalid.next(codepoint)) {
+    CHECK_EQ(codepoint, 0xFFFDU);
+    CHECK(!invalid.last_valid());
+    replacements++;
+  }
+  CHECK_EQ(replacements, 3);
+  CHECK_EQ(invalid.position(), sizeof(overlong));
+}
+
 static void test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall() {
   using namespace georgian_bitmap;
   int letters = 0;
@@ -1956,6 +2031,7 @@ int main() {
   test_report_publishes_only_on_change();
   test_alignment();
   test_date_formats();
+  test_all_georgian_weekday_and_month_names_are_utf8();
   test_weather_condition_normalization();
   test_weather_temperature_values_are_explicit_and_prioritized();
   test_fixed_weather_panels_and_bitmap_categories();
@@ -1973,6 +2049,7 @@ int main() {
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
   test_utf8_georgian_pair_is_measured_and_drawn_as_two_glyphs();
+  test_malformed_utf8_is_bounded_and_truncated_prefixes_fail_closed();
   test_generated_bitmap_has_all_mkhedruli_glyphs_and_stays_eight_rows_tall();
   test_georgian_full_name_date_scrolls_instead_of_clipping();
   test_default_layout_matches_readme();
