@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "4537a927fc7dd813eea5a0234c42a6d6b0349a5f96ecd028c439ca6f7c6ce6c1",
+  "sourceHash": "4e49c0cc1b0169603bc1c5acb1b068ec8b0073c18eed8e6fcc7ef6257ca41538",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.20",
+  "releaseVersion": "0.7.21",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n\n- Use the bundled MG Minecraft Georgian 8 px pixel font for Georgian date\n  labels and offer it as an optional Clock font.",
+  "releaseNotes": "### Fixed\n\n- Expand every MG Minecraft Georgian date glyph to the same full eight-row\n  height and correct the final month-letter code mapping.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

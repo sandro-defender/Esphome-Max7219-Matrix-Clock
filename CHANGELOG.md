@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.21 - 2026-10-08
+
+### Fixed
+
+- Expand every MG Minecraft Georgian date glyph to the same full eight-row
+  height and correct the final month-letter code mapping.
+
 ## 0.7.20 - 2026-10-08
 
 ### Changed
