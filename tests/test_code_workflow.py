@@ -86,6 +86,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(lock["packages"][""]["devDependencies"]["esbuild"], version)
         self.assertEqual(lock["packages"]["node_modules/esbuild"]["version"], version)
 
+    def test_date_font_windows_helper_keeps_its_log_visible(self):
+        helper = (ROOT / "scripts/generate_date_font.bat").read_text(encoding="utf8").lower()
+        self.assertIn("date font generation completed successfully", helper)
+        self.assertIn("pause", helper)
+
 
 class CodeGateTests(unittest.TestCase):
     def test_full_plan_checks_freshness_instead_of_regenerating(self):
