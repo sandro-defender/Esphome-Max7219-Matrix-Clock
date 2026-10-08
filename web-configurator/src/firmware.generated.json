@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "52b1cc0249850baa579d84ef34c791c68973a3ff1e08346a73608a2ddaa23dba",
+  "sourceHash": "d39b5f2e8879cfd0a7e7afb1c0ac576f2345189e025b95e21a006db85e95d5e7",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.0",
+  "releaseVersion": "0.8.1",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n\n- Publish the Georgian pixel-font catalogue under a new minor release version.",
+  "releaseNotes": "### Fixed\n\n- Publish the merged independent Date font selector under a fresh immutable\n  release version.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
