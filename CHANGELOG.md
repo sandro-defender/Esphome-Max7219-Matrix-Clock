@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.8 - 2026-10-09
+
+### Changed
+
+- Keep the Windows Date-font generator window open after every run, preserving
+  its full log and reporting success or failure before it closes.
+
 ## 0.8.7 - 2026-10-09
 
 ### Changed

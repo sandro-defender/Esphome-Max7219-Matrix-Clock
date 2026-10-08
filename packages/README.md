@@ -27,6 +27,7 @@ the package list; everything else lives here.
 | `configurator.json` | UI bindings only (labels, groups, input kinds, optional packages, recommended entities); defaults/options/entities are generated from the YAML above |
 | `max7219_clock_renderer.h` | display state machine, layout, slide-up animation, scrolling, countdown and OTA screens (pure C++17, host-testable) |
 | `max7219_clock_esphome.h` | adapters between the renderer and ESPHome's display/font components |
+| `max7219_date_font.generated.h` | generated one-LED-per-cell Georgian Date glyph data from `fonts/max7219.ttf` |
 
 Generated files: `restore_defaults.generated.yaml`, `fonts_default_local.yaml`,
 `fonts_local.yaml`, `local_fonts/*.yaml` and `examples/*.yaml` come from
