@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2 - 2026-10-08
+
+### Fixed
+
+- Publish the independent Date font selector in a fresh immutable release.
+
 ## 0.8.1 - 2026-10-08
 
 ### Fixed
