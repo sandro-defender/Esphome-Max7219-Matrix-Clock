@@ -90,46 +90,48 @@ export function drawGlyphRows(target: PixelTarget, glyph: Glyph, x: number, y: n
 export const BUILTIN_DIGITS = Array.from({ length: 10 }, (_, i) => BUILTIN_GLYPHS[String(i)]);
 export const BUILTIN_LETTERS = Array.from({ length: 26 }, (_, i) => BUILTIN_GLYPHS[String.fromCharCode(65 + i)]);
 
-function builtinRows(ch: string): number[] {
-  return BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "];
-}
+const GEORGIAN_GLYPHS: Record<string, number[]> = {
+  "\x80": [0b00110,0b00001,0b00100,0b00001,0b10001,0b10001,0b01100], "\x81": [0b00110,0b10001,0b00001,0b00100,0b00001,0b10001,0b01100],
+  "\x82": [0b00110,0b10001,0b10001,0b10001,0b10001,0b00000,0b00000], "\x83": [0b01011,0b10101,0b10101,0b10001,0b10001,0b00000,0b00000],
+  "\x84": [0b00111,0b11000,0b11011,0b10101,0b10101,0b10000,0b10000], "\x85": [0b10110,0b01010,0b01110,0b10001,0b10001,0b10001,0b01100],
+  "\x86": [0b10000,0b10000,0b10100,0b10010,0b10010,0b10010,0b01100], "\x87": [0b01000,0b00100,0b10010,0b10010,0b01100,0b00000,0b00000],
+  "\x88": [0b00110,0b10001,0b01110,0b10001,0b10001,0b10001,0b01100], "\x89": [0b01101,0b10010,0b10010,0b10010,0b10010,0b01101,0b00000],
+  "\x8A": [0b10000,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100], "\x8B": [0b10110,0b01010,0b01010,0b00010,0b10010,0b10010,0b01100],
+  "\x8C": [0b01000,0b00110,0b00001,0b00100,0b00001,0b10001,0b11100], "\x8D": [0b01000,0b00100,0b11100,0b10010,0b10010,0b10010,0b01100],
+  "\x8E": [0b11100,0b10000,0b11100,0b10010,0b10010,0b10010,0b01100], "\x8F": [0b00110,0b10001,0b10001,0b00001,0b10001,0b10001,0b01100],
+  "\x90": [0b11011,0b10100,0b10100,0b10100,0b10110,0b00100,0b01010], "\x91": [0b01110,0b01010,0b00100,0b11010,0b10001,0b10001,0b01100],
+  "\x92": [0b11011,0b10101,0b10101,0b10101,0b10001,0b00100,0b01100], "\x93": [0b00001,0b00001,0b11110,0b10001,0b10001,0b00001,0b01100],
+  "\x94": [0b10010,0b10001,0b10110,0b10001,0b10001,0b11001,0b01110],
+};
+function builtinRows(ch: string): number[] { return GEORGIAN_GLYPHS[ch] ?? BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
 function builtinAdvance(ch: string): number { return BUILTIN_ADVANCES[ch] ?? BUILTIN_METRICS.defaultAdvance; }
 
-function isMkhedruli(ch: string): boolean {
-  const codepoint = ch.codePointAt(0) ?? 0;
-  return codepoint >= 0x10d0 && codepoint <= 0x10f0;
-}
-
-/** Firmware text walks UTF-8 by Unicode code point, not by encoded byte. */
+/** C++ walks UTF-8 bytes, not JavaScript Unicode code points. */
 export function textCells(text: string): string[] {
-  return [...text];
+  if ([...text].every((ch) => ch.charCodeAt(0) <= 0xff)) return [...text];
+  return [...new TextEncoder().encode(text)].map((byte) => String.fromCharCode(byte));
 }
 
 class BuiltinPreviewFont implements PreviewFont {
   readonly id: string = "builtin";
   readonly label: string = "Compact 5x7";
-  readonly builtin: boolean = true;
+  readonly builtin = true;
   readonly inkHeight = BUILTIN_METRICS.inkHeight;
   readonly inkTop = BUILTIN_METRICS.inkTop;
   readonly clockWidth = BUILTIN_METRICS.clockWidth;
   readonly maxDigitHeight = BUILTIN_METRICS.maxDigitHeight;
 
-  glyph(ch: string): Glyph | null {
-    if (isMkhedruli(ch)) return null;
+  glyph(ch: string): Glyph {
     return { w: 5, h: 7, rows: builtinRows(ch), top: 0, advance: builtinAdvance(ch) };
   }
 
   advance(ch: string): number {
-    return isMkhedruli(ch) ? 0 : builtinAdvance(ch);
+    return builtinAdvance(ch);
   }
 
-  measure(text: string): number | null {
+  measure(text: string): number {
     let width = 0;
-    for (const ch of textCells(text)) {
-      const advance = this.advance(ch);
-      if (advance === 0) return null;
-      width += advance;
-    }
+    for (const ch of textCells(text)) width += builtinAdvance(ch);
     return width;
   }
 
@@ -138,8 +140,58 @@ class BuiltinPreviewFont implements PreviewFont {
   }
 
   drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
-    const glyph = this.glyph(ch);
-    if (glyph) drawGlyphRows(target, glyph, x, boxTop);
+    drawGlyphRows(target, this.glyph(ch), x, boxTop);
+  }
+}
+
+/** Pixel rows from MG Minecraft Georgian Regular at 8 px. */
+const MINECRAFT_GEORGIAN_ROWS: readonly (readonly number[])[] = [
+  [0x02,0x02,0x04,0x02,0x22,0x1C,0x00,0x00], [0x1C,0x22,0x04,0x02,0x22,0x1C,0x00,0x00],
+  [0x1C,0x22,0x22,0x22,0x14,0x00,0x00,0x00], [0x14,0x2A,0x22,0x22,0x14,0x00,0x00,0x00],
+  [0x10,0x20,0x20,0x3C,0x22,0x22,0x24,0x00], [0x14,0x2A,0x02,0x1E,0x22,0x22,0x1C,0x00],
+  [0x20,0x20,0x20,0x24,0x22,0x22,0x1C,0x00], [0x08,0x04,0x02,0x22,0x1C,0x00,0x00,0x00],
+  [0x1C,0x22,0x02,0x1E,0x22,0x22,0x1C,0x00], [0x14,0x2A,0x2A,0x2A,0x12,0x00,0x00,0x00],
+  [0x20,0x20,0x28,0x3C,0x22,0x22,0x1C,0x00], [0x14,0x2A,0x02,0x02,0x22,0x1C,0x00,0x00],
+  [0x08,0x04,0x02,0x04,0x02,0x22,0x1C,0x00], [0x10,0x18,0x08,0x14,0x22,0x22,0x1C,0x00],
+  [0x1C,0x20,0x20,0x3C,0x22,0x22,0x1C,0x00], [0x1C,0x22,0x02,0x02,0x22,0x1C,0x00,0x00],
+  [0x1C,0x22,0x22,0x10,0x28,0x04,0x00,0x00], [0x1C,0x22,0x2C,0x10,0x28,0x04,0x00,0x00],
+  [0x08,0x0C,0x2A,0x22,0x22,0x1C,0x00,0x00], [0x02,0x02,0x0E,0x12,0x02,0x02,0x22,0x1C],
+  [0x10,0x28,0x08,0x14,0x22,0x22,0x1C,0x00],
+];
+
+function fullHeightMinecraftRows(rows: readonly number[]): number[] {
+  let sourceHeight = 8;
+  while (sourceHeight > 1 && rows[sourceHeight - 1] === 0) sourceHeight--;
+  return Array.from({ length: 8 }, (_, row) => rows[Math.floor(row * sourceHeight / 8)]);
+}
+
+class GeorgianDatePreviewFont extends BuiltinPreviewFont {
+  readonly id = "georgian-date";
+  readonly label = "Georgian date";
+  readonly inkHeight = 8;
+  readonly maxDigitHeight = 8;
+
+  glyph(ch: string): Glyph {
+    const code = ch.charCodeAt(0);
+    if (code < 0x80 || code >= 0x80 + 21) return super.glyph(ch);
+    return {
+      w: 6,
+      h: 8,
+      top: 0,
+      rows: fullHeightMinecraftRows(MINECRAFT_GEORGIAN_ROWS[code - 0x80]),
+      advance: 6,
+    };
+  }
+
+  advance(ch: string): number {
+    const code = ch.charCodeAt(0);
+    return code >= 0x80 && code < 0x80 + 21 ? 6 : super.advance(ch);
+  }
+
+  measure(text: string): number {
+    let width = 0;
+    for (const ch of textCells(text)) width += this.advance(ch);
+    return width;
   }
 }
 
@@ -201,56 +253,13 @@ class GeneratedPreviewFont implements PreviewFont {
   }
 }
 
-
-const GEORGIAN_FONT_ID = "font_georgian_mkhedruli_8x8_source";
-
-/**
- * The generated source-table face handles every clock glyph and Mkhedruli
- * letter. Compact 5x7 supplies Latin for mixed free-text messages.
- */
-class GeorgianBitmapPreviewFont extends BuiltinPreviewFont {
-  readonly id = "georgian-mkhedruli-8x8";
-  readonly label = "Georgian Mkhedruli 8x8";
-  readonly builtin = false;
-  readonly inkHeight = 8;
-  readonly maxDigitHeight = 8;
-  private readonly source = new GeneratedPreviewFont(
-    GEORGIAN_FONT_ID,
-    "Georgian Mkhedruli 8x8",
-    GENERATED_FONTS[GEORGIAN_FONT_ID],
-  );
-
-  glyph(ch: string): Glyph | null {
-    return this.source.glyph(ch) ?? super.glyph(ch);
-  }
-
-  advance(ch: string): number {
-    return this.source.advance(ch) || super.advance(ch);
-  }
-
-  measure(text: string): number | null {
-    let width = 0;
-    for (const ch of textCells(text)) {
-      const advance = this.advance(ch);
-      if (advance === 0) return null;
-      width += advance;
-    }
-    return width;
-  }
-
-  drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
-    if (this.source.glyph(ch)) this.source.drawGlyph(target, ch, x, boxTop);
-    else super.drawGlyph(target, ch, x, boxTop);
-  }
-}
-
 const cache = new Map<string, PreviewFont>();
 
 /** Built-in 5x7 fallback font; never missing, never downloads anything. */
 export const BUILTIN_FONT: PreviewFont = new BuiltinPreviewFont();
 
 /** Matches the firmware's larger Georgian weekday and month lettering. */
-export const GEORGIAN_DATE_FONT: PreviewFont = new GeorgianBitmapPreviewFont();
+export const GEORGIAN_DATE_FONT: PreviewFont = new GeorgianDatePreviewFont();
 
 /** Preview font for an ESPHome font id such as `font_tiny5_source`. */
 export function generatedFont(id: string, label: string): PreviewFont | null {
