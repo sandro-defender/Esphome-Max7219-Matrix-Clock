@@ -438,7 +438,7 @@ def build():
         raise ValueError("The ESP-WROOM-32 example and installer need an ESP32 hardware target")
 
     # Check all compiled source fonts, not just the default pair.
-    all_paths = [ROOT / "dev.yaml", ROOT / "CHANGELOG.md", ROOT / "packages/configurator.json", ROOT / "requirements-validation.txt", Path(__file__), ROOT / "web-configurator/scripts/generate_glyphs.py"]
+    all_paths = [ROOT / "dev.yaml", ROOT / "CHANGELOG.md", ROOT / "packages/configurator.json", ROOT / "requirements-validation.txt", Path(__file__), ROOT / "scripts/generate_date_font.py", ROOT / "web-configurator/scripts/generate_glyphs.py"]
     all_paths += [ROOT / file for file in core_files if file != reset_path]
     all_paths += [ROOT / spec["base"] for spec in target_specs]
     all_paths += list((ROOT / "packages").glob("*.h")) + list((ROOT / "packages/fonts").glob("*.yaml")) + [ROOT / "packages/fonts_web.yaml"]

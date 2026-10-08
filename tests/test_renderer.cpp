@@ -1705,13 +1705,14 @@ static void test_builtin_font_renders_every_required_glyph() {
 static void test_georgian_date_font_uses_max7219_rows() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  // კ keeps max7219.ttf's native five-pixel advance and baseline.
-  const char letter = static_cast<char>(0x80);
+  // პ preserves the seven rows drawn in max7219.ttf on the 8-row matrix.
+  const char letter = static_cast<char>(0x8C);
   georgian.draw_glyph(canvas, letter, 0, 0);
-  CHECK_EQ(georgian.advance(letter), 5);
+  CHECK_EQ(georgian.advance(letter), 6);
   CHECK_EQ(georgian.ink_height(), 8);
-  CHECK(canvas.get(2, 5));
-  CHECK(canvas.row_on(5) > 0);
+  int lit_rows = 0;
+  for (int row = 0; row < 8; row++) if (canvas.row_on(row) > 0) lit_rows++;
+  CHECK_EQ(lit_rows, 7);
 }
 
 static void test_default_layout_matches_readme() {
