@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "a0d7fbbf78547c467d55972a9a7acdb796ce362e821ddfc446e993e8b9faf841",
+  "sourceHash": "5b08a882517fa3b8c5a292957bd249d60bf39247c9acb0789471e4e4a4f93289",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.5",
+  "releaseVersion": "0.8.6",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Use the bundled MAX7219 Georgian face for Georgian weekday and month labels\n  on the Date screen.",
+  "releaseNotes": "### Fixed\n\n- Render Georgian Date glyphs at the native `max7219.ttf` pixel rows and\n  advances, without vertical stretching.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

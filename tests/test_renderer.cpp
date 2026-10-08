@@ -1710,7 +1710,7 @@ static void test_georgian_date_font_uses_max7219_rows() {
   georgian.draw_glyph(canvas, letter, 0, 0);
   CHECK_EQ(georgian.advance(letter), 6);
   CHECK_EQ(georgian.ink_height(), 8);
-  CHECK(canvas.get(2, 7));
+  CHECK(canvas.get(2, 5));
   CHECK(canvas.row_on(7) > 0);
 }
 
