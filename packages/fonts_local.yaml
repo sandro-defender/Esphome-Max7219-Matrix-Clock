@@ -40,6 +40,14 @@ font:
   bpp: 1
   glyphs:
   - '0123456789:.-/%!?+ '
+- id: font_mg_minecraft_georgian_source
+  file:
+    type: local
+    path: ../fonts/mg-minecraft-georgian-regular.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
 esphome:
   build_flags:
   - -DMAX7219_FONT_PIXEL_CLOCK_6X8
@@ -47,6 +55,7 @@ esphome:
   - -DMAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
   - -DMAX7219_FONT_MD_MAX72XX_SYSTEM
   - -DMAX7219_FONT_DOT_MATRIX
+  - -DMAX7219_FONT_MG_MINECRAFT_GEORGIAN
 select:
 - id: !extend 'clock_font'
   initial_option: Pixel Clock 6x8
@@ -56,3 +65,4 @@ select:
   - MD Parola Numeric 7-Segment
   - MD MAX72XX System
   - Dot Matrix
+  - MG Minecraft Georgian

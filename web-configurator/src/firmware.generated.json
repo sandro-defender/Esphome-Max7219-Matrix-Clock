@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "3793b576f1cfc61dc01b055357605eac75e78257db00a97841920486441fb948",
+  "sourceHash": "4537a927fc7dd813eea5a0234c42a6d6b0349a5f96ecd028c439ca6f7c6ce6c1",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.7.19",
+  "releaseVersion": "0.7.20",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Changed\n\n- Render Georgian weekday and month labels using a bold 8 px Noto Sans Georgian\n  raster in nine-pixel cells. Long labels continue to scroll instead of shrinking.",
+  "releaseNotes": "### Changed\n\n- Use the bundled MG Minecraft Georgian 8 px pixel font for Georgian date\n  labels and offer it as an optional Clock font.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2577,6 +2577,18 @@
       "source": "scripts/generate_dot_matrix_font.py",
       "file": "fonts/dot-matrix/DotMatrix.ttf",
       "package": "packages/fonts/dot-matrix.yaml"
+    },
+    {
+      "id": "mg-minecraft-georgian",
+      "option": "MG Minecraft Georgian",
+      "label": "MG Minecraft Georgian",
+      "family": "MG Minecraft Georgian",
+      "firmwareId": "font_mg_minecraft_georgian_source",
+      "size": 8,
+      "license": "CC BY-SA 3.0",
+      "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
+      "file": "fonts/mg-minecraft-georgian-regular.ttf",
+      "package": "packages/fonts/mg-minecraft-georgian.yaml"
     }
   ],
   "settings": [
@@ -2592,7 +2604,8 @@
         "matrix-2px",
         "md-parola-numeric-7seg",
         "md-max72xx-system",
-        "dot-matrix"
+        "dot-matrix",
+        "mg-minecraft-georgian"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2602,7 +2615,8 @@
         "Matrix 2px",
         "MD Parola Numeric 7-Segment",
         "MD MAX72XX System",
-        "Dot Matrix"
+        "Dot Matrix",
+        "MG Minecraft Georgian"
       ]
     },
     {

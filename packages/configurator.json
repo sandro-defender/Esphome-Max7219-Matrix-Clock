@@ -408,6 +408,11 @@
       "label": "MD MAX72XX System",
       "license": "LGPL-2.1-or-later",
       "source": "fonts/md-max72xx-system/LICENSE.txt"
+    },
+    "mg-minecraft-georgian": {
+      "label": "MG Minecraft Georgian",
+      "license": "CC BY-SA 3.0",
+      "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
     }
   },
   "groups": [

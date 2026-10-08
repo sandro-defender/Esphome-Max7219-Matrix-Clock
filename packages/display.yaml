@@ -118,6 +118,10 @@ display:
       max7219_clock::SourceFont dot_matrix_font(font_dot_matrix_source, &it);
       if (font_option == "Dot Matrix") selected = &dot_matrix_font;
       #endif
+      #ifdef MAX7219_FONT_MG_MINECRAFT_GEORGIAN
+      max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
+      if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
+      #endif
       max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
 
       // ----- Publish only what changed (keeps API traffic low) ------------
