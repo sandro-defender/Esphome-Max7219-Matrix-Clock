@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.20 - 2026-10-08
+
+### Changed
+
+- Use the bundled MG Minecraft Georgian 8 px pixel font for Georgian date
+  labels and offer it as an optional Clock font.
+
 ## 0.7.19 - 2026-10-08
 
 ### Changed

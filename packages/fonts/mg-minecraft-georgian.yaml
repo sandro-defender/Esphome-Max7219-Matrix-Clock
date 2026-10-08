@@ -1,0 +1,19 @@
+# Optional Georgian pixel face. CC BY-SA 3.0 attribution is retained in fonts/.
+font:
+- id: font_mg_minecraft_georgian_source
+  file:
+    type: web
+    url: ${fonts_base_url}/mg-minecraft-georgian-regular.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - '0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ'
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_MG_MINECRAFT_GEORGIAN
+
+select:
+  - id: !extend clock_font
+    options:
+      - "MG Minecraft Georgian"
