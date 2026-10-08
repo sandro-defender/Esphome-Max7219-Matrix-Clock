@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "5b08a882517fa3b8c5a292957bd249d60bf39247c9acb0789471e4e4a4f93289",
+  "sourceHash": "817de1f44a5d73eb4a37e53af4e523d453f9f53919519c84608eba449a4f782e",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.6",
+  "releaseVersion": "0.8.7",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Render Georgian Date glyphs at the native `max7219.ttf` pixel rows and\n  advances, without vertical stretching.",
+  "releaseNotes": "### Changed\n\n- Generate the MAX7219 Georgian Date bitmap rows and advances directly from\n  the hand-drawn cells in `fonts/max7219.ttf`: one drawn cell is one matrix\n  LED. Run `scripts\\\\generate_date_font.bat` on Windows after replacing the\n  font; CI rejects stale firmware or configurator date glyphs.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

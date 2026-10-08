@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.7 - 2026-10-09
+
+### Changed
+
+- Generate the MAX7219 Georgian Date bitmap rows and advances directly from
+  the hand-drawn cells in `fonts/max7219.ttf`: one drawn cell is one matrix
+  LED. Run `scripts\\generate_date_font.bat` on Windows after replacing the
+  font; CI rejects stale firmware or configurator date glyphs.
+
 ## 0.8.6 - 2026-10-09
 
 ### Fixed

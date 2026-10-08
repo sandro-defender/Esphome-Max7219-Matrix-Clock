@@ -141,12 +141,12 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8C\x87\x84 02. \x82\x87\x8E 26");
   });
 
-  it("uses the MAX7219 Georgian date lettering at all eight rows", () => {
-    const letter = "\x80";
-    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(5);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 5 });
+  it("preserves the seven-row Georgian pixel glyph on the eight-row matrix", () => {
+    const letter = "\x8C";
+    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(6);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
     expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[5]).toBe(0x18);
+    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows.filter((row) => row !== 0)).toHaveLength(7);
   });
 });
 

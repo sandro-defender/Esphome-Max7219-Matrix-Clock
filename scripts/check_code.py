@@ -53,6 +53,7 @@ def check_plan(python, npm, skip_sdk_checks=False):
     if not skip_sdk_checks:
         checks.extend([
             ("Firmware contract freshness (SDK imports only)", [python, "scripts/generate_firmware_contract.py", "--check"]),
+            ("Georgian date font freshness", [python, "scripts/generate_date_font.py", "--check"]),
             ("Browser/host glyph freshness (SDK imports only)", [python, "web-configurator/scripts/generate_glyphs.py", "--check"]),
         ])
     checks.extend([

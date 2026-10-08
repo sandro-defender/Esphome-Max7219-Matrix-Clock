@@ -90,15 +90,15 @@ class WorkflowTests(unittest.TestCase):
 class CodeGateTests(unittest.TestCase):
     def test_full_plan_checks_freshness_instead_of_regenerating(self):
         plan = check_code.check_plan("python", "npm")
-        self.assertEqual(len(plan), 8)
+        self.assertEqual(len(plan), 9)
         generated = [command for label, command in plan if "freshness" in label]
-        self.assertEqual(len(generated), 2)
+        self.assertEqual(len(generated), 3)
         self.assertTrue(all(command[-1] == "--check" for command in generated))
 
     def test_reduced_mode_omits_only_sdk_freshness(self):
         full = check_code.check_plan("python", "npm")
         reduced = check_code.check_plan("python", "npm", skip_sdk_checks=True)
-        self.assertEqual(reduced, full[2:])
+        self.assertEqual(reduced, full[3:])
 
     def test_plan_keeps_source_publisher_workflow_and_pixel_oracle_coverage(self):
         commands = [command for _, command in check_code.check_plan("python", "npm")]
