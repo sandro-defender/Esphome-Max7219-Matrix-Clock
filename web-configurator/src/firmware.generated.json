@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "b8c02b15846c7bceb17e227fe6b3c3b7c303158f8977e30cf0a599d03a6173e9",
+  "sourceHash": "585a0b618d7a48d5e9bdeccbdef9b8b64166c688dc500997e74d7aadc8ed1861",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.8.9",
   "esphomeVersion": "2026.9.1",
@@ -2589,6 +2589,18 @@
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
       "file": "fonts/mg-minecraft-georgian-regular.ttf",
       "package": "packages/fonts/mg-minecraft-georgian.yaml"
+    },
+    {
+      "id": "max7219-georgian",
+      "option": "max7219 Georgian",
+      "label": "max7219 Georgian",
+      "family": "max7219 Georgian",
+      "firmwareId": "font_max7219_georgian_source",
+      "size": 8,
+      "license": "CC BY-SA",
+      "source": "fonts/max7219-georgian/LICENSE.txt",
+      "file": "fonts/max7219-georgian/max7219Georgian-Regular.ttf",
+      "package": "packages/fonts/max7219-georgian.yaml"
     }
   ],
   "settings": [
@@ -2605,7 +2617,8 @@
         "md-parola-numeric-7seg",
         "md-max72xx-system",
         "dot-matrix",
-        "mg-minecraft-georgian"
+        "mg-minecraft-georgian",
+        "max7219-georgian"
       ],
       "default": "pixel-clock-6x8",
       "input": "font",
@@ -2616,7 +2629,8 @@
         "MD Parola Numeric 7-Segment",
         "MD MAX72XX System",
         "Dot Matrix",
-        "MG Minecraft Georgian"
+        "MG Minecraft Georgian",
+        "max7219 Georgian"
       ]
     },
     {
