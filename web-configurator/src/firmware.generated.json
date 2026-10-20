@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "585a0b618d7a48d5e9bdeccbdef9b8b64166c688dc500997e74d7aadc8ed1861",
+  "sourceHash": "3265c25683c7eb1a6925959139a9716baed26f8109e7da12229d807e7aef0972",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.9",
+  "releaseVersion": "0.8.10",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Bottom-align short Georgian Date glyphs on the 8-row matrix without changing\n  their hand-drawn pixels or stroke weight.",
+  "releaseNotes": "### Added\n\n- Integrate the max7219 Georgian clock font as a selectable optional face,\n  including its web package, display bridge, configurator metadata and\n  generated glyphs.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
