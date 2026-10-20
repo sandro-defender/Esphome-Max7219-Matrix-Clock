@@ -413,11 +413,6 @@
       "label": "MG Minecraft Georgian",
       "license": "CC BY-SA 3.0",
       "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
-    },
-    "max7219-georgian": {
-      "label": "max7219 Georgian",
-      "license": "CC BY-SA",
-      "source": "fonts/max7219-georgian/LICENSE.txt"
     }
   },
   "groups": [

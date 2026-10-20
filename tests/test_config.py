@@ -139,7 +139,6 @@ FONT_OPTION_BY_ID = {
     "font_matrix_2px_source": "Matrix 2px",
     "font_dot_matrix_source": "Dot Matrix",
     "font_mg_minecraft_georgian_source": "MG Minecraft Georgian",
-    "font_max7219_georgian_source": "max7219 Georgian",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
@@ -685,12 +684,7 @@ class ConfigContractTests(unittest.TestCase):
                 )
             expected_height = (
                 MATRIX_ROW_HEIGHT - 1
-                if entry["id"] in (
-                    "font_md_max72xx_system_source",
-                    "font_md_parola_numeric_7seg_source",
-                    "font_mg_minecraft_georgian_source",
-                    "font_max7219_georgian_source",
-                )
+                if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source", "font_mg_minecraft_georgian_source")
                 else MATRIX_ROW_HEIGHT
             )
             self.assertEqual(
@@ -905,7 +899,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 7)
+        self.assertEqual(len(faces), 6)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
