@@ -219,7 +219,9 @@ back to Compact.
 
 Licences, generated-font sources and the add-a-font checklist are in
 [fonts/README.md](fonts/README.md); the package policy is in
-[packages/fonts/README.md](packages/fonts/README.md).
+[packages/fonts/README.md](packages/fonts/README.md). For Pixeel exports see
+the [Pixeel font integration guide](docs/PIXEEL_FONTS.md) (custom single-font
+builds and catalogue contributions).
 
 ## Secrets and security
 
