@@ -1,13 +1,5 @@
 # Changelog
 
-## 0.8.10 - 2026-10-21
-
-### Added
-
-- Integrate the max7219 Georgian clock font as a selectable optional face,
-  including its web package, display bridge, configurator metadata and
-  generated glyphs.
-
 ## 0.8.9 - 2026-10-09
 
 ### Fixed
