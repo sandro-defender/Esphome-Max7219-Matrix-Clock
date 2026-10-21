@@ -692,7 +692,7 @@ export function renderScene(
   };
 }
 
-/** MAX7219 2026.9.1 send64pixels(): flip local X before per-chip rotation. */
+/** MAX7219 2026.10.0 send64pixels(): flip local X before per-chip rotation. */
 export function driverTransform(frame: Frame, rotation: number, flipX: boolean, reverseChain = false): void {
   if (rotation === 0 && !flipX && !reverseChain) return;
   const source = frame.pixels.slice();

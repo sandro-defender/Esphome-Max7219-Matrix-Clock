@@ -104,12 +104,34 @@ released CHANGELOG sections are published release notes and part of the
 firmware-contract hash, so they are never rewritten. The design contract from
 that file now lives here and in the configurator README.
 
+## 2026-10-21 — ESPHome 2026.10.0 and the native ESP8266 toolchain
+
+The firmware minimum and validation dependency moved from ESPHome 2026.9.1 to
+**2026.10.0 exactly**. The ESP8266 base package explicitly selects
+`toolchain: arduino` and framework `3.1.2`, the native Arduino toolchain path
+introduced as the default in this release; the supported Wemos D1 mini uses
+this path. The first build after the change is expected to be clean because the
+toolchain has changed.
+
+ESPHome's `toolchain: platformio` remains an upstream opt-out for custom or
+unsupported boards, but is deprecated and scheduled for removal in 2027.4.0.
+Nine local config variants passed ESPHome 2026.10.0 validation, and ESP8266 C++
+source generation passed for the default, all-font, built-in and installer
+profiles. ESP32 C++ generation could not complete because the sandbox could not
+reach the external PlatformIO registry. A full ESP8266 compile was attempted
+but stopped while fetching the native framework: GitHub redirects release
+assets to a host unavailable in this sandbox. These checks used the exact SDK
+inside Python 3.11 with temporary compatibility patches, not the supported
+Python 3.12–3.14 environment. Full firmware compilation and physical-device
+behavior remain unverified.
+
 ## Verification limits
 
-Firmware compilation has repeatedly failed in sandboxes because the PlatformIO
-toolchain host was blocked (`SSLEOFError` / `HTTPClientError` while downloading
-`platformio/espressif8266@4.2.1`), and toolchain downloads have been explicitly
-out of scope at times. As a consequence CI validates sources, generated
-artifacts, host C++ and the web app — it does not compile or flash firmware, and
-no current flash/RAM or on-device result exists. See
+Earlier firmware compilation attempts failed in sandboxes because the
+PlatformIO toolchain host was blocked (`SSLEOFError` / `HTTPClientError` while
+downloading `platformio/espressif8266@4.2.1`), and toolchain downloads have been
+explicitly out of scope at times. The 2026.10.0 native-toolchain attempt is
+recorded above. CI validates sources, generated artifacts, host C++ and the web
+app — it does not compile or flash firmware, and no current flash/RAM or
+on-device result exists. See
 [VALIDATION.md](../VALIDATION.md#what-ci-never-verifies).

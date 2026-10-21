@@ -143,11 +143,11 @@ class CodeGateTests(unittest.TestCase):
     def test_sdk_dependencies_must_be_exact_and_match_the_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "requirements-validation.txt").write_text("esphome==2026.9.1\nfreetype-py==2.5.1\n")
+            (root / "requirements-validation.txt").write_text("esphome==2026.10.0\nfreetype-py==2.5.1\n")
             manifest = root / "web-configurator/src/firmware.generated.json"
             manifest.parent.mkdir(parents=True)
-            manifest.write_text(json.dumps({"esphomeVersion": "2026.9.1"}))
-            pins = {"esphome": "2026.9.1", "freetype-py": "2.5.1"}
+            manifest.write_text(json.dumps({"esphomeVersion": "2026.10.0"}))
+            pins = {"esphome": "2026.10.0", "freetype-py": "2.5.1"}
             with patch.object(check_code, "version", side_effect=pins.__getitem__):
                 check_code.pinned_dependencies(root)
             with patch.object(check_code, "version", return_value="2026.9.0"), self.assertRaisesRegex(ValueError, "installed"):

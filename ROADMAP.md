@@ -10,7 +10,7 @@ Status: **Unverified**. No linked ESP8266 binary or flash/RAM measurement exists
 for the current source; CI never compiles firmware.
 
 - [ ] Compile `dev.yaml` (and one installer YAML from the configurator) on a
-      build host with ESPHome 2026.9.1 exactly; record the commit, toolchain
+      build host with ESPHome 2026.10.0 exactly; record the commit, toolchain
       versions and final `INFO Successfully compiled program.`
 - [ ] Record flash/RAM bytes and headroom for the default font pair and for the
       largest selectable subset in [VALIDATION.md](VALIDATION.md) and
@@ -61,12 +61,3 @@ Status: no browser automation is used.
       copy/download) and a screen-reader spot check.
 - [ ] Reduced-motion and small-screen (≤320 px) review of the current
       deployment; record date, browser and findings.
-
-## 6. ESPHome target change
-
-Status: pinned to 2026.9.1.
-
-- [ ] One PR that bumps `min_version` in `packages/base.yaml`,
-      `requirements-validation.txt`, `project_ref` and the `CHANGELOG.md`
-      section, regenerates the contract and glyphs, and updates every dated
-      version reference in the docs.

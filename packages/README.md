@@ -5,7 +5,7 @@ the package list; everything else lives here.
 
 | Module | Contents |
 |---|---|
-| `base.yaml` | device identity, `min_version: "2026.9.1"`, project metadata (`project_ref`), ESP8266 board, boot defaults, logger, display substitution defaults |
+| `base.yaml` | device identity, `min_version: "2026.10.0"`, project metadata (`project_ref`), ESP8266 board, native Arduino toolchain and framework 3.1.2, boot defaults, logger, display substitution defaults |
 | `base-esp32.yaml` | ESP-WROOM-32 counterpart: board, pins, framework, OTA port and the same display defaults |
 | `network.yaml` | Wi-Fi (with fallback access point), encrypted native API, Home Assistant time and SNTP fallback, both using `${timezone}` |
 | `renderer.yaml` | C++ include list, restore-defaults script, OTA error/success timeouts |

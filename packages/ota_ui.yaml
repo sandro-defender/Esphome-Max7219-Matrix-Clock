@@ -1,5 +1,5 @@
 # Encrypted native OTA; the local API key is reused, never embedded here.
-# Official 2026.9.1: x is 0..100, OTA blocks loop(), and on_end runs just before
+# Official 2026.10.0: x is 0..100, OTA blocks loop(), and on_end runs just before
 # reboot. The renderer calls MAX7219::display() synchronously from update().
 ota:
   - platform: esphome

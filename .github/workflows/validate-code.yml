@@ -49,7 +49,7 @@ jobs:
 
       - name: Check source freshness, regressions, preview and web bundle
         # Imports the exact SDK to inspect source/schema/glyph APIs. Never runs
-        # esphome config/compile/codegen or downloads the PlatformIO toolchain.
+        # esphome config/compile/codegen or downloads either firmware toolchain.
         run: python scripts/check_code.py
 
   publish:

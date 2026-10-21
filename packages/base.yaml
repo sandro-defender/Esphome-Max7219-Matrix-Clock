@@ -11,7 +11,7 @@ substitutions:
   device_comment: "ESP8266 MAX7219 matrix clock (packages release)"
   # Version reported as the ESPHome project version. Keep this in sync with the
   # tag that the release example pins.
-  project_ref: "0.8.12"
+  project_ref: "0.8.14"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   project_version: ${project_ref}
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
@@ -62,7 +62,7 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   comment: ${device_comment}
-  min_version: "2026.9.1"
+  min_version: "2026.10.0"
   project:
     name: sandro-defender.max7219-matrix-clock
     version: ${project_version}
@@ -70,6 +70,10 @@ esphome:
 
 esp8266:
   board: ${board}
+  # Native Arduino toolchain introduced in ESPHome 2026.10.0.
+  toolchain: arduino
+  framework:
+    version: "3.1.2"
   # Required so template numbers/selects/switches can restore their values.
   restore_from_flash: true
 

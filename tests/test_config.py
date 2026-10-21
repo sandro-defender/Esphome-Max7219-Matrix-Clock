@@ -45,7 +45,7 @@ except ImportError:  # pragma: no cover - PyYAML ships with ESPHome
 REPO = Path(__file__).resolve().parent.parent
 PACKAGES = REPO / "packages"
 FIRMWARE = json.loads((REPO / "web-configurator/src/firmware.generated.json").read_text())
-TARGET_VERSION = "2026.9.1"
+TARGET_VERSION = "2026.10.0"
 DEFAULT_MATRIX_WIDTH = 48  # six 8x8 modules in one row
 
 REQUIRED_MODULES = [
@@ -263,12 +263,19 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn("max7219_date_font.generated.h", includes)
 
     def test_min_version_is_the_target_release(self):
-        base = load_yaml(PACKAGES / "base.yaml")
-        self.assertEqual(TARGET_VERSION, base["esphome"]["min_version"])
+        for package in ("base.yaml", "base-esp32.yaml"):
+            with self.subTest(package=package):
+                config = load_yaml(PACKAGES / package)
+                self.assertEqual(TARGET_VERSION, config["esphome"]["min_version"])
         self.assertEqual(
             TARGET_VERSION,
             re.search(r"^esphome==([^\s]+)$", read(REPO / "requirements-validation.txt"), re.M).group(1),
         )
+
+    def test_esp8266_explicitly_uses_the_native_arduino_toolchain(self):
+        base = load_yaml(PACKAGES / "base.yaml")
+        self.assertEqual("arduino", base["esp8266"]["toolchain"])
+        self.assertEqual("3.1.2", base["esp8266"]["framework"]["version"])
 
     def test_device_identity_and_board_are_substitutions(self):
         base_text = read(PACKAGES / "base.yaml")
@@ -295,7 +302,7 @@ class ConfigContractTests(unittest.TestCase):
         self.assertLessEqual(refresh_ms * 4, animation_ms)
 
     # ------------------------------------------------------------------ #
-    # 2026.9 API / OTA requirements
+    # API / OTA requirements validated against the pinned ESPHome SDK.
     # ------------------------------------------------------------------ #
     def test_api_uses_actions_not_legacy_services(self):
         for path in PACKAGES.glob("*.yaml"):
@@ -319,7 +326,7 @@ class ConfigContractTests(unittest.TestCase):
         self.assertIn(
             "api.respond",
             read(PACKAGES / "actions.yaml"),
-            "the status action must use api.respond per the 2026.9 documentation",
+            "the status action must use api.respond per the current ESPHome documentation",
         )
 
     def test_esp8266_action_string_budget(self):
@@ -685,7 +692,7 @@ class ConfigContractTests(unittest.TestCase):
             from importlib.metadata import version
             installed = version("esphome")
         except Exception:
-            self.skipTest("ESPHome 2026.9.1 not installed; offline contracts still run")
+            self.skipTest("ESPHome 2026.10.0 not installed; offline contracts still run")
         if installed != TARGET_VERSION:
             self.skipTest("Requires exactly ESPHome " + TARGET_VERSION)
         from esphome.config import resolve_extend_remove
@@ -943,7 +950,7 @@ class SecretsExampleFormatTests(unittest.TestCase):
         self.assertEqual(32, len(decoded))
 
     def test_validation_key_fixture_is_nonzero(self):
-        """ESPHome 2026.9 rejects the formerly used all-zero dummy key."""
+        """ESPHome rejects the formerly used all-zero dummy key."""
         script = read(REPO / "scripts" / "validate.ps1")
         match = re.search(r"\[byte\[\]\]\((\d+)\.\.(\d+)\)", script)
         self.assertIsNotNone(match, "validation script must use explicit dummy bytes")

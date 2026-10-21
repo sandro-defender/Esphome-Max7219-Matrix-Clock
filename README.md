@@ -1,6 +1,6 @@
 # ESPHome MAX7219 Matrix Clock
 
-A modular ESPHome **2026.9.1** firmware for a MAX7219 LED matrix clock on an
+A modular ESPHome **2026.10.0** firmware for a MAX7219 LED matrix clock on an
 ESP8266 (Wemos D1 mini), with a full Home Assistant control surface, five
 optional 8-row clock faces plus a built-in fallback, per-digit slide-up
 animation, and OTA progress shown on the panel.
@@ -37,7 +37,7 @@ target, so an ESP32 installer never contains an ESP8266 pin alias such as `D8`.
 
 ### Manual installation
 
-1. Install ESPHome 2026.9.1: `pip install -r requirements-validation.txt`.
+1. Install ESPHome 2026.10.0: `pip install -r requirements-validation.txt`.
 2. Copy `secrets.yaml.example` to `secrets.yaml` and fill in your values
    (keep the existing API key if the device is already paired).
 3. Copy `examples/release.yaml` next to it for a Wemos D1 mini, or
@@ -47,6 +47,12 @@ target, so an ESP32 installer never contains an ESP8266 pin alias such as `D8`.
 4. `esphome config <your-file>.yaml` — must report `Configuration is valid!`.
 5. `esphome run <your-file>.yaml` — first flash over USB, later updates over
    the air.
+
+ESP8266 builds use ESPHome 2026.10.0's native Arduino toolchain with framework
+3.1.2, both explicitly pinned in the base package. Expect a clean first build
+after upgrading. The old `platformio` toolchain remains an upstream opt-out for
+custom or unsupported boards, but is deprecated and scheduled for removal in
+ESPHome 2027.4.0.
 
 ESPHome downloads the pinned package files and font assets from this repository;
 nothing else has to be copied locally. `dev.yaml` is the local development entry
@@ -75,7 +81,7 @@ through substitutions in your own YAML — no need to edit the packages:
 
 ```yaml
 substitutions:
-  board: nodemcuv2            # any ESP8266 board id
+  board: nodemcuv2            # board supported by the native toolchain
   matrix_chips: "12"          # 12 modules = 96 pixels wide
   matrix_rows: "1"
   matrix_wiring: snake        # or zigzag

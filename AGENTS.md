@@ -13,7 +13,7 @@ generated `examples/release.yaml` (pinned install). There is no
 ## Before you change anything
 
 - [ ] `git status`: keep unrelated changes; work on a branch, never push `main`.
-- [ ] Decide the firmware target is still **ESPHome 2026.9.1 exactly**
+- [ ] Decide the firmware target is still **ESPHome 2026.10.0 exactly**
       (`packages/base.yaml` `min_version`, `requirements-validation.txt`).
 - [ ] Read [packages/README.md](packages/README.md) (module map) and
       [packages/fonts/README.md](packages/fonts/README.md) (font policy).
@@ -71,7 +71,7 @@ package YAML and headers, `packages/fonts/*.yaml`, `packages/fonts_web.yaml`,
 the bundled font files and their source/generator files. Any change there
 changes `sourceHash`; CI then fails with "Firmware/configurator drift" until the
 generated contract is regenerated. Regeneration needs Python 3.12+ with
-`esphome==2026.9.1` importable (SDK imports only, no compile).
+`esphome==2026.10.0` importable (SDK imports only, no compile).
 
 `python scripts/check_code.py --skip-sdk-checks` is **reduced coverage**, not a
 pass: it omits the exact-SDK dependency check and both generated-freshness
@@ -80,7 +80,7 @@ checks.
 ## Commands that must pass
 
 ```bash
-pip install -r requirements-validation.txt          # esphome==2026.9.1, freetype-py, fonttools
+pip install -r requirements-validation.txt          # esphome==2026.10.0, freetype-py, fonttools
 npm --prefix web-configurator ci --ignore-scripts
 python scripts/check_code.py                        # full gate (Python 3.12–3.14)
 python scripts/check_code.py --skip-sdk-checks      # local fallback, reduced coverage

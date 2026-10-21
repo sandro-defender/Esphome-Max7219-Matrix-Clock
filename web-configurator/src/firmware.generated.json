@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "893592c4025f7495f3a91cd34f1007016f5d71b7f84867c200d0bf2d81d3fa46",
+  "sourceHash": "b5474cbdc4e13205f606b646a46b9452dc3ef60b8e39046b0031a3f54fdf0a16",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.12",
-  "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Added\n\n- Link the project on GitHub from the web configurator header, and link the\n  [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/)\n  under the compiled faces in Font Lab so a custom face is one click away.\n- Document the hosted Pixeel editor and the GitHub project page in `README.md`,\n  `fonts/README.md`, `packages/fonts/README.md`,\n  `web-configurator/README.md` and `docs/PIXEEL_FONTS.md`.\n\n### Fixed\n\n- Separate glyphs that a pixel face packs full width. Faces whose glyph cells\n  carry ink right up to the cell edge (the custom big `0-9` digits are 6 px of\n  ink in a 6 px advance) printed neighbouring digits as one blob, which showed\n  on the Clock screen as merged digits such as `34`. The renderer now measures\n  the real bitmaps of the face and inserts one blank column after every glyph\n  when the face does not leave one itself; faces that already separate their\n  cells keep their own metrics, so `Standard 0-9` and the built-in\n  `Compact 5x7` clock are unchanged. The default `max7219` face with\n  `Custom big 0-9` still shows `HH:MM:SS` in exactly 48 px.\n\n### Changed\n\n- One combination now needs more room than before: the built-in `Compact 5x7`\n  face with `Custom big 0-9` and the `Digits` seconds mode measures 50 px for\n  `HH:MM:SS`, so the firmware drops the seconds digits for that pairing (the\n  digits are separated instead of merged). The Web Configurator shows the same\n  width warning the firmware acts on. Every other pairing is unaffected.",
+  "releaseVersion": "0.8.14",
+  "esphomeVersion": "2026.10.0",
+  "releaseNotes": "### Changed\n\n- Upgrade the firmware minimum and validation pin to ESPHome 2026.10.0.\n- Explicitly select ESPHome's native Arduino toolchain and Arduino framework\n  3.1.2 for the supported ESP8266 target.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
