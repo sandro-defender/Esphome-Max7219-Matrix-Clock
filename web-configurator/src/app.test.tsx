@@ -32,6 +32,16 @@ describe("App", () => {
     expect(info.match(/<h1/g)).toHaveLength(1);
     for (const id of [...configIds, ...infoIds]) expect(markup + info).toContain(`aria-labelledby="${id}-title"`);
   });
+  it("gives both top-level pages a clear intro and exposes the current navigation page", () => {
+    expect(markup).toContain('class="configure-intro"');
+    expect(markup).toContain("Design your ");
+    expect(markup.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(info.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(markup).toContain('class="release-status checking"');
+    expect(markup).toContain("Newest published release:");
+    expect(info).toContain('class="info-intro"');
+    expect(info).toContain("Project guide");
+  });
   it("renders every generated firmware control and option, with extras enabled together", () => {
     let cfg = DEFAULT_CONFIG;
     for (const id of EXTRA_FONTS) cfg = addExtraFontAndSelect(cfg, id);
@@ -223,8 +233,10 @@ describe("responsive layout", () => {
     expect(css).toContain("minmax(min(100%, 340px), 1fr)");
     expect(css).toContain("grid-template-columns: minmax(0, 1fr) 6.3rem");
     expect(css).toContain("@media (max-width: 479px)");
-    expect(css).toContain("font-size: 16px; min-height: 38px");
+    expect(css).toContain("font-size: 16px; min-height: 44px");
     expect(css).toContain(":focus-visible");
+    expect(css).toContain("animation-duration: 0.01ms !important");
+    expect(rule(css, '.composer input[type="text"]:focus')).not.toContain("outline: none");
     expect(css).not.toContain(".setting-row { display: none");
   });
 });

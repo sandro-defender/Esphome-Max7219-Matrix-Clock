@@ -32,7 +32,7 @@ python3 scripts/generate_glyphs.py          # rewrite src/glyphs.generated.ts
 python3 scripts/generate_glyphs.py --check  # fail if it is stale (used in CI)
 ```
 
-`generate_glyphs.py` needs Python 3.12+ with `esphome==2026.9.1` importable and
+`generate_glyphs.py` needs Python 3.12+ with `esphome==2026.10.0` importable and
 `freetype-py` (`pip install -r ../requirements-validation.txt`). Node 20+ works
 locally; CI uses Node 22.
 

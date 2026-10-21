@@ -183,7 +183,7 @@ cp secrets.yaml.example secrets.yaml
 # Fix api_encryption_key: esphome generate-encryption-key or let the script
 # generate a random one — the example placeholder is NOT valid base64
 
-pip install -r requirements-validation.txt   # esphome==2026.9.1 exactly
+pip install -r requirements-validation.txt   # esphome==2026.10.0 exactly
 
 esphome config dev-custom.yaml   # expect: Configuration is valid!
 esphome run dev-custom.yaml      # first flash over USB, later OTA
@@ -243,7 +243,7 @@ open a PR with the updated catalogue files and regenerated assets.
 |---|---|---|
 | `WARNING: EXPORT-REPORT.md reports **Status:** FAIL` | Pixeel validation failed: digit taller than 8 px, `88:88:88` > 48 px, or clipped ink. | Open `EXPORT-REPORT.md` for the exact measurement. Adjust the design in Pixeel and re-export. The script still installs the font but the clock may clip or degrade to the fallback. |
 | `Firmware/configurator drift. Regenerate…` | `packages/display.yaml` or `dev.yaml` changed without re-running the generator. | `python scripts/generate_firmware_contract.py` and commit the regenerated files. `use_pixeel_font.py` does this automatically. |
-| `Use exactly ESPHome 2026.9.1, installed …` | Wrong Python env. | `python3 -m venv .venv && .venv/bin/pip install -r requirements-validation.txt` and re-run with `.venv/bin/python`. |
+| `Use exactly ESPHome 2026.10.0, installed …` | Wrong Python env. | `python3 -m venv .venv && .venv/bin/pip install -r requirements-validation.txt` and re-run with `.venv/bin/python`. |
 | `Missing fontMetadata…` / `Missing font …` during `generate_firmware_contract.py` | Catalogue face installed without its `fontMetadata` entry or font asset. | Ensure `fonts/<slug>/LICENSE.txt` exists and `packages/configurator.json` contains the slug. The integrator script handles both; manual installs must add them. |
 | `api_encryption_key` invalid base64 | `secrets.yaml.example` placeholder is not valid base64. | Generate a real key: `base64` of 32 random bytes (`esphome generate-encryption-key` or `python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"`). The script creates `secrets.yaml` with a valid dummy key when `--config`/`--flash` needs it. |
 | `g++: error` / syntax check fails for custom slot | Custom label contains unescaped quotes. | The script escapes `'` → `''` for YAML and `"`/`\` for C++. Re-run `use_pixeel_font.py` with a corrected `--label`. |

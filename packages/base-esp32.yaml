@@ -7,7 +7,7 @@ substitutions:
   device_name: max7219-clock
   friendly_name: MAX7219 Matrix Clock
   device_comment: "ESP-WROOM-32 MAX7219 matrix clock (packages release)"
-  project_ref: "0.8.12"
+  project_ref: "0.8.14"
   project_repo: sandro-defender/Esphome-Max7219-Matrix-Clock
   project_version: ${project_ref}
   fonts_base_url: https://raw.githubusercontent.com/${project_repo}/${project_ref}/fonts
@@ -53,7 +53,7 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   comment: ${device_comment}
-  min_version: "2026.9.1"
+  min_version: "2026.10.0"
   project:
     name: sandro-defender.max7219-matrix-clock
     version: ${project_version}

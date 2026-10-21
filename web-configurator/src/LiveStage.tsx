@@ -13,7 +13,7 @@ function pad(n: number): string {
 export function LiveMark() {
   const [dot, setDot] = useState(() => new Date().getSeconds() % 8);
   useEffect(() => {
-    const id = window.setInterval(() => setDot(new Date().getSeconds() % 8), 250);
+    const id = window.setInterval(() => setDot(new Date().getSeconds() % 8), 1000);
     return () => window.clearInterval(id);
   }, []);
   return (
@@ -93,13 +93,11 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
           style={{ background: led.glow, opacity: cfg.displayPower ? 0.22 + scene.effectiveBrightness / 40 : 0 }}
         />
         <div className="chassis-top">
-          <span>
-            MAX7219 · {scene.geometry.width}×{scene.geometry.height}
+          <span className="chassis-model">MAX7219 <i aria-hidden="true">·</i> {scene.geometry.width}×{scene.geometry.height}</span>
+          <span className={cn("chassis-power", cfg.displayPower ? "on" : "off")}>
+            <i className={cn("power-led", cfg.displayPower && "on")} aria-hidden="true" />
+            {cfg.displayPower ? "Display on" : "Display off"}
           </span>
-          <span
-            className={cn("power-led", cfg.displayPower && "on")}
-            title={cfg.displayPower ? "Display on" : "Display off"}
-          />
         </div>
         <MatrixCanvas
           width={scene.frame.width}

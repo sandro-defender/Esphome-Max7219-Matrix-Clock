@@ -65,7 +65,11 @@ const ConfigureColumn = memo(function ConfigureColumn({
 const InfoColumn = memo(function InfoColumn({ cfg, yaml, geo, release, getInstaller }: { cfg: Config; yaml: string; geo: Geometry; release: ReleaseState; getInstaller: () => Promise<string | null> }) {
   return (
     <>
-      <h1>Info &amp; help</h1>
+      <header className="info-intro">
+        <p className="eyebrow"><span className="eyebrow-mark" aria-hidden="true" /> Project guide <span className="eyebrow-divider">/</span> Reference</p>
+        <h1>Info &amp; help</h1>
+        <p>Release details, wiring, installer notes and practical fixes for bringing your matrix clock online.</p>
+      </header>
       <ReleaseNotesSection releaseTag={release.tag} />
       <InstallSection cfg={cfg} yaml={yaml} ready={release.ready && Boolean(yaml)} releaseTag={release.tag} getInstaller={getInstaller} />
       <HardwareSection cfg={cfg} geo={geo} />
@@ -171,12 +175,12 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
       <header className="topbar" ref={topbarRef}>
         <div className="brand">
           <LiveMark />
-          <div>
+          <div className="brand-copy">
             <div className="brand-name">
               Clock<span>lab</span>
             </div>
             <small>
-              MAX7219 · ESPHome {PROJECT.esphome} ·{" "}
+              MAX7219 MATRIX CLOCK <span className="brand-separator">·</span> ESPHome {PROJECT.esphome} <span className="brand-separator">·</span>{" "}
               <a href={PROJECT.repo} target="_blank" rel="noreferrer">
                 GitHub
               </a>
@@ -184,19 +188,23 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
           </div>
         </div>
         <div className="top-actions">
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={share}
-            title="Copy a link that reopens the configurator with these settings"
-          >
-            Share
-          </button>
-          <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
-            Reset
-          </button>
-          <button type="button" className="btn ghost" onClick={download} disabled={!installerReady}>Download YAML</button>
-          <CopyButton text={yaml} id="top-yaml" label="Copy install YAML" copiedLabel="Copied" className="primary" disabled={!installerReady} getText={getInstaller} />
+          <div className="utility-actions">
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={share}
+              title="Copy a link that reopens the configurator with these settings"
+            >
+              Share
+            </button>
+            <button type="button" className="btn ghost" onClick={reset} title="Forget the saved settings">
+              Reset
+            </button>
+          </div>
+          <div className="export-actions">
+            <button type="button" className="btn ghost" onClick={download} disabled={!installerReady}>Download YAML</button>
+            <CopyButton text={yaml} id="top-yaml" label="Copy install YAML" copiedLabel="Copied" className="primary" disabled={!installerReady} getText={getInstaller} />
+          </div>
         </div>
       </header>
 
@@ -210,14 +218,40 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
       ) : null}
 
       <nav className="site-nav" aria-label="Configurator pages" ref={navRef}>
-        <ul>
-          <li><button type="button" className={page === "configure" ? "on" : ""} aria-pressed={page === "configure"} onClick={() => setPage("configure")}>Configure</button></li>
-          <li><button type="button" className={page === "info" ? "on" : ""} aria-pressed={page === "info"} onClick={() => setPage("info")}>Info &amp; help</button></li>
-        </ul>
-      <div className="release-status" role="status"><span>Newest published release: <strong>{release.tag ?? (release.checking ? "checking…" : "not verified")}</strong> · {release.message}</span>
-        {!release.ready ? <button type="button" className="btn ghost" onClick={release.retry} disabled={release.checking}>Retry</button> : null}
-        {install.error ? <strong className="warn-text">{install.error}</strong> : null}
-      </div>
+        <div className="nav-inner">
+          <ul>
+            <li>
+              <button
+                type="button"
+                className={page === "configure" ? "on" : ""}
+                aria-current={page === "configure" ? "page" : undefined}
+                onClick={() => setPage("configure")}
+              >
+                <span className="nav-index" aria-hidden="true">01</span> Configure
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={page === "info" ? "on" : ""}
+                aria-current={page === "info" ? "page" : undefined}
+                onClick={() => setPage("info")}
+              >
+                <span className="nav-index" aria-hidden="true">02</span> Info &amp; help
+              </button>
+            </li>
+          </ul>
+          <div className={`release-status ${release.ready ? "verified" : release.checking ? "checking" : "unverified"}`} role="status">
+            <span className="release-indicator" aria-hidden="true" />
+            <span className="release-copy">
+              <span className="release-label">Newest published release:</span>
+              <strong>{release.tag ?? (release.checking ? "checking…" : "not verified")}</strong>
+              <span className="release-message">{release.message}</span>
+            </span>
+            {!release.ready ? <button type="button" className="btn ghost" onClick={release.retry} disabled={release.checking}>Retry</button> : null}
+            {install.error ? <strong className="warn-text">{install.error}</strong> : null}
+          </div>
+        </div>
       </nav>
 
       <main id="main" className="shell">

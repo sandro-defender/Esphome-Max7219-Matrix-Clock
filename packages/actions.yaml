@@ -1,4 +1,4 @@
-# API actions module (modern `api.actions`, ESPHome 2026.9 syntax).
+# API actions module (`api.actions`); validated against ESPHome 2026.10.0.
 #
 # Every action validates and clamps its input before it reaches the renderer.
 # Descriptions stay short on purpose: ESP8266 allows at most 384 bytes of

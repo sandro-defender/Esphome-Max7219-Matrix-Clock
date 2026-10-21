@@ -20,7 +20,11 @@ export function PreviewControls({ cfg, scene, sliding, reducedMotion, onMessage,
   const slideState = reducedMotion ? "reduced motion" : !cfg.digitAnimation || cfg.animationMs === 0 ? "off" :
     `${cfg.animationMs} ms${sliding ? " · sliding" : ""}`;
   return <div className="preview-controls">
-    <h1 id="preview-title">Your matrix clock.</h1>
+    <div className="configure-intro">
+      <p className="eyebrow"><span className="eyebrow-mark" aria-hidden="true" /> Device studio <span className="eyebrow-divider">/</span> Configure</p>
+      <h1 id="preview-title">Design your <em>matrix clock.</em></h1>
+      <p className="intro-copy">Tune the hardware, display and type. The preview follows your settings; the installer stays faithful to the firmware.</p>
+    </div>
     <div className="panel preview-clock"><label htmlFor="preview-time">Preview time
       <input id="preview-time" placeholder="live" inputMode="numeric" value={cfg.previewTime} spellCheck={false} onChange={(event) => onPreviewTime(event.target.value)} />
     </label><div className="chips"><button type="button" className="chip" onClick={() => onPreviewTime("")}>Live</button>

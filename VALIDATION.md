@@ -8,8 +8,8 @@ that needs a build host and, for real confidence, a device.
 
 | Tool | Version | Used for |
 | --- | --- | --- |
-| Python | **3.12–3.14** | `esphome==2026.9.1` must be importable; the generator imports its schema/font APIs without running the CLI |
-| `requirements-validation.txt` | `esphome==2026.9.1`, `freetype-py==2.5.1`, `fonttools==4.66.1` | exact SDK imports, font metrics, glyph freshness |
+| Python | **3.12–3.14** | `esphome==2026.10.0` must be importable; the generator imports its schema/font APIs without running the CLI |
+| `requirements-validation.txt` | `esphome==2026.10.0`, `freetype-py==2.5.1`, `fonttools==4.66.1` | exact SDK imports, font metrics, glyph freshness |
 | Node.js | **22** (CI; 20+ works locally) | configurator tests, typecheck, Vite bundle |
 | `web-configurator` npm deps | `package-lock.json` | `npm ci` |
 | g++ | C++17 | host renderer tests |
@@ -43,7 +43,7 @@ python scripts/generate_firmware_contract.py
 python web-configurator/scripts/generate_glyphs.py     # only after font changes
 ```
 
-Both need Python 3.12+ with `esphome==2026.9.1` importable (imports only, no
+Both need Python 3.12+ with `esphome==2026.10.0` importable (imports only, no
 `esphome config`/`compile`/codegen).
 
 ## Reduced local coverage

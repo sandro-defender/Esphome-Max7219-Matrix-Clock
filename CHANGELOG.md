@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.8.14 - 2026-10-21
+
+### Changed
+
+- Upgrade the firmware minimum and validation pin to ESPHome 2026.10.0.
+- Explicitly select ESPHome's native Arduino toolchain and Arduino framework
+  3.1.2 for the supported ESP8266 target.
+
+## 0.8.13 - 2026-10-21
+
+### Changed
+
+- Refresh the web configurator with a clearer device-studio introduction, a
+  compact release-verification badge, grouped export actions, and a more
+  balanced desktop and mobile layout.
+- Refine the live matrix status readout and unify the surfaces, spacing and
+  interaction states across the configurator.
+
+### Fixed
+
+- Preserve keyboard focus visibility in the message preview, improve mobile
+  control target sizes, and respect reduced-motion preferences for interface
+  transitions.
+
 ## 0.8.12 - 2026-10-21
 
 ### Added

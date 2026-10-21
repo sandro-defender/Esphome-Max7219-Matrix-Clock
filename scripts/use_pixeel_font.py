@@ -337,7 +337,7 @@ def regenerate_contract(repo: Path) -> None:
     print("Regenerating firmware contract...", file=sys.stderr)
     result = subprocess.run([sys.executable, str(script)], cwd=repo)
     if result.returncode != 0:
-        print(f"WARNING: {script} failed with exit {result.returncode} — is esphome==2026.9.1 installed? (pip install -r requirements-validation.txt)", file=sys.stderr)
+        print(f"WARNING: {script} failed with exit {result.returncode} — is esphome==2026.10.0 installed? (pip install -r requirements-validation.txt)", file=sys.stderr)
     else:
         print("Firmware contract regenerated")
 
