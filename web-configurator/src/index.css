@@ -39,6 +39,10 @@
   --chassis-h: 200px;
   --pin-gap: 8px;
   --shell-max: 1520px;
+  /* Pinned matrix width cap; a panel wider than this (many modules) pushes
+     --matrix-w up so the chassis stretches to the page edges instead of
+     scaling the pixels down. */
+  --chassis-cap: 640px;
 }
 
 * { box-sizing: border-box; }
@@ -272,7 +276,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .face-stepper { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
 .face-stepper button { border: 1px solid var(--line); background: var(--bg-3); color: var(--amber-2); border-radius: var(--r-s); min-height: 40px; padding: 6px 9px; line-height: 1.2; font-size: .75rem; }
-.info-page { grid-column: 1 / -1; }
 
 .site-nav ul {
   display: flex;
@@ -333,7 +336,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ------------------------------------------------------------------ *
- * Shell: single column on phones, preview rail from 980 px
+ * Shell: one full-width column at every screen size. The live matrix
+ * is pinned under the menu (the phone layout), the rest scrolls below.
  * ------------------------------------------------------------------ */
 
 .shell {
@@ -345,68 +349,55 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .content-col { min-width: 0; margin-top: 26px; }
 
 @media (min-width: 980px) {
-  .shell {
-    display: grid;
-    grid-template-columns: minmax(300px, .82fr) minmax(0, 1.45fr);
-    gap: 24px;
-    /* Both columns start at the same top edge: the matrix on the left, the
-       title and the preview controls on the right, all in the first screen. */
-    align-items: start;
-    padding: 16px 24px 72px;
-  }
-  /* The rail spans the full row height so the sticky stage can follow the
-     reader down the whole document. */
-  .stage-col { min-width: 0; align-self: stretch; }
-  .content-col { margin-top: 0; }
-  .stage {
-    position: sticky;
-    top: calc(var(--nav-h) + 14px);
-  }
+  .shell { padding: 16px 24px 72px; }
+  /* A little more room for the matrix on large screens — the phone cap stays. */
+  :root { --chassis-cap: 720px; }
 }
+
+/* Scrolled: the pinned display is just the pixel table, and the reserved
+   slot (the --chassis-h measured from this element) shrinks with it. */
+.chassis.compact { padding: 6px 12px; }
+.chassis.compact .chassis-top,
+.chassis.compact .chassis-bottom,
+.chassis.compact .screw,
+.chassis.compact .halo { display: none; }
 
 /* ------------------------------------------------------------------ *
  * Live stage: matrix first, then the time and the face readout
  * ------------------------------------------------------------------ */
 
-.stage { min-width: 0; }
+.stage { min-width: 0; display: flex; flex-direction: column; }
 
-/* The slot reserves the chassis height in the flow; on phones the chassis
-   itself is fixed under the pinned chrome, so the matrix stays put while every
-   section scrolls past. JS replaces the height with the measured one. */
-.chassis-slot { height: 0; }
+/* The slot reserves the chassis height in the flow; the chassis itself is
+   fixed under the pinned chrome at every width, so the matrix stays put while
+   every section scrolls past. JS replaces the height with the measured one. */
+.chassis-slot { height: var(--chassis-h); }
 
 .chassis {
-  position: relative;
-  margin-top: 0;
+  /* `--pin-top` is the measured bottom edge of the pinned chrome, so the
+     matrix always sits exactly under the menu: never behind it at the top of
+     the page, never covering the brand row or the header buttons. */
+  position: fixed;
+  top: calc(var(--pin-top) + var(--pin-gap));
+  /* Centred and capped, so a landscape tablet or a wide desktop does not get
+     a wall of LEDs — unless the pixel table itself is wider, in which case
+     --matrix-w wins and the chassis runs edge to edge. */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2 * max(10px, env(safe-area-inset-left, 0px)));
+  max-width: max(var(--chassis-cap), var(--matrix-w, 0px));
+  /* Below the nav (50), above the scrolling content. */
+  z-index: 40;
   padding: 14px 12px 10px;
+  transition: padding 180ms ease-out;
   border-radius: var(--r-l);
   background:
     linear-gradient(180deg, rgba(255, 214, 160, 0.05), transparent 30%),
     linear-gradient(180deg, #2a241c, #14110e 40%, #0c0b09);
   border: 1px solid rgba(255, 214, 160, 0.18);
   box-shadow:
-    0 22px 48px rgba(0, 0, 0, 0.42),
+    0 14px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 236, 210, 0.14);
-}
-
-@media (max-width: 979px) {
-  .stage { display: flex; flex-direction: column; }
-  .chassis-slot { height: var(--chassis-h); }
-  .chassis {
-    /* `--pin-top` is the measured bottom edge of the pinned chrome, so the
-       matrix always sits exactly under the menu: never behind it at the top of
-       the page, never covering the brand row or the header buttons. */
-    position: fixed;
-    top: calc(var(--pin-top) + var(--pin-gap));
-    /* Centred and capped, so a landscape tablet does not get a wall of LEDs. */
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 2 * max(10px, env(safe-area-inset-left, 0px)));
-    max-width: 640px;
-    /* Below the nav (50), above the scrolling content. */
-    z-index: 40;
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 236, 210, 0.14);
-  }
 }
 
 .screw {
@@ -600,7 +591,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
    here, so they inherit one consistent box from the design system. */
 .preview-controls { min-width: 0; }
 
-.configure-intro { grid-column: 1 / -1; max-width: 62ch; margin: 0 0 3px; }
+.configure-intro { max-width: 62ch; margin: 0 0 3px; }
 .eyebrow {
   display: flex;
   align-items: center;
@@ -717,12 +708,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
  * Sections
  * ------------------------------------------------------------------ */
 
-.doc-section { margin-top: 42px; scroll-margin-top: 0; }
-
-@media (max-width: 979px) {
-  /* An anchor target has to clear the pinned matrix, not just the menu. */
-  .doc-section, .stage { scroll-margin-top: calc(var(--chassis-h) + var(--pin-gap) + 4px); }
-}
+/* An anchor target has to clear the pinned matrix, not just the menu. */
+.doc-section { margin-top: 42px; scroll-margin-top: calc(var(--chassis-h) + var(--pin-gap) + 4px); }
+.stage { scroll-margin-top: calc(var(--chassis-h) + var(--pin-gap) + 4px); }
 
 .doc-section > h2 {
   position: relative;
@@ -770,6 +758,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .panel p, .card p { margin: 8px 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
 .panel p strong, .section-lead strong { color: var(--ink); }
+
+/* The Info page spans the whole shell on large screens: tables and code may
+   run edge to edge, but running paragraph text that wide is unreadable. */
+.info-page .panel p, .info-page .card p { max-width: 78ch; }
 
 a { color: var(--amber-2); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 a:hover { color: var(--amber); }
@@ -974,6 +966,59 @@ pre, .code {
 
 .pin-table td:last-child, .pin-table td:nth-child(3) { font-family: var(--mono); font-size: 0.78rem; }
 .pin-table td:last-child { color: var(--amber-2); }
+
+/* Reference tables fold by default so the Info & help page stays short. */
+.table-fold {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--bg-2);
+}
+
+.table-fold > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  border-bottom: 1px solid transparent;
+  border-radius: var(--r-m);
+}
+
+.table-fold > summary::before {
+  content: "+";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.table-fold[open] > summary::before { content: "−"; }
+.table-fold[open] > summary { border-bottom-color: var(--line-soft); border-radius: var(--r-m) var(--r-m) 0 0; }
+.table-fold > summary::-webkit-details-marker { display: none; }
+.table-fold > summary:hover { background: var(--amber-soft); }
+
+.table-fold-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.table-fold > .table-scroll { margin-top: 8px; margin-left: 14px; margin-right: 14px; }
+.table-fold > .table-scroll:last-child { margin-bottom: 14px; }
 
 .entity-list { list-style: none; padding: 0; margin: 8px 0 0; }
 
@@ -1491,10 +1536,7 @@ button.font-card:hover { border-color: var(--amber-dim); }
 @media (prefers-reduced-motion: reduce) { .release-status.checking .release-indicator::after { animation: none; } }
 /* Compact settings: one shared label/control grid, no masonry reading order. */
 .compact-settings { --label-width: 9rem; margin-top: 24px; }
-.compact-settings :is(input, select, button, summary) { scroll-margin-top: calc(var(--nav-h) + 16px); }
-@media (max-width: 979px) {
-  .compact-settings :is(input, select, button, summary) { scroll-margin-top: calc(var(--nav-h) + var(--chassis-h) + var(--pin-gap) + 16px); }
-}
+.compact-settings :is(input, select, button, summary) { scroll-margin-top: calc(var(--nav-h) + var(--chassis-h) + var(--pin-gap) + 16px); }
 .settings-intro { color: var(--muted); font-size: .86rem; line-height: 1.45; margin: 10px 0 12px; }
 .settings-intro strong { color: var(--ink); }
 .tune-grid, .visibility-grid {
@@ -1534,6 +1576,36 @@ button.font-card:hover { border-color: var(--amber-dim); }
 .field-note code { font: inherit; color: var(--amber-2); }
 .compact-help { margin-top: 6px; font-size: .8rem; }
 .compact-help > summary { cursor: pointer; padding: 6px 0; color: var(--amber-2); min-height: 32px; }
+
+/* Install-time Home Assistant entity IDs: folded by default, one disclosure
+   per card, same compact rhythm as the "About" help. */
+.entity-fields { margin-top: 6px; font-size: .8rem; }
+.entity-fields > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 0;
+  color: var(--amber-2);
+  min-height: 32px;
+}
+.entity-fields > summary::-webkit-details-marker { display: none; }
+.entity-fields > summary::before {
+  content: "+";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .7rem;
+}
+.entity-fields[open] > summary::before { content: "−"; }
 .preview-settings { margin-top: 10px; }
 /* Hardware radios are explicit and keyboard-operable, with generated defaults. */
 .target-picker { border-color: var(--amber-dim); }

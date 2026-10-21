@@ -86,6 +86,27 @@ describe("App", () => {
     expect(info).toContain("encrypted native OTA");
     expect(markup + info).not.toContain('type="password"');
   });
+  it("folds every Info & help reference table by default, one table per disclosure", () => {
+    // The five reference tables (wiring, package contract, actions, entities,
+    // fonts) each sit in one disclosure that starts closed, so the page stays
+    // short until a table is actually opened.
+    const folds = [...info.matchAll(/<details class="table-fold"[^>]*>/g)];
+    expect(folds).toHaveLength(5);
+    for (const match of folds) expect(match[0]).not.toContain("open");
+    for (const [label, rows] of [["Wiring", "5 rows"], ["Package contract", undefined], ["Actions", undefined], ["Entities", undefined], ["Fonts", undefined]] as const) {
+      const fold = [...info.matchAll(new RegExp(`<details class="table-fold"[^>]*><summary><span>${label}</span><span class="table-fold-count">[\\d]+ rows?</span>`, "g"))];
+      expect(fold, label).toHaveLength(1);
+      if (rows) expect(fold[0][0]).toContain(rows);
+    }
+    // Each disclosure contains exactly one table and no nested disclosure.
+    for (const match of info.matchAll(/<details class="table-fold"[^>]*>[\s\S]*?<\/details>/g)) {
+      const [block] = match;
+      const body = block.slice(block.indexOf(">") + 1, -"</details>".length);
+      expect(body.match(/<table class="pin-table">/g)).toHaveLength(1);
+      expect(body).not.toContain("<details");
+    }
+    expect(info).not.toMatch(/<details class="table-fold"[^>]*open/);
+  });
   it("retains every shipped hardware photo with meaningful alt and caption, only in Info & help", () => {
     const files = readdirSync(new URL("../public/images", import.meta.url)).filter((name) => name.endsWith(".jpg")).sort();
     const figures = [...info.matchAll(/<figure[^>]*>\s*<img src="\.\/images\/([\w.-]+)" alt="([^"]+)"[^>]*\/?>\s*<figcaption>([^<]+)<\/figcaption>/g)];
@@ -102,7 +123,6 @@ describe("App", () => {
  * ------------------------------------------------------------------ */
 
 const DESKTOP = "@media (min-width: 980px)";
-const PHONE = "@media (max-width: 979px)";
 
 /** Bodies of every `{…}` block that follows `opener`, braces balanced. */
 function blocks(scope: string, opener: string): string[] {
@@ -150,12 +170,12 @@ describe("responsive layout", () => {
     expect(chassis).toBeGreaterThan(stage);
     expect(chassis).toBeLessThan(readout);
     expect(readout).toBeLessThan(status);
-    // The page title sits in the settings column: no block of text is stacked
-    // above the panel, so the first desktop screen is the matrix itself.
+    // The page title sits below the stage: no block of text is stacked above
+    // the panel, so the first screen is the pinned matrix itself.
     expect(markup.indexOf("<h1")).toBeGreaterThan(status);
   });
 
-  it("keeps the essential preview controls above the fold beside the matrix", () => {
+  it("keeps the essential preview controls above the fold under the matrix", () => {
     const controls = markup.indexOf('id="preview-time"');
     const composer = markup.indexOf('id="ha-message"');
     const tune = markup.indexOf('<section id="tune"');
@@ -164,36 +184,36 @@ describe("responsive layout", () => {
     expect(composer).toBeGreaterThan(0);
     expect(controls).toBeLessThan(tune);
     expect(composer).toBeLessThan(tune);
-    // They live in the settings column, not under the sticky device rail.
+    // They live in the content column under the stage, never before it.
     expect(markup.indexOf('class="content-col"')).toBeLessThan(controls);
   });
 
-  it("wastes no vertical space above the desktop matrix", () => {
-    const shell = rule(css, ".shell", DESKTOP);
-    expect(shell).toContain("display: grid");
-    expect(shell).toContain("align-items: start");
-    expect(Number(/padding: (\d+)px/.exec(shell)![1])).toBeLessThanOrEqual(16);
-    expect(rule(css, ".chassis")).toContain("margin-top: 0");
-    expect(rule(css, ".chassis-slot")).toContain("height: 0");
+  it("keeps the page one full-width column with the pinned matrix at every width", () => {
+    // No preview rail beside the content: the shell defines no two-column
+    // grid, the matrix is pinned under the menu exactly as on phones, and the
+    // settings and reference content below it use the whole page width.
+    expect(rule(css, ".shell")).not.toContain("display: grid");
+    expect(rule(css, ".shell", DESKTOP)).not.toContain("grid-template-columns");
+    expect(rule(css, ".chassis")).toContain("position: fixed");
+    expect(rule(css, ".chassis")).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
+    // Capped — but a pixel table wider than the cap (many modules) pushes the
+    // chassis to the page edges through --matrix-w instead of scaling down.
+    expect(rule(css, ".chassis")).toContain("max-width: max(var(--chassis-cap), var(--matrix-w, 0px))");
+    expect(rule(css, ":root")).toContain("--chassis-cap: 640px");
+    // Large screens get a bigger matrix, phones keep the 640 px cap.
+    expect(rule(css, ":root", DESKTOP)).toContain("--chassis-cap: 720px");
     expect(rule(css, ".topbar")).toContain("padding: 12px 16px 8px");
   });
 
-  it("keeps the desktop preview a sticky rail beside every section", () => {
-    expect(rule(css, ".stage-col", DESKTOP)).toContain("align-self: stretch");
-    const stage = rule(css, ".stage", DESKTOP);
-    expect(stage).toContain("position: sticky");
-    expect(stage).toContain("top: calc(var(--nav-h) + 14px)");
-  });
-
-  it("pins the phone matrix under the measured chrome and under the menu", () => {
-    const chassis = rule(css, ".chassis", PHONE);
+  it("pins the matrix under the measured chrome and under the menu", () => {
+    const chassis = rule(css, ".chassis");
     expect(chassis).toContain("position: fixed");
     expect(chassis).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
     expect(chassis).toContain("z-index: 40");
     expect(chassis).toContain("env(safe-area-inset-left");
-    // Centred and capped instead of stretched across a landscape tablet.
+    // Centred, and capped by --chassis-cap unless the pixel table is wider.
     expect(chassis).toContain("left: 50%");
-    expect(chassis).toContain("max-width: 640px");
+    expect(chassis).toContain("max-width: max(var(--chassis-cap), var(--matrix-w, 0px))");
 
     const nav = rule(css, ".site-nav");
     expect(nav).toContain("position: sticky");
@@ -204,16 +224,30 @@ describe("responsive layout", () => {
     expect(Number(/rgba\(16, 14, 12, ([\d.]+)\)/.exec(nav)![1])).toBeGreaterThanOrEqual(0.95);
 
     // The spacer keeps the document height honest while the chassis is fixed.
-    expect(rule(css, ".chassis-slot", PHONE)).toContain("height: var(--chassis-h)");
+    expect(rule(css, ".chassis-slot")).toContain("height: var(--chassis-h)");
     expect(markup).toContain('class="chassis-slot"');
-    // A measured inline height used to override desktop's zero-height spacer.
+    // A measured inline height used to override the reserved spacer.
     const stage = readFileSync(new URL("./LiveStage.tsx", import.meta.url), "utf8");
     expect(stage).not.toContain("style={chassisH");
   });
 
   it("gives anchor jumps room for the menu and the pinned matrix", () => {
     expect(rule(css, "html")).toContain("scroll-padding-top: calc(var(--nav-h) + 12px)");
-    expect(rule(css, ".doc-section, .stage", PHONE)).toContain("var(--chassis-h)");
+    expect(rule(css, ".doc-section")).toContain("var(--chassis-h)");
+  });
+
+  it("collapses the pinned display to just the pixel table while scrolled", () => {
+    // The scroll state is measured in the stage, the bezel furniture is
+    // hidden by CSS; the measured --chassis-h slot follows the shorter box.
+    const stage = readFileSync(new URL("./LiveStage.tsx", import.meta.url), "utf8");
+    expect(stage).toContain("addEventListener(\"scroll\"");
+    expect(stage).toContain("chassis\", scrolled && \"compact\"");
+    expect(stage).toContain("naturalPanelWidth");
+    expect(css).toContain(".chassis.compact { padding: 6px 12px; }");
+    for (const part of [".chassis-top", ".chassis-bottom", ".screw", ".halo"]) {
+      expect(css).toContain(`.chassis.compact ${part}`);
+    }
+    expect(css).toContain(".chassis.compact .halo { display: none; }");
   });
 
   it("keeps the panel centred and inside its column", () => {

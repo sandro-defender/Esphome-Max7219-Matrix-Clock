@@ -12,6 +12,7 @@ import {
   moduleBoundaries,
   moduleGeometry,
   moduleOrigin,
+  naturalPanelWidth,
   panelBounds,
   pixelCenter,
   type ModuleBoundaryCtx,
@@ -107,6 +108,17 @@ describe("MatrixCanvas module joining", () => {
       expect(moduleOrigin(stacked, 0, my).y + stacked.mod).toBe(moduleOrigin(stacked, 0, my + 1).y);
     }
     expect(moduleOrigin(stacked, 0, 3).y + stacked.mod + stacked.labelH).toBe(stacked.cssH);
+  });
+
+  it("reports the unshrunk panel width so a wide chassis can stretch instead of scaling the dots", () => {
+    // 6 modules: dot 11, pitch 13 → 48 columns × 13.
+    expect(naturalPanelWidth(6, 1)).toBe(48 * 13);
+    // 12 modules: dot 6, pitch 7 → 96 columns × 7.
+    expect(naturalPanelWidth(12, 1)).toBe(96 * 7);
+    // A narrow box still shrinks to fit; the natural width is the target.
+    const narrow = moduleGeometry(360, 12, 1);
+    expect(narrow.cssW).toBeLessThan(naturalPanelWidth(12, 1));
+    expect(naturalPanelWidth(12, 1)).toBe(12 * 8 * 7);
   });
 
   it("keeps the LED grid inside a module evenly pitched", () => {

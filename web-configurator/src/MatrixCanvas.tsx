@@ -127,6 +127,16 @@ export function moduleGeometry(box: number, modulesX: number, modulesY: number):
   };
 }
 
+/**
+ * Panel width at the dot size chosen for the module count, before any
+ * shrink-to-fit: this is how wide the pixel table wants to be when there is
+ * room on screen, so the chassis can stretch to the edges instead of scaling
+ * the dots down.
+ */
+export function naturalPanelWidth(modulesX: number, modulesY: number): number {
+  return moduleGeometry(Number.MAX_SAFE_INTEGER, modulesX, modulesY).cssW;
+}
+
 /** Top-left corner of one module in canvas CSS px. */
 export function moduleOrigin(geometry: ModuleGeometry, mx: number, my: number): { x: number; y: number } {
   const step = geometry.mod + geometry.gap;

@@ -6,7 +6,7 @@ import { useLayoutEffect, useRef, type RefObject } from "react";
  *
  * - `--nav-h` — the sticky section nav's own height, used for anchor offsets;
  * - `--pin-top` — where the pinned chrome currently ends, in viewport pixels,
- *   used as the `top` of the matrix that stays pinned on phones.
+ *   used as the `top` of the matrix that stays pinned under the menu.
  *
  * Measuring beats hard-coding here: the nav sits below the brand row until that
  * row scrolls away, and its height moves with the safe-area inset, the notice

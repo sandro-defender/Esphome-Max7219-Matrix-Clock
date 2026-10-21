@@ -61,7 +61,14 @@ describe("compact settings model", () => {
         expect(Boolean(control.getAttribute("aria-label") || control.labels?.length), item.key).toBe(true);
       }
     }
-    expect(doc.querySelectorAll("[data-settings-group] details > summary")).toHaveLength(FIRMWARE.groups.length);
+    // One "About" disclosure per card, plus one folded entity-ID disclosure on
+    // the card carrying the Home Assistant temperature/weather inputs.
+    expect(doc.querySelectorAll("[data-settings-group] details.compact-help > summary")).toHaveLength(FIRMWARE.groups.length);
+    const entityFold = doc.querySelector('[data-settings-group="Screens"] details.entity-fields');
+    expect(entityFold).toBeTruthy();
+    // Folded by default: no `open` attribute on the details element itself.
+    expect(/^<details class="entity-fields">/.test(entityFold!.outerHTML)).toBe(true);
+    expect(entityFold!.querySelectorAll("[data-setting-key]")).toHaveLength(Object.keys(ENTITY_ID_FIELDS).length);
     expect(doc.querySelector('input[type="password"]')).toBeNull();
     for (const secret of Object.keys(FIRMWARE.secrets)) expect(doc.querySelector(`[name="${secret}"]`)).toBeNull();
   });

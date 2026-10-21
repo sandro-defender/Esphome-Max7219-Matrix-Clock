@@ -2,7 +2,7 @@ import type { Config } from "./types";
 import { deviceSlug } from "./device";
 import { fontSpec } from "./fontCatalog";
 import { type Geometry } from "./render";
-import { CopyButton, Section } from "./ui";
+import { CopyButton, Section, TableFold } from "./ui";
 import { entityId, entityMap, installCommand, sampleAction } from "./yaml";
 import { FIRMWARE, PROJECT } from "./firmware";
 import { installerSecrets } from "./settingsModel";
@@ -31,50 +31,52 @@ export function HardwareSection({ cfg, geo }: { cfg: Config; geo: Geometry }) {
     >
       <div className="panel">
         <h3>Default wiring</h3>
-        <div className="table-scroll">
-        <table className="pin-table">
-          <thead>
-            <tr>
-              <th>Signal</th>
-              <th>Module pin</th>
-              <th>{target.platform === "esp32" ? "ESP32 pin" : "D1 mini pin"}</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Clock</td>
-              <td>CLK</td>
-              <td>{cfg.clkPin}</td>
-              <td>{fallback("clkPin")} by default{hardwarePins ? `; ${hardwarePins.clk} is the hardware SPI clock` : ""}</td>
-            </tr>
-            <tr>
-              <td>Data</td>
-              <td>DIN</td>
-              <td>{cfg.mosiPin}</td>
-              <td>{fallback("mosiPin")} by default; first module only — then OUT → IN down the chain</td>
-            </tr>
-            <tr>
-              <td>Load / chip select</td>
-              <td>CS</td>
-              <td>{cfg.csPin}</td>
-              <td>{fallback("csPin")} by default</td>
-            </tr>
-            <tr>
-              <td>Ground</td>
-              <td>GND</td>
-              <td>G</td>
-              <td>Common ground with the matrix is mandatory</td>
-            </tr>
-            <tr>
-              <td>Supply</td>
-              <td>VCC</td>
-              <td>5V</td>
-              <td>Matrix wants 5 V; the controller's logic is 3.3 V</td>
-            </tr>
-          </tbody>
-        </table>
-        </div>
+        <TableFold label="Wiring" rows={5}>
+          <div className="table-scroll">
+          <table className="pin-table">
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Module pin</th>
+                <th>{target.platform === "esp32" ? "ESP32 pin" : "D1 mini pin"}</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Clock</td>
+                <td>CLK</td>
+                <td>{cfg.clkPin}</td>
+                <td>{fallback("clkPin")} by default{hardwarePins ? `; ${hardwarePins.clk} is the hardware SPI clock` : ""}</td>
+              </tr>
+              <tr>
+                <td>Data</td>
+                <td>DIN</td>
+                <td>{cfg.mosiPin}</td>
+                <td>{fallback("mosiPin")} by default; first module only — then OUT → IN down the chain</td>
+              </tr>
+              <tr>
+                <td>Load / chip select</td>
+                <td>CS</td>
+                <td>{cfg.csPin}</td>
+                <td>{fallback("csPin")} by default</td>
+              </tr>
+              <tr>
+                <td>Ground</td>
+                <td>GND</td>
+                <td>G</td>
+                <td>Common ground with the matrix is mandatory</td>
+              </tr>
+              <tr>
+                <td>Supply</td>
+                <td>VCC</td>
+                <td>5V</td>
+                <td>Matrix wants 5 V; the controller's logic is 3.3 V</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </TableFold>
         <p>
           Chain <strong>DOUT of one module to DIN of the next</strong>, starting at the module that gets the controller's
           three lines. The numbers under the preview are chain order. The matrix wants 5 V on VCC; 3.3 V logic usually
@@ -140,9 +142,11 @@ export function InstallSection({ cfg, yaml, ready = false, releaseTag, getInstal
       <pre className="code">{installCommand(cfg)}</pre></div>
     <div className="panel"><h3>Current package contract</h3>
       <p>Published release: <strong>{releaseTag ?? "checking"}</strong>. All packages and font assets use that same immutable tag, never main. Downloads stay disabled while the release or matching source contract is unverified.</p>
-      <div className="table-scroll"><table className="pin-table"><thead><tr><th>Substitution / entity</th><th>Current value</th><th>Configure group</th></tr></thead><tbody>
-        {FIRMWARE.settings.map((item) => <tr key={item.key}><td>{item.target}</td><td>{String(cfg[item.key])}</td><td>{item.group}</td></tr>)}
-      </tbody></table></div>
+      <TableFold label="Package contract" rows={FIRMWARE.settings.length}>
+        <div className="table-scroll"><table className="pin-table"><thead><tr><th>Substitution / entity</th><th>Current value</th><th>Configure group</th></tr></thead><tbody>
+          {FIRMWARE.settings.map((item) => <tr key={item.key}><td>{item.target}</td><td>{String(cfg[item.key])}</td><td>{item.group}</td></tr>)}
+        </tbody></table></div>
+      </TableFold>
       <p>Preferences are first-boot defaults. Previously restored Home Assistant values take priority. After changing the compiled font subset, reselect Clock font once: ESPHome restores an option index, not its label. Compact 5×7 is always available.</p>
     </div>
     <div className="panel"><div className="yaml-bar"><h3>{slug}.yaml</h3><CopyButton text={yaml} id="yaml" label="Copy install YAML" disabled={!ready} getText={getInstaller} /></div>
@@ -155,24 +159,31 @@ export function AssistantSection({ cfg }: { cfg: Config }) {
   return <Section id="assistant" title="Home Assistant entities and actions" lead={<>The following reference is generated from the actual firmware packages. Example entity IDs use {ids.node}; Home Assistant may adjust duplicates.</>}>
     <div className="panel"><h3>Actions</h3><CopyButton text={sampleAction(cfg, cfg.message || "DOOR")} id="action" label="Copy message action" />
       <pre className="code">{sampleAction(cfg, cfg.message || "DOOR")}</pre>
-      <div className="table-scroll"><table className="pin-table"><tbody>{FIRMWARE.actions.map((action) => <tr key={action.action}>
-        <td><code>esphome.{ids.node}_{action.action}</code></td><td>{action.description}</td><td>{Object.entries(action.variables).map(([key, type]) => `${key}: ${type}`).join(", ")}</td>
-      </tr>)}</tbody></table></div><p>A configured default duration of 0 persists until cleared; action durations at or below 0 select that default. Messages preserve spaces and ASCII case is uppercased, truncated at a valid UTF-8 boundary to {FIRMWARE.renderer.messageMaxBytes} bytes. Unsupported text uses the built-in fallback.</p></div>
-    <div className="panel"><h3>Entity reference</h3><p>Exposure is set under Configure → Home Assistant visibility. Hidden entities remain in the firmware but are not advertised to Home Assistant or the device web server. Rebuild and install to apply changes; previously registered Home Assistant entities may need cleanup.</p><div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
-      {FIRMWARE.entities.map((entity, index) => <tr key={`${entity.domain}-${entity.id ?? entity.name}-${index}`}>
-        <td><strong>{entity.name}</strong><br /><code>{entityId(cfg, entity.domain, entity.name)}</code></td>
-        <td>{(entity.id === "clock_font" || entity.id === "date_font" || entity.id === "temp_font" || entity.id === "message_font") ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
-          (entity.min_value !== undefined ? `${entity.min_value}–${entity.max_value}, step ${entity.step} ${entity.unit_of_measurement ?? ""}` : entity.domain)}
-          {cfg.hiddenEntities.includes(entity.id) ? " · internal (hidden)" : " · exposed"}{entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
-      </tr>)}
-    </tbody></table></div></div>
+      <TableFold label="Actions" rows={FIRMWARE.actions.length}>
+        <div className="table-scroll"><table className="pin-table"><tbody>{FIRMWARE.actions.map((action) => <tr key={action.action}>
+          <td><code>esphome.{ids.node}_{action.action}</code></td><td>{action.description}</td><td>{Object.entries(action.variables).map(([key, type]) => `${key}: ${type}`).join(", ")}</td>
+        </tr>)}</tbody></table></div>
+      </TableFold><p>A configured default duration of 0 persists until cleared; action durations at or below 0 select that default. Messages preserve spaces and ASCII case is uppercased, truncated at a valid UTF-8 boundary to {FIRMWARE.renderer.messageMaxBytes} bytes. Unsupported text uses the built-in fallback.</p></div>
+    <div className="panel"><h3>Entity reference</h3><p>Exposure is set under Configure → Home Assistant visibility. Hidden entities remain in the firmware but are not advertised to Home Assistant or the device web server. Rebuild and install to apply changes; previously registered Home Assistant entities may need cleanup.</p>
+      <TableFold label="Entities" rows={FIRMWARE.entities.length}>
+        <div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
+          {FIRMWARE.entities.map((entity, index) => <tr key={`${entity.domain}-${entity.id ?? entity.name}-${index}`}>
+            <td><strong>{entity.name}</strong><br /><code>{entityId(cfg, entity.domain, entity.name)}</code></td>
+            <td>{(entity.id === "clock_font" || entity.id === "date_font" || entity.id === "temp_font" || entity.id === "message_font") ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
+              (entity.min_value !== undefined ? `${entity.min_value}–${entity.max_value}, step ${entity.step} ${entity.unit_of_measurement ?? ""}` : entity.domain)}
+              {cfg.hiddenEntities.includes(entity.id) ? " · internal (hidden)" : " · exposed"}{entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
+          </tr>)}
+        </tbody></table></div>
+      </TableFold></div>
   </Section>;
 }
 
 export function FontReferenceSection() {
   return <Section id="font-reference" title="Fonts and preview behaviour">
     <div className="panel"><h3>Default and optional fonts</h3><p>The default pair is {FIRMWARE.defaultFonts.map((key) => fontSpec(key).label).join(" + ")}. All compatible extras may be selected together, without a cap. The built-in Compact 5×7 fallback needs no external font data.</p>
-      <table className="pin-table"><tbody>{FIRMWARE.fonts.map((font) => <tr key={font.id}><td>{font.label}</td><td>{font.license}</td><td><a href={`${PROJECT.repo}/blob/${PROJECT.ref}/${font.source}`} target="_blank" rel="noreferrer">Source / licence</a></td></tr>)}</tbody></table></div>
+      <TableFold label="Fonts" rows={FIRMWARE.fonts.length}>
+        <div className="table-scroll"><table className="pin-table"><tbody>{FIRMWARE.fonts.map((font) => <tr key={font.id}><td>{font.label}</td><td>{font.license}</td><td><a href={`${PROJECT.repo}/blob/${PROJECT.ref}/${font.source}`} target="_blank" rel="noreferrer">Source / licence</a></td></tr>)}</tbody></table></div>
+      </TableFold></div>
     <div className="panel"><h3>How the display chooses a layout</h3><p>Full HH:MM:SS → HH:MM plus seconds bar → Compact 5×7. A glyph never wraps into the next chip. Free text falls back to Compact if the selected face lacks even one character; wide messages scroll or clip according to Message scroll.</p>
       <p>Digit animation slides only changed numeric cells upward in their own ink-height window. Unchanged digits and colons remain stationary. Duration and blank-row gap are real Home Assistant controls; setting duration to 0 or disabling Digit animation cancels any active slide. Browser reduced-motion preferences suppress preview animation only.</p>
       <p>The preview uses the exact FreeType monochrome glyphs, advances and bearings and the C++ built-in bitmap. It displays the logical front-facing buffer; wiring guides mark chain order. Per-chip rotation and flip reflect the selected driver transforms. Frozen preview time, message demo, colour and module boundaries are preview-only and do not enter installer YAML.</p></div>

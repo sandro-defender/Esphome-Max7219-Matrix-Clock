@@ -71,10 +71,10 @@ const InfoColumn = memo(function InfoColumn({ cfg, yaml, geo, release, getInstal
         <p>Release details, wiring, installer notes and practical fixes for bringing your matrix clock online.</p>
       </header>
       <ReleaseNotesSection releaseTag={release.tag} />
-      <InstallSection cfg={cfg} yaml={yaml} ready={release.ready && Boolean(yaml)} releaseTag={release.tag} getInstaller={getInstaller} />
       <HardwareSection cfg={cfg} geo={geo} />
-      <FontReferenceSection />
+      <InstallSection cfg={cfg} yaml={yaml} ready={release.ready && Boolean(yaml)} releaseTag={release.tag} getInstaller={getInstaller} />
       <AssistantSection cfg={cfg} />
+      <FontReferenceSection />
       <TroubleshootingSection />
       <GallerySection />
       <DocsSection />
@@ -256,7 +256,7 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
 
       <main id="main" className="shell">
         {page === "configure" ? <>
-          <div className="stage-col"><LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} /></div>
+          <LiveStage cfg={cfg} scene={scene} now={now} onPreviousFont={() => cycleFont(-1)} onNextFont={() => cycleFont(1)} />
           <div className="content-col">
             <PreviewControls cfg={cfg} scene={scene} sliding={sliding} reducedMotion={reducedMotion}
               onMessage={(value) => patch("message", value)} onPreviewTime={(value) => patch("previewTime", value)}

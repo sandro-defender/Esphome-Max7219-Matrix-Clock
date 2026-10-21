@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.15 - 2026-10-21
+
+### Changed
+
+- Reorganise the web configurator into one full-width column at every screen
+  size: the live matrix is pinned under the menu exactly as on phones, and the
+  settings and Info & help content scroll below it using the whole page width
+  instead of a narrow column beside a preview rail.
+- Reorder the Info & help sections to build order (release, wiring, install,
+  then the entity, action and font references) and cap paragraph width so the
+  full-width panels stay readable on large screens while tables and code run
+  edge to edge.
+- Fold the web configurator's Info & help reference tables (wiring, package
+  contract, actions, entities and fonts) behind collapsed disclosures with a
+  row count, so the page stays short and the table you need is one click away.
+- While the page is scrolled, the pinned display collapses to just the pixel
+  table (bezel labels and screws hidden, reserved space released), and the
+  Home Assistant temperature and weather entity IDs fold behind one disclosure
+  so the Screens card stays compact.
+- A panel wider than the chassis cap (for example twelve modules) now stretches
+  the chassis to the page edges instead of scaling the dots down to fit.
+
 ## 0.8.14 - 2026-10-21
 
 ### Changed
