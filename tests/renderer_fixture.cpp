@@ -106,19 +106,46 @@ static std::string visible_pixels(const display::Display &panel, const Values &v
   return bits;
 }
 
-static void load_font(const Values &values, display::Display &panel, BuiltinFont &builtin,
-                      std::unique_ptr<font::Font> &native, std::unique_ptr<SourceFont> &external,
-                      const GlyphFont *&selected) {
+static void load_named_font(const std::string &font_key, display::Display &panel, BuiltinFont &builtin,
+                            std::unique_ptr<font::Font> &native, std::unique_ptr<SourceFont> &external,
+                            const GlyphFont *&selected) {
   selected = &builtin;
-  if (values.at("font") == "compact") return;
-  for (const auto &record : font::FIXTURE_FONTS) if (values.at("font") == record.id) {
-    native = std::make_unique<font::Font>(record);
-    external = std::make_unique<SourceFont>(native.get(), &panel);
-    selected = external.get();
-    return;
+  if (font_key == "compact" || font_key == "Compact 5x7") return;
+  std::string normalized = font_key;
+  for (char &ch : normalized) {
+    if (ch >= 'A' && ch <= 'Z') ch = (char) (ch - 'A' + 'a');
+    else if (ch == '-' || ch == ' ') ch = '_';
   }
-  throw std::runtime_error("Unknown compiled font");
+  const std::string candidate_id = "font_" + normalized + "_source";
+  for (const auto &record : font::FIXTURE_FONTS) {
+    if (font_key == record.id || candidate_id == record.id) {
+      native = std::make_unique<font::Font>(record);
+      external = std::make_unique<SourceFont>(native.get(), &panel);
+      selected = external.get();
+      return;
+    }
+  }
+  throw std::runtime_error("Unknown compiled font: " + font_key);
 }
+
+struct LoadedScreenFonts {
+  std::unique_ptr<font::Font> clock_native, date_native, temp_native, msg_native;
+  std::unique_ptr<SourceFont> clock_ext, date_ext, temp_ext, msg_ext;
+  const GlyphFont *clock = nullptr;
+  const GlyphFont *date = nullptr;
+  const GlyphFont *temp = nullptr;
+  const GlyphFont *msg = nullptr;
+  ScreenFonts refs;
+
+  void load(const Values &values, display::Display &panel, BuiltinFont &builtin) {
+    const std::string def = values.at("font");
+    load_named_font(def, panel, builtin, clock_native, clock_ext, clock);
+    load_named_font(has(values, "dateFont") ? values.at("dateFont") : def, panel, builtin, date_native, date_ext, date);
+    load_named_font(has(values, "tempFont") ? values.at("tempFont") : def, panel, builtin, temp_native, temp_ext, temp);
+    load_named_font(has(values, "messageFont") ? values.at("messageFont") : def, panel, builtin, msg_native, msg_ext, msg);
+    refs = ScreenFonts{clock, date, temp, msg};
+  }
+};
 
 static void fill_clock(Frame &frame, const Values &values) {
   fixture_preferences(frame, values);
@@ -147,10 +174,9 @@ static void emit_single(const Values &values) {
   display::Display panel(width, height);
   DisplayCanvas canvas(panel);
   BuiltinFont builtin;
-  const GlyphFont *selected = &builtin;
-  std::unique_ptr<font::Font> native;
-  std::unique_ptr<SourceFont> external;
-  load_font(values, panel, builtin, native, external, selected);
+  LoadedScreenFonts screen_fonts;
+  screen_fonts.load(values, panel, builtin);
+  const GlyphFont *selected = screen_fonts.clock;
 
   Frame frame;
   fill_clock(frame, values);
@@ -173,15 +199,15 @@ static void emit_single(const Values &values) {
     state.ota_error = std::stoi(values.at("error"));
   }
   Report report;
-  render(canvas, *selected, builtin, frame, report);
+  render(canvas, *selected, builtin, frame, report, &screen_fonts.refs);
   if (!values.at("from").empty()) {
     snprintf(state.anim_prev, sizeof(state.anim_prev), "%s", values.at("from").c_str());
     panel.clear();
-    render(canvas, *selected, builtin, frame, report);  // start actual transition
+    render(canvas, *selected, builtin, frame, report, &screen_fonts.refs);  // start actual transition
   }
   frame.now_ms += elapsed;
   panel.clear();
-  render(canvas, *selected, builtin, frame, report);
+  render(canvas, *selected, builtin, frame, report, &screen_fonts.refs);
   const bool priority = state.ota_state != OTA_IDLE || state.boot_active;
   std::cout << "{\"pixels\":" << json_string(visible_pixels(panel, values, priority))
             << ",\"brightness\":" << state.applied_brightness
@@ -248,10 +274,9 @@ static void emit_sequence(const Values &values) {
   display::Display panel(width, height);
   DisplayCanvas canvas(panel);
   BuiltinFont builtin;
-  const GlyphFont *selected = &builtin;
-  std::unique_ptr<font::Font> native;
-  std::unique_ptr<SourceFont> external;
-  load_font(values, panel, builtin, native, external, selected);
+  LoadedScreenFonts screen_fonts;
+  screen_fonts.load(values, panel, builtin);
+  const GlyphFont *selected = screen_fonts.clock;
 
   state = Runtime();
   std::string selected_screen = values.at("screen");
@@ -299,9 +324,11 @@ static void emit_sequence(const Values &values) {
     Frame frame;
     fill_clock(frame, prefs);
     frame.now_ms = now_ms;
+    screen_fonts.load(prefs, panel, builtin);
+    selected = screen_fonts.clock;
     panel.clear();
     Report report;
-    render(canvas, *selected, builtin, frame, report);
+    render(canvas, *selected, builtin, frame, report, &screen_fonts.refs);
     const std::string mode = mode_name(effective_mode(frame));
     const std::string pixels = visible_pixels(panel, prefs, state.ota_state != OTA_IDLE || state.boot_active);
     const bool message_visible = temporary_screen_active(state.message_active, frame.now_ms, state.message_deadline_ms);

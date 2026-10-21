@@ -1,6 +1,15 @@
 import { FIRMWARE } from "./firmware";
 import { GENERATED_FONTS, BUILTIN_GLYPHS, BUILTIN_ADVANCES, BUILTIN_METRICS, type GeneratedFont } from "./glyphs.generated";
-import { MAX7219_GEORGIAN_ADVANCES, MAX7219_GEORGIAN_ROWS } from "./date_font.generated";
+import {
+  MAX7219_CUSTOM_BIG_DIGIT_ADVANCES,
+  MAX7219_CUSTOM_BIG_DIGIT_ROWS,
+  MAX7219_GEORGIAN_ADVANCES,
+  MAX7219_GEORGIAN_CODEPOINTS,
+  MAX7219_GEORGIAN_ROWS,
+  MAX7219_MKHEDRULI_ADVANCES,
+  MAX7219_MKHEDRULI_ROWS,
+} from "./date_font.generated";
+import type { DigitStyle, LetterStyle } from "./types";
 
 /**
  * Font engine for the live preview.
@@ -107,32 +116,66 @@ const GEORGIAN_GLYPHS: Record<string, number[]> = {
 function builtinRows(ch: string): number[] { return GEORGIAN_GLYPHS[ch] ?? BUILTIN_GLYPHS[ch.replace(/[a-z]/g, (char) => char.toUpperCase())] ?? BUILTIN_GLYPHS[" "]; }
 function builtinAdvance(ch: string): number { return BUILTIN_ADVANCES[ch] ?? BUILTIN_METRICS.defaultAdvance; }
 
-/** C++ walks UTF-8 bytes, not JavaScript Unicode code points. */
+const LATIN_TO_GEORGIAN_MAP: readonly number[] = [
+  0x10D0, 0x10D1, 0x10EA, 0x10D3, 0x10D4, 0x10E4, 0x10D2, 0x10F0, 0x10D8,
+  0x10EF, 0x10D9, 0x10DA, 0x10DB, 0x10DC, 0x10DD, 0x10DE, 0x10E7, 0x10E0,
+  0x10E1, 0x10E2, 0x10E3, 0x10D5, 0x10EC, 0x10EE, 0x10E6, 0x10D6,
+];
+
+export function latinToGeorgianChar(ch: string): string {
+  const lower = ch.toLowerCase();
+  const code = lower.charCodeAt(0);
+  if (code >= 97 && code <= 122) return String.fromCodePoint(LATIN_TO_GEORGIAN_MAP[code - 97]);
+  return ch;
+}
+
+/** Matches C++ `next_utf8_codepoint` + single-byte 0x80..0x94 date tokens. */
 export function textCells(text: string): string[] {
-  if ([...text].every((ch) => ch.charCodeAt(0) <= 0xff)) return [...text];
-  return [...new TextEncoder().encode(text)].map((byte) => String.fromCharCode(byte));
+  return [...text];
 }
 
 class BuiltinPreviewFont implements PreviewFont {
   readonly id: string = "builtin";
   readonly label: string = "Compact 5x7";
   readonly builtin = true;
-  readonly inkHeight = BUILTIN_METRICS.inkHeight;
-  readonly inkTop = BUILTIN_METRICS.inkTop;
-  readonly clockWidth = BUILTIN_METRICS.clockWidth;
-  readonly maxDigitHeight = BUILTIN_METRICS.maxDigitHeight;
+  readonly inkHeight: number = BUILTIN_METRICS.inkHeight;
+  readonly inkTop: number = BUILTIN_METRICS.inkTop;
+  readonly clockWidth: number = BUILTIN_METRICS.clockWidth;
+  readonly maxDigitHeight: number = BUILTIN_METRICS.maxDigitHeight;
 
   glyph(ch: string): Glyph {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (cp >= 0xE000 && cp <= 0xE009) {
+      return {
+        w: 8,
+        h: 8,
+        top: 0,
+        rows: [...MAX7219_CUSTOM_BIG_DIGIT_ROWS[cp - 0xE000]],
+        advance: MAX7219_CUSTOM_BIG_DIGIT_ADVANCES[cp - 0xE000],
+      };
+    }
+    if (cp >= 0x10D0 && cp <= 0x10F0) {
+      return {
+        w: 8,
+        h: 8,
+        top: 0,
+        rows: [...MAX7219_MKHEDRULI_ROWS[cp - 0x10D0]],
+        advance: MAX7219_MKHEDRULI_ADVANCES[cp - 0x10D0],
+      };
+    }
     return { w: 5, h: 7, rows: builtinRows(ch), top: 0, advance: builtinAdvance(ch) };
   }
 
   advance(ch: string): number {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (cp >= 0xE000 && cp <= 0xE009) return MAX7219_CUSTOM_BIG_DIGIT_ADVANCES[cp - 0xE000];
+    if (cp >= 0x10D0 && cp <= 0x10F0) return MAX7219_MKHEDRULI_ADVANCES[cp - 0x10D0];
     return builtinAdvance(ch);
   }
 
   measure(text: string): number {
     let width = 0;
-    for (const ch of textCells(text)) width += builtinAdvance(ch);
+    for (const ch of textCells(text)) width += this.advance(ch);
     return width;
   }
 
@@ -152,20 +195,35 @@ class GeorgianDatePreviewFont extends BuiltinPreviewFont {
   readonly maxDigitHeight = 8;
 
   glyph(ch: string): Glyph {
-    const code = ch.charCodeAt(0);
-    if (code < 0x80 || code >= 0x80 + 21) return super.glyph(ch);
-    return {
-      w: 8,
-      h: 8,
-      top: 0,
-      rows: [...MAX7219_GEORGIAN_ROWS[code - 0x80]],
-      advance: MAX7219_GEORGIAN_ADVANCES[code - 0x80],
-    };
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x80 && code < 0x80 + 21) {
+      return {
+        w: 8,
+        h: 8,
+        top: 0,
+        rows: [...MAX7219_GEORGIAN_ROWS[code - 0x80]],
+        advance: MAX7219_GEORGIAN_ADVANCES[code - 0x80],
+      };
+    }
+    const dateIdx = MAX7219_GEORGIAN_CODEPOINTS.indexOf(code as typeof MAX7219_GEORGIAN_CODEPOINTS[number]);
+    if (dateIdx >= 0) {
+      return {
+        w: 8,
+        h: 8,
+        top: 0,
+        rows: [...MAX7219_GEORGIAN_ROWS[dateIdx]],
+        advance: MAX7219_GEORGIAN_ADVANCES[dateIdx],
+      };
+    }
+    return super.glyph(ch);
   }
 
   advance(ch: string): number {
-    const code = ch.charCodeAt(0);
-    return code >= 0x80 && code < 0x80 + 21 ? MAX7219_GEORGIAN_ADVANCES[code - 0x80] : super.advance(ch);
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x80 && code < 0x80 + 21) return MAX7219_GEORGIAN_ADVANCES[code - 0x80];
+    const dateIdx = MAX7219_GEORGIAN_CODEPOINTS.indexOf(code as typeof MAX7219_GEORGIAN_CODEPOINTS[number]);
+    if (dateIdx >= 0) return MAX7219_GEORGIAN_ADVANCES[dateIdx];
+    return super.advance(ch);
   }
 
   measure(text: string): number {
@@ -201,9 +259,14 @@ class GeneratedPreviewFont implements PreviewFont {
   }
 
   glyph(ch: string): Glyph | null {
+    const code = ch.codePointAt(0) ?? 0;
+    let lookup = ch;
+    if (code >= 0x80 && code < 0x80 + 21) {
+      lookup = String.fromCodePoint(MAX7219_GEORGIAN_CODEPOINTS[code - 0x80]);
+    }
     // The generator stores the space under a readable key.
-    const key = ch === " " ? "space" : ch;
-    const entry = this.font.glyphs[key] ?? this.font.glyphs[key.toUpperCase()];
+    const key = lookup === " " ? "space" : lookup;
+    const entry = this.font.glyphs[key] ?? (code < 0x80 ? this.font.glyphs[key.toUpperCase()] : undefined);
     if (!entry) return null;
     return { w: entry.w, h: entry.h, rows: entry.rows, left: entry.left, top: entry.top, advance: entry.advance };
   }
@@ -214,7 +277,7 @@ class GeneratedPreviewFont implements PreviewFont {
 
   measure(text: string): number | null {
     let width = 0;
-    for (const ch of text) {
+    for (const ch of textCells(text)) {
       const glyph = this.glyph(ch);
       if (!glyph) return null;
       width += glyph.advance;
@@ -233,6 +296,97 @@ class GeneratedPreviewFont implements PreviewFont {
   }
 }
 
+class StyledPreviewFont implements PreviewFont {
+  constructor(
+    private readonly base: PreviewFont,
+    private readonly digitStyle: DigitStyle,
+    private readonly letterStyle: LetterStyle,
+  ) {}
+
+  get id(): string {
+    return `${this.base.id}::${this.digitStyle}::${this.letterStyle}`;
+  }
+
+  get label(): string {
+    return this.base.label;
+  }
+
+  get builtin(): boolean {
+    return this.base.builtin;
+  }
+
+  private get usesBigDigits(): boolean {
+    return this.digitStyle === "Custom big 0-9" && this.base.advance("\uE000") > 0;
+  }
+
+  get inkHeight(): number {
+    if (this.usesBigDigits) return this.base.glyph("\uE000")?.h ?? 8;
+    return this.base.inkHeight;
+  }
+
+  get inkTop(): number {
+    if (this.usesBigDigits) return this.base.glyph("\uE000")?.top ?? 0;
+    return this.base.inkTop;
+  }
+
+  get clockWidth(): number {
+    return this.measure("88:88:88") ?? this.base.clockWidth;
+  }
+
+  get maxDigitHeight(): number {
+    if (this.usesBigDigits) return 8;
+    return this.base.maxDigitHeight;
+  }
+
+  private mapChar(ch: string): string {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (this.digitStyle === "Custom big 0-9" && cp >= 48 && cp <= 57) {
+      const big = String.fromCodePoint(0xE000 + (cp - 48));
+      if (this.base.advance(big) > 0) return big;
+    }
+    if (this.letterStyle === "Georgian" && ((cp >= 65 && cp <= 90) || (cp >= 97 && cp <= 122))) {
+      const ge = latinToGeorgianChar(ch);
+      if (this.base.advance(ge) > 0) return ge;
+    }
+    return ch;
+  }
+
+  glyph(ch: string): Glyph | null {
+    return this.base.glyph(this.mapChar(ch));
+  }
+
+  advance(ch: string): number {
+    return this.base.advance(this.mapChar(ch));
+  }
+
+  measure(text: string): number | null {
+    let width = 0;
+    for (const ch of textCells(text)) {
+      const step = this.advance(ch);
+      if (step <= 0) return null;
+      width += step;
+    }
+    return width;
+  }
+
+  boxTop(bandHeight: number): number {
+    return Math.floor((bandHeight - this.inkHeight) / 2) - this.inkTop;
+  }
+
+  drawGlyph(target: PixelTarget, ch: string, x: number, boxTop: number): void {
+    this.base.drawGlyph(target, this.mapChar(ch), x, boxTop);
+  }
+}
+
+export function styledPreviewFont(
+  base: PreviewFont,
+  digitStyle: DigitStyle = "Standard 0-9",
+  letterStyle: LetterStyle = "English",
+): PreviewFont {
+  if (digitStyle === "Standard 0-9" && letterStyle === "English") return base;
+  return new StyledPreviewFont(base, digitStyle, letterStyle);
+}
+
 const cache = new Map<string, PreviewFont>();
 
 /** Built-in 5x7 fallback font; never missing, never downloads anything. */
@@ -241,7 +395,7 @@ export const BUILTIN_FONT: PreviewFont = new BuiltinPreviewFont();
 /** Matches the firmware's larger Georgian weekday and month lettering. */
 export const GEORGIAN_DATE_FONT: PreviewFont = new GeorgianDatePreviewFont();
 
-/** Preview font for an ESPHome font id such as `font_tiny5_source`. */
+/** Preview font for an ESPHome font id such as `font_max7219_source`. */
 export function generatedFont(id: string, label: string): PreviewFont | null {
   const source = GENERATED_FONTS[id];
   if (!source) return null;

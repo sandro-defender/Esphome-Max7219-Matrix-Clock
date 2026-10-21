@@ -116,7 +116,7 @@ grep -q '#include "max7219_clock_esphome.h"' "$MAIN_CPP" || { echo "FAILED: rend
   || { echo "FAILED: package headers not copied into the build"; exit 1; }
 
 FONTS=$(find "$WORK/config/.esphome/font" -name font.ttf 2>/dev/null | wc -l | tr -d ' ')
-[[ "$FONTS" -eq 2 ]] || { echo "FAILED: expected exactly 2 web fonts, downloaded $FONTS"; exit 1; }
+[[ "$FONTS" -eq 1 ]] || { echo "FAILED: expected exactly 1 web font, downloaded $FONTS"; exit 1; }
 
 echo
 echo "RESULT: release path OK (tag $REF)"

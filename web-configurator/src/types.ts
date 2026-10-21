@@ -5,6 +5,8 @@ export type Alignment = "Left" | "Center" | "Right";
 export type HourFormat = "24-hour" | "12-hour";
 export type DateFormat = "DD.MM" | "MM/DD" | "DD/MM" | "DD.MM.YY" | "Weekday DD.MM.YY" | "Weekday DD. MMM YY" | "Weekday MMM.DD";
 export type DateLanguage = "English" | "Georgian";
+export type DigitStyle = "Standard 0-9" | "Custom big 0-9";
+export type LetterStyle = "English" | "Georgian";
 export type ScreenTransitionStyle = "Slide left" | "Slide up";
 export type SecondsMode = "Off" | "Digits" | "Bar";
 export type MessageScroll = "Scroll" | "Static";
@@ -99,7 +101,17 @@ export interface Config {
   animationRowGap: number;
   screenTransitionStyle: ScreenTransitionStyle;
   clockFont: ClockFont;
-  /** Included external faces: Pixel Clock 6x8 ships by default; other faces are optional. */
+  clockDigitStyle: DigitStyle;
+  clockLetterStyle: LetterStyle;
+  dateFont: ClockFont;
+  dateDigitStyle: DigitStyle;
+  tempFont: ClockFont;
+  tempDigitStyle: DigitStyle;
+  tempLetterStyle: LetterStyle;
+  messageFont: ClockFont;
+  messageDigitStyle: DigitStyle;
+  messageLetterStyle: LetterStyle;
+  /** Included external faces: max7219 ships by default; extra faces are optional. */
   fonts: ClockFont[];
   layoutPreview: LayoutPreview;
 

@@ -35,13 +35,13 @@ export function GlyphStrip({ font, text, scale = 3, className }: GlyphStripProps
 
     const boxTop = font.boxTop(rows);
     let cursor = 0;
-    for (const ch of text) {
+    for (const ch of [...text]) {
       const glyph = font.glyph(ch);
       if (glyph) {
         for (let row = 0; row < glyph.rows.length; row++) {
           for (let col = 0; col < glyph.w; col++) {
             if (!(glyph.rows[row] & (1 << (glyph.w - 1 - col)))) continue;
-            const x = cursor + col;
+            const x = cursor + (glyph.left ?? 0) + col;
             const y = boxTop + glyph.top + row;
             if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
             ctx.fillStyle = "#ffb347";

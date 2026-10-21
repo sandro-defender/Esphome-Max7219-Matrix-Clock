@@ -1705,8 +1705,8 @@ static void test_builtin_font_renders_every_required_glyph() {
 static void test_georgian_date_font_uses_max7219_rows() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  // პ preserves the seven rows drawn in max7219.ttf on the 8-row matrix.
-  const char letter = static_cast<char>(0x8C);
+  // ვ preserves the seven rows drawn in max7219.ttf on the 8-row matrix.
+  const char letter = static_cast<char>(0x81);
   georgian.draw_glyph(canvas, letter, 0, 0);
   CHECK_EQ(georgian.advance(letter), 6);
   CHECK_EQ(georgian.ink_height(), 8);
@@ -1714,6 +1714,52 @@ static void test_georgian_date_font_uses_max7219_rows() {
   for (int row = 0; row < 8; row++) if (canvas.row_on(row) > 0) lit_rows++;
   CHECK_EQ(lit_rows, 7);
   CHECK(canvas.row_on(7) > 0);  // short glyphs share the date baseline.
+}
+
+static void test_per_screen_fonts_and_character_sets() {
+  FakeCanvas canvas(48, 8);
+  FakeFont clock_f(6, 7, 0);
+  FakeFont date_f(5, 7, 0);
+  FakeFont temp_f(6, 7, 0);
+  FakeFont msg_f(6, 7, 0);
+  ScreenFonts sf{&clock_f, &date_f, &temp_f, &msg_f};
+
+  Frame f = base_frame();
+  f.screen = SCREEN_CLOCK;
+  reset_state();
+  render(canvas, clock_f, compact, f, report, &sf);
+  CHECK(!clock_f.calls.empty());
+  CHECK(date_f.calls.empty());
+
+  clock_f.calls.clear();
+  f.screen = SCREEN_DATE;
+  f.animate = false;
+  render(canvas, clock_f, compact, f, report, &sf);
+  CHECK(clock_f.calls.empty());
+  CHECK(!date_f.calls.empty());
+
+  date_f.calls.clear();
+  f.screen = SCREEN_TEMPERATURE;
+  f.temperature_valid = true;
+  f.temperature_c = 21.5f;
+  render(canvas, clock_f, compact, f, report, &sf);
+  CHECK(!temp_f.calls.empty());
+
+  // Custom big digits and Georgian UTF-8 / transliteration via StyledFont.
+  StyledFont big_digits(compact, DIGIT_STYLE_CUSTOM_BIG, LETTER_STYLE_ENGLISH);
+  CHECK_EQ(big_digits.ink_height(), 8);
+  CHECK_EQ(big_digits.advance('0'), 6);
+  FakeCanvas big_canvas(8, 8);
+  big_digits.draw_glyph(big_canvas, '0', 0, 0);
+  CHECK(big_canvas.row_on(7) > 0);  // custom big '0' fills all 8 rows
+
+  StyledFont ge_letters(compact, DIGIT_STYLE_STANDARD, LETTER_STYLE_GEORGIAN);
+  FakeCanvas ge_canvas(48, 8);
+  ge_letters.draw_text(ge_canvas, "ABC", 0, 0);
+  CHECK(ge_canvas.on_count() > 0);
+  FakeCanvas utf8_canvas(48, 8);
+  ge_letters.draw_text(utf8_canvas, "აბგ", 0, 0);
+  CHECK(utf8_canvas.on_count() > 0);
 }
 
 static void test_default_layout_matches_readme() {
@@ -1897,6 +1943,7 @@ int main() {
   test_ota_text_falls_back_to_builtin_font();
   test_builtin_font_renders_every_required_glyph();
   test_georgian_date_font_uses_max7219_rows();
+  test_per_screen_fonts_and_character_sets();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();

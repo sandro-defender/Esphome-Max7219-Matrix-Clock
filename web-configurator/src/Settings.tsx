@@ -7,6 +7,8 @@ import type { Geometry } from "./render";
 import { enabledSetting, ENTITY_ID_FIELDS, entityIdPattern, SETTINGS_GROUPS, textLimit } from "./settingsModel";
 import { Field, NumberField, type Patch, Section, Slider, Toggle } from "./ui";
 
+const FONT_SETTING_KEYS = new Set<keyof Config>(["clockFont", "dateFont", "tempFont", "messageFont"]);
+
 /** Every generated binding gets one widget; no second hand-maintained list. */
 function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Config; patch: Patch }) {
   const value = cfg[item.key];
@@ -14,8 +16,9 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
   const disabled = !enabledSetting(item, cfg);
   if (item.input === "boolean") return <Toggle label={item.label} checked={Boolean(value)} disabled={disabled}
     onChange={(next) => patch(item.key, next)} />;
+  const isFont = FONT_SETTING_KEYS.has(item.key);
   const options = item.input === "pin" ? pinNamesFor(cfg.target, cfg.board) :
-    item.key === "clockFont" ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
+    isFont ? FIRMWARE.fonts.filter((font) => font.id === "compact" || cfg.fonts.includes(font.id)).map((font) => font.id) : settingOptions(item, cfg.target);
   if (options) return <Field id={id} label={item.label}>
     <select id={id} value={String(value)} disabled={disabled} onChange={(event) => {
       const next = typeof item.default === "number" ? Number(event.target.value) : event.target.value;
@@ -23,7 +26,7 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
       if (item.key === "rotateChip") patch("reverseEnable", next === 180);
     }}>
       {!options.map(String).includes(String(value)) ? <option value={String(value)}>Select a valid {item.input === "pin" ? "pin" : "option"}</option> : null}
-      {options.map((option) => <option key={String(option)} value={String(option)}>{item.key === "clockFont" ? fontSpec(String(option)).label : String(option)}</option>)}
+      {options.map((option) => <option key={String(option)} value={String(option)}>{isFont ? fontSpec(String(option)).label : String(option)}</option>)}
     </select>
   </Field>;
   if (typeof item.default === "number") {

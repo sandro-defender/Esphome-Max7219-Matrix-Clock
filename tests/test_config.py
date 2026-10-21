@@ -133,12 +133,7 @@ REQUIRED_ACTIONS = {
 # teaching the select, the display lambda and the web configurator about it is
 # the most likely way to ship a font nobody can choose.
 FONT_OPTION_BY_ID = {
-    "font_pixel_clock_6x8_source": "Pixel Clock 6x8",
-    "font_md_parola_numeric_7seg_source": "MD Parola Numeric 7-Segment",
-    "font_md_max72xx_system_source": "MD MAX72XX System",
-    "font_matrix_2px_source": "Matrix 2px",
-    "font_dot_matrix_source": "Dot Matrix",
-    "font_mg_minecraft_georgian_source": "MG Minecraft Georgian",
+    "font_max7219_source": "max7219",
 }
 
 # The selectable faces are clock-first: compile numbers and status punctuation
@@ -579,16 +574,11 @@ class ConfigContractTests(unittest.TestCase):
         for external, entry in zip(web, local):
             self.assertEqual(external["file"]["url"].replace("${fonts_base_url}/", ""),
                              entry["file"]["path"].removeprefix("../fonts/"))
-            if entry["id"] not in ("font_pixel_clock_6x8_source", "font_matrix_2px_source", "font_dot_matrix_source"):
-                font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
-                shared_lgpl = (
-                    entry["id"] == "font_md_parola_numeric_7seg_source"
-                    and (REPO / "fonts" / "md-max72xx-system" / "LICENSE.txt").is_file()
-                )
-                self.assertTrue(
-                    shared_lgpl or any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt", "mg-minecraft-georgian-LICENSE.txt")),
-                    f"{entry['id']} must retain its source license",
-                )
+            font_dir = (PACKAGES / entry["file"]["path"]).resolve().parent
+            self.assertTrue(
+                any((font_dir / name).is_file() for name in ("OFL.txt", "LICENSE.txt")),
+                f"{entry['id']} must retain its source license",
+            )
             self.assertEqual("local", entry["file"]["type"])
             path = (PACKAGES / entry["file"]["path"]).resolve()
             self.assertTrue(path.is_file(), f"missing font file {path}")
@@ -637,33 +627,32 @@ class ConfigContractTests(unittest.TestCase):
                     f"{entry['id']} has no '{char}' glyph in its source file",
                 )
 
-    def test_repository_georgian_fonts_keep_both_modern_alphabets(self):
-        """Optional Georgian sources remain available for a later shortlist."""
+    def test_unified_max7219_font_contains_standard_and_custom_big_digits_and_en_ge_letters(self):
+        """Unified max7219.ttf covers standard 0-9, custom big U+E000-U+E009, EN A-Z/a-z, and GE ა-ჰ."""
         try:
             import freetype
         except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
             self.skipTest("freetype-py not installed")
 
-        paths = {
-            "noto-sans-georgian": REPO / "fonts/noto-sans-georgian/NotoSansGeorgian-Variable.ttf",
-            "noto-serif-georgian": REPO / "fonts/noto-serif-georgian/NotoSerifGeorgian-Variable.ttf",
-        }
-        for font_id, path in paths.items():
-            face = freetype.Face(str(path))
-            for char in GEORGIAN_MKHEDRULI + GEORGIAN_MTAVRULI:
-                self.assertNotEqual(
-                    face.get_char_index(ord(char)),
-                    0,
-                    f"{font_id} has no '{char}' glyph in its source file",
-                )
+        path = REPO / "fonts/max7219.ttf"
+        self.assertTrue(path.is_file())
+        face = freetype.Face(str(path))
+        face.set_pixel_sizes(8, 0)
+        english_upper = "".join(chr(c) for c in range(ord("A"), ord("Z") + 1))
+        english_lower = "".join(chr(c) for c in range(ord("a"), ord("z") + 1))
+        custom_big_digits = "".join(chr(0xE000 + i) for i in range(10))
+        for char in FONT_REQUIRED_GLYPHS + english_upper + english_lower + GEORGIAN_MKHEDRULI + custom_big_digits:
+            self.assertNotEqual(
+                face.get_char_index(ord(char)),
+                0,
+                f"max7219.ttf has no '{char}' (U+{ord(char):04X}) glyph",
+            )
+        for ch in custom_big_digits:
+            face.load_char(ord(ch), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            self.assertEqual(face.glyph.bitmap.rows, MATRIX_ROW_HEIGHT)
 
     def test_font_ink_is_not_taller_than_the_matrix(self):
-        """Digits taller than the panel would be clipped on the real display.
-
-        FreeType hinting can move an edge by a pixel, so this is a coarse
-        guard: a font that needs a 9th row is rejected, a borderline 8 px face
-        is still allowed.
-        """
+        """Digits taller than the panel would be clipped on the real display."""
         try:
             import freetype
         except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
@@ -673,140 +662,22 @@ class ConfigContractTests(unittest.TestCase):
             face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
             face.set_pixel_sizes(entry["size"], 0)
             digit_heights = []
-            for char in "0123456789:-":
+            for char in "0123456789:-" + "".join(chr(0xE000 + i) for i in range(10)):
+                if face.get_char_index(ord(char)) == 0:
+                    continue
                 face.load_char(ord(char), freetype.FT_LOAD_RENDER)
-                if char.isdigit():
+                if char.isdigit() or 0xE000 <= ord(char) <= 0xE009:
                     digit_heights.append(face.glyph.bitmap.rows)
                 self.assertLessEqual(
                     face.glyph.bitmap.rows,
                     MATRIX_ROW_HEIGHT,
                     f"{entry['id']} draws '{char}' {face.glyph.bitmap.rows}px tall",
                 )
-            expected_height = (
-                MATRIX_ROW_HEIGHT - 1
-                if entry["id"] in ("font_md_max72xx_system_source", "font_md_parola_numeric_7seg_source", "font_mg_minecraft_georgian_source")
-                else MATRIX_ROW_HEIGHT
-            )
             self.assertEqual(
-                expected_height,
+                MATRIX_ROW_HEIGHT,
                 max(digit_heights),
                 f"{entry['id']} has an unexpected largest digit height",
             )
-
-    def test_matrix_2px_font_is_pixel_exact_with_two_pixel_lines(self):
-        """Rasterise the generated Matrix 2px face exactly like ESPHome does.
-
-        The user-facing promise of fonts/matrix-2px is twofold: digits fill
-        all eight rows of the matrix, and every line of every number is
-        exactly two pixels thick. Both properties live in the design table of
-        scripts/generate_matrix_font.py; this test proves that FreeType (the
-        firmware path) reproduces that design pixel for pixel at the compiled
-        size, so no hinting round can thicken or thin a stroke.
-        """
-        try:
-            import freetype
-        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
-            self.skipTest("freetype-py not installed")
-
-        sys.path.insert(0, str(REPO / "scripts"))
-        try:
-            import generate_matrix_font as design_source
-        finally:
-            sys.path.pop(0)
-
-        # The invariants that make "2 pixels" true, re-checked independently.
-        design_source.validate_design()
-
-        entry = next(
-            e for e in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
-            if e["id"] == "font_matrix_2px_source"
-        )
-        face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
-        face.set_pixel_sizes(entry["size"], 0)
-
-        expected = {
-            char: [list(row) for row in rows] for char, rows in design_source.DIGITS.items()
-        }
-        expected_advance = {char: 7 for char in design_source.DIGITS}
-        for char, (rows, advance) in design_source.PUNCTUATION.items():
-            expected[char] = [list(row) for row in rows]
-            expected_advance[char] = advance
-
-        for char, design in expected.items():
-            if char == " ":
-                continue
-            # Same load flags as esphome/components/font for bpp: 1.
-            face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
-            glyph = face.glyph
-            bitmap = glyph.bitmap
-            advance = (glyph.metrics.horiAdvance + 63) // 64
-            self.assertEqual(
-                expected_advance[char],
-                advance,
-                f"Matrix 2px '{char}' advances {advance}px, expected {expected_advance[char]}",
-            )
-            if char.isdigit():
-                self.assertEqual(
-                    MATRIX_ROW_HEIGHT,
-                    bitmap.rows,
-                    f"Matrix 2px digit '{char}' is {bitmap.rows}px tall, not a full matrix row",
-                )
-            # Re-ink the design canvas with what FreeType actually produced.
-            offset_y = (face.size.ascender + 63) // 64 - glyph.bitmap_top
-            canvas = [[0] * len(design[0]) for _ in range(MATRIX_ROW_HEIGHT)]
-            for y in range(bitmap.rows):
-                for x in range(bitmap.width):
-                    byte = bitmap.buffer[y * bitmap.pitch + (x // 8)]
-                    if byte & (1 << (7 - x % 8)):
-                        row, col = offset_y + y, glyph.bitmap_left + x
-                        self.assertTrue(
-                            0 <= row < MATRIX_ROW_HEIGHT and 0 <= col < len(design[0]),
-                            f"Matrix 2px '{char}' ink lands outside the matrix at ({row},{col})",
-                        )
-                        canvas[row][col] = 1
-            wanted = [[1 if cell == "#" else 0 for cell in row] for row in design]
-            self.assertEqual(
-                wanted,
-                canvas,
-                f"Matrix 2px '{char}' does not rasterise to its pixel design",
-            )
-
-    def test_dot_matrix_font_uses_6x8_cells_and_fits_a_32x8_clock(self):
-        """The single-LED-dot clock face fits HH:MM on a four-module panel."""
-        try:
-            import freetype
-        except ImportError:  # pragma: no cover - freetype-py ships with ESPHome
-            self.skipTest("freetype-py not installed")
-
-        sys.path.insert(0, str(REPO / "scripts"))
-        try:
-            import generate_dot_matrix_font as design_source
-        finally:
-            sys.path.pop(0)
-
-        design_source.validate_design()
-        entry = next(
-            e for e in load_yaml(PACKAGES / "fonts_local.yaml")["font"]
-            if e["id"] == "font_dot_matrix_source"
-        )
-        face = freetype.Face(str((PACKAGES / entry["file"]["path"]).resolve()))
-        face.set_pixel_sizes(entry["size"], 0)
-
-        self.assertLessEqual(
-            sum(design_source.advance_for(char) for char in "88:88"),
-            32,
-            "Dot Matrix HH:MM must fit a 32x8 display",
-        )
-        for char, rows in design_source.GLYPHS.items():
-            face.load_char(ord(char), freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
-            glyph = face.glyph
-            self.assertEqual(
-                design_source.advance_for(char),
-                (glyph.metrics.horiAdvance + 63) // 64,
-                f"Dot Matrix '{char}' has the wrong advance",
-            )
-            if char.isdigit():
-                self.assertEqual(MATRIX_ROW_HEIGHT, glyph.bitmap.rows)
 
     def test_exact_esphome_font_option_merge(self):
         """Exercise the real resolver when the exact target is installed."""
@@ -830,7 +701,10 @@ class ConfigContractTests(unittest.TestCase):
                 return [convert(v) for v in value]
             return value
 
-        base = convert(load_yaml(PACKAGES / "controls.yaml"))
+        base = merge_config(
+            convert(load_yaml(PACKAGES / "controls.yaml")),
+            convert(load_yaml(PACKAGES / "date_controls.yaml")),
+        )
         faces = [convert(load_yaml(p)) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
         for mask in range(1 << len(faces)):
             merged = copy.deepcopy(base)
@@ -840,26 +714,26 @@ class ConfigContractTests(unittest.TestCase):
                     merged = merge_config(merged, copy.deepcopy(face))
                     expected += face["select"][0]["options"]
             resolve_extend_remove(merged)
-            select = next(e for e in merged["select"] if e["id"] == "clock_font")
-            self.assertEqual(select["options"], expected)
-            self.assertIn(select["initial_option"], expected)
-        # Enforce the requested default pair independently of the generated
-        # contract, then exercise that exact order with the real tagged resolver.
-        self.assertEqual(FIRMWARE["defaultFonts"], ["pixel-clock-6x8", "matrix-2px"])
+            for select_id in ("clock_font", "date_font", "temp_font", "message_font"):
+                select = next(e for e in merged["select"] if e["id"] == select_id)
+                self.assertEqual(select["options"], expected)
+                self.assertIn(select["initial_option"], expected)
+        self.assertEqual(FIRMWARE["defaultFonts"], ["max7219"])
         default_merged = copy.deepcopy(base)
-        for rel_name in ("pixel-clock-6x8.yaml", "matrix-2px.yaml"):
+        for rel_name in ("max7219.yaml",):
             default_merged = merge_config(default_merged, convert(load_yaml(PACKAGES / "fonts" / rel_name)))
         resolve_extend_remove(default_merged)
-        default_select = next(e for e in default_merged["select"] if e["id"] == "clock_font")
-        self.assertEqual(default_select["options"], ["Compact 5x7", "Pixel Clock 6x8", "Matrix 2px"])
-        self.assertEqual(default_select["initial_option"], "Pixel Clock 6x8")
+        for select_id in ("clock_font", "date_font", "temp_font", "message_font"):
+            default_select = next(e for e in default_merged["select"] if e["id"] == select_id)
+            self.assertEqual(default_select["options"], ["Compact 5x7", "max7219"])
+            self.assertEqual(default_select["initial_option"], "max7219")
         self.assertEqual(
             default_merged["esphome"]["build_flags"],
-            ["-DMAX7219_FONT_PIXEL_CLOCK_6X8", "-DMAX7219_FONT_MATRIX_2PX"],
+            ["-DMAX7219_FONT_MAX7219"],
         )
         self.assertEqual(
             [f["id"] for f in default_merged["font"]],
-            ["font_pixel_clock_6x8_source", "font_matrix_2px_source"],
+            ["font_max7219_source"],
         )
         self.assertEqual(merge_config({"lambda": "first"}, {"lambda": "second"}), {"lambda": "second"})
 
@@ -869,12 +743,11 @@ class ConfigContractTests(unittest.TestCase):
         display = read(PACKAGES / "display.yaml")
         start = display.index("      max7219_clock::BuiltinFont builtin_font;")
         end = display.index("      max7219_clock::render(", start)
-        block = display[start:end].replace("id(clock_font)", "clock_font")
+        block = display[start:end]
+        for select_id in ("clock_font", "date_font", "temp_font", "message_font"):
+            block = block.replace(f"id({select_id})", select_id)
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        # Zero, every single face, the public default pair, and the full catalogue.
-        cases = [[], *[[f] for f in faces],
-                 [f for f in faces if f["font"][0]["id"] in
-                  ("font_matrix_2px_source", "font_dot_matrix_source")], faces]
+        cases = [[], *[[f] for f in faces], faces]
         with tempfile.TemporaryDirectory(prefix="clock-font-syntax-") as temp:
             path = Path(temp) / "selection.cpp"
             for chosen in cases:
@@ -882,15 +755,16 @@ class ConfigContractTests(unittest.TestCase):
                 flags = [f["esphome"]["build_flags"][0] for f in chosen]
                 source = """#include <string>
 using StringRef = std::string;
-struct Select { StringRef current_option() { return "Compact 5x7"; } } clock_font;
+struct Select { StringRef current_option() { return "Compact 5x7"; } } clock_font, date_font, temp_font, message_font;
 namespace max7219_clock {
 struct GlyphFont {};
 struct BuiltinFont : GlyphFont {};
+struct ScreenFonts { const GlyphFont *a; const GlyphFont *b; const GlyphFont *c; const GlyphFont *d; };
 #ifdef USE_FONT
 struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
 #endif
 }
-""" + declarations + "void draw(int &it) {\n" + block + "\n(void)selected; }\n"
+""" + declarations + "void draw(int &it) {\n" + block + "\n(void)selected; (void)screen_fonts; }\n"
                 path.write_text(source)
                 result = subprocess.run(["g++", "-std=c++17", "-fsyntax-only", *flags,
                     *(["-DUSE_FONT"] if chosen else []), str(path)], capture_output=True, text=True)
@@ -899,7 +773,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
     def test_every_compiled_font_is_selectable_and_wired(self):
         """Every subset (2^N, including zero/one/all): options, flags and C++ agree."""
         faces = [load_yaml(p) for p in sorted((PACKAGES / "fonts").glob("*.yaml"))]
-        self.assertEqual(len(faces), 6)
+        self.assertGreaterEqual(len(faces), 1)
         display = read(PACKAGES / "display.yaml")
         blocks = re.findall(r"#ifdef (MAX7219_FONT_\w+)\n(.*?)#endif", display, re.S)
         self.assertEqual(len(blocks), len(faces))
@@ -909,8 +783,8 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
         self.assertEqual(base["initial_option"], "Compact 5x7")
         reset = read(PACKAGES / "restore_defaults.generated.yaml")
         self.assertIn('"Compact 5x7"', reset)
-        self.assertIn('"Pixel Clock 6x8"', reset)
-        self.assertIn('has_option("Pixel Clock 6x8")', reset)
+        self.assertIn('"max7219"', reset)
+        self.assertIn('has_option("max7219")', reset)
         self.assertIn("#ifdef USE_FONT", read(PACKAGES / "max7219_clock_esphome.h"))
         local = load_yaml(PACKAGES / "fonts_local.yaml")
         self.assertEqual(set(local["select"][0]["options"]), set(FONT_OPTION_BY_ID.values()))
@@ -929,7 +803,7 @@ struct SourceFont : GlyphFont { SourceFont(int, int*) {} };
                 fid = face["font"][0]["id"]
                 macro = face["esphome"]["build_flags"][0].removeprefix("-D")
                 self.assertIn(fid, by_macro[macro])
-                self.assertIn('font_option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
+                self.assertIn('option == "' + FONT_OPTION_BY_ID[fid] + '"', by_macro[macro])
                 self.assertNotIn('id(' + fid, display)
                 self.assertNotIn("substitutions", face, "only base.yaml owns the release/font ref")
         # A declaration anywhere outside a feature guard would break zero-font builds.

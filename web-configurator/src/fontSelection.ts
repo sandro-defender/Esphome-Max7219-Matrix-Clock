@@ -12,8 +12,16 @@ export function normalizeFonts(input: unknown): ClockFont[] {
 
 export function withFonts(config: Config, input: unknown): Config {
   const fonts = normalizeFonts(input);
-  const clockFont = config.clockFont === "compact" || fonts.includes(config.clockFont) ? config.clockFont : String(FIRMWARE.defaults.clockFont);
-  return { ...config, fonts, clockFont };
+  const valid = (font: ClockFont | undefined, fallbackKey: keyof typeof FIRMWARE.defaults) =>
+    font && (font === "compact" || fonts.includes(font)) ? font : String(FIRMWARE.defaults[fallbackKey]);
+  return {
+    ...config,
+    fonts,
+    clockFont: valid(config.clockFont, "clockFont"),
+    dateFont: valid(config.dateFont, "dateFont"),
+    tempFont: valid(config.tempFont, "tempFont"),
+    messageFont: valid(config.messageFont, "messageFont"),
+  };
 }
 
 export function toggleExtraFont(config: Config, font: ClockFont): Config {

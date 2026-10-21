@@ -1,0 +1,30 @@
+# GENERATED from the corresponding fonts/ release package; do not edit.
+font:
+- id: font_max7219_source
+  file:
+    type: local
+    path: ../../fonts/max7219.ttf
+  size: 8
+  bpp: 1
+  glyphs:
+  - 0123456789:.-/%!?+ ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzაბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ
+esphome:
+  build_flags:
+  - -DMAX7219_FONT_MAX7219
+select:
+- id: !extend 'clock_font'
+  initial_option: max7219
+  options:
+  - max7219
+- id: !extend 'date_font'
+  initial_option: max7219
+  options:
+  - max7219
+- id: !extend 'temp_font'
+  initial_option: max7219
+  options:
+  - max7219
+- id: !extend 'message_font'
+  initial_option: max7219
+  options:
+  - max7219

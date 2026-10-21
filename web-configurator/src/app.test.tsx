@@ -43,8 +43,13 @@ describe("App", () => {
     for (const target of FIRMWARE.hardwareTargets) expect(tune, target.id).toContain(target.label);
     const selected = /type="radio"[^>]*checked=""[^>]*>[\s\S]*?<strong>([^<]+)<\/strong>/.exec(tune);
     expect(selected?.[1]).toBe(FIRMWARE.hardwareTargets.find((target) => target.id === FIRMWARE.defaultTarget)!.label);
-    expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
-    expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(2);
+    expect(DEFAULT_FONTS).toEqual(["max7219"]);
+    expect(markup.match(/type="checkbox" disabled="" checked=""/g)).toHaveLength(1);
+    expect(markup).toContain("data-font-screens");
+    expect(markup).toContain("data-font-charsets");
+    for (const charset of ["standardDigits", "customBigDigits", "englishUpper", "englishLower", "georgian", "punctuation"]) {
+      expect(markup).toContain(`data-charset="${charset}"`);
+    }
   });
   it("offers preview-only indoor/outdoor samples and every weather icon without querying Home Assistant", () => {
     for (const id of ["preview-weather-condition", "preview-home-temperature", "preview-outdoor-temperature", "preview-weather-temperature"])

@@ -247,6 +247,49 @@
       "group": "Clock",
       "input": "font"
     },
+    "clockDigitStyle": {
+      "target": "clock_digit_style",
+      "group": "Clock"
+    },
+    "clockLetterStyle": {
+      "target": "clock_letter_style",
+      "group": "Clock"
+    },
+    "dateFont": {
+      "target": "date_font",
+      "group": "Screens",
+      "input": "font"
+    },
+    "dateDigitStyle": {
+      "target": "date_digit_style",
+      "group": "Screens"
+    },
+    "tempFont": {
+      "target": "temp_font",
+      "group": "Screens",
+      "input": "font"
+    },
+    "tempDigitStyle": {
+      "target": "temp_digit_style",
+      "group": "Screens"
+    },
+    "tempLetterStyle": {
+      "target": "temp_letter_style",
+      "group": "Screens"
+    },
+    "messageFont": {
+      "target": "message_font",
+      "group": "Messages",
+      "input": "font"
+    },
+    "messageDigitStyle": {
+      "target": "message_digit_style",
+      "group": "Messages"
+    },
+    "messageLetterStyle": {
+      "target": "message_letter_style",
+      "group": "Messages"
+    },
     "screen": {
       "target": "screen_mode",
       "group": "Screens"
@@ -384,35 +427,10 @@
     }
   },
   "fontMetadata": {
-    "pixel-clock-6x8": {
-      "label": "Pixel Clock 6×8",
-      "license": "Project-generated",
-      "source": "scripts/generate_pixel_clock_6x8_font.py"
-    },
-    "matrix-2px": {
-      "label": "Matrix 2px",
-      "license": "Project-generated",
-      "source": "scripts/generate_matrix_font.py"
-    },
-    "dot-matrix": {
-      "label": "Dot Matrix",
-      "license": "Project-generated",
-      "source": "scripts/generate_dot_matrix_font.py"
-    },
-    "md-parola-numeric-7seg": {
-      "label": "MD Parola Numeric 7-Segment",
-      "license": "LGPL-2.1-or-later",
-      "source": "fonts/md-max72xx-system/LICENSE.txt"
-    },
-    "md-max72xx-system": {
-      "label": "MD MAX72XX System",
-      "license": "LGPL-2.1-or-later",
-      "source": "fonts/md-max72xx-system/LICENSE.txt"
-    },
-    "mg-minecraft-georgian": {
-      "label": "MG Minecraft Georgian",
-      "license": "CC BY-SA 3.0",
-      "source": "fonts/mg-minecraft-georgian-LICENSE.txt"
+    "max7219": {
+      "label": "max7219",
+      "license": "CC BY-SA 4.0",
+      "source": "fonts/LICENSE.txt"
     }
   },
   "groups": [
