@@ -141,13 +141,17 @@ describe("clock and date text", () => {
     expect(dateContent(NOON, { ...DEFAULT_CONFIG, dateLanguage: "Georgian", dateFormat: "Weekday DD. MMM YY" })).toBe("\x8C\x87\x84 02. \x82\x87\x8E 26");
   });
 
-  it("preserves the seven-row Georgian pixel glyph on the eight-row matrix", () => {
-    const letter = "\x8C";
-    expect(GEORGIAN_DATE_FONT.advance(letter)).toBe(6);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)).toMatchObject({ h: 8, advance: 6 });
-    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows).toHaveLength(8);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows.filter((row) => row !== 0)).toHaveLength(7);
-    expect(GEORGIAN_DATE_FONT.glyph(letter)?.rows[7]).not.toBe(0);
+  it("preserves the seven-row and eight-row Georgian pixel glyphs on the eight-row matrix", () => {
+    const shortLetter = "\x81";
+    expect(GEORGIAN_DATE_FONT.advance(shortLetter)).toBe(6);
+    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)).toMatchObject({ h: 8, advance: 6 });
+    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows).toHaveLength(8);
+    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows.filter((row) => row !== 0)).toHaveLength(7);
+    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows[7]).not.toBe(0);
+
+    const tallLetter = "\x8C";
+    expect(GEORGIAN_DATE_FONT.advance(tallLetter)).toBe(6);
+    expect(GEORGIAN_DATE_FONT.glyph(tallLetter)?.rows.filter((row) => row !== 0)).toHaveLength(8);
   });
 });
 
@@ -185,14 +189,14 @@ describe("renderScene", () => {
   });
 
   it("falls back to the built-in font when the panel is too narrow", () => {
-    const scene = sceneWith({ chips: 2, clockFont: "matrix-2px" });
+    const scene = sceneWith({ chips: 2, clockFont: "max7219" });
     expect(scene.usedFallback).toBe(true);
     expect(scene.notices.some((notice) => notice.level === "warn")).toBe(true);
     expect(lit(scene.frame)).toBeGreaterThan(0);
   });
 
   it("drops the seconds before it falls back", () => {
-    const scene = sceneWith({ chips: 4, clockFont: "matrix-2px" });
+    const scene = sceneWith({ chips: 4, clockFont: "max7219" });
     expect(scene.geometry.width).toBe(32);
     expect(scene.usedFallback).toBe(false);
     expect(scene.droppedSeconds).toBe(true);

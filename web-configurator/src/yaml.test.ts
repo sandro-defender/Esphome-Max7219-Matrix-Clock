@@ -44,8 +44,8 @@ describe("single-source firmware / UI / installer parity", () => {
       expect(() => buildYaml(DEFAULT_CONFIG, ref)).toThrow(/immutable/);
   });
 
-  it("ships exactly Pixel Clock + Matrix 2px by default in dev, examples and the UI", () => {
-    expect(DEFAULT_FONTS).toEqual(["pixel-clock-6x8", "matrix-2px"]);
+  it("ships max7219 by default in dev, examples and the UI", () => {
+    expect(DEFAULT_FONTS).toEqual(["max7219"]);
     const files = [...FIRMWARE.packageFiles, ...DEFAULT_FONTS.map((key) => FIRMWARE.fonts.find((font) => font.id === key)!.package!)];
     expect(packageFiles(yaml)).toEqual(files);
     expect(packageFiles(releaseExample)).toEqual(files);
@@ -62,8 +62,10 @@ describe("single-source firmware / UI / installer parity", () => {
     ]);
     for (const key of DEFAULT_FONTS) expect(toggleExtraFont(cfg, key)).toBe(cfg);
     expect(toggleExtraFont(cfg, "compact")).toBe(cfg);
-    const selected = cfg.clockFont;
-    expect(toggleExtraFont(cfg, selected).clockFont).toBe(FIRMWARE.defaults.clockFont);
+    if (EXTRA_FONTS.length > 0) {
+      const selected = cfg.clockFont;
+      expect(toggleExtraFont(cfg, selected).clockFont).toBe(FIRMWARE.defaults.clockFont);
+    }
   });
 
   it("writes each and every adjustable entity, option and substitution from firmware bindings", () => {

@@ -10,6 +10,13 @@ frame.date_show_outdoor_temperature = N(values.at("dateShowOutdoorTemperature"))
 frame.show_temperature_degree = N(values.at("showTemperatureDegree"));
 frame.date_format = max7219_clock::date_format_from_option(S(values.at("dateFormat")));
 frame.date_language = max7219_clock::date_language_from_option(S(values.at("dateLanguage")));
+frame.clock_digit_style = max7219_clock::digit_style_from_option(S(values.at("clockDigitStyle")));
+frame.clock_letter_style = max7219_clock::letter_style_from_option(S(values.at("clockLetterStyle")));
+frame.date_digit_style = max7219_clock::digit_style_from_option(S(values.at("dateDigitStyle")));
+frame.temp_digit_style = max7219_clock::digit_style_from_option(S(values.at("tempDigitStyle")));
+frame.temp_letter_style = max7219_clock::letter_style_from_option(S(values.at("tempLetterStyle")));
+frame.message_digit_style = max7219_clock::digit_style_from_option(S(values.at("messageDigitStyle")));
+frame.message_letter_style = max7219_clock::letter_style_from_option(S(values.at("messageLetterStyle")));
 frame.use_12h = S(values.at("hourFormat")) == "12 hour";
 frame.blink_colon = N(values.at("blinkColon"));
 frame.animate = N(values.at("digitAnimation"));

@@ -1,5 +1,4 @@
-# Default release font set. All other faces are opt-in per-face packages.
-# The release ref/font URL substitutions come from base.yaml, never a second tag.
+# Default external font wrapper for remote packages: usages.
+# Includes the unified max7219 pixel font (EN/GE letters, standard 0-9, custom big 0-9).
 packages:
-  pixel_clock_6x8: !include fonts/pixel-clock-6x8.yaml
-  matrix_2px: !include fonts/matrix-2px.yaml
+  max7219: !include fonts/max7219.yaml

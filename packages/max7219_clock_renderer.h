@@ -28,6 +28,8 @@
 #include <float.h>
 #include <stdlib.h>
 
+#include "max7219_date_font.generated.h"
+
 namespace max7219_clock {
 
 // --------------------------------------------------------------------------
@@ -108,6 +110,16 @@ enum DateLanguage : uint8_t {
   DATE_LANGUAGE_GEORGIAN,
 };
 
+enum DigitStyle : uint8_t {
+  DIGIT_STYLE_STANDARD = 0,
+  DIGIT_STYLE_CUSTOM_BIG,
+};
+
+enum LetterStyle : uint8_t {
+  LETTER_STYLE_ENGLISH = 0,
+  LETTER_STYLE_GEORGIAN,
+};
+
 enum ScreenTransitionStyle : uint8_t {
   SCREEN_TRANSITION_SLIDE_LEFT = 0,
   SCREEN_TRANSITION_SLIDE_UP,
@@ -181,6 +193,53 @@ class TranslatedCanvas : public Canvas {
 };
 
 // --------------------------------------------------------------------------
+// UTF-8 helper for multi-byte Unicode glyphs (Georgian U+10D0..U+10F0 and
+// custom big digits U+E000..U+E009). Single-byte codes 0x00..0xBF (including
+// compact Georgian date codes 0x80..0x94) stay on the single-byte path.
+// --------------------------------------------------------------------------
+inline uint32_t next_utf8_codepoint(const char *&cursor) {
+  const uint8_t lead = (uint8_t) *cursor;
+  if (lead == 0) return 0;
+  cursor++;
+  if (lead < 0x80U) return lead;
+  if (lead >= 0x80U && lead < 0x80U + 21U) return max7219_date_font::CODEPOINTS[lead - 0x80U];
+  if ((lead & 0xE0U) == 0xC0U) {
+    const uint8_t b1 = (uint8_t) *cursor;
+    if ((b1 & 0xC0U) != 0x80U) return '?';
+    cursor++;
+    return ((uint32_t) (lead & 0x1FU) << 6) | (uint32_t) (b1 & 0x3FU);
+  }
+  if ((lead & 0xF0U) == 0xE0U) {
+    const uint8_t b1 = (uint8_t) cursor[0];
+    const uint8_t b2 = (uint8_t) cursor[1];
+    if ((b1 & 0xC0U) != 0x80U || (b2 & 0xC0U) != 0x80U) return '?';
+    cursor += 2;
+    return ((uint32_t) (lead & 0x0FU) << 12) | ((uint32_t) (b1 & 0x3FU) << 6) | (uint32_t) (b2 & 0x3FU);
+  }
+  if ((lead & 0xF8U) == 0xF0U) {
+    const uint8_t b1 = (uint8_t) cursor[0];
+    const uint8_t b2 = (uint8_t) cursor[1];
+    const uint8_t b3 = (uint8_t) cursor[2];
+    if ((b1 & 0xC0U) != 0x80U || (b2 & 0xC0U) != 0x80U || (b3 & 0xC0U) != 0x80U) return '?';
+    cursor += 3;
+    return ((uint32_t) (lead & 0x07U) << 18) | ((uint32_t) (b1 & 0x3FU) << 12) |
+           ((uint32_t) (b2 & 0x3FU) << 6) | (uint32_t) (b3 & 0x3FU);
+  }
+  return '?';
+}
+
+inline uint32_t latin_to_georgian_codepoint(char c) {
+  if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+  if (c < 'a' || c > 'z') return (uint32_t) (uint8_t) c;
+  static const uint16_t MAP[26] = {
+      0x10D0, 0x10D1, 0x10EA, 0x10D3, 0x10D4, 0x10E4, 0x10D2, 0x10F0, 0x10D8,
+      0x10EF, 0x10D9, 0x10DA, 0x10DB, 0x10DC, 0x10DD, 0x10DE, 0x10E7, 0x10E0,
+      0x10E1, 0x10E2, 0x10E3, 0x10D5, 0x10EC, 0x10EE, 0x10E6, 0x10D6,
+  };
+  return MAP[c - 'a'];
+}
+
+// --------------------------------------------------------------------------
 // Font interface: one glyph cell at a time so that the renderer owns layout,
 // alignment and the per-digit slide-up animation.
 // --------------------------------------------------------------------------
@@ -189,18 +248,47 @@ class GlyphFont {
   virtual ~GlyphFont() {}
   // Horizontal step for one character, in pixels.
   virtual int advance(char c) const = 0;
+  virtual int advance_cp(uint32_t cp) const {
+    if (cp < 0x80U) return this->advance((char) cp);
+    for (int i = 0; i < 21; i++) {
+      if (max7219_date_font::CODEPOINTS[i] == cp) return this->advance((char) (0x80 + i));
+    }
+    return 0;
+  }
   virtual const void *identity() const { return this; }
   // Ink height and the ink offset from the text box top, measured on a digit.
   // The renderer uses both to centre the ink inside the display.
   virtual int ink_height() const = 0;
   virtual int ink_top() const = 0;
+  virtual int big_digit_ink_height() const { return this->ink_height(); }
+  virtual int big_digit_ink_top() const { return this->ink_top(); }
   // Draw a single character with its text box top at `box_top`.
   virtual void draw_glyph(Canvas &c, char ch, int x, int box_top) const = 0;
+  virtual void draw_glyph_cp(Canvas &c, uint32_t cp, int x, int box_top) const {
+    if (cp < 0x80U) {
+      this->draw_glyph(c, (char) cp, x, box_top);
+      return;
+    }
+    for (int i = 0; i < 21; i++) {
+      if (max7219_date_font::CODEPOINTS[i] == cp) {
+        this->draw_glyph(c, (char) (0x80 + i), x, box_top);
+        return;
+      }
+    }
+  }
 
   int text_width(const char *s) const {
     int w = 0;
-    if (s != nullptr)
-      for (const char *p = s; *p != '\0'; p++) w += this->advance(*p);
+    if (s != nullptr) {
+      const char *p = s;
+      while (*p != '\0') {
+        if ((uint8_t) *p >= 0xC0U) {
+          w += this->advance_cp(next_utf8_codepoint(p));
+        } else {
+          w += this->advance(*p++);
+        }
+      }
+    }
     return w;
   }
   // Text box top that puts the digit ink in the vertical middle of the display.
@@ -210,9 +298,17 @@ class GlyphFont {
   void draw_text(Canvas &c, const char *s, int x, int box_top) const {
     if (s == nullptr) return;
     int cursor = x;
-    for (const char *p = s; *p != '\0'; p++) {
-      this->draw_glyph(c, *p, cursor, box_top);
-      cursor += this->advance(*p);
+    const char *p = s;
+    while (*p != '\0') {
+      if ((uint8_t) *p >= 0xC0U) {
+        const uint32_t cp = next_utf8_codepoint(p);
+        this->draw_glyph_cp(c, cp, cursor, box_top);
+        cursor += this->advance_cp(cp);
+      } else {
+        this->draw_glyph(c, *p, cursor, box_top);
+        cursor += this->advance(*p);
+        p++;
+      }
     }
   }
 };
@@ -358,28 +454,65 @@ inline int advance(char c) {
 class BuiltinFont : public GlyphFont {
  public:
   int advance(char c) const override { return builtin::advance(c); }
+  int advance_cp(uint32_t cp) const override {
+    if (cp < 0x80U) return this->advance((char) cp);
+    if (cp >= 0xE000U && cp <= 0xE009U) return max7219_date_font::CUSTOM_BIG_DIGIT_ADVANCES[cp - 0xE000U];
+    if (cp >= 0x10D0U && cp <= 0x10F0U) return max7219_date_font::MKHEDRULI_ADVANCES[cp - 0x10D0U];
+    return 6;
+  }
   int ink_height() const override { return 7; }
   int ink_top() const override { return 0; }
+  int big_digit_ink_height() const override { return 8; }
+  int big_digit_ink_top() const override { return 0; }
   void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
     const uint8_t *rows = builtin::glyph(ch);
     for (int row = 0; row < 7; row++)
       for (int col = 0; col < 5; col++)
         if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
   }
+  void draw_glyph_cp(Canvas &c, uint32_t cp, int x, int box_top) const override {
+    if (cp < 0x80U) {
+      this->draw_glyph(c, (char) cp, x, box_top);
+      return;
+    }
+    if (cp >= 0xE000U && cp <= 0xE009U) {
+      const uint8_t *rows = max7219_date_font::CUSTOM_BIG_DIGIT_ROWS[cp - 0xE000U];
+      for (int row = 0; row < 8; row++)
+        for (int col = 0; col < 8; col++)
+          if (rows[row] & (1 << (7 - col))) c.pixel(x + col, box_top + row, true);
+      return;
+    }
+    if (cp >= 0x10D0U && cp <= 0x10F0U) {
+      const uint8_t *rows = max7219_date_font::MKHEDRULI_ROWS[cp - 0x10D0U];
+      for (int row = 0; row < 8; row++)
+        for (int col = 0; col < 8; col++)
+          if (rows[row] & (1 << (7 - col))) c.pixel(x + col, box_top + row, true);
+      return;
+    }
+  }
 };
 
 // Georgian month and weekday labels use the bundled max7219.ttf pixel face at
 // native hand-drawn cells mapped one-to-one to the matrix's 8 rows; lengthy
 // date labels scroll instead of being squeezed.
-#include "max7219_date_font.generated.h"
 class GeorgianDateFont : public GlyphFont {
  public:
   int advance(char c) const override {
     const unsigned char code = (unsigned char) c;
     return code >= 0x80 && code < 0x80 + 21 ? max7219_date_font::ADVANCES[code - 0x80] : builtin::advance(c);
   }
+  int advance_cp(uint32_t cp) const override {
+    if (cp >= 0xE000U && cp <= 0xE009U) return max7219_date_font::CUSTOM_BIG_DIGIT_ADVANCES[cp - 0xE000U];
+    for (int i = 0; i < 21; i++) {
+      if (max7219_date_font::CODEPOINTS[i] == cp) return max7219_date_font::ADVANCES[i];
+    }
+    if (cp >= 0x10D0U && cp <= 0x10F0U) return max7219_date_font::MKHEDRULI_ADVANCES[cp - 0x10D0U];
+    return GlyphFont::advance_cp(cp);
+  }
   int ink_height() const override { return 8; }
   int ink_top() const override { return 0; }
+  int big_digit_ink_height() const override { return 8; }
+  int big_digit_ink_top() const override { return 0; }
   void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
     const unsigned char code = (unsigned char) ch;
     if (code >= 0x80 && code < 0x80 + 21) {
@@ -392,7 +525,119 @@ class GeorgianDateFont : public GlyphFont {
     for (int row = 0; row < 7; row++) for (int col = 0; col < 5; col++)
       if (rows[row] & (1 << (4 - col))) c.pixel(x + col, box_top + row, true);
   }
+  void draw_glyph_cp(Canvas &c, uint32_t cp, int x, int box_top) const override {
+    if (cp >= 0xE000U && cp <= 0xE009U) {
+      const uint8_t *rows = max7219_date_font::CUSTOM_BIG_DIGIT_ROWS[cp - 0xE000U];
+      for (int row = 0; row < 8; row++)
+        for (int col = 0; col < 8; col++)
+          if (rows[row] & (1 << (7 - col))) c.pixel(x + col, box_top + row, true);
+      return;
+    }
+    for (int i = 0; i < 21; i++) {
+      if (max7219_date_font::CODEPOINTS[i] == cp) {
+        const uint8_t *rows = max7219_date_font::ROWS[i];
+        for (int row = 0; row < 8; row++)
+          for (int col = 0; col < 8; col++)
+            if (rows[row] & (1 << (7 - col))) c.pixel(x + col, box_top + row, true);
+        return;
+      }
+    }
+    if (cp >= 0x10D0U && cp <= 0x10F0U) {
+      const uint8_t *rows = max7219_date_font::MKHEDRULI_ROWS[cp - 0x10D0U];
+      for (int row = 0; row < 8; row++)
+        for (int col = 0; col < 8; col++)
+          if (rows[row] & (1 << (7 - col))) c.pixel(x + col, box_top + row, true);
+      return;
+    }
+    GlyphFont::draw_glyph_cp(c, cp, x, box_top);
+  }
+};
 
+// Per-screen character set adapter: applies digit style (Standard 0-9 vs
+// Custom big U+E000..U+E009) and letter style (English vs Georgian) on top of
+// any GlyphFont without mutating the underlying font instance.
+class StyledFont : public GlyphFont {
+ public:
+  StyledFont(const GlyphFont &base, int digit_style = DIGIT_STYLE_STANDARD,
+             int letter_style = LETTER_STYLE_ENGLISH)
+      : base_(&base), digit_style_(digit_style), letter_style_(letter_style) {}
+
+  uint32_t map_codepoint(uint32_t cp) const {
+    if (digit_style_ == DIGIT_STYLE_CUSTOM_BIG && cp >= '0' && cp <= '9') {
+      const uint32_t big = 0xE000U + (cp - '0');
+      if (base_->advance_cp(big) > 0) return big;
+    }
+    if (letter_style_ == LETTER_STYLE_GEORGIAN &&
+        ((cp >= 'A' && cp <= 'Z') || (cp >= 'a' && cp <= 'z'))) {
+      const uint32_t ge = latin_to_georgian_codepoint((char) cp);
+      if (base_->advance_cp(ge) > 0) return ge;
+    }
+    return cp;
+  }
+
+  int advance(char c) const override {
+    const uint8_t b = (uint8_t) c;
+    if (b >= 0x80U && b < 0x80U + 21U) return base_->advance(c);
+    const uint32_t mapped = map_codepoint(b);
+    return mapped == b ? base_->advance(c) : base_->advance_cp(mapped);
+  }
+
+  int advance_cp(uint32_t cp) const override {
+    const uint32_t mapped = map_codepoint(cp);
+    if (mapped < 0x80U && mapped == cp) return base_->advance((char) mapped);
+    return base_->advance_cp(mapped);
+  }
+
+  int ink_height() const override {
+    if (digit_style_ == DIGIT_STYLE_CUSTOM_BIG && base_->advance_cp(0xE000U) > 0)
+      return base_->big_digit_ink_height();
+    return base_->ink_height();
+  }
+
+  int ink_top() const override {
+    if (digit_style_ == DIGIT_STYLE_CUSTOM_BIG && base_->advance_cp(0xE000U) > 0)
+      return base_->big_digit_ink_top();
+    return base_->ink_top();
+  }
+
+  const void *identity() const override {
+    return reinterpret_cast<const void *>(
+        reinterpret_cast<uintptr_t>(base_->identity()) ^
+        ((uintptr_t) digit_style_ << 1) ^ ((uintptr_t) letter_style_ << 2));
+  }
+
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    const uint8_t b = (uint8_t) ch;
+    if (b >= 0x80U && b < 0x80U + 21U) {
+      base_->draw_glyph(c, ch, x, box_top);
+      return;
+    }
+    const uint32_t mapped = map_codepoint(b);
+    if (mapped == b)
+      base_->draw_glyph(c, ch, x, box_top);
+    else
+      base_->draw_glyph_cp(c, mapped, x, box_top);
+  }
+
+  void draw_glyph_cp(Canvas &c, uint32_t cp, int x, int box_top) const override {
+    const uint32_t mapped = map_codepoint(cp);
+    if (mapped < 0x80U && mapped == cp)
+      base_->draw_glyph(c, (char) mapped, x, box_top);
+    else
+      base_->draw_glyph_cp(c, mapped, x, box_top);
+  }
+
+ private:
+  const GlyphFont *base_;
+  int digit_style_;
+  int letter_style_;
+};
+
+struct ScreenFonts {
+  const GlyphFont *clock_font = nullptr;
+  const GlyphFont *date_font = nullptr;
+  const GlyphFont *temp_font = nullptr;
+  const GlyphFont *message_font = nullptr;
 };
 
 // --------------------------------------------------------------------------
@@ -430,6 +675,13 @@ struct Frame {
   bool show_temperature_degree = true;
   int date_format = DATE_DD_MM;
   int date_language = DATE_LANGUAGE_ENGLISH;
+  int clock_digit_style = DIGIT_STYLE_STANDARD;
+  int clock_letter_style = LETTER_STYLE_ENGLISH;
+  int date_digit_style = DIGIT_STYLE_STANDARD;
+  int temp_digit_style = DIGIT_STYLE_STANDARD;
+  int temp_letter_style = LETTER_STYLE_ENGLISH;
+  int message_digit_style = DIGIT_STYLE_STANDARD;
+  int message_letter_style = LETTER_STYLE_ENGLISH;
   bool use_12h = false;
   bool blink_colon = true;
   bool animate = true;
@@ -997,7 +1249,7 @@ inline void draw_weather_panel(Canvas &canvas, int x, const Frame &f, bool show_
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text);
 
 inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback,
-                                        const Frame &f, uint8_t screen) {
+                                        const Frame &f, uint8_t screen, const ScreenFonts *screen_fonts = nullptr) {
   uint8_t mode = MODE_CLOCK;
   switch (screen) {
     case SCREEN_DATE:
@@ -1039,21 +1291,42 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
   ViewportCanvas content_canvas(canvas, content_x, content_width);
   const int width = content_canvas.width();
   const int height = content_canvas.height();
-  const GlyphFont *active = &font;
+  const GlyphFont *base_font = &font;
+  int digit_style = f.clock_digit_style;
+  int letter_style = f.clock_letter_style;
+  if (mode == MODE_DATE) {
+    if (screen_fonts != nullptr && screen_fonts->date_font != nullptr) base_font = screen_fonts->date_font;
+    digit_style = f.date_digit_style;
+    letter_style = f.date_language == DATE_LANGUAGE_GEORGIAN ? LETTER_STYLE_GEORGIAN : LETTER_STYLE_ENGLISH;
+  } else if (mode == MODE_TEMPERATURE) {
+    if (screen_fonts != nullptr && screen_fonts->temp_font != nullptr) base_font = screen_fonts->temp_font;
+    digit_style = f.temp_digit_style;
+    letter_style = f.temp_letter_style;
+  } else if (screen_fonts != nullptr && screen_fonts->clock_font != nullptr) {
+    base_font = screen_fonts->clock_font;
+  }
   GeorgianDateFont georgian_date_font;
+  const GlyphFont &primary_base = (mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN && base_font == &fallback)
+                                      ? (const GlyphFont &) georgian_date_font
+                                      : *base_font;
+  const GlyphFont &fallback_base = (mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
+                                       ? (const GlyphFont &) georgian_date_font
+                                       : fallback;
+  StyledFont styled_primary(primary_base, digit_style, letter_style);
+  StyledFont styled_fallback(fallback_base, digit_style, letter_style);
+  const GlyphFont *active = &styled_primary;
   char content[24] = {0};
   bool with_seconds = mode == MODE_CLOCK && f.seconds_mode == SECONDS_DIGITS && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
-    active = &georgian_date_font;
-  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
-    active = &font_for_text(*active, fallback, content);
+  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE)) {
+    active = &font_for_text(styled_primary, styled_fallback, content);
+  }
   if (has_content && active->text_width(content) > width) {
     if (with_seconds) {
       with_seconds = false;
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
-    if (has_content && active->text_width(content) > width) active = &fallback;
+    if (has_content && active->text_width(content) > width) active = &styled_fallback;
   }
   if (!has_content) {
     snprintf(content, sizeof(content), "--:--");
@@ -1066,26 +1339,45 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
 }
 
 // Choose the face for a free-text string (message, alert, OTA): the selected
-// font when it has every glyph, otherwise the built-in fallback. The external
-// faces only compile clock glyphs (see fonts_*.yaml), so Latin messages and
-// the OTA texts would otherwise collapse onto zero-advance missing glyphs.
+// font when it has every glyph, otherwise the built-in fallback.
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text) {
-  if (text != nullptr)
-    for (const char *p = text; *p != '\0'; p++)
-      if (primary.advance(*p) == 0) return fallback;
+  if (text != nullptr) {
+    const char *p = text;
+    while (*p != '\0') {
+      if ((uint8_t) *p >= 0xC0U) {
+        const uint32_t cp = next_utf8_codepoint(p);
+        if (primary.advance_cp(cp) == 0) return fallback;
+      } else {
+        if (primary.advance(*p++) == 0) return fallback;
+      }
+    }
+  }
   return primary;
 }
 
 // A weekday date is its own marquee. Do not combine that continuous movement
 // with the one-off whole-screen slide used by short fixed screens.
 inline bool date_content_needs_scroll(const Frame &f, const GlyphFont &primary,
-                                      const GlyphFont &fallback, int width) {
+                                      const GlyphFont &fallback, int width,
+                                      const ScreenFonts *screen_fonts = nullptr) {
   char content[24] = {0};
   if (!build_content(f, MODE_DATE, false, content, sizeof(content))) return false;
+  const GlyphFont *base_font = (screen_fonts != nullptr && screen_fonts->date_font != nullptr)
+                                   ? screen_fonts->date_font
+                                   : &primary;
+  const int letter_style = f.date_language == DATE_LANGUAGE_GEORGIAN ? LETTER_STYLE_GEORGIAN : LETTER_STYLE_ENGLISH;
   GeorgianDateFont georgian_date_font;
-  const GlyphFont &text_font = f.date_language == DATE_LANGUAGE_GEORGIAN
-      ? static_cast<const GlyphFont &>(georgian_date_font) : font_for_text(primary, fallback, content);
-  return text_font.text_width(content) > width;
+  const GlyphFont &primary_base = (f.date_language == DATE_LANGUAGE_GEORGIAN && base_font == &fallback)
+                                      ? (const GlyphFont &) georgian_date_font
+                                      : *base_font;
+  const GlyphFont &fallback_base = (f.date_language == DATE_LANGUAGE_GEORGIAN)
+                                       ? (const GlyphFont &) georgian_date_font
+                                       : fallback;
+  StyledFont styled_primary(primary_base, f.date_digit_style, letter_style);
+  StyledFont styled_fallback(fallback_base, f.date_digit_style, letter_style);
+  const GlyphFont *active = &font_for_text(styled_primary, styled_fallback, content);
+  if (active->text_width(content) > width) active = &styled_fallback;
+  return active->text_width(content) > width;
 }
 
 // Draw one text line. `animate_from` (may be nullptr) holds the previous
@@ -1113,7 +1405,16 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
   const int travel = slide + animation_row_gap;
 
   int cursor = start_x;
-  for (int i = 0; i < len; i++) {
+  for (int i = 0; i < len;) {
+    if ((uint8_t) content[i] >= 0xC0U) {
+      const char *p = content + i;
+      const uint32_t cp = next_utf8_codepoint(p);
+      const int step = font.advance_cp(cp);
+      if (cursor + step > 0 && cursor < width) font.draw_glyph_cp(c, cp, cursor, box_top);
+      cursor += step;
+      i = (int) (p - content);
+      continue;
+    }
     const int step = font.advance(content[i]);
     const bool changed = animate && is_digit(content[i]) && is_digit(animate_from[i]) &&
                          content[i] != animate_from[i];
@@ -1129,6 +1430,7 @@ inline void draw_line(Canvas &c, const GlyphFont &font, const char *content, con
       }
     }
     cursor += step;
+    i++;
   }
 }
 
@@ -1332,10 +1634,19 @@ inline void draw_free_text(Canvas &c, const GlyphFont &font, const char *text, u
   const uint32_t offset = (elapsed_ms / ms_per_px) % loop_width;
   const int origin_x = offset < (uint32_t) text_width ? -(int) offset : width - (int) (offset - (uint32_t) text_width);
   int cursor = origin_x;
-  for (const char *p = text; *p != '\0'; p++) {
-    const int step = font.advance(*p);
-    if (cursor + step > 0 && cursor < width) font.draw_glyph(c, *p, cursor, box_top);
-    cursor += step;
+  const char *p = text;
+  while (*p != '\0') {
+    if ((uint8_t) *p >= 0xC0U) {
+      const uint32_t cp = next_utf8_codepoint(p);
+      const int step = font.advance_cp(cp);
+      if (cursor + step > 0 && cursor < width) font.draw_glyph_cp(c, cp, cursor, box_top);
+      cursor += step;
+    } else {
+      const int step = font.advance(*p);
+      if (cursor + step > 0 && cursor < width) font.draw_glyph(c, *p, cursor, box_top);
+      cursor += step;
+      p++;
+    }
   }
 }
 
@@ -1493,15 +1804,52 @@ inline void housekeeping(const Frame &f, Report &report) {
 }
 
 // Main entry point: draw one frame and report what changed.
-inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback, const Frame &f, Report &report) {
+inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallback, const Frame &f, Report &report,
+                   const ScreenFonts *screen_fonts = nullptr) {
   report = Report();
   const int width = canvas.width();
   const int height = canvas.height();
 
   housekeeping(f, report);
   const uint8_t mode = effective_mode(f);
-  const GlyphFont *active = &font;
+  const GlyphFont *clock_base = (screen_fonts != nullptr && screen_fonts->clock_font != nullptr)
+                                    ? screen_fonts->clock_font
+                                    : &font;
+  const GlyphFont *date_base = (screen_fonts != nullptr && screen_fonts->date_font != nullptr)
+                                   ? screen_fonts->date_font
+                                   : &font;
+  const GlyphFont *temp_base = (screen_fonts != nullptr && screen_fonts->temp_font != nullptr)
+                                   ? screen_fonts->temp_font
+                                   : &font;
+  const GlyphFont *message_base = (screen_fonts != nullptr && screen_fonts->message_font != nullptr)
+                                      ? screen_fonts->message_font
+                                      : &font;
+  const GlyphFont *mode_base = clock_base;
+  int mode_digit_style = f.clock_digit_style;
+  int mode_letter_style = f.clock_letter_style;
+  if (mode == MODE_DATE) {
+    mode_base = date_base;
+    mode_digit_style = f.date_digit_style;
+    mode_letter_style = f.date_language == DATE_LANGUAGE_GEORGIAN ? LETTER_STYLE_GEORGIAN : LETTER_STYLE_ENGLISH;
+  } else if (mode == MODE_TEMPERATURE) {
+    mode_base = temp_base;
+    mode_digit_style = f.temp_digit_style;
+    mode_letter_style = f.temp_letter_style;
+  } else if (mode == MODE_MESSAGE || mode == MODE_COUNTDOWN) {
+    mode_base = message_base;
+    mode_digit_style = f.message_digit_style;
+    mode_letter_style = f.message_letter_style;
+  }
   GeorgianDateFont georgian_date_font;
+  const GlyphFont &primary_base = (mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN && mode_base == &fallback)
+                                      ? (const GlyphFont &) georgian_date_font
+                                      : *mode_base;
+  const GlyphFont &fallback_base = (mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
+                                       ? (const GlyphFont &) georgian_date_font
+                                       : fallback;
+  StyledFont styled_primary(primary_base, mode_digit_style, mode_letter_style);
+  StyledFont styled_fallback(fallback_base, mode_digit_style, mode_letter_style);
+  const GlyphFont *active = &styled_primary;
 
   // Report the mode/OTA/countdown changes once, so the YAML side can publish.
   if ((int) mode != state.reported_mode) {
@@ -1554,8 +1902,6 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   }
 
   // Free text (message or alert) scrolls or is centred depending on width.
-  // Latin text falls back to the built-in face, which is the only face that
-  // compiles letters (see fonts_*.yaml).
   if (mode == MODE_MESSAGE) {
     state.reset_animation();
     const bool alert = temporary_screen_active(state.alert_active, f.now_ms, state.alert_deadline_ms);
@@ -1566,7 +1912,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       state.scroll_started_ms = f.now_ms;
     }
     if (state.scroll_started_ms != 0) started = state.scroll_started_ms;
-    const GlyphFont &text_font = font_for_text(*active, fallback, text);
+    const GlyphFont &text_font = font_for_text(styled_primary, styled_fallback, text);
     draw_free_text(canvas, text_font, text, (uint32_t)(f.now_ms - started), f.message_scroll, f.scroll_ms_per_px,
                    text_font.centered_box_top(height));
     return;
@@ -1593,21 +1939,21 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       float progress = (float) (uint32_t)(f.now_ms - state.screen_transition_started_ms) / (float) f.animation_ms;
       if (progress >= 1.0f) {
         state.screen_transition_active = false;
-        if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width))
+        if (f.screen == SCREEN_DATE && date_content_needs_scroll(f, font, fallback, width, screen_fonts))
           state.date_scroll_started_ms = f.now_ms;
       } else {
         if (f.screen_transition_style == SCREEN_TRANSITION_SLIDE_UP) {
           const int offset = (int) (progress * height);
           TranslatedCanvas outgoing(canvas, 0, -offset);
           TranslatedCanvas incoming(canvas, 0, height - offset);
-          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous, screen_fonts);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen, screen_fonts);
         } else {
           const int offset = (int) (progress * width);
           TranslatedCanvas outgoing(canvas, -offset);
           TranslatedCanvas incoming(canvas, width - offset);
-          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous);
-          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen);
+          draw_selected_screen_static(outgoing, font, fallback, f, (uint8_t) state.screen_transition_previous, screen_fonts);
+          draw_selected_screen_static(incoming, font, fallback, f, (uint8_t) f.screen, screen_fonts);
         }
         state.reset_animation();
         return;
@@ -1637,10 +1983,9 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
   char content[24] = {0};
   bool with_seconds = (mode == MODE_CLOCK) && (f.seconds_mode == SECONDS_DIGITS) && f.time_valid;
   bool has_content = build_content(f, mode, with_seconds, content, sizeof(content));
-  if (has_content && mode == MODE_DATE && f.date_language == DATE_LANGUAGE_GEORGIAN)
-    active = &georgian_date_font;
-  else if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE))
-    active = &font_for_text(*active, fallback, content);
+  if (has_content && (mode == MODE_DATE || mode == MODE_TEMPERATURE)) {
+    active = &font_for_text(styled_primary, styled_fallback, content);
+  }
   if (has_content && active->text_width(content) > layout_width) {
     // 1. drop the seconds digits, keep the bottom-row bar
     if (with_seconds) {
@@ -1648,7 +1993,7 @@ inline void render(Canvas &canvas, const GlyphFont &font, const GlyphFont &fallb
       has_content = build_content(f, mode, false, content, sizeof(content));
     }
     // 2. fall back to the built-in font, which always fits the default layout
-    if (has_content && active->text_width(content) > layout_width) active = &fallback;
+    if (has_content && active->text_width(content) > layout_width) active = &styled_fallback;
   }
   if (!has_content) {
     // No valid time yet: keep a readable, non-empty placeholder.

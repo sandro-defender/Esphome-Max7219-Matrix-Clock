@@ -5,9 +5,45 @@ script:
   then:
   - lambda: 'auto call = id(clock_font).make_call();
 
-      call.set_option(id(clock_font).has_option("Pixel Clock 6x8") ? "Pixel Clock 6x8" : "Compact 5x7");
+      call.set_option(id(clock_font).has_option("max7219") ? "max7219" : "Compact 5x7");
 
       call.perform();'
+  - select.set:
+      id: clock_digit_style
+      option: Custom big 0-9
+  - select.set:
+      id: clock_letter_style
+      option: English
+  - lambda: 'auto call = id(date_font).make_call();
+
+      call.set_option(id(date_font).has_option("max7219") ? "max7219" : "Compact 5x7");
+
+      call.perform();'
+  - select.set:
+      id: date_digit_style
+      option: Standard 0-9
+  - lambda: 'auto call = id(temp_font).make_call();
+
+      call.set_option(id(temp_font).has_option("max7219") ? "max7219" : "Compact 5x7");
+
+      call.perform();'
+  - select.set:
+      id: temp_digit_style
+      option: Standard 0-9
+  - select.set:
+      id: temp_letter_style
+      option: English
+  - lambda: 'auto call = id(message_font).make_call();
+
+      call.set_option(id(message_font).has_option("max7219") ? "max7219" : "Compact 5x7");
+
+      call.perform();'
+  - select.set:
+      id: message_digit_style
+      option: Standard 0-9
+  - select.set:
+      id: message_letter_style
+      option: English
   - select.set:
       id: screen_mode
       option: Clock

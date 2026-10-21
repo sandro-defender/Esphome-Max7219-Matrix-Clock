@@ -54,3 +54,151 @@ switch:
       - script.execute: request_matrix_refresh
     turn_off_action:
       - script.execute: request_matrix_refresh
+
+select:
+  - platform: template
+    name: "Clock digit style"
+    id: clock_digit_style
+    internal: ${ha_hide_clock_digit_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Custom big 0-9"
+    options:
+      - "Standard 0-9"
+      - "Custom big 0-9"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Clock letter style"
+    id: clock_letter_style
+    internal: ${ha_hide_clock_letter_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "English"
+    options:
+      - "English"
+      - "Georgian"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Date font"
+    id: date_font
+    internal: ${ha_hide_date_font}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Compact 5x7"
+    options:
+      - "Compact 5x7"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Date digit style"
+    id: date_digit_style
+    internal: ${ha_hide_date_digit_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Standard 0-9"
+    options:
+      - "Standard 0-9"
+      - "Custom big 0-9"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Temperature font"
+    id: temp_font
+    internal: ${ha_hide_temp_font}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Compact 5x7"
+    options:
+      - "Compact 5x7"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Temperature digit style"
+    id: temp_digit_style
+    internal: ${ha_hide_temp_digit_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Standard 0-9"
+    options:
+      - "Standard 0-9"
+      - "Custom big 0-9"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Temperature letter style"
+    id: temp_letter_style
+    internal: ${ha_hide_temp_letter_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "English"
+    options:
+      - "English"
+      - "Georgian"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Message font"
+    id: message_font
+    internal: ${ha_hide_message_font}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Compact 5x7"
+    options:
+      - "Compact 5x7"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Message digit style"
+    id: message_digit_style
+    internal: ${ha_hide_message_digit_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "Standard 0-9"
+    options:
+      - "Standard 0-9"
+      - "Custom big 0-9"
+    set_action:
+      - component.update: matrix
+
+  - platform: template
+    name: "Message letter style"
+    id: message_letter_style
+    internal: ${ha_hide_message_letter_style}
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    update_interval: never
+    initial_option: "English"
+    options:
+      - "English"
+      - "Georgian"
+    set_action:
+      - component.update: matrix

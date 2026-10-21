@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "b8c02b15846c7bceb17e227fe6b3c3b7c303158f8977e30cf0a599d03a6173e9",
+  "sourceHash": "3c294e15f35175a6d77b5533b2d47aa2b34f34c046d15e6661e242ff5fc49991",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.9",
+  "releaseVersion": "0.8.11",
   "esphomeVersion": "2026.9.1",
-  "releaseNotes": "### Fixed\n\n- Bottom-align short Georgian Date glyphs on the 8-row matrix without changing\n  their hand-drawn pixels or stroke weight.",
+  "releaseNotes": "### Added\n\n- Unify `fonts/max7219.ttf` as the default bundled pixel font covering standard\n  ASCII digits (`0–9`), custom big digits (`U+E000–U+E009`), English letters\n  (`A–Z`/`a–z`), Georgian Mkhedruli letters (`ა–ჰ`), and punctuation, while\n  automatically extracting character sets from any font in `fonts/`.\n- Add independent per-screen Font, Digit Set (`Standard 0-9` / `Custom Big 0-9`),\n  and Letter Set (`English` / `Georgian`) runtime Home Assistant `select`\n  controls and Web Configurator selectors for Clock, Date, Temperature, and\n  Messages/Countdown.\n- Integrate `.claude/skills/ui-ux-pro-max` and redesign the Web Configurator\n  Font Lab with a per-screen typography workbench and live pixel specimen cards\n  for all extracted character sets.\n\n### Removed\n\n- Remove legacy single-purpose font packages and generator scripts in favor of\n  the unified `max7219` font package.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2506,8 +2506,7 @@
     "web_server_password": "web_server_password"
   },
   "defaultFonts": [
-    "pixel-clock-6x8",
-    "matrix-2px"
+    "max7219"
   ],
   "fonts": [
     {
@@ -2516,79 +2515,35 @@
       "label": "Compact 5×7",
       "family": "built-in bitmap",
       "license": "Project source",
-      "source": "packages/max7219_clock_renderer.h"
+      "source": "packages/max7219_clock_renderer.h",
+      "characterSets": {
+        "standardDigits": "0123456789",
+        "customBigDigits": "",
+        "englishUpper": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "englishLower": "",
+        "georgian": "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ",
+        "punctuation": ":.-/%!?+"
+      }
     },
     {
-      "id": "pixel-clock-6x8",
-      "option": "Pixel Clock 6x8",
-      "label": "Pixel Clock 6×8",
-      "family": "Pixel Clock 6x8",
-      "firmwareId": "font_pixel_clock_6x8_source",
+      "id": "max7219",
+      "option": "max7219",
+      "label": "max7219",
+      "family": "max7219 Georgian",
+      "firmwareId": "font_max7219_source",
       "size": 8,
-      "license": "Project-generated",
-      "source": "scripts/generate_pixel_clock_6x8_font.py",
-      "file": "fonts/pixel-clock-6x8/PixelClock6x8.ttf",
-      "package": "packages/fonts/pixel-clock-6x8.yaml"
-    },
-    {
-      "id": "matrix-2px",
-      "option": "Matrix 2px",
-      "label": "Matrix 2px",
-      "family": "Matrix 2px",
-      "firmwareId": "font_matrix_2px_source",
-      "size": 8,
-      "license": "Project-generated",
-      "source": "scripts/generate_matrix_font.py",
-      "file": "fonts/matrix-2px/Matrix2px.ttf",
-      "package": "packages/fonts/matrix-2px.yaml"
-    },
-    {
-      "id": "md-parola-numeric-7seg",
-      "option": "MD Parola Numeric 7-Segment",
-      "label": "MD Parola Numeric 7-Segment",
-      "family": "MD Parola Numeric 7-Segment",
-      "firmwareId": "font_md_parola_numeric_7seg_source",
-      "size": 8,
-      "license": "LGPL-2.1-or-later",
-      "source": "fonts/md-max72xx-system/LICENSE.txt",
-      "file": "fonts/md-parola-numeric-7seg/MDParolaNumeric7Seg.ttf",
-      "package": "packages/fonts/md-parola-numeric-7seg.yaml"
-    },
-    {
-      "id": "md-max72xx-system",
-      "option": "MD MAX72XX System",
-      "label": "MD MAX72XX System",
-      "family": "MD MAX72XX System",
-      "firmwareId": "font_md_max72xx_system_source",
-      "size": 8,
-      "license": "LGPL-2.1-or-later",
-      "source": "fonts/md-max72xx-system/LICENSE.txt",
-      "file": "fonts/md-max72xx-system/MDMax72xxSystem.ttf",
-      "package": "packages/fonts/md-max72xx-system.yaml"
-    },
-    {
-      "id": "dot-matrix",
-      "option": "Dot Matrix",
-      "label": "Dot Matrix",
-      "family": "Dot Matrix",
-      "firmwareId": "font_dot_matrix_source",
-      "size": 8,
-      "license": "Project-generated",
-      "source": "scripts/generate_dot_matrix_font.py",
-      "file": "fonts/dot-matrix/DotMatrix.ttf",
-      "package": "packages/fonts/dot-matrix.yaml"
-    },
-    {
-      "id": "mg-minecraft-georgian",
-      "option": "MG Minecraft Georgian",
-      "label": "MG Minecraft Georgian",
-      "family": "MG Minecraft Georgian",
-      "firmwareId": "font_mg_minecraft_georgian_source",
-      "size": 8,
-      "license": "CC BY-SA 3.0",
-      "source": "fonts/mg-minecraft-georgian-LICENSE.txt",
-      "file": "fonts/mg-minecraft-georgian-regular.ttf",
-      "package": "packages/fonts/mg-minecraft-georgian.yaml"
+      "license": "CC BY-SA 4.0",
+      "source": "fonts/LICENSE.txt",
+      "file": "fonts/max7219.ttf",
+      "package": "packages/fonts/max7219.yaml",
+      "characterSets": {
+        "standardDigits": "0123456789",
+        "customBigDigits": "",
+        "englishUpper": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "englishLower": "abcdefghijklmnopqrstuvwxyz",
+        "georgian": "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ",
+        "punctuation": ":.-/%!?+"
+      }
     }
   ],
   "settings": [
@@ -2600,24 +2555,156 @@
       "label": "Clock font",
       "options": [
         "compact",
-        "pixel-clock-6x8",
-        "matrix-2px",
-        "md-parola-numeric-7seg",
-        "md-max72xx-system",
-        "dot-matrix",
-        "mg-minecraft-georgian"
+        "max7219"
       ],
-      "default": "pixel-clock-6x8",
+      "default": "max7219",
       "input": "font",
       "firmwareOptions": [
         "Compact 5x7",
-        "Pixel Clock 6x8",
-        "Matrix 2px",
-        "MD Parola Numeric 7-Segment",
-        "MD MAX72XX System",
-        "Dot Matrix",
-        "MG Minecraft Georgian"
+        "max7219"
       ]
+    },
+    {
+      "key": "clockDigitStyle",
+      "kind": "select",
+      "target": "clock_digit_style",
+      "group": "Clock",
+      "label": "Clock digit style",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "default": "Custom big 0-9",
+      "input": "select"
+    },
+    {
+      "key": "clockLetterStyle",
+      "kind": "select",
+      "target": "clock_letter_style",
+      "group": "Clock",
+      "label": "Clock letter style",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "default": "English",
+      "input": "select"
+    },
+    {
+      "key": "dateFont",
+      "kind": "select",
+      "target": "date_font",
+      "group": "Screens",
+      "label": "Date font",
+      "options": [
+        "compact",
+        "max7219"
+      ],
+      "default": "max7219",
+      "input": "font",
+      "firmwareOptions": [
+        "Compact 5x7",
+        "max7219"
+      ]
+    },
+    {
+      "key": "dateDigitStyle",
+      "kind": "select",
+      "target": "date_digit_style",
+      "group": "Screens",
+      "label": "Date digit style",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "default": "Standard 0-9",
+      "input": "select"
+    },
+    {
+      "key": "tempFont",
+      "kind": "select",
+      "target": "temp_font",
+      "group": "Screens",
+      "label": "Temperature font",
+      "options": [
+        "compact",
+        "max7219"
+      ],
+      "default": "max7219",
+      "input": "font",
+      "firmwareOptions": [
+        "Compact 5x7",
+        "max7219"
+      ]
+    },
+    {
+      "key": "tempDigitStyle",
+      "kind": "select",
+      "target": "temp_digit_style",
+      "group": "Screens",
+      "label": "Temperature digit style",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "default": "Standard 0-9",
+      "input": "select"
+    },
+    {
+      "key": "tempLetterStyle",
+      "kind": "select",
+      "target": "temp_letter_style",
+      "group": "Screens",
+      "label": "Temperature letter style",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "default": "English",
+      "input": "select"
+    },
+    {
+      "key": "messageFont",
+      "kind": "select",
+      "target": "message_font",
+      "group": "Messages",
+      "label": "Message font",
+      "options": [
+        "compact",
+        "max7219"
+      ],
+      "default": "max7219",
+      "input": "font",
+      "firmwareOptions": [
+        "Compact 5x7",
+        "max7219"
+      ]
+    },
+    {
+      "key": "messageDigitStyle",
+      "kind": "select",
+      "target": "message_digit_style",
+      "group": "Messages",
+      "label": "Message digit style",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "default": "Standard 0-9",
+      "input": "select"
+    },
+    {
+      "key": "messageLetterStyle",
+      "kind": "select",
+      "target": "message_letter_style",
+      "group": "Messages",
+      "label": "Message letter style",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "default": "English",
+      "input": "select"
     },
     {
       "key": "screen",
@@ -3509,7 +3596,17 @@
     }
   ],
   "defaults": {
-    "clockFont": "pixel-clock-6x8",
+    "clockFont": "max7219",
+    "clockDigitStyle": "Custom big 0-9",
+    "clockLetterStyle": "English",
+    "dateFont": "max7219",
+    "dateDigitStyle": "Standard 0-9",
+    "tempFont": "max7219",
+    "tempDigitStyle": "Standard 0-9",
+    "tempLetterStyle": "English",
+    "messageFont": "max7219",
+    "messageDigitStyle": "Standard 0-9",
+    "messageLetterStyle": "English",
     "screen": "Clock",
     "alignment": "Center",
     "hourFormat": "24-hour",
@@ -3727,10 +3824,9 @@
       "entity_category": "config",
       "options": [
         "Compact 5x7",
-        "Pixel Clock 6x8",
-        "Matrix 2px"
+        "max7219"
       ],
-      "initial_option": "Pixel Clock 6x8",
+      "initial_option": "max7219",
       "domain": "select",
       "package": "packages/controls.yaml",
       "visibilitySubstitution": "ha_hide_clock_font",
@@ -4111,6 +4207,166 @@
       "visibleByDefault": true,
       "recommended": true,
       "group": "Buttons"
+    },
+    {
+      "id": "clock_digit_style",
+      "name": "Clock digit style",
+      "entity_category": "config",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "initial_option": "Custom big 0-9",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_digit_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "clock_letter_style",
+      "name": "Clock letter style",
+      "entity_category": "config",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "initial_option": "English",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_clock_letter_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Clock"
+    },
+    {
+      "id": "date_font",
+      "name": "Date font",
+      "entity_category": "config",
+      "options": [
+        "Compact 5x7",
+        "max7219"
+      ],
+      "initial_option": "max7219",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_font",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "date_digit_style",
+      "name": "Date digit style",
+      "entity_category": "config",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "initial_option": "Standard 0-9",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_date_digit_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "temp_font",
+      "name": "Temperature font",
+      "entity_category": "config",
+      "options": [
+        "Compact 5x7",
+        "max7219"
+      ],
+      "initial_option": "max7219",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_temp_font",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "temp_digit_style",
+      "name": "Temperature digit style",
+      "entity_category": "config",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "initial_option": "Standard 0-9",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_temp_digit_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "temp_letter_style",
+      "name": "Temperature letter style",
+      "entity_category": "config",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "initial_option": "English",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_temp_letter_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Screens"
+    },
+    {
+      "id": "message_font",
+      "name": "Message font",
+      "entity_category": "config",
+      "options": [
+        "Compact 5x7",
+        "max7219"
+      ],
+      "initial_option": "max7219",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_message_font",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
+    },
+    {
+      "id": "message_digit_style",
+      "name": "Message digit style",
+      "entity_category": "config",
+      "options": [
+        "Standard 0-9",
+        "Custom big 0-9"
+      ],
+      "initial_option": "Standard 0-9",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_message_digit_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
+    },
+    {
+      "id": "message_letter_style",
+      "name": "Message letter style",
+      "entity_category": "config",
+      "options": [
+        "English",
+        "Georgian"
+      ],
+      "initial_option": "English",
+      "domain": "select",
+      "package": "packages/date_controls.yaml",
+      "visibilitySubstitution": "ha_hide_message_letter_style",
+      "visibleByDefault": true,
+      "recommended": false,
+      "group": "Messages"
     },
     {
       "id": "date_scroll_speed",

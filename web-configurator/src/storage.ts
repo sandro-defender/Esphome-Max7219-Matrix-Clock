@@ -23,6 +23,9 @@ function enumsFor(target: string): Partial<Record<keyof Config, readonly unknown
     FIRMWARE.settings.filter((item) => item.options).map((item) => [item.key, settingOptions(item, target)!]),
   );
   options.clockFont = CLOCK_FONTS;
+  options.dateFont = CLOCK_FONTS;
+  options.tempFont = CLOCK_FONTS;
+  options.messageFont = CLOCK_FONTS;
   options.led = Object.keys(LED_PALETTE);
   // Retired illustration links must not change the actual firmware preview.
   options.layoutPreview = ["firmware"];
@@ -72,7 +75,12 @@ export function sanitizeConfig(input: unknown): Config {
   // Values that are absent come from the target's own base package; a value
   // that is present but invalid for this target stays visible and fails the
   // installer loudly in buildYaml instead of being silently rewritten.
-  return withFonts(config, Object.prototype.hasOwnProperty.call(source, "fonts") ? config.fonts : [config.clockFont]);
+  return withFonts(
+    config,
+    Object.prototype.hasOwnProperty.call(source, "fonts")
+      ? config.fonts
+      : [config.clockFont, config.dateFont, config.tempFont, config.messageFont],
+  );
 }
 
 function toBase64Url(text: string): string {

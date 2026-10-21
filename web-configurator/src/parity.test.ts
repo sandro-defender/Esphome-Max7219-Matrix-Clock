@@ -18,10 +18,15 @@ beforeAll(() => { execFileSync("make", ["-C", "tests", "fixture"], { cwd: root, 
 function oracle(cfg: Config, now = date, from = "", elapsed = 0, overlay = "none", percent = 0, error = 0, version = FIRMWARE.releaseVersion) {
   const geo = geometry(cfg.chips, cfg.rows);
   const font = FIRMWARE.fonts.find((item) => item.id === cfg.clockFont)!;
+  const dateFont = FIRMWARE.fonts.find((item) => item.id === cfg.dateFont)!;
+  const tempFont = FIRMWARE.fonts.find((item) => item.id === cfg.tempFont)!;
+  const messageFont = FIRMWARE.fonts.find((item) => item.id === cfg.messageFont)!;
   const values: Record<string, string | number> = Object.fromEntries(FIRMWARE.settings.map((item) =>
     [item.key, typeof cfg[item.key] === "string" ? firmwareOption(item.key, String(cfg[item.key])) : String(cfg[item.key])],
   ));
-  Object.assign(values, { width: geo.width, height: geo.height, font: font.firmwareId ?? "compact", hour: now.getHours(), minute: now.getMinutes(),
+  Object.assign(values, { width: geo.width, height: geo.height, font: font.firmwareId ?? "compact",
+    dateFont: dateFont.firmwareId ?? "compact", tempFont: tempFont.firmwareId ?? "compact", messageFont: messageFont.firmwareId ?? "compact",
+    hour: now.getHours(), minute: now.getMinutes(),
     second: now.getSeconds(), day: now.getDate(), month: now.getMonth()+1, message: cfg.message, from, elapsed, overlay, percent, error, version,
     previewHomeTemperature: cfg.previewHomeTemperature, previewOutdoorTemperature: cfg.previewOutdoorTemperature,
     previewWeatherTemperature: cfg.previewWeatherTemperature, previewWeatherCondition: cfg.previewWeatherCondition });
@@ -59,7 +64,7 @@ describe("exact firmware / browser pixel parity", () => {
     }
 
     for (const [dateShowWeatherIcon, dateShowOutdoorTemperature] of [[false, false], [true, false], [false, true], [true, true]]) {
-      compare(config({ chips: 12, rows: 1, clockFont: "pixel-clock-6x8", screen: "Date",
+      compare(config({ chips: 12, rows: 1, clockFont: "max7219", screen: "Date",
         dateFormat: "Weekday DD. MMM YY", dateShowWeatherIcon, dateShowOutdoorTemperature,
         previewWeatherCondition: "scattered clouds" as Config["previewWeatherCondition"] }));
     }
@@ -88,18 +93,53 @@ describe("exact firmware / browser pixel parity", () => {
   it("matches native MAX7219 transmission for all rotations, local flips and inversion", () => {
     for (const rotateChip of FIRMWARE.settings.find((item) => item.key === "rotateChip")!.options!) {
       for (const flipX of [false, true]) for (const invert of [false, true]) {
-        compare(config({ rotateChip: Number(rotateChip) as Config["rotateChip"], flipX, invert, clockFont: "matrix-2px" }));
+        compare(config({ rotateChip: Number(rotateChip) as Config["rotateChip"], flipX, invert, clockFont: "max7219" }));
       }
     }
   });
 
   it("reverses the chip chain when a 180-degree rotation needs digit positions swapped", () => {
-    compare(config({ rotateChip: 180, reverseEnable: true, clockFont: "matrix-2px" }));
+    compare(config({ rotateChip: 180, reverseEnable: true, clockFont: "max7219" }));
   });
 
   it("matches ASCII, spaces, unsupported/UTF-8 text, scrolling and timeout", () => {
     for (const clockFont of FONT_CATALOG.map((font) => font.id)) for (const message of ["HI  THERE", "0123456", "LONG MESSAGE SCROLLS ACROSS THE PANEL", " a🙂აბ b "]) {
-      for (const scrollMode of ["Scroll", "Static"] as const) for (const elapsed of [0, 120, 3000, 15000]) compare(config({ clockFont, message, scrollMode }), date, undefined, elapsed);
+      for (const scrollMode of ["Scroll", "Static"] as const) for (const elapsed of [0, 120, 3000, 15000]) compare(config({ clockFont, messageFont: clockFont, message, scrollMode }), date, undefined, elapsed);
+    }
+  }, 30000);
+
+  it("matches per-screen fonts, standard vs custom-big digits, and English vs Georgian letters across all screens", () => {
+    for (const fontId of FONT_CATALOG.map((f) => f.id)) {
+      for (const digitStyle of ["Standard 0-9", "Custom big 0-9"] as const) {
+        for (const letterStyle of ["English", "Georgian"] as const) {
+          compare(config({
+            screen: "Clock",
+            clockFont: fontId,
+            clockDigitStyle: digitStyle,
+            clockLetterStyle: letterStyle,
+          }));
+          compare(config({
+            screen: "Date",
+            dateFormat: "Weekday DD. MMM YY",
+            dateFont: fontId,
+            dateDigitStyle: digitStyle,
+            dateLanguage: letterStyle,
+          }));
+          compare(config({
+            screen: "Temperature",
+            tempFont: fontId,
+            tempDigitStyle: digitStyle,
+            tempLetterStyle: letterStyle,
+          }));
+          compare(config({
+            message: "HELLO 123 გამარჯობა",
+            messageFont: fontId,
+            messageDigitStyle: digitStyle,
+            messageLetterStyle: letterStyle,
+            scrollMode: "Static",
+          }));
+        }
+      }
     }
   }, 30000);
 
@@ -145,12 +185,14 @@ describe("exact firmware / browser pixel parity", () => {
     }
   }, 30000);
 
-  it("keeps Matrix 2px zero's repaired upper-left 2×2 stroke and the original 8-row height", () => {
-    const zero = previewFont("matrix-2px").glyph("0")!;
-    expect(zero.h).toBe(8);
-    const left = 3 << (zero.w-2);
-    expect(zero.rows[0] & left).toBe(left);
-    expect(zero.rows[1] & left).toBe(left);
+  it("extracts both standard 5x7 digits and custom 8-row big digits plus EN/GE letters from max7219", () => {
+    const face = previewFont("max7219");
+    const stdZero = face.glyph("0")!;
+    const bigZero = face.glyph("\uE000")!;
+    expect(stdZero.h).toBe(7);
+    expect(bigZero.h).toBe(8);
+    expect(face.glyph("A")?.h).toBe(7);
+    expect(face.glyph("ა")?.h).toBeGreaterThanOrEqual(7);
   });
 
   it("preserves message spaces/bytes and converts live time to the selected zone with DST", () => {

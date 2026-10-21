@@ -136,6 +136,38 @@ def build():
     if len(fallback["options"]) != 1:
         raise ValueError("The built-in fallback needs one option")
     font_options = {"compact": fallback["options"][0]}
+    font_select_ids = ("clock_font", "date_font", "temp_font", "message_font")
+
+    def extract_character_sets(face_obj, size_px: int, declared_glyphs: str) -> dict[str, str]:
+        import freetype as ft
+        face_obj.set_pixel_sizes(size_px, 0)
+        cmap = dict(face_obj.get_chars())
+        declared = set(declared_glyphs)
+
+        def available(chars: str) -> str:
+            out = []
+            for ch in chars:
+                cp = ord(ch)
+                if ch not in declared or cp not in cmap:
+                    continue
+                if ch == " ":
+                    out.append(ch)
+                    continue
+                face_obj.load_char(cp, ft.FT_LOAD_RENDER | ft.FT_LOAD_TARGET_MONO)
+                b = face_obj.glyph.bitmap
+                if any(b.buffer[i] != 0 for i in range(len(b.buffer))):
+                    out.append(ch)
+            return "".join(out)
+
+        return {
+            "standardDigits": available("0123456789"),
+            "customBigDigits": available("".join(chr(cp) for cp in range(0xE000, 0xE00A))),
+            "englishUpper": available("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            "englishLower": available("abcdefghijklmnopqrstuvwxyz"),
+            "georgian": available("".join(chr(cp) for cp in range(0x10D0, 0x10F1))),
+            "punctuation": available(":.-/%!?+"),
+        }
+
     for face_id in order:
         face = faces[face_id]
         font = face["font"][0]
@@ -152,10 +184,14 @@ def build():
         if face_id in default_fonts and face["select"][0].get("initial_option"):
             initial_font = face_id
         import freetype
-        family = freetype.Face(str(ROOT / asset)).family_name.decode("utf8")
+        ft_face = freetype.Face(str(ROOT / asset))
+        family = ft_face.family_name.decode("utf8")
+        declared_glyphs = "".join(font.get("glyphs", []))
+        char_sets = extract_character_sets(ft_face, font["size"], declared_glyphs)
         font_specs.append({"id": face_id, "option": option, "label": meta["label"], "family": family,
                            "firmwareId": font["id"], "size": font["size"], "license": meta["license"],
-                           "source": meta["source"], "file": asset, "package": f"packages/fonts/{face_id}.yaml"})
+                           "source": meta["source"], "file": asset, "package": f"packages/fonts/{face_id}.yaml",
+                           "characterSets": char_sets})
         local = copy.deepcopy(face)
         local["font"][0]["file"] = {"type": "local", "path": "../../" + asset}
         outputs[ROOT / f"packages/local_fonts/{face_id}.yaml"] = "# GENERATED from the corresponding fonts/ release package; do not edit.\n" + dump(local)
@@ -164,9 +200,20 @@ def build():
         local_catalog["font"].append(entry)
         local_catalog["esphome"]["build_flags"] += face["esphome"]["build_flags"]
     font_specs.insert(0, {"id": "compact", "option": fallback["options"][0], "label": re.sub(r"(?<=\d)x(?=\d)", "×", fallback["options"][0]),
-                          "family": "built-in bitmap", "license": "Project source", "source": "packages/max7219_clock_renderer.h"})
-    local_catalog["select"] = [{"id": Tag("clock_font", "!extend"), "initial_option": font_options[initial_font],
-                                 "options": [font_options[key] for key in order]}]
+                          "family": "built-in bitmap", "license": "Project source", "source": "packages/max7219_clock_renderer.h",
+                          "characterSets": {
+                              "standardDigits": "0123456789",
+                              "customBigDigits": "".join(chr(cp) for cp in range(0xE000, 0xE00A)),
+                              "englishUpper": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                              "englishLower": "",
+                              "georgian": "".join(chr(cp) for cp in range(0x10D0, 0x10F1)),
+                              "punctuation": ":.-/%!?+",
+                          }})
+    local_catalog["select"] = [
+        {"id": Tag(select_id, "!extend"), "initial_option": font_options[initial_font],
+         "options": [font_options[key] for key in order]}
+        for select_id in font_select_ids
+    ]
     outputs[ROOT / "packages/fonts_local.yaml"] = "# GENERATED measurement catalogue; not the default firmware entry point.\n" + dump(local_catalog)
     outputs[ROOT / "packages/fonts_default_local.yaml"] = "# GENERATED default pair from fonts_web.yaml, using local assets for validation.\n" + dump({"packages": {key.replace("-", "_"): Tag(f"local_fonts/{key}.yaml", "!include") for key in default_fonts}})
 
@@ -186,7 +233,7 @@ def build():
                                    "visibilitySubstitution": visibility[1],
                                    "visibleByDefault": not cv.boolean(resolve(subs[visibility[1]], subs)),
                                    "recommended": entity["id"] in bindings["recommendedEntities"]})
-                    if record.get("id") == "clock_font":
+                    if record.get("id") in font_select_ids:
                         record["options"] = [font_options["compact"]] + [font_options[key] for key in default_fonts]
                         record["initial_option"] = font_options[initial_font]
                     if "initial_value" in record:
@@ -475,10 +522,11 @@ def build():
     for item in settings:
         if item["kind"] == "select":
             value = item["default"]
-            if item["key"] == "clockFont":
+            if item.get("input") == "font":
+                target_id = item["target"]
                 desired = font_options[value]
                 fallback_option = font_options["compact"]
-                resets.append({"lambda": f'auto call = id(clock_font).make_call();\ncall.set_option(id(clock_font).has_option({json.dumps(desired)}) ? {json.dumps(desired)} : {json.dumps(fallback_option)});\ncall.perform();'})
+                resets.append({"lambda": f'auto call = id({target_id}).make_call();\ncall.set_option(id({target_id}).has_option({json.dumps(desired)}) ? {json.dumps(desired)} : {json.dumps(fallback_option)});\ncall.perform();'})
             else:
                 if "firmwareOptions" in item:
                     value = item["firmwareOptions"][item["options"].index(value)]

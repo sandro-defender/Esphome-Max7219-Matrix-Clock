@@ -21,6 +21,15 @@ export interface FirmwareSetting {
   exclusiveSecrets?: string[];
 }
 
+export interface FirmwareCharacterSets {
+  standardDigits: string;
+  customBigDigits: string;
+  englishUpper: string;
+  englishLower: string;
+  georgian: string;
+  punctuation: string;
+}
+
 export interface FirmwareFont {
   id: string;
   option: string;
@@ -32,6 +41,7 @@ export interface FirmwareFont {
   source: string;
   file?: string;
   package?: string;
+  characterSets?: FirmwareCharacterSets;
 }
 
 /**

@@ -27,5 +27,4 @@ packages:
     - packages/ota_ui.yaml
     - packages/web_server.yaml
     - packages/boot_ui.yaml
-    - packages/fonts/pixel-clock-6x8.yaml
-    - packages/fonts/matrix-2px.yaml
+    - packages/fonts/max7219.yaml

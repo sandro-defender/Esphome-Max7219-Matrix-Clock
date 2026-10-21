@@ -1,0 +1,12 @@
+max7219 Unified LED Matrix Font (fonts/max7219.ttf)
+
+Copyright (c) 2020-2026 Sandro
+License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+
+Contains 8-row MAX7219 pixel glyphs for:
+- Standard ASCII digits (U+0030..U+0039, 5x7)
+- Custom big digits (U+E000..U+E009, 6x8)
+- English uppercase letters (U+0041..U+005A)
+- English lowercase letters (U+0061..U+007A)
+- Georgian Mkhedruli letters (U+10D0..U+10F0)
+- Clock and status punctuation (:.-/%!?+ )

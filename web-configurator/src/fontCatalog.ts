@@ -20,6 +20,16 @@ export interface FontSpec {
   /** One line explaining when to pick this face. */
   blurb?: string;
   source?: string;
+  file?: string;
+  package?: string;
+  characterSets?: {
+    standardDigits: string;
+    customBigDigits: string;
+    englishUpper: string;
+    englishLower: string;
+    georgian: string;
+    punctuation: string;
+  };
 }
 
 /** Faces rendered for comparison only; they are never included in installer YAML. */

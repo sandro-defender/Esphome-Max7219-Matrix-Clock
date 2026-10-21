@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.8.11 - 2026-10-21
+
+### Added
+
+- Unify `fonts/max7219.ttf` as the default bundled pixel font covering standard
+  ASCII digits (`0–9`), custom big digits (`U+E000–U+E009`), English letters
+  (`A–Z`/`a–z`), Georgian Mkhedruli letters (`ა–ჰ`), and punctuation, while
+  automatically extracting character sets from any font in `fonts/`.
+- Add independent per-screen Font, Digit Set (`Standard 0-9` / `Custom Big 0-9`),
+  and Letter Set (`English` / `Georgian`) runtime Home Assistant `select`
+  controls and Web Configurator selectors for Clock, Date, Temperature, and
+  Messages/Countdown.
+- Integrate `.claude/skills/ui-ux-pro-max` and redesign the Web Configurator
+  Font Lab with a per-screen typography workbench and live pixel specimen cards
+  for all extracted character sets.
+
+### Removed
+
+- Remove legacy single-purpose font packages and generator scripts in favor of
+  the unified `max7219` font package.
+
+## 0.8.10 - 2026-10-20
+
+### Added
+
+- Integrate the max7219 Georgian clock font as a selectable optional face,
+  including its web package, display bridge, configurator metadata and
+  generated glyphs.
+
 ## 0.8.9 - 2026-10-09
 
 ### Fixed

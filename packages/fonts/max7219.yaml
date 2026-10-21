@@ -1,0 +1,33 @@
+# Unified MAX7219 pixel font containing EN/GE letters, standard 0-9, and custom big 0-9.
+# License and glyph documentation: fonts/LICENSE.txt
+font:
+  - id: font_max7219_source
+    file:
+      type: web
+      url: ${fonts_base_url}/max7219.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - '0123456789:.-/%!?+ ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzაბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ'
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_MAX7219
+
+select:
+  - id: !extend clock_font
+    initial_option: "max7219"
+    options:
+      - "max7219"
+  - id: !extend date_font
+    initial_option: "max7219"
+    options:
+      - "max7219"
+  - id: !extend temp_font
+    initial_option: "max7219"
+    options:
+      - "max7219"
+  - id: !extend message_font
+    initial_option: "max7219"
+    options:
+      - "max7219"

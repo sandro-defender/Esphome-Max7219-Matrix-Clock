@@ -161,7 +161,7 @@ export function AssistantSection({ cfg }: { cfg: Config }) {
     <div className="panel"><h3>Entity reference</h3><p>Exposure is set under Configure → Home Assistant visibility. Hidden entities remain in the firmware but are not advertised to Home Assistant or the device web server. Rebuild and install to apply changes; previously registered Home Assistant entities may need cleanup.</p><div className="table-scroll"><table className="pin-table"><thead><tr><th>Entity</th><th>Options / bounds</th><th>Package</th></tr></thead><tbody>
       {FIRMWARE.entities.map((entity, index) => <tr key={`${entity.domain}-${entity.id ?? entity.name}-${index}`}>
         <td><strong>{entity.name}</strong><br /><code>{entityId(cfg, entity.domain, entity.name)}</code></td>
-        <td>{entity.id === "clock_font" ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
+        <td>{(entity.id === "clock_font" || entity.id === "date_font" || entity.id === "temp_font" || entity.id === "message_font") ? ["compact", ...cfg.fonts].map((key) => fontSpec(key).option).join(", ") : entity.options?.join(", ") ??
           (entity.min_value !== undefined ? `${entity.min_value}–${entity.max_value}, step ${entity.step} ${entity.unit_of_measurement ?? ""}` : entity.domain)}
           {cfg.hiddenEntities.includes(entity.id) ? " · internal (hidden)" : " · exposed"}{entity.entity_category ? ` · ${entity.entity_category}` : ""}{entity.disabled_by_default ? " · disabled by default" : ""}</td><td>{entity.package}</td>
       </tr>)}

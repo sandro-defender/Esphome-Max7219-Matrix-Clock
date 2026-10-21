@@ -71,6 +71,13 @@ display:
       frame.show_temperature_degree = id(show_temperature_degree).state;
       frame.date_format = max7219_clock::date_format_from_option(id(date_format).current_option());
       frame.date_language = max7219_clock::date_language_from_option(id(date_language).current_option());
+      frame.clock_digit_style = max7219_clock::digit_style_from_option(id(clock_digit_style).current_option());
+      frame.clock_letter_style = max7219_clock::letter_style_from_option(id(clock_letter_style).current_option());
+      frame.date_digit_style = max7219_clock::digit_style_from_option(id(date_digit_style).current_option());
+      frame.temp_digit_style = max7219_clock::digit_style_from_option(id(temp_digit_style).current_option());
+      frame.temp_letter_style = max7219_clock::letter_style_from_option(id(temp_letter_style).current_option());
+      frame.message_digit_style = max7219_clock::digit_style_from_option(id(message_digit_style).current_option());
+      frame.message_letter_style = max7219_clock::letter_style_from_option(id(message_letter_style).current_option());
       frame.use_12h = id(time_format).current_option() == "12 hour";
       frame.blink_colon = id(clock_blink).state;
       frame.animate = id(clock_animate).state;
@@ -96,33 +103,23 @@ display:
       max7219_clock::DisplayCanvas canvas(it);
       max7219_clock::BuiltinFont builtin_font;
       const StringRef font_option = id(clock_font).current_option();
+      const StringRef date_font_option = id(date_font).current_option();
+      const StringRef temp_font_option = id(temp_font).current_option();
+      const StringRef message_font_option = id(message_font).current_option();
       max7219_clock::GlyphFont *selected = &builtin_font;
+      max7219_clock::GlyphFont *selected_date = &builtin_font;
+      max7219_clock::GlyphFont *selected_temp = &builtin_font;
+      max7219_clock::GlyphFont *selected_message = &builtin_font;
       // Raw generated pointers intentionally avoid id() resolution for omitted faces.
-      #ifdef MAX7219_FONT_PIXEL_CLOCK_6X8
-      max7219_clock::SourceFont pixel_clock_6x8_font(font_pixel_clock_6x8_source, &it);
-      if (font_option == "Pixel Clock 6x8") selected = &pixel_clock_6x8_font;
+      #ifdef MAX7219_FONT_MAX7219
+      max7219_clock::SourceFont max7219_font(font_max7219_source, &it);
+      if (font_option == "max7219") selected = &max7219_font;
+      if (date_font_option == "max7219") selected_date = &max7219_font;
+      if (temp_font_option == "max7219") selected_temp = &max7219_font;
+      if (message_font_option == "max7219") selected_message = &max7219_font;
       #endif
-      #ifdef MAX7219_FONT_MD_PAROLA_NUMERIC_7SEG
-      max7219_clock::SourceFont md_parola_numeric_7seg_font(font_md_parola_numeric_7seg_source, &it);
-      if (font_option == "MD Parola Numeric 7-Segment") selected = &md_parola_numeric_7seg_font;
-      #endif
-      #ifdef MAX7219_FONT_MD_MAX72XX_SYSTEM
-      max7219_clock::SourceFont md_max72xx_system_font(font_md_max72xx_system_source, &it);
-      if (font_option == "MD MAX72XX System") selected = &md_max72xx_system_font;
-      #endif
-      #ifdef MAX7219_FONT_MATRIX_2PX
-      max7219_clock::SourceFont matrix_2px_font(font_matrix_2px_source, &it);
-      if (font_option == "Matrix 2px") selected = &matrix_2px_font;
-      #endif
-      #ifdef MAX7219_FONT_DOT_MATRIX
-      max7219_clock::SourceFont dot_matrix_font(font_dot_matrix_source, &it);
-      if (font_option == "Dot Matrix") selected = &dot_matrix_font;
-      #endif
-      #ifdef MAX7219_FONT_MG_MINECRAFT_GEORGIAN
-      max7219_clock::SourceFont mg_minecraft_georgian_font(font_mg_minecraft_georgian_source, &it);
-      if (font_option == "MG Minecraft Georgian") selected = &mg_minecraft_georgian_font;
-      #endif
-      max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report);
+      max7219_clock::ScreenFonts screen_fonts{selected, selected_date, selected_temp, selected_message};
+      max7219_clock::render(canvas, *selected, builtin_font, frame, max7219_clock::report, &screen_fonts);
 
       // ----- Publish only what changed (keeps API traffic low) ------------
       if (max7219_clock::report.mode_changed) {

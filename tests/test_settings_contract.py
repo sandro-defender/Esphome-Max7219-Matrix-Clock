@@ -204,7 +204,7 @@ class InstallerMergeTests(unittest.TestCase):
                 for web in (True, False):
                     with self.subTest(target=target["id"], hidden=len(hidden), web=web):
                         installer = self.installer({"target": target["id"], "hiddenEntities": hidden, "webServer": web,
-                                                    "brightness": 7, "dateScreenDuration": 25, "clockFont": "matrix-2px"})
+                                                    "brightness": 7, "dateScreenDuration": 25, "clockFont": "max7219"})
                         merged = self.merged(installer)
                         self.assertIn(target["platform"], merged)
                         self.assertNotIn("esp32" if target["platform"] == "esp8266" else "esp8266", merged)
@@ -217,8 +217,8 @@ class InstallerMergeTests(unittest.TestCase):
                             self.assertEqual(cv.boolean(entity["internal"]), id_ in hidden)
                         self.assertEqual(actual["matrix_brightness"]["initial_value"], 7)
                         self.assertEqual(actual["date_screen_duration"]["initial_value"], 25)
-                        self.assertEqual(actual["clock_font"]["initial_option"], "Matrix 2px")
-                        self.assertIn("Matrix 2px", actual["clock_font"]["options"])
+                        self.assertEqual(actual["clock_font"]["initial_option"], "max7219")
+                        self.assertIn("max7219", actual["clock_font"]["options"])
                         self.assertEqual({item["action"] for item in merged["api"]["actions"]}, {a["action"] for a in CONTRACT["actions"]})
                         self.assertTrue(any(script["id"] == "restore_display_defaults" for script in merged["script"]))
                         self.assertTrue(any(entity.get("id") == "temperature_sensor" and entity["internal"] for entity in merged["sensor"]))

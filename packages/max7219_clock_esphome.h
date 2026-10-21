@@ -43,8 +43,16 @@ class DisplayCanvas : public Canvas {
 class SourceFont : public GlyphFont {
  public:
   SourceFont(font::Font *font, display::Display *) : font_(font) {}
+  static uint32_t char_to_codepoint(char c) {
+    const uint8_t b = (uint8_t) c;
+    if (b >= 0x80U && b < 0x80U + 21U) return max7219_date_font::CODEPOINTS[b - 0x80U];
+    return (uint32_t) b;
+  }
   int advance(char c) const override {
-    const font::Glyph *glyph = this->font_->find_glyph((uint32_t) (uint8_t) c);
+    return this->advance_cp(char_to_codepoint(c));
+  }
+  int advance_cp(uint32_t cp) const override {
+    const font::Glyph *glyph = this->font_->find_glyph(cp);
     return glyph != nullptr ? glyph->advance : 0;
   }
   // Ink height/top of a digit: the clock/countdown text is centred on digits.
@@ -56,12 +64,23 @@ class SourceFont : public GlyphFont {
     const font::Glyph *glyph = this->font_->find_glyph('0');
     return glyph != nullptr ? glyph->offset_y : 0;
   }
+  int big_digit_ink_height() const override {
+    const font::Glyph *glyph = this->font_->find_glyph(0xE000U);
+    return glyph != nullptr ? glyph->height : this->ink_height();
+  }
+  int big_digit_ink_top() const override {
+    const font::Glyph *glyph = this->font_->find_glyph(0xE000U);
+    return glyph != nullptr ? glyph->offset_y : this->ink_top();
+  }
   const void *identity() const override { return this->font_; }
   void draw_glyph(Canvas &canvas, char ch, int x, int box_top) const override {
+    this->draw_glyph_cp(canvas, char_to_codepoint(ch), x, box_top);
+  }
+  void draw_glyph_cp(Canvas &canvas, uint32_t cp, int x, int box_top) const override {
     // All supported faces are bpp: 1. Read ESPHome's compiled, packed glyph
     // through Canvas so per-cell clipping also applies to external fonts.
     // Font::print draws straight into Display and bypasses that clip window.
-    const font::Glyph *glyph = this->font_->find_glyph((uint32_t) (uint8_t) ch);
+    const font::Glyph *glyph = this->font_->find_glyph(cp);
     if (glyph == nullptr) return;
     for (int row = 0; row < glyph->height; row++) {
       for (int col = 0; col < glyph->width; col++) {
@@ -132,6 +151,14 @@ template<typename Option> inline uint8_t date_format_from_option(const Option &o
 
 template<typename Option> inline uint8_t date_language_from_option(const Option &option) {
   return option == "Georgian" ? DATE_LANGUAGE_GEORGIAN : DATE_LANGUAGE_ENGLISH;
+}
+
+template<typename Option> inline uint8_t digit_style_from_option(const Option &option) {
+  return option == "Custom big 0-9" ? DIGIT_STYLE_CUSTOM_BIG : DIGIT_STYLE_STANDARD;
+}
+
+template<typename Option> inline uint8_t letter_style_from_option(const Option &option) {
+  return option == "Georgian" ? LETTER_STYLE_GEORGIAN : LETTER_STYLE_ENGLISH;
 }
 
 template<typename Option> inline uint8_t screen_transition_style_from_option(const Option &option) {

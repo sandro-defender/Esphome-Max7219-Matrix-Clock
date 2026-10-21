@@ -7,6 +7,8 @@ import {
   drawTextLine,
   normalizeMessage,
   setPixel,
+  styledPreviewFont,
+  textCells,
   type PixelTarget,
   type PreviewFont,
 } from "./fonts";
@@ -346,7 +348,7 @@ export function clockLayout(
   const boxTop = font.boxTop(frame.height);
   const cells: ClockCell[] = [];
   let cursor = startX;
-  for (const char of content) {
+  for (const char of textCells(content)) {
     const advance = font.advance(char);
     cells.push({ char, x: cursor, advance, top: boxTop, digit: isDigit(char) });
     cursor += advance;
@@ -507,7 +509,8 @@ export function renderScene(
     : cfg.messageHold <= 0 ? null : Math.max(0, Math.ceil((cfg.messageHold * 1000 - age) / 1000));
   const selectedScreen = timeline?.screen ?? cfg.screen;
 
-  const selected = previewFont(cfg.clockFont);
+  const clockBase = previewFont(cfg.clockFont);
+  const selected = styledPreviewFont(clockBase, cfg.clockDigitStyle, cfg.clockLetterStyle);
   const spec = fontSpec(cfg.clockFont);
   const panels = weatherPanelGeometry(frame.width, frame.height);
   const clockViewportWidth = panels.available ? 48 : frame.width;
@@ -538,7 +541,9 @@ export function renderScene(
       text: `${spec.label} fills all 8 rows, so the seconds bar is drawn under the digits. Choose the Digits seconds mode for a cleaner look.`,
     });
   }
-  if (page === "message" && text.length === 0 && cfg.screen === "Message") {
+  if (page === "message" && text.length > 0 && cfg.screen === "Message") {
+    // Active message
+  } else if (page === "message" && text.length === 0 && cfg.screen === "Message") {
     notices.push({ level: "info", text: "The Message screen shows whatever the last show_message action sent. Nothing is queued here." });
   }
 
@@ -549,14 +554,41 @@ export function renderScene(
   let content = "";
 
   if (cfg.displayPower) {
-    let font = page === "date" && cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : selected;
+    const dateLetterStyle = cfg.dateLanguage === "Georgian" ? "Georgian" : "English";
+    const dateBase = cfg.dateFont === "compact" && cfg.dateLanguage === "Georgian"
+      ? GEORGIAN_DATE_FONT
+      : previewFont(cfg.dateFont);
+    const dateFallbackBase = cfg.dateLanguage === "Georgian" ? GEORGIAN_DATE_FONT : BUILTIN_FONT;
+    const datePrimary = styledPreviewFont(dateBase, cfg.dateDigitStyle, dateLetterStyle);
+    const dateFallback = styledPreviewFont(dateFallbackBase, cfg.dateDigitStyle, dateLetterStyle);
+    const tempPrimary = styledPreviewFont(previewFont(cfg.tempFont), cfg.tempDigitStyle, cfg.tempLetterStyle);
+    const tempFallback = styledPreviewFont(BUILTIN_FONT, cfg.tempDigitStyle, cfg.tempLetterStyle);
+    const messagePrimary = styledPreviewFont(previewFont(cfg.messageFont), cfg.messageDigitStyle, cfg.messageLetterStyle);
+    const messageFallback = styledPreviewFont(BUILTIN_FONT, cfg.messageDigitStyle, cfg.messageLetterStyle);
+    const clockFallback = styledPreviewFont(BUILTIN_FONT, cfg.clockDigitStyle, cfg.clockLetterStyle);
+
+    let font = page === "date"
+      ? datePrimary
+      : page === "temperature"
+        ? tempPrimary
+        : page === "message"
+          ? messagePrimary
+          : selected;
+    const fallbackFont = page === "date"
+      ? dateFallback
+      : page === "temperature"
+        ? tempFallback
+        : page === "message"
+          ? messageFallback
+          : clockFallback;
+
     if (page === "grid") paintGrid(frame, geo);
     else if (page === "checkerboard") paintChecker(frame);
     else if (page === "message") {
       const shown = text.length > 0 ? text : "";
       if (shown) {
         if (font.measure(shown) === null) {
-          font = BUILTIN_FONT;
+          font = fallbackFont;
           usedFallback = true;
         }
         drawFreeText(frame, font, shown, cfg, age);
@@ -591,7 +623,7 @@ export function renderScene(
         content = build();
       }
       if ((font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width) {
-        font = BUILTIN_FONT;
+        font = fallbackFont;
         usedFallback = true;
       }
       if (page === "date" && (font.measure(content) ?? Number.POSITIVE_INFINITY) > contentFrame.width) {
