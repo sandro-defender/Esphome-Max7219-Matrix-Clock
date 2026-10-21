@@ -39,6 +39,10 @@
   --chassis-h: 200px;
   --pin-gap: 8px;
   --shell-max: 1520px;
+  /* Pinned matrix width cap; a panel wider than this (many modules) pushes
+     --matrix-w up so the chassis stretches to the page edges instead of
+     scaling the pixels down. */
+  --chassis-cap: 640px;
 }
 
 * { box-sizing: border-box; }
@@ -347,8 +351,16 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (min-width: 980px) {
   .shell { padding: 16px 24px 72px; }
   /* A little more room for the matrix on large screens — the phone cap stays. */
-  .chassis { max-width: 720px; }
+  :root { --chassis-cap: 720px; }
 }
+
+/* Scrolled: the pinned display is just the pixel table, and the reserved
+   slot (the --chassis-h measured from this element) shrinks with it. */
+.chassis.compact { padding: 6px 12px; }
+.chassis.compact .chassis-top,
+.chassis.compact .chassis-bottom,
+.chassis.compact .screw,
+.chassis.compact .halo { display: none; }
 
 /* ------------------------------------------------------------------ *
  * Live stage: matrix first, then the time and the face readout
@@ -368,14 +380,16 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   position: fixed;
   top: calc(var(--pin-top) + var(--pin-gap));
   /* Centred and capped, so a landscape tablet or a wide desktop does not get
-     a wall of LEDs. */
+     a wall of LEDs — unless the pixel table itself is wider, in which case
+     --matrix-w wins and the chassis runs edge to edge. */
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 2 * max(10px, env(safe-area-inset-left, 0px)));
-  max-width: 640px;
+  max-width: max(var(--chassis-cap), var(--matrix-w, 0px));
   /* Below the nav (50), above the scrolling content. */
   z-index: 40;
   padding: 14px 12px 10px;
+  transition: padding 180ms ease-out;
   border-radius: var(--r-l);
   background:
     linear-gradient(180deg, rgba(255, 214, 160, 0.05), transparent 30%),
@@ -1562,6 +1576,36 @@ button.font-card:hover { border-color: var(--amber-dim); }
 .field-note code { font: inherit; color: var(--amber-2); }
 .compact-help { margin-top: 6px; font-size: .8rem; }
 .compact-help > summary { cursor: pointer; padding: 6px 0; color: var(--amber-2); min-height: 32px; }
+
+/* Install-time Home Assistant entity IDs: folded by default, one disclosure
+   per card, same compact rhythm as the "About" help. */
+.entity-fields { margin-top: 6px; font-size: .8rem; }
+.entity-fields > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 0;
+  color: var(--amber-2);
+  min-height: 32px;
+}
+.entity-fields > summary::-webkit-details-marker { display: none; }
+.entity-fields > summary::before {
+  content: "+";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .7rem;
+}
+.entity-fields[open] > summary::before { content: "−"; }
 .preview-settings { margin-top: 10px; }
 /* Hardware radios are explicit and keyboard-operable, with generated defaults. */
 .target-picker { border-color: var(--amber-dim); }

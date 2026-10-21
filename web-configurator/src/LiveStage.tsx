@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MatrixCanvas } from "./MatrixCanvas";
+import { MatrixCanvas, naturalPanelWidth } from "./MatrixCanvas";
 import { LEDS } from "./leds";
 import { fitForPanel, fontSpec } from "./fontCatalog";
 import type { Scene } from "./render";
@@ -61,6 +61,31 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
     return () => observer.disconnect();
   }, []);
 
+  // Once the page scrolls, the pinned display is just the pixel table: the
+  // bezel furniture goes away and the reserved slot shrinks with it. The two
+  // thresholds keep the state from flapping while the page height changes.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const compactBelow = 60;
+    const fullAbove = 24;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled((current) => (current ? y >= fullAbove : y > compactBelow));
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // A wide panel (many modules) must not be scaled down to fit the capped
+  // chassis: it tells the chassis how wide the pixel table really wants to be,
+  // so the chassis stretches to the page edges instead.
+  const { modulesX, modulesY } = scene.geometry;
+  useEffect(() => {
+    const natural = naturalPanelWidth(modulesX, modulesY) + 26; // chassis padding + slack
+    document.documentElement.style.setProperty("--matrix-w", `${Math.round(natural)}px`);
+  }, [modulesX, modulesY]);
+
   const spec = fontSpec(cfg.clockFont);
   const fit = fitForPanel(scene.font, scene.geometry.width, Math.min(8, scene.geometry.height));
   const led = LEDS[cfg.led];
@@ -83,7 +108,7 @@ export function LiveStage({ cfg, scene, now, onPreviousFont, onNextFont }: LiveS
   return (
     <section id="preview" className="stage" aria-labelledby="preview-title">
       <div className="chassis-slot" aria-hidden="true" />
-      <div className="chassis" ref={chassisRef}>
+      <div className={cn("chassis", scrolled && "compact")} ref={chassisRef}>
         <i className="screw tl" />
         <i className="screw tr" />
         <i className="screw bl" />

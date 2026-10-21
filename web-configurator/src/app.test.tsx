@@ -196,9 +196,12 @@ describe("responsive layout", () => {
     expect(rule(css, ".shell", DESKTOP)).not.toContain("grid-template-columns");
     expect(rule(css, ".chassis")).toContain("position: fixed");
     expect(rule(css, ".chassis")).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
-    expect(rule(css, ".chassis")).toContain("max-width: 640px");
+    // Capped — but a pixel table wider than the cap (many modules) pushes the
+    // chassis to the page edges through --matrix-w instead of scaling down.
+    expect(rule(css, ".chassis")).toContain("max-width: max(var(--chassis-cap), var(--matrix-w, 0px))");
+    expect(rule(css, ":root")).toContain("--chassis-cap: 640px");
     // Large screens get a bigger matrix, phones keep the 640 px cap.
-    expect(rule(css, ".chassis", DESKTOP)).toContain("max-width: 720px");
+    expect(rule(css, ":root", DESKTOP)).toContain("--chassis-cap: 720px");
     expect(rule(css, ".topbar")).toContain("padding: 12px 16px 8px");
   });
 
@@ -208,9 +211,9 @@ describe("responsive layout", () => {
     expect(chassis).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
     expect(chassis).toContain("z-index: 40");
     expect(chassis).toContain("env(safe-area-inset-left");
-    // Centred and capped instead of stretched across a landscape tablet.
+    // Centred, and capped by --chassis-cap unless the pixel table is wider.
     expect(chassis).toContain("left: 50%");
-    expect(chassis).toContain("max-width: 640px");
+    expect(chassis).toContain("max-width: max(var(--chassis-cap), var(--matrix-w, 0px))");
 
     const nav = rule(css, ".site-nav");
     expect(nav).toContain("position: sticky");
@@ -231,6 +234,20 @@ describe("responsive layout", () => {
   it("gives anchor jumps room for the menu and the pinned matrix", () => {
     expect(rule(css, "html")).toContain("scroll-padding-top: calc(var(--nav-h) + 12px)");
     expect(rule(css, ".doc-section")).toContain("var(--chassis-h)");
+  });
+
+  it("collapses the pinned display to just the pixel table while scrolled", () => {
+    // The scroll state is measured in the stage, the bezel furniture is
+    // hidden by CSS; the measured --chassis-h slot follows the shorter box.
+    const stage = readFileSync(new URL("./LiveStage.tsx", import.meta.url), "utf8");
+    expect(stage).toContain("addEventListener(\"scroll\"");
+    expect(stage).toContain("chassis\", scrolled && \"compact\"");
+    expect(stage).toContain("naturalPanelWidth");
+    expect(css).toContain(".chassis.compact { padding: 6px 12px; }");
+    for (const part of [".chassis-top", ".chassis-bottom", ".screw", ".halo"]) {
+      expect(css).toContain(`.chassis.compact ${part}`);
+    }
+    expect(css).toContain(".chassis.compact .halo { display: none; }");
   });
 
   it("keeps the panel centred and inside its column", () => {

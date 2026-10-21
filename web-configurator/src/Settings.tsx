@@ -48,6 +48,20 @@ function FirmwareField({ item, cfg, patch }: { item: FirmwareSetting; cfg: Confi
   </>;
 }
 
+/** One generated binding inside a card, with the automatic-timezone row. */
+function SettingRow({ item, cfg, patch, detected }: { item: FirmwareSetting; cfg: Config; patch: Patch; detected: string | null }) {
+  return <div data-setting-key={item.key}>
+    {item.key === "timezone" ? <div data-configurator-key="automaticTimezone">
+      <Toggle label="Automatic timezone" checked={cfg.automaticTimezone} onChange={(value) => patch("automaticTimezone", value)} />
+    </div> : null}
+    <FirmwareField item={item} cfg={cfg} patch={patch} />
+    {item.key === "timezone" ? <p id="timezone-hint" className="field-note" role="status">
+      {cfg.automaticTimezone ? "Follows this browser on load and tab return. Turn off to enter a manual zone." : "Manual override is saved and shared; browser changes will not replace it."}
+      {detected ? <> Browser: <code>{detected}</code>.</> : " Detection unavailable; keeping the current zone. Turn off automatic mode to edit it."}
+    </p> : null}
+  </div>;
+}
+
 /** Native radios give hardware selection normal Tab/arrow-key behavior. */
 function HardwareTargetPicker({ cfg, onTarget }: { cfg: Config; onTarget: (id: string) => void }) {
   const current = targetSpec(cfg.target);
@@ -71,20 +85,21 @@ export function TuneSection({ cfg, patch, geo, detected = null, onTarget }: {
   return <Section id="tune" title="Settings" className="compact-settings">
     <p className="settings-intro">Changes update the preview and installer together. Firmware preferences are first-boot defaults; values already saved on the clock take priority.</p>
     <HardwareTargetPicker cfg={cfg} onTarget={onTarget ?? ((id) => patch("target", id))} />
-    <div className="tune-grid">{SETTINGS_GROUPS.map((group) => <fieldset className="control-group settings-card" key={group.id} data-settings-group={group.id}>
-      <legend>{group.id}</legend>
-      {group.settings.map((item) => <div key={item.key} data-setting-key={item.key}>
-        {item.key === "timezone" ? <div data-configurator-key="automaticTimezone">
-          <Toggle label="Automatic timezone" checked={cfg.automaticTimezone} onChange={(value) => patch("automaticTimezone", value)} />
-        </div> : null}
-        <FirmwareField item={item} cfg={cfg} patch={patch} />
-        {item.key === "timezone" ? <p id="timezone-hint" className="field-note" role="status">
-          {cfg.automaticTimezone ? "Follows this browser on load and tab return. Turn off to enter a manual zone." : "Manual override is saved and shared; browser changes will not replace it."}
-          {detected ? <> Browser: <code>{detected}</code>.</> : " Detection unavailable; keeping the current zone. Turn off automatic mode to edit it."}
-        </p> : null}
-      </div>)}
-      <details className="compact-help"><summary>About {group.id.toLowerCase()}</summary><p>{group.description}</p></details>
-    </fieldset>)}</div>
+    <div className="tune-grid">{SETTINGS_GROUPS.map((group) => {
+      // The install-time Home Assistant entity IDs are set once and rarely
+      // touched: keep them folded away so the card stays compact.
+      const entityItems = group.settings.filter((item) => ENTITY_ID_FIELDS[item.key]);
+      const otherItems = group.settings.filter((item) => !ENTITY_ID_FIELDS[item.key]);
+      return <fieldset className="control-group settings-card" key={group.id} data-settings-group={group.id}>
+        <legend>{group.id}</legend>
+        {otherItems.map((item) => <SettingRow key={item.key} item={item} cfg={cfg} patch={patch} detected={detected} />)}
+        {entityItems.length ? <details className="entity-fields">
+          <summary>Temperature and weather entity IDs ({entityItems.length})</summary>
+          {entityItems.map((item) => <SettingRow key={item.key} item={item} cfg={cfg} patch={patch} detected={detected} />)}
+        </details> : null}
+        <details className="compact-help"><summary>About {group.id.toLowerCase()}</summary><p>{group.description}</p></details>
+      </fieldset>;
+    })}</div>
     <fieldset className="control-group settings-card preview-settings"><legend>Preview only</legend>
       <Field id="preview-led" label="LED colour"><select id="preview-led" value={cfg.led} onChange={(event) => patch("led", event.target.value as LedName)}>
         {Object.entries(LEDS).map(([key, led]) => <option key={key} value={key}>{led.label}</option>)}

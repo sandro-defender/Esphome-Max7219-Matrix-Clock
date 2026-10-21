@@ -15,6 +15,12 @@
 - Fold the web configurator's Info & help reference tables (wiring, package
   contract, actions, entities and fonts) behind collapsed disclosures with a
   row count, so the page stays short and the table you need is one click away.
+- While the page is scrolled, the pinned display collapses to just the pixel
+  table (bezel labels and screws hidden, reserved space released), and the
+  Home Assistant temperature and weather entity IDs fold behind one disclosure
+  so the Screens card stays compact.
+- A panel wider than the chassis cap (for example twelve modules) now stretches
+  the chassis to the page edges instead of scaling the dots down to fit.
 
 ## 0.8.14 - 2026-10-21
 

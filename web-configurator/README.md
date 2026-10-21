@@ -11,8 +11,12 @@ visibility and Font Lab. Info & help keeps the reference in build order:
 release notes, wiring, installer YAML, entity/action references, fonts,
 troubleshooting, gallery and documentation. Cards share aligned labels and
 controls; descriptions, entity groups and the reference tables use native
-disclosures (tables start folded). The matrix is pinned under the menu at
-every screen size and the content below it uses the full page width.
+disclosures (tables start folded, and the Home Assistant temperature/weather
+entity IDs stay folded in the Screens card). The matrix is pinned under the
+menu at every screen size and the content below it uses the full page width;
+while scrolled it collapses to just the pixel table, and a panel wider than
+the chassis cap (many modules) stretches the chassis to the page edges
+instead of shrinking the dots.
 
 The header links to the project on GitHub. Under the compiled faces, Font Lab
 links to the [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/),
