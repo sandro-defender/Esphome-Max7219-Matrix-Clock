@@ -19,3 +19,11 @@ The firmware also keeps a built-in 5×7 pixel fallback in
 `packages/max7219_clock_renderer.h` (`Compact 5x7`) plus the generated Georgian
 and custom-big digit tables in `packages/max7219_date_font.generated.h` so the
 display remains readable even when external fonts are omitted.
+
+## Make your own face
+
+The [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/)
+draws 8-row pixel faces in the browser and exports a drop-in package for this
+clock. The font lab in the Web Configurator links to it, and
+[docs/PIXEEL_FONTS.md](../docs/PIXEEL_FONTS.md) explains the export contract,
+the personal custom slot and catalogue contributions.

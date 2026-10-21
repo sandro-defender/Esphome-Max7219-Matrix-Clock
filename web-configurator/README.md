@@ -11,6 +11,11 @@ visibility and Font Lab. Info & help keeps wiring, installer YAML, entity/action
 references, troubleshooting, gallery and documentation. Cards share aligned
 labels and controls; descriptions and entity groups use native disclosures.
 The matrix stays visible on phones and becomes a sticky rail from 980 px.
+
+The header links to the project on GitHub. Under the compiled faces, Font Lab
+links to the [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/),
+which exports a package for this clock; the export contract is documented in
+[docs/PIXEEL_FONTS.md](../docs/PIXEEL_FONTS.md).
 The complete coverage audit and fixed safety policies are in
 [docs/CONFIGURATOR_SETTINGS.md](../docs/CONFIGURATOR_SETTINGS.md).
 

@@ -1040,6 +1040,17 @@ button.font-card:hover { border-color: var(--amber-dim); }
 
 .font-width-warn { margin-top: 12px; }
 
+/* Pointer to the pixel-font editor, kept apart from the compiled faces. */
+.font-source {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .font-card-strips {
   display: flex;
   flex-wrap: wrap;

@@ -296,12 +296,74 @@ class GeneratedPreviewFont implements PreviewFont {
   }
 }
 
+// -------------------------------------------------------------------------
+// Automatic letter spacing (mirrors StyledFont in max7219_clock_renderer.h)
+//
+// Faces whose glyph cells are packed full width (ink width == advance) print
+// neighbouring digits as one blob. A face that already leaves a blank column
+// between its cells keeps its own metrics; one that does not gets exactly one
+// blank column after every glyph. Measured from the real bitmaps, digits and
+// letters only - separators are narrow on purpose.
+// -------------------------------------------------------------------------
+
+/** Blank columns guaranteed between two adjacent glyph cells. */
+export const LETTER_SPACING_PX = 1;
+
+const PROBE_SIZE = 64;
+const PROBE_TOP = 32;
+const PROBE_GROUPS = ["0123456789", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"];
+
+/** Inked columns of one glyph relative to its cell origin; null when blank. */
+function probeInkColumns(font: PreviewFont, ch: string): { first: number; last: number } | null {
+  const pixels = new Uint8Array(PROBE_SIZE * PROBE_SIZE);
+  font.drawGlyph({ width: PROBE_SIZE, height: PROBE_SIZE, pixels }, ch, 0, PROBE_TOP);
+  let first = -1;
+  let last = -1;
+  for (let x = 0; x < PROBE_SIZE; x++) {
+    for (let y = 0; y < PROBE_SIZE; y++) {
+      if (pixels[y * PROBE_SIZE + x]) {
+        if (first < 0) first = x;
+        last = x;
+        break;
+      }
+    }
+  }
+  return first < 0 ? null : { first, last };
+}
+
+/** Smallest blank gap, in columns, between two adjacent digit or letter cells. */
+export function measureLetterGap(font: PreviewFont): number {
+  let minLeft = PROBE_SIZE;
+  let maxBleed = -PROBE_SIZE;
+  for (const group of PROBE_GROUPS) {
+    for (const ch of group) {
+      const advance = font.advance(ch);
+      if (advance <= 0) continue; // glyph is not compiled into this face
+      const ink = probeInkColumns(font, ch);
+      if (!ink) continue; // blank cell
+      if (ink.first < minLeft) minLeft = ink.first;
+      const bleed = ink.last + 1 - advance;
+      if (bleed > maxBleed) maxBleed = bleed;
+    }
+  }
+  return maxBleed === -PROBE_SIZE ? 1 : minLeft - maxBleed;
+}
+
 class StyledPreviewFont implements PreviewFont {
+  private spacing = 0;
+
   constructor(
     private readonly base: PreviewFont,
     private readonly digitStyle: DigitStyle,
     private readonly letterStyle: LetterStyle,
-  ) {}
+  ) {
+    this.spacing = measureLetterGap(this) >= 1 ? 0 : LETTER_SPACING_PX;
+  }
+
+  /** Extra blank columns inserted after every glyph. */
+  get letterSpacing(): number {
+    return this.spacing;
+  }
 
   get id(): string {
     return `${this.base.id}::${this.digitStyle}::${this.letterStyle}`;
@@ -356,15 +418,15 @@ class StyledPreviewFont implements PreviewFont {
   }
 
   advance(ch: string): number {
-    return this.base.advance(this.mapChar(ch));
+    return this.base.advance(this.mapChar(ch)) + this.spacing;
   }
 
   measure(text: string): number | null {
     let width = 0;
     for (const ch of textCells(text)) {
-      const step = this.advance(ch);
-      if (step <= 0) return null;
-      width += step;
+      const raw = this.base.advance(this.mapChar(ch));
+      if (raw <= 0) return null; // glyph is not compiled into this face
+      width += raw + this.spacing;
     }
     return width;
   }
@@ -383,11 +445,19 @@ export function styledPreviewFont(
   digitStyle: DigitStyle = "Standard 0-9",
   letterStyle: LetterStyle = "English",
 ): PreviewFont {
-  if (digitStyle === "Standard 0-9" && letterStyle === "English") return base;
-  return new StyledPreviewFont(base, digitStyle, letterStyle);
+  // Always wrapped: the wrapper also carries the face's automatic letter
+  // spacing, which the firmware applies to every style combination. The
+  // spacing is measured once per face + style pair.
+  const key = `${base.id}::${digitStyle}::${letterStyle}`;
+  const cached = styledCache.get(key);
+  if (cached) return cached;
+  const font = new StyledPreviewFont(base, digitStyle, letterStyle);
+  styledCache.set(key, font);
+  return font;
 }
 
 const cache = new Map<string, PreviewFont>();
+const styledCache = new Map<string, PreviewFont>();
 
 /** Built-in 5x7 fallback font; never missing, never downloads anything. */
 export const BUILTIN_FONT: PreviewFont = new BuiltinPreviewFont();

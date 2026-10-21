@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.8.12 - 2026-10-21
+
+### Added
+
+- Link the project on GitHub from the web configurator header, and link the
+  [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/)
+  under the compiled faces in Font Lab so a custom face is one click away.
+- Document the hosted Pixeel editor and the GitHub project page in `README.md`,
+  `fonts/README.md`, `packages/fonts/README.md`,
+  `web-configurator/README.md` and `docs/PIXEEL_FONTS.md`.
+
+### Fixed
+
+- Separate glyphs that a pixel face packs full width. Faces whose glyph cells
+  carry ink right up to the cell edge (the custom big `0-9` digits are 6 px of
+  ink in a 6 px advance) printed neighbouring digits as one blob, which showed
+  on the Clock screen as merged digits such as `34`. The renderer now measures
+  the real bitmaps of the face and inserts one blank column after every glyph
+  when the face does not leave one itself; faces that already separate their
+  cells keep their own metrics, so `Standard 0-9` and the built-in
+  `Compact 5x7` clock are unchanged. The default `max7219` face with
+  `Custom big 0-9` still shows `HH:MM:SS` in exactly 48 px.
+
+### Changed
+
+- One combination now needs more room than before: the built-in `Compact 5x7`
+  face with `Custom big 0-9` and the `Digits` seconds mode measures 50 px for
+  `HH:MM:SS`, so the firmware drops the seconds digits for that pairing (the
+  digits are separated instead of merged). The Web Configurator shows the same
+  width warning the firmware acts on. Every other pairing is unaffected.
+
 ## 0.8.11 - 2026-10-21
 
 ### Added
