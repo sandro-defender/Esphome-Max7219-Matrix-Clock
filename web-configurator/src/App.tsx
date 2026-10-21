@@ -175,7 +175,12 @@ export default function App({ initialPage = "configure" }: { initialPage?: Page 
             <div className="brand-name">
               Clock<span>lab</span>
             </div>
-            <small>MAX7219 · ESPHome {PROJECT.esphome}</small>
+            <small>
+              MAX7219 · ESPHome {PROJECT.esphome} ·{" "}
+              <a href={PROJECT.repo} target="_blank" rel="noreferrer">
+                GitHub
+              </a>
+            </small>
           </div>
         </div>
         <div className="top-actions">

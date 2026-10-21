@@ -1,8 +1,10 @@
 # Pixeel font integration
 
-Pixeel is a browser pixel-font editor (https://github.com/sandro-defender/Pixeel-font-editor)
-that can export a MAX7219 clock face as a drop-in firmware package. This
-repository consumes those exports in two ways:
+Pixeel is a browser pixel-font editor — open it at
+<https://sandro-defender.github.io/Pixeel-font-editor/> (source:
+<https://github.com/sandro-defender/Pixeel-font-editor>) — that can export a
+MAX7219 clock face as a drop-in firmware package. This repository consumes
+those exports in two ways:
 
 * **Personal build** — compile *only* your font (custom slot). No catalogue
   change, no PR required.

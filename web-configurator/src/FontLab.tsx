@@ -208,6 +208,13 @@ export function FontLab({ cfg, setCfg, panelWidth, panelHeight }: FontLabProps) 
           })}
         </div>
         {warning ? <p className="warn font-width-warn" role="status">{warning}</p> : null}
+        <p className="font-source">
+          Want a different face? Draw one in the{" "}
+          <a href="https://sandro-defender.github.io/Pixeel-font-editor/" target="_blank" rel="noreferrer">
+            Pixeel font editor
+          </a>{" "}
+          and export a drop-in package for this clock.
+        </p>
       </fieldset>
 
       <fieldset className="font-group font-group-screens" data-font-screens>

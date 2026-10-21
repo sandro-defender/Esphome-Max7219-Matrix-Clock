@@ -256,6 +256,10 @@ class GlyphFont {
     return 0;
   }
   virtual const void *identity() const { return this; }
+  // Blank columns this face inserts after every glyph. Layout uses the spaced
+  // advance everywhere; a glyph that is missing from the face still steps by
+  // exactly this much, so callers compare against it instead of against zero.
+  virtual int letter_spacing() const { return 0; }
   // Ink height and the ink offset from the text box top, measured on a digit.
   // The renderer uses both to centre the ink inside the display.
   virtual int ink_height() const = 0;
@@ -553,6 +557,84 @@ class GeorgianDateFont : public GlyphFont {
   }
 };
 
+// --------------------------------------------------------------------------
+// Automatic letter spacing
+//
+// Some pixel faces pack every glyph cell full width (ink width == advance), so
+// neighbouring digits touch and read as one blob - "12:34" in the custom big
+// 0-9 face is the classic case. A face that already leaves a blank column
+// between its cells keeps its own metrics; a face that does not gets exactly
+// one blank column inserted after every glyph.
+//
+// The check is measured from the real bitmaps, never from a hand kept table:
+// the widest ink that reaches the right edge of a cell and the narrowest ink
+// that starts at the left edge of a cell decide the worst-case gap between any
+// two adjacent glyphs. Only digit and letter cells decide it - separators
+// (':', '.', '/', ...) are narrow on purpose and keep the face's own advance.
+// --------------------------------------------------------------------------
+
+// Blank columns guaranteed between two adjacent glyph cells.
+constexpr int LETTER_SPACING_PX = 1;
+
+// Row the measurement probe draws at. Glyph ink is measured on an offscreen
+// canvas, so no probe pixel ever reaches the panel - and a recorded draw at
+// this box top is a measurement, never part of a screen.
+constexpr int INK_PROBE_BOX_TOP = 32;
+
+// Canvas that records only the horizontal extent of the ink drawn into it.
+class InkProbe : public Canvas {
+ public:
+  void pixel(int x, int y, bool on) override {
+    if (!on) return;
+    if (x < this->first_) this->first_ = x;
+    if (x > this->last_) this->last_ = x;
+  }
+  int width() const override { return 64; }
+  int height() const override { return 64; }
+  bool inked() const { return this->last_ >= this->first_; }
+  void reset() {
+    this->first_ = 64;
+    this->last_ = -1;
+  }
+
+  int first_ = 64;
+  int last_ = -1;
+};
+
+// Smallest blank gap, in columns, that `font` leaves between two adjacent
+// digit or letter cells. Zero means the cells touch, negative that ink can
+// cross the cell boundary. Returns 1 when nothing can be measured.
+inline int measure_letter_gap(const GlyphFont &font) {
+  int min_left = 64;    // narrowest first inked column
+  int max_bleed = -64;  // widest ink overshoot past the right edge of a cell
+  InkProbe probe;
+  for (int group = 0; group < 3; group++) {
+    const char *set = group == 0 ? "0123456789"
+                     : group == 1 ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                  : "abcdefghijklmnopqrstuvwxyz";
+    for (const char *p = set; *p != '\0'; p++) {
+      const uint32_t cp = (uint32_t)(uint8_t) *p;
+      const int advance = font.advance_cp(cp);
+      if (advance <= 0) continue;  // glyph is not compiled into this face
+      probe.reset();
+      font.draw_glyph_cp(probe, cp, 0, INK_PROBE_BOX_TOP);
+      if (!probe.inked()) continue;  // blank cell
+      if (probe.first_ < min_left) min_left = probe.first_;
+      const int bleed = probe.last_ + 1 - advance;
+      if (bleed > max_bleed) max_bleed = bleed;
+    }
+  }
+  return max_bleed == -64 ? 1 : min_left - max_bleed;
+}
+
+// Letter spacing for one face + style pair. Measured from the bitmaps on every
+// StyledFont construction: BuiltinFont and GeorgianDateFont live on the stack,
+// so an object address says nothing about which face it is and no cache keyed
+// on `identity()` can be trusted. The measurement is bounded - 62 glyph cells
+// drawn once into a canvas that stores two integers - and a face never changes
+// its spacing at run time.
+inline int auto_letter_spacing(const GlyphFont &font) { return measure_letter_gap(font) >= 1 ? 0 : LETTER_SPACING_PX; }
+
 // Per-screen character set adapter: applies digit style (Standard 0-9 vs
 // Custom big U+E000..U+E009) and letter style (English vs Georgian) on top of
 // any GlyphFont without mutating the underlying font instance.
@@ -560,7 +642,9 @@ class StyledFont : public GlyphFont {
  public:
   StyledFont(const GlyphFont &base, int digit_style = DIGIT_STYLE_STANDARD,
              int letter_style = LETTER_STYLE_ENGLISH)
-      : base_(&base), digit_style_(digit_style), letter_style_(letter_style) {}
+      : base_(&base), digit_style_(digit_style), letter_style_(letter_style), spacing_(0) {
+    this->spacing_ = auto_letter_spacing(*this);
+  }
 
   uint32_t map_codepoint(uint32_t cp) const {
     if (digit_style_ == DIGIT_STYLE_CUSTOM_BIG && cp >= '0' && cp <= '9') {
@@ -575,17 +659,23 @@ class StyledFont : public GlyphFont {
     return cp;
   }
 
+  // Extra blank columns inserted after every glyph (0 when the face already
+  // separates its cells). Everything that measures or steps text goes through
+  // these two functions, so alignment, scrolling and the slide-up animation
+  // all see the same spacing.
+  int letter_spacing() const override { return this->spacing_; }
+
   int advance(char c) const override {
     const uint8_t b = (uint8_t) c;
-    if (b >= 0x80U && b < 0x80U + 21U) return base_->advance(c);
+    if (b >= 0x80U && b < 0x80U + 21U) return base_->advance(c) + this->spacing_;
     const uint32_t mapped = map_codepoint(b);
-    return mapped == b ? base_->advance(c) : base_->advance_cp(mapped);
+    return (mapped == b ? base_->advance(c) : base_->advance_cp(mapped)) + this->spacing_;
   }
 
   int advance_cp(uint32_t cp) const override {
     const uint32_t mapped = map_codepoint(cp);
-    if (mapped < 0x80U && mapped == cp) return base_->advance((char) mapped);
-    return base_->advance_cp(mapped);
+    const int step = mapped < 0x80U && mapped == cp ? base_->advance((char) mapped) : base_->advance_cp(mapped);
+    return step + this->spacing_;
   }
 
   int ink_height() const override {
@@ -600,11 +690,15 @@ class StyledFont : public GlyphFont {
     return base_->ink_top();
   }
 
-  const void *identity() const override {
+  // Identity of the face + style pair. The spacing is derived from both, so
+  // the cache key must not depend on it.
+  const void *style_identity() const {
     return reinterpret_cast<const void *>(
         reinterpret_cast<uintptr_t>(base_->identity()) ^
         ((uintptr_t) digit_style_ << 1) ^ ((uintptr_t) letter_style_ << 2));
   }
+
+  const void *identity() const override { return this->style_identity(); }
 
   void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
     const uint8_t b = (uint8_t) ch;
@@ -631,6 +725,7 @@ class StyledFont : public GlyphFont {
   const GlyphFont *base_;
   int digit_style_;
   int letter_style_;
+  int spacing_;
 };
 
 struct ScreenFonts {
@@ -1341,14 +1436,15 @@ inline void draw_selected_screen_static(Canvas &canvas, const GlyphFont &font, c
 // Choose the face for a free-text string (message, alert, OTA): the selected
 // font when it has every glyph, otherwise the built-in fallback.
 inline const GlyphFont &font_for_text(const GlyphFont &primary, const GlyphFont &fallback, const char *text) {
+  const int blank = primary.letter_spacing();
   if (text != nullptr) {
     const char *p = text;
     while (*p != '\0') {
       if ((uint8_t) *p >= 0xC0U) {
         const uint32_t cp = next_utf8_codepoint(p);
-        if (primary.advance_cp(cp) == 0) return fallback;
+        if (primary.advance_cp(cp) <= blank) return fallback;
       } else {
-        if (primary.advance(*p++) == 0) return fallback;
+        if (primary.advance(*p++) <= blank) return fallback;
       }
     }
   }

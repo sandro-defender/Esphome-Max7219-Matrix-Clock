@@ -15,3 +15,11 @@ Every screen (Clock, Date, Temperature, and Messages/Countdown) can select its
 own font, digit set (`Standard 0-9` vs `Custom big 0-9`), and letter set
 (`English` vs `Georgian`) independently in the Web Configurator and at runtime
 in Home Assistant.
+
+## Make your own face
+
+Draw one in the
+[Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/) and
+export a package for this clock; see
+[docs/PIXEEL_FONTS.md](../../docs/PIXEEL_FONTS.md) for the export contract and
+both installation paths.

@@ -103,6 +103,21 @@ struct DrawCall {
   int box_top;
 };
 
+// The letter-spacing measurement draws every glyph once into an offscreen
+// canvas at INK_PROBE_BOX_TOP; every other recorded call belongs to a screen.
+static const DrawCall *first_drawn(const std::vector<DrawCall> &calls) {
+  for (const auto &call : calls)
+    if (call.box_top != INK_PROBE_BOX_TOP) return &call;
+  return nullptr;
+}
+
+static int drawn_count(const std::vector<DrawCall> &calls) {
+  int n = 0;
+  for (const auto &call : calls)
+    if (call.box_top != INK_PROBE_BOX_TOP) n++;
+  return n;
+}
+
 class FakeFont : public GlyphFont {
  public:
   FakeFont(int advance, int ink_height = 7, int ink_top = 0)
@@ -119,7 +134,7 @@ class FakeFont : public GlyphFont {
   int calls_for(char ch) const {
     int n = 0;
     for (const auto &call : calls)
-      if (call.ch == ch) n++;
+      if (call.ch == ch && call.box_top != INK_PROBE_BOX_TOP) n++;
     return n;
   }
 
@@ -261,7 +276,7 @@ static void test_animation_survives_hour_rollover() {
 
   reset_state();
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls.size(), 5u);
+  CHECK_EQ(drawn_count(font.calls), 5);
 
   font.calls.clear();
   canvas.clear();
@@ -321,7 +336,7 @@ static void test_clock_layout() {
   reset_state();
   render(canvas, font, compact, f, report);
   // 8 characters * 6px = 48 -> exact fit, no fallback, no clipping.
-  CHECK_EQ(font.calls.size(), 8u);
+  CHECK_EQ(drawn_count(font.calls), 8);
   CHECK_EQ(compact.text_width("12:34:56"), 42);  // still fits 48px
 
   int x0, y0, x1, y1;
@@ -341,7 +356,7 @@ static void test_seconds_dropped_when_too_wide() {
   // Seconds digits must be dropped, then the remaining "12:34" (5 * 8 = 40)
   // still fits, so the selected font is kept and no colon-second is drawn.
   CHECK_EQ((int) strlen("12:34"), 5);
-  CHECK_EQ(wide.calls.size(), 5u);
+  CHECK_EQ(drawn_count(wide.calls), 5);
   CHECK_EQ(wide.calls_for(':'), 1);
 }
 
@@ -353,7 +368,7 @@ static void test_falls_back_to_builtin_font() {
   reset_state();
   render(canvas, wide, compact, f, report);
   // Every character comes from the built-in font; the wide font is unused.
-  CHECK_EQ(wide.calls.size(), 0u);
+  CHECK_EQ(drawn_count(wide.calls), 0);
   CHECK(canvas.on_count() > 0);
 }
 
@@ -365,7 +380,7 @@ static void test_invalid_time_shows_placeholder() {
 
   reset_state();
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls.size(), 0u);      // built-in is used for the placeholder
+  CHECK_EQ(drawn_count(font.calls), 0);  // built-in is used for the placeholder
   CHECK(canvas.on_count() > 0);
 }
 
@@ -520,7 +535,7 @@ static void test_only_changed_digits_animate() {
 
   reset_state();
   render(canvas, font, compact, f, report);  // baseline, no animation
-  CHECK_EQ(font.calls.size(), 5u);
+  CHECK_EQ(drawn_count(font.calls), 5);
 
   // 12:34 -> 12:35: only the last digit changed.
   font.calls.clear();
@@ -753,14 +768,16 @@ static void test_message_scrolling_and_static() {
   f.now_ms = 0;
   render(canvas, font, compact, f, report);
   // A new scrolling message starts left aligned, so it is visible immediately.
-  int first_x = font.calls.empty() ? -1 : font.calls[0].x;
+  const DrawCall *first_call = first_drawn(font.calls);
+  int first_x = first_call == nullptr ? -1 : first_call->x;
   CHECK_EQ(first_x, 0);
 
   font.calls.clear();
   canvas.clear();
   f.now_ms = 2000;  // 2000ms / 60ms per px -> the text has moved left
   render(canvas, font, compact, f, report);
-  int later_x = font.calls.empty() ? -1 : font.calls[0].x;
+  const DrawCall *later_call = first_drawn(font.calls);
+  int later_x = later_call == nullptr ? -1 : later_call->x;
   CHECK(later_x < 0);
 
   // Scrolling off: the text is static (left aligned) and never scrolls.
@@ -771,12 +788,12 @@ static void test_message_scrolling_and_static() {
   font.calls.clear();
   canvas.clear();
   render(canvas, font, compact, f, report);
-  int static_x = font.calls[0].x;
+  int static_x = first_drawn(font.calls)->x;
   font.calls.clear();
   canvas.clear();
   f.now_ms = 5000;
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls[0].x, static_x);
+  CHECK_EQ(first_drawn(font.calls)->x, static_x);
 
   // Short messages are centred, not scrolled.
   reset_state();
@@ -786,7 +803,7 @@ static void test_message_scrolling_and_static() {
   font.calls.clear();
   render(canvas, font, compact, f2, report);
   // "HI" = 6 + 6 = 12px wide, centred at (48 - 12) / 2 = 18.
-  CHECK_EQ(font.calls[0].x, 18);
+  CHECK_EQ(first_drawn(font.calls)->x, 18);
 }
 
 static void test_message_without_duration_stays_until_cleared() {
@@ -1095,7 +1112,7 @@ static void test_bitmap_test_screens() {
   f.screen = SCREEN_GRID_TEST;
   reset_state();
   render(grid, font, compact, f, report);
-  CHECK(font.calls.empty());
+  CHECK_EQ(drawn_count(font.calls), 0);
   CHECK(grid.on_count() > 0);
   // Six modules in one row: a box border runs along the top row.
   CHECK(grid.get(0, 0) && grid.get(7, 0) && grid.get(8, 0) && grid.get(47, 0));
@@ -1145,7 +1162,7 @@ static void test_alignment() {
   f.alignment = ALIGN_LEFT;
   reset_state();
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls[0].x, 0);
+  CHECK_EQ(first_drawn(font.calls)->x, 0);
 
   font.calls.clear();
   canvas.clear();
@@ -1623,7 +1640,7 @@ class ClockOnlyFont : public GlyphFont {
   int calls_for(char ch) const {
     int n = 0;
     for (const auto &call : calls)
-      if (call.ch == ch) n++;
+      if (call.ch == ch && call.box_top != INK_PROBE_BOX_TOP) n++;
     return n;
   }
 };
@@ -1640,7 +1657,7 @@ static void test_latin_message_falls_back_to_builtin_font() {
   state.set_message("HELLO", 0, 0);
   render(canvas, font, compact, f, report);
   CHECK(canvas.on_count() > 0);            // the built-in face drew the word
-  CHECK_EQ(font.calls.size(), 0u);         // the letter-less face was not used
+  CHECK_EQ(drawn_count(font.calls), 0);     // the letter-less face was not used
 
   // A numeric message keeps the selected face.
   canvas.clear();
@@ -1664,8 +1681,9 @@ static void test_message_uses_selected_font_metrics() {
   reset_state();
   state.set_message("42", 0, 0);
   render(canvas, font, compact, f, report);
-  CHECK(!font.calls.empty());
-  CHECK_EQ(font.calls[0].box_top, -1);
+  const DrawCall *first = first_drawn(font.calls);
+  CHECK(first != nullptr);
+  CHECK_EQ(first->box_top, -1);
 }
 
 static void test_ota_text_falls_back_to_builtin_font() {
@@ -1679,14 +1697,14 @@ static void test_ota_text_falls_back_to_builtin_font() {
   state.ota_state = OTA_STARTING;
   render(canvas, font, compact, f, report);
   CHECK(canvas.on_count() > 0);
-  CHECK_EQ(font.calls.size(), 0u);
+  CHECK_EQ(drawn_count(font.calls), 0);
 
   canvas.clear();
   font.calls.clear();
   state.ota_state = OTA_SUCCESS;
   f.now_ms = 1000;
   render(canvas, font, compact, f, report);
-  CHECK_EQ(font.calls.size(), 0u);
+  CHECK_EQ(drawn_count(font.calls), 0);
   CHECK(canvas.on_count() > 0);
 }
 
@@ -1728,27 +1746,33 @@ static void test_per_screen_fonts_and_character_sets() {
   f.screen = SCREEN_CLOCK;
   reset_state();
   render(canvas, clock_f, compact, f, report, &sf);
-  CHECK(!clock_f.calls.empty());
-  CHECK(date_f.calls.empty());
+  CHECK(drawn_count(clock_f.calls) > 0);
+  CHECK_EQ(drawn_count(date_f.calls), 0);
 
   clock_f.calls.clear();
   f.screen = SCREEN_DATE;
   f.animate = false;
   render(canvas, clock_f, compact, f, report, &sf);
-  CHECK(clock_f.calls.empty());
-  CHECK(!date_f.calls.empty());
+  CHECK_EQ(drawn_count(clock_f.calls), 0);
+  CHECK(drawn_count(date_f.calls) > 0);
 
   date_f.calls.clear();
   f.screen = SCREEN_TEMPERATURE;
   f.temperature_valid = true;
   f.temperature_c = 21.5f;
   render(canvas, clock_f, compact, f, report, &sf);
-  CHECK(!temp_f.calls.empty());
+  CHECK(drawn_count(temp_f.calls) > 0);
 
   // Custom big digits and Georgian UTF-8 / transliteration via StyledFont.
   StyledFont big_digits(compact, DIGIT_STYLE_CUSTOM_BIG, LETTER_STYLE_ENGLISH);
   CHECK_EQ(big_digits.ink_height(), 8);
-  CHECK_EQ(big_digits.advance('0'), 6);
+  // The custom big 0-9 cells carry 6 px of ink in a 6 px advance, so the
+  // renderer inserts one blank column after every glyph (see the spacing test).
+  CHECK_EQ(big_digits.letter_spacing(), 1);
+  CHECK_EQ(big_digits.advance('0'), 7);
+  StyledFont plain_digits(compact, DIGIT_STYLE_STANDARD, LETTER_STYLE_ENGLISH);
+  CHECK_EQ(plain_digits.letter_spacing(), 0);  // 5 px ink in a 6 px advance: already separated
+  CHECK_EQ(plain_digits.advance('0'), 6);
   FakeCanvas big_canvas(8, 8);
   big_digits.draw_glyph(big_canvas, '0', 0, 0);
   CHECK(big_canvas.row_on(7) > 0);  // custom big '0' fills all 8 rows
@@ -1760,6 +1784,133 @@ static void test_per_screen_fonts_and_character_sets() {
   FakeCanvas utf8_canvas(48, 8);
   ge_letters.draw_text(utf8_canvas, "აბგ", 0, 0);
   CHECK(utf8_canvas.on_count() > 0);
+}
+
+// --------------------------------------------------------------------------
+// Automatic letter spacing
+// --------------------------------------------------------------------------
+
+// Face whose every glyph fills `ink_width` columns of an `advance` wide cell,
+// so tests can build a packed (touching) and a spaced face on demand.
+class CellFont : public GlyphFont {
+ public:
+  CellFont(int advance, int ink_width, int ink_height = 7)
+      : advance_(advance), ink_width_(ink_width), ink_height_(ink_height) {}
+  int advance(char) const override { return advance_; }
+  int ink_height() const override { return ink_height_; }
+  int ink_top() const override { return 0; }
+  void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+    calls.push_back({ch, x, box_top});
+    for (int row = 0; row < ink_height_; row++)
+      for (int col = 0; col < ink_width_; col++) c.pixel(x + col, box_top + row, true);
+  }
+  int drawn_calls() const { return drawn_count(calls); }
+
+  mutable std::vector<DrawCall> calls;
+
+ private:
+  int advance_, ink_width_, ink_height_;
+};
+
+static bool column_lit(const FakeCanvas &canvas, int x, int rows) {
+  for (int y = 0; y < rows; y++)
+    if (canvas.get(x, y)) return true;
+  return false;
+}
+
+static void test_automatic_letter_spacing_is_measured_per_face() {
+  // Packed cells (ink width == advance) touch: one blank column is inserted.
+  CellFont packed(6, 6);
+  StyledFont packed_styled(packed);
+  CHECK_EQ(packed_styled.letter_spacing(), 1);
+  CHECK_EQ(packed_styled.advance('0'), 7);
+  CHECK_EQ(packed_styled.text_width("34"), 14);  // includes the trailing gap
+
+  // A face that already leaves a blank column keeps its own metrics.
+  CellFont spaced(6, 5);
+  StyledFont spaced_styled(spaced);
+  CHECK_EQ(spaced_styled.letter_spacing(), 0);
+  CHECK_EQ(spaced_styled.advance('0'), 6);
+  CHECK_EQ(spaced_styled.text_width("34"), 12);
+
+  // One blank column is not enough when the ink overshoots the cell.
+  CellFont overshoot(6, 7);
+  StyledFont overshoot_styled(overshoot);
+  CHECK_EQ(overshoot_styled.letter_spacing(), 1);
+
+  // Spacing is decided once per face + style pair and is stable afterwards.
+  CHECK_EQ(packed_styled.letter_spacing(), 1);
+  CHECK_EQ(StyledFont(packed, DIGIT_STYLE_STANDARD, LETTER_STYLE_GEORGIAN).letter_spacing(), 1);
+  CHECK_EQ(StyledFont(spaced, DIGIT_STYLE_STANDARD, LETTER_STYLE_ENGLISH).letter_spacing(), 0);
+}
+
+static void test_automatic_letter_spacing_separates_adjacent_glyphs() {
+  CellFont packed(6, 6);
+  StyledFont packed_styled(packed);
+
+  // Without the spacing the two cells would light columns 5 and 6 back to back.
+  FakeCanvas canvas(48, 8);
+  packed_styled.draw_text(canvas, "34", 0, 0);
+  CHECK(canvas.get(4, 0));   // ink still reaches the right edge of the first cell
+  CHECK(!column_lit(canvas, 6, 7));  // the inserted blank column
+  CHECK(canvas.get(7, 0));   // the second cell starts after it
+
+  // The un-spaced face is left alone: its own 1 px gap is where it always was.
+  CellFont spaced(6, 5);
+  FakeCanvas spaced_canvas(48, 8);
+  StyledFont(spaced).draw_text(spaced_canvas, "34", 0, 0);
+  CHECK(spaced_canvas.get(4, 0));
+  CHECK(!column_lit(spaced_canvas, 5, 7));
+  CHECK(spaced_canvas.get(6, 0));
+}
+
+static void test_automatic_letter_spacing_keeps_missing_glyph_detection() {
+  // A missing glyph steps by the spacing only, so the renderer still falls
+  // back to the built-in face instead of printing blanks.
+  class SparseStyled : public GlyphFont {
+   public:
+    int advance(char c) const override { return c == '9' ? 0 : 6; }
+    int ink_height() const override { return 7; }
+    int ink_top() const override { return 0; }
+    void draw_glyph(Canvas &c, char ch, int x, int box_top) const override {
+      if (ch == '9') return;
+      for (int row = 0; row < 7; row++)
+        for (int col = 0; col < 6; col++) c.pixel(x + col, box_top + row, true);
+    }
+  };
+  SparseStyled sparse;
+  StyledFont sparse_styled(sparse);
+  CHECK_EQ(sparse_styled.letter_spacing(), 1);
+  CHECK_EQ(sparse_styled.advance('9'), 1);  // spacing only: no glyph
+  CHECK(&font_for_text(sparse_styled, compact, "19") == &compact);
+  CHECK(&font_for_text(sparse_styled, compact, "12") == &sparse_styled);
+}
+
+static void test_automatic_letter_spacing_keeps_the_clock_inside_the_panel() {
+  // A face that gains a gap may no longer fit HH:MM:SS. The renderer drops the
+  // seconds and, if the face is still too wide, falls back - exactly as it did
+  // before the spacing existed. Nothing is ever drawn outside the panel.
+  FakeCanvas canvas;
+  CellFont packed(6, 6);  // 6 px ink in a 6 px cell -> 1 px inserted
+  Frame f = base_frame();
+  f.seconds_mode = SECONDS_DIGITS;
+
+  reset_state();
+  render(canvas, packed, compact, f, report);
+  // 8 cells * 7 px = 56 > 48 -> seconds dropped; "12:34" = 5 * 7 = 35 fits.
+  CHECK_EQ(packed.drawn_calls(), 5);
+  int x0, y0, x1, y1;
+  CHECK(canvas.bbox(&x0, &y0, &x1, &y1));
+  CHECK(x0 >= 0);
+  CHECK(x1 < 48);
+
+  // A face that is too wide even without seconds still falls back.
+  FakeCanvas narrow(24, 8);
+  packed.calls.clear();
+  reset_state();
+  render(narrow, packed, compact, f, report);
+  CHECK_EQ(packed.drawn_calls(), 0);  // the built-in face drew it
+  CHECK(narrow.on_count() > 0);
 }
 
 static void test_default_layout_matches_readme() {
@@ -1852,7 +2003,8 @@ static void test_boot_installed_version_priority_expiry_and_wrap() {
   CHECK_EQ(effective_mode(f), MODE_BOOT);
   CHECK(strcmp(state.boot_version, "V0.7.0+abcdef012345") == 0);
   render(canvas, primary, fallback, f, report);
-  CHECK(primary.calls.empty()); CHECK(!fallback.calls.empty());
+  CHECK_EQ(drawn_count(primary.calls), 0);  // boot uses the built-in face
+  CHECK(drawn_count(fallback.calls) > 0);
   f.now_ms = 3499; render(canvas, primary, fallback, f, report); CHECK(state.boot_active);
   f.now_ms = 3500; render(canvas, primary, fallback, f, report); CHECK(!state.boot_active);
   CHECK_EQ(effective_mode(f), MODE_CLOCK); CHECK(!state.anim_active);
@@ -1944,6 +2096,10 @@ int main() {
   test_builtin_font_renders_every_required_glyph();
   test_georgian_date_font_uses_max7219_rows();
   test_per_screen_fonts_and_character_sets();
+  test_automatic_letter_spacing_is_measured_per_face();
+  test_automatic_letter_spacing_separates_adjacent_glyphs();
+  test_automatic_letter_spacing_keeps_missing_glyph_detection();
+  test_automatic_letter_spacing_keeps_the_clock_inside_the_panel();
   test_default_layout_matches_readme();
   test_slide_animation_uses_ink_height_not_canvas_height();
   test_animation_row_gap_separates_old_and_new_digits();

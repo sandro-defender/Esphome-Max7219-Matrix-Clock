@@ -219,9 +219,17 @@ back to Compact.
 
 Licences, generated-font sources and the add-a-font checklist are in
 [fonts/README.md](fonts/README.md); the package policy is in
-[packages/fonts/README.md](packages/fonts/README.md). For Pixeel exports see
-the [Pixeel font integration guide](docs/PIXEEL_FONTS.md) (custom single-font
-builds and catalogue contributions).
+[packages/fonts/README.md](packages/fonts/README.md).
+
+To design your own face, draw it in the
+[Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/) and
+export a package for this clock; the
+[Pixeel font integration guide](docs/PIXEEL_FONTS.md) covers custom
+single-font builds and catalogue contributions.
+
+The firmware source, releases and issue tracker live on
+[GitHub](https://github.com/sandro-defender/Esphome-Max7219-Matrix-Clock);
+the configurator itself links back to that page from its header.
 
 ## Secrets and security
 
