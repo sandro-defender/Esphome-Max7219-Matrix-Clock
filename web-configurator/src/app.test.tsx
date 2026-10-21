@@ -86,6 +86,27 @@ describe("App", () => {
     expect(info).toContain("encrypted native OTA");
     expect(markup + info).not.toContain('type="password"');
   });
+  it("folds every Info & help reference table by default, one table per disclosure", () => {
+    // The five reference tables (wiring, package contract, actions, entities,
+    // fonts) each sit in one disclosure that starts closed, so the page stays
+    // short until a table is actually opened.
+    const folds = [...info.matchAll(/<details class="table-fold"[^>]*>/g)];
+    expect(folds).toHaveLength(5);
+    for (const match of folds) expect(match[0]).not.toContain("open");
+    for (const [label, rows] of [["Wiring", "5 rows"], ["Package contract", undefined], ["Actions", undefined], ["Entities", undefined], ["Fonts", undefined]] as const) {
+      const fold = [...info.matchAll(new RegExp(`<details class="table-fold"[^>]*><summary><span>${label}</span><span class="table-fold-count">[\\d]+ rows?</span>`, "g"))];
+      expect(fold, label).toHaveLength(1);
+      if (rows) expect(fold[0][0]).toContain(rows);
+    }
+    // Each disclosure contains exactly one table and no nested disclosure.
+    for (const match of info.matchAll(/<details class="table-fold"[^>]*>[\s\S]*?<\/details>/g)) {
+      const [block] = match;
+      const body = block.slice(block.indexOf(">") + 1, -"</details>".length);
+      expect(body.match(/<table class="pin-table">/g)).toHaveLength(1);
+      expect(body).not.toContain("<details");
+    }
+    expect(info).not.toMatch(/<details class="table-fold"[^>]*open/);
+  });
   it("retains every shipped hardware photo with meaningful alt and caption, only in Info & help", () => {
     const files = readdirSync(new URL("../public/images", import.meta.url)).filter((name) => name.endsWith(".jpg")).sort();
     const figures = [...info.matchAll(/<figure[^>]*>\s*<img src="\.\/images\/([\w.-]+)" alt="([^"]+)"[^>]*\/?>\s*<figcaption>([^<]+)<\/figcaption>/g)];

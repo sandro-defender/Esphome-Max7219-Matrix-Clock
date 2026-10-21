@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "b5474cbdc4e13205f606b646a46b9452dc3ef60b8e39046b0031a3f54fdf0a16",
+  "sourceHash": "a8f43096563d0ba3be9d55fb9a381d84298f48a52acd4f987575021bad8103a9",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.14",
+  "releaseVersion": "0.8.15",
   "esphomeVersion": "2026.10.0",
-  "releaseNotes": "### Changed\n\n- Upgrade the firmware minimum and validation pin to ESPHome 2026.10.0.\n- Explicitly select ESPHome's native Arduino toolchain and Arduino framework\n  3.1.2 for the supported ESP8266 target.",
+  "releaseNotes": "### Changed\n\n- Fold the web configurator's Info & help reference tables (wiring, package\n  contract, actions, entities and fonts) behind collapsed disclosures with a\n  row count, so the page stays short and the table you need is one click away.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

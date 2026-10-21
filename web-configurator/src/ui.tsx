@@ -59,6 +59,23 @@ export function CopyButton({
   );
 }
 
+/**
+ * Foldable reference table. Folded by default so the long Info & help tables
+ * stay out of the page flow until one is actually needed: the page title, the
+ * surrounding notes and the summary bar remain visible, the rows hide away.
+ */
+export function TableFold({ label, rows, children }: { label: string; rows: number; children: ReactNode }) {
+  return (
+    <details className="table-fold">
+      <summary>
+        <span>{label}</span>
+        <span className="table-fold-count">{rows} row{rows === 1 ? "" : "s"}</span>
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 /** Aligned, explicitly labelled field used by every firmware widget. */
 export function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return <div className="field setting-row">

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.15 - 2026-10-21
+
+### Changed
+
+- Fold the web configurator's Info & help reference tables (wiring, package
+  contract, actions, entities and fonts) behind collapsed disclosures with a
+  row count, so the page stays short and the table you need is one click away.
+
 ## 0.8.14 - 2026-10-21
 
 ### Changed

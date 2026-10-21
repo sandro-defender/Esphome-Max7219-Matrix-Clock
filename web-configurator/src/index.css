@@ -975,6 +975,59 @@ pre, .code {
 .pin-table td:last-child, .pin-table td:nth-child(3) { font-family: var(--mono); font-size: 0.78rem; }
 .pin-table td:last-child { color: var(--amber-2); }
 
+/* Reference tables fold by default so the Info & help page stays short. */
+.table-fold {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--bg-2);
+}
+
+.table-fold > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  border-bottom: 1px solid transparent;
+  border-radius: var(--r-m);
+}
+
+.table-fold > summary::before {
+  content: "+";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.table-fold[open] > summary::before { content: "−"; }
+.table-fold[open] > summary { border-bottom-color: var(--line-soft); border-radius: var(--r-m) var(--r-m) 0 0; }
+.table-fold > summary::-webkit-details-marker { display: none; }
+.table-fold > summary:hover { background: var(--amber-soft); }
+
+.table-fold-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.table-fold > .table-scroll { margin-top: 8px; margin-left: 14px; margin-right: 14px; }
+.table-fold > .table-scroll:last-child { margin-bottom: 14px; }
+
 .entity-list { list-style: none; padding: 0; margin: 8px 0 0; }
 
 .entity-list li {
