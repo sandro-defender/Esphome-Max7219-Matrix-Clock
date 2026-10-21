@@ -123,7 +123,6 @@ describe("App", () => {
  * ------------------------------------------------------------------ */
 
 const DESKTOP = "@media (min-width: 980px)";
-const PHONE = "@media (max-width: 979px)";
 
 /** Bodies of every `{…}` block that follows `opener`, braces balanced. */
 function blocks(scope: string, opener: string): string[] {
@@ -171,12 +170,12 @@ describe("responsive layout", () => {
     expect(chassis).toBeGreaterThan(stage);
     expect(chassis).toBeLessThan(readout);
     expect(readout).toBeLessThan(status);
-    // The page title sits in the settings column: no block of text is stacked
-    // above the panel, so the first desktop screen is the matrix itself.
+    // The page title sits below the stage: no block of text is stacked above
+    // the panel, so the first screen is the pinned matrix itself.
     expect(markup.indexOf("<h1")).toBeGreaterThan(status);
   });
 
-  it("keeps the essential preview controls above the fold beside the matrix", () => {
+  it("keeps the essential preview controls above the fold under the matrix", () => {
     const controls = markup.indexOf('id="preview-time"');
     const composer = markup.indexOf('id="ha-message"');
     const tune = markup.indexOf('<section id="tune"');
@@ -185,29 +184,26 @@ describe("responsive layout", () => {
     expect(composer).toBeGreaterThan(0);
     expect(controls).toBeLessThan(tune);
     expect(composer).toBeLessThan(tune);
-    // They live in the settings column, not under the sticky device rail.
+    // They live in the content column under the stage, never before it.
     expect(markup.indexOf('class="content-col"')).toBeLessThan(controls);
   });
 
-  it("wastes no vertical space above the desktop matrix", () => {
-    const shell = rule(css, ".shell", DESKTOP);
-    expect(shell).toContain("display: grid");
-    expect(shell).toContain("align-items: start");
-    expect(Number(/padding: (\d+)px/.exec(shell)![1])).toBeLessThanOrEqual(16);
-    expect(rule(css, ".chassis")).toContain("margin-top: 0");
-    expect(rule(css, ".chassis-slot")).toContain("height: 0");
+  it("keeps the page one full-width column with the pinned matrix at every width", () => {
+    // No preview rail beside the content: the shell defines no two-column
+    // grid, the matrix is pinned under the menu exactly as on phones, and the
+    // settings and reference content below it use the whole page width.
+    expect(rule(css, ".shell")).not.toContain("display: grid");
+    expect(rule(css, ".shell", DESKTOP)).not.toContain("grid-template-columns");
+    expect(rule(css, ".chassis")).toContain("position: fixed");
+    expect(rule(css, ".chassis")).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
+    expect(rule(css, ".chassis")).toContain("max-width: 640px");
+    // Large screens get a bigger matrix, phones keep the 640 px cap.
+    expect(rule(css, ".chassis", DESKTOP)).toContain("max-width: 720px");
     expect(rule(css, ".topbar")).toContain("padding: 12px 16px 8px");
   });
 
-  it("keeps the desktop preview a sticky rail beside every section", () => {
-    expect(rule(css, ".stage-col", DESKTOP)).toContain("align-self: stretch");
-    const stage = rule(css, ".stage", DESKTOP);
-    expect(stage).toContain("position: sticky");
-    expect(stage).toContain("top: calc(var(--nav-h) + 14px)");
-  });
-
-  it("pins the phone matrix under the measured chrome and under the menu", () => {
-    const chassis = rule(css, ".chassis", PHONE);
+  it("pins the matrix under the measured chrome and under the menu", () => {
+    const chassis = rule(css, ".chassis");
     expect(chassis).toContain("position: fixed");
     expect(chassis).toContain("top: calc(var(--pin-top) + var(--pin-gap))");
     expect(chassis).toContain("z-index: 40");
@@ -225,16 +221,16 @@ describe("responsive layout", () => {
     expect(Number(/rgba\(16, 14, 12, ([\d.]+)\)/.exec(nav)![1])).toBeGreaterThanOrEqual(0.95);
 
     // The spacer keeps the document height honest while the chassis is fixed.
-    expect(rule(css, ".chassis-slot", PHONE)).toContain("height: var(--chassis-h)");
+    expect(rule(css, ".chassis-slot")).toContain("height: var(--chassis-h)");
     expect(markup).toContain('class="chassis-slot"');
-    // A measured inline height used to override desktop's zero-height spacer.
+    // A measured inline height used to override the reserved spacer.
     const stage = readFileSync(new URL("./LiveStage.tsx", import.meta.url), "utf8");
     expect(stage).not.toContain("style={chassisH");
   });
 
   it("gives anchor jumps room for the menu and the pinned matrix", () => {
     expect(rule(css, "html")).toContain("scroll-padding-top: calc(var(--nav-h) + 12px)");
-    expect(rule(css, ".doc-section, .stage", PHONE)).toContain("var(--chassis-h)");
+    expect(rule(css, ".doc-section")).toContain("var(--chassis-h)");
   });
 
   it("keeps the panel centred and inside its column", () => {

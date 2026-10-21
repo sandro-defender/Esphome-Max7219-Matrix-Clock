@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "a8f43096563d0ba3be9d55fb9a381d84298f48a52acd4f987575021bad8103a9",
+  "sourceHash": "0726551222ab4f001241957ad35707b425eb1e7cc99594a672ff6fadcbef65e5",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
   "releaseVersion": "0.8.15",
   "esphomeVersion": "2026.10.0",
-  "releaseNotes": "### Changed\n\n- Fold the web configurator's Info & help reference tables (wiring, package\n  contract, actions, entities and fonts) behind collapsed disclosures with a\n  row count, so the page stays short and the table you need is one click away.",
+  "releaseNotes": "### Changed\n\n- Reorganise the web configurator into one full-width column at every screen\n  size: the live matrix is pinned under the menu exactly as on phones, and the\n  settings and Info & help content scroll below it using the whole page width\n  instead of a narrow column beside a preview rail.\n- Reorder the Info & help sections to build order (release, wiring, install,\n  then the entity, action and font references) and cap paragraph width so the\n  full-width panels stay readable on large screens while tables and code run\n  edge to edge.\n- Fold the web configurator's Info & help reference tables (wiring, package\n  contract, actions, entities and fonts) behind collapsed disclosures with a\n  row count, so the page stays short and the table you need is one click away.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",

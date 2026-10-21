@@ -7,10 +7,12 @@ generates one small installer YAML backed by the version-pinned packages in
 <https://sandro-defender.github.io/Esphome-Max7219-Matrix-Clock/>.
 
 Configure contains the live preview, compact settings cards, Home Assistant
-visibility and Font Lab. Info & help keeps wiring, installer YAML, entity/action
-references, troubleshooting, gallery and documentation. Cards share aligned
-labels and controls; descriptions and entity groups use native disclosures.
-The matrix stays visible on phones and becomes a sticky rail from 980 px.
+visibility and Font Lab. Info & help keeps the reference in build order:
+release notes, wiring, installer YAML, entity/action references, fonts,
+troubleshooting, gallery and documentation. Cards share aligned labels and
+controls; descriptions, entity groups and the reference tables use native
+disclosures (tables start folded). The matrix is pinned under the menu at
+every screen size and the content below it uses the full page width.
 
 The header links to the project on GitHub. Under the compiled faces, Font Lab
 links to the [Pixeel font editor](https://sandro-defender.github.io/Pixeel-font-editor/),

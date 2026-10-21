@@ -38,8 +38,8 @@ interface LiveStageProps {
  * face/fit readout — nothing else, so the whole block fits above the fold and
  * can stay pinned while the settings scroll past.
  *
- * On narrow viewports the chassis leaves the flow (`position: fixed`, see
- * index.css) and sits exactly under the pinned chrome: its `top` comes from the
+ * The chassis leaves the flow (`position: fixed`, see index.css) at every
+ * width and sits exactly under the pinned chrome: its `top` comes from the
  * measured `--pin-top`, so the section nav can never cover the matrix and the
  * matrix can never cover the header controls. A `.chassis-slot` spacer keeps
  * the document height honest by mirroring the chassis height.
