@@ -1108,7 +1108,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           4,
           4,
@@ -1125,7 +1125,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           16,
           28,
@@ -1142,7 +1142,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           12,
           18,
@@ -1159,7 +1159,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           14,
           17,
@@ -1176,7 +1176,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           14,
           17,
@@ -1190,10 +1190,10 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10d5": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           14,
           17,
@@ -1201,19 +1201,19 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
           6,
           1,
           17,
+          17,
           14
         ]
       },
       "\u10d6": {
-        "w": 6,
-        "h": 8,
+        "w": 5,
+        "h": 7,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
-          24,
-          36,
-          24,
+          12,
+          18,
           12,
           6,
           9,
@@ -1222,36 +1222,37 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         ]
       },
       "\u10d7": {
-        "w": 7,
-        "h": 7,
-        "left": 0,
-        "top": 1,
-        "advance": 8,
-        "rows": [
-          62,
-          73,
-          73,
-          73,
-          73,
-          73,
-          49
-        ]
-      },
-      "\u10d8": {
-        "w": 6,
+        "w": 5,
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 7,
+        "advance": 5,
         "rows": [
-          30,
-          33,
-          33,
-          33,
-          33,
-          33,
-          33,
-          18
+          10,
+          21,
+          21,
+          21,
+          21,
+          21,
+          29,
+          9
+        ]
+      },
+      "\u10d8": {
+        "w": 5,
+        "h": 8,
+        "left": 0,
+        "top": 0,
+        "advance": 5,
+        "rows": [
+          14,
+          17,
+          17,
+          17,
+          17,
+          17,
+          17,
+          17
         ]
       },
       "\u10d9": {
@@ -1259,7 +1260,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           1,
           1,
@@ -1276,7 +1277,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           14,
           17,
@@ -1290,17 +1291,18 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10db": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           14,
           17,
           1,
           15,
+          27,
           17,
-          17,
+          27,
           14
         ]
       },
@@ -1309,33 +1311,33 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           15,
           16,
           16,
-          16,
           30,
+          27,
           17,
-          17,
+          27,
           14
         ]
       },
       "\u10dd": {
-        "w": 7,
+        "w": 5,
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 8,
+        "advance": 5,
         "rows": [
-          62,
-          73,
-          73,
-          73,
-          65,
-          65,
-          34,
-          34
+          10,
+          21,
+          21,
+          21,
+          17,
+          17,
+          17,
+          17
         ]
       },
       "\u10de": {
@@ -1343,7 +1345,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           4,
           2,
@@ -1357,34 +1359,36 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10df": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           3,
           5,
           13,
           1,
           1,
+          25,
           17,
           14
         ]
       },
       "\u10e0": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
-          12,
+          14,
+          16,
           16,
           16,
           30,
           17,
           17,
-          18
+          17
         ]
       },
       "\u10e1": {
@@ -1392,7 +1396,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           16,
           16,
@@ -1409,7 +1413,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           4,
           10,
@@ -1426,7 +1430,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           10,
           21,
@@ -1443,7 +1447,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           10,
           21,
@@ -1460,7 +1464,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           1,
           7,
@@ -1477,7 +1481,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           10,
           21,
@@ -1494,7 +1498,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           17,
           17,
@@ -1511,7 +1515,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           10,
           21,
@@ -1528,7 +1532,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           12,
           18,
@@ -1545,7 +1549,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           8,
           19,
@@ -1562,7 +1566,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           1,
           1,
@@ -1576,13 +1580,14 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10ec": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           10,
           21,
+          16,
           16,
           30,
           17,
@@ -1592,11 +1597,12 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10ed": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
+          2,
           6,
           11,
           6,
@@ -1611,7 +1617,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           16,
           16,
@@ -1625,11 +1631,12 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
       },
       "\u10ef": {
         "w": 5,
-        "h": 7,
+        "h": 8,
         "left": 0,
-        "top": 1,
-        "advance": 6,
+        "top": 0,
+        "advance": 5,
         "rows": [
+          4,
           4,
           14,
           4,
@@ -1644,7 +1651,7 @@ export const GENERATED_FONTS: Record<string, GeneratedFont> = {
         "h": 8,
         "left": 0,
         "top": 0,
-        "advance": 6,
+        "advance": 5,
         "rows": [
           1,
           6,

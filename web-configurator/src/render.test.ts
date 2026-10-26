@@ -142,15 +142,19 @@ describe("clock and date text", () => {
   });
 
   it("preserves the seven-row and eight-row Georgian pixel glyphs on the eight-row matrix", () => {
-    const shortLetter = "\x81";
-    expect(GEORGIAN_DATE_FONT.advance(shortLetter)).toBe(6);
-    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)).toMatchObject({ h: 8, advance: 6 });
-    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows).toHaveLength(8);
+    const dateLetter = "\x81";
+    expect(GEORGIAN_DATE_FONT.advance(dateLetter)).toBe(5);
+    expect(GEORGIAN_DATE_FONT.glyph(dateLetter)).toMatchObject({ h: 8, advance: 5 });
+    expect(GEORGIAN_DATE_FONT.glyph(dateLetter)?.rows).toHaveLength(8);
+    expect(GEORGIAN_DATE_FONT.glyph(dateLetter)?.rows.filter((row) => row !== 0)).toHaveLength(8);
+    expect(GEORGIAN_DATE_FONT.glyph(dateLetter)?.rows[7]).not.toBe(0);
+
+    const shortLetter = "\u10D6";
+    expect(GEORGIAN_DATE_FONT.advance(shortLetter)).toBe(5);
     expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows.filter((row) => row !== 0)).toHaveLength(7);
-    expect(GEORGIAN_DATE_FONT.glyph(shortLetter)?.rows[7]).not.toBe(0);
 
     const tallLetter = "\x8C";
-    expect(GEORGIAN_DATE_FONT.advance(tallLetter)).toBe(6);
+    expect(GEORGIAN_DATE_FONT.advance(tallLetter)).toBe(5);
     expect(GEORGIAN_DATE_FONT.glyph(tallLetter)?.rows.filter((row) => row !== 0)).toHaveLength(8);
   });
 });

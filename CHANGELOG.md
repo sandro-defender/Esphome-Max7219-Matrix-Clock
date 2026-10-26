@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.16 - 2026-10-26
+
+### Changed
+
+- Update the bundled `max7219` pixel font (`fonts/max7219.ttf`) with refined
+  5-column Georgian Mkhedruli glyphs and SIL Open Font License 1.1 metadata, and
+  regenerate the firmware contract, fallback date tables and web preview glyphs.
+
+### Fixed
+
+- Restore `fonts/README.md` and remove the leftover Pixeel export archive from
+  `fonts/`.
+
 ## 0.8.15 - 2026-10-21
 
 ### Changed

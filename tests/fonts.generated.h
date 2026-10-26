@@ -101,18 +101,18 @@ static const uint8_t font_max7219_source_4305_data[] = {135,8,168,198,46};
 static const uint8_t font_max7219_source_4306_data[] = {100,136,168,198,46};
 static const uint8_t font_max7219_source_4307_data[] = {116,99,232,65,193};
 static const uint8_t font_max7219_source_4308_data[] = {116,66,16,198,46};
-static const uint8_t font_max7219_source_4309_data[] = {116,66,96,197,192};
-static const uint8_t font_max7219_source_4310_data[] = {98,70,12,24,146,70};
-static const uint8_t font_max7219_source_4311_data[] = {125,38,76,153,50,88,128};
-static const uint8_t font_max7219_source_4312_data[] = {122,24,97,134,24,82};
+static const uint8_t font_max7219_source_4309_data[] = {116,66,96,198,46};
+static const uint8_t font_max7219_source_4310_data[] = {100,152,100,164,192};
+static const uint8_t font_max7219_source_4311_data[] = {85,107,90,215,169};
+static const uint8_t font_max7219_source_4312_data[] = {116,99,24,198,49};
 static const uint8_t font_max7219_source_4313_data[] = {8,66,32,198,46};
 static const uint8_t font_max7219_source_4314_data[] = {116,99,4,80,65};
-static const uint8_t font_max7219_source_4315_data[] = {116,66,248,197,192};
-static const uint8_t font_max7219_source_4316_data[] = {124,33,15,70,46};
-static const uint8_t font_max7219_source_4317_data[] = {125,38,76,152,48,81,34};
+static const uint8_t font_max7219_source_4315_data[] = {116,66,253,199,110};
+static const uint8_t font_max7219_source_4316_data[] = {124,33,237,199,110};
+static const uint8_t font_max7219_source_4317_data[] = {85,107,88,198,49};
 static const uint8_t font_max7219_source_4318_data[] = {32,130,32,198,46};
-static const uint8_t font_max7219_source_4319_data[] = {25,90,16,197,192};
-static const uint8_t font_max7219_source_4320_data[] = {100,33,232,198,64};
+static const uint8_t font_max7219_source_4319_data[] = {25,90,16,230,46};
+static const uint8_t font_max7219_source_4320_data[] = {116,33,15,70,49};
 static const uint8_t font_max7219_source_4321_data[] = {132,33,40,198,46};
 static const uint8_t font_max7219_source_4322_data[] = {34,136,160,198,46};
 static const uint8_t font_max7219_source_4323_data[] = {85,66,16,198,46};
@@ -124,10 +124,10 @@ static const uint8_t font_max7219_source_4328_data[] = {85,66,248,198,46};
 static const uint8_t font_max7219_source_4329_data[] = {100,185,15,70,50};
 static const uint8_t font_max7219_source_4330_data[] = {68,227,40,198,46};
 static const uint8_t font_max7219_source_4331_data[] = {8,66,23,198,46};
-static const uint8_t font_max7219_source_4332_data[] = {85,97,232,197,192};
-static const uint8_t font_max7219_source_4333_data[] = {50,204,32,197,192};
+static const uint8_t font_max7219_source_4332_data[] = {85,97,15,70,46};
+static const uint8_t font_max7219_source_4333_data[] = {17,150,97,6,46};
 static const uint8_t font_max7219_source_4334_data[] = {132,33,232,198,46};
-static const uint8_t font_max7219_source_4335_data[] = {35,136,32,197,192};
+static const uint8_t font_max7219_source_4335_data[] = {33,28,65,6,46};
 static const uint8_t font_max7219_source_4336_data[] = {9,130,96,198,46};
 static const uint8_t font_max7219_source_57344_data[] = {123,60,243,207,60,222};
 static const uint8_t font_max7219_source_57345_data[] = {110,102,102,111};
@@ -211,39 +211,39 @@ static const Glyph font_max7219_source_glyphs[] = {
   Glyph(120, font_max7219_source_120_data, 6, 0, 2, 5, 5),
   Glyph(121, font_max7219_source_121_data, 6, 0, 2, 5, 6),
   Glyph(122, font_max7219_source_122_data, 6, 0, 2, 5, 5),
-  Glyph(4304, font_max7219_source_4304_data, 6, 0, 0, 5, 8),
-  Glyph(4305, font_max7219_source_4305_data, 6, 0, 0, 5, 8),
-  Glyph(4306, font_max7219_source_4306_data, 6, 0, 0, 5, 8),
-  Glyph(4307, font_max7219_source_4307_data, 6, 0, 0, 5, 8),
-  Glyph(4308, font_max7219_source_4308_data, 6, 0, 0, 5, 8),
-  Glyph(4309, font_max7219_source_4309_data, 6, 0, 0, 5, 7),
-  Glyph(4310, font_max7219_source_4310_data, 6, 0, 0, 6, 8),
-  Glyph(4311, font_max7219_source_4311_data, 8, 0, 1, 7, 7),
-  Glyph(4312, font_max7219_source_4312_data, 7, 0, 0, 6, 8),
-  Glyph(4313, font_max7219_source_4313_data, 6, 0, 0, 5, 8),
-  Glyph(4314, font_max7219_source_4314_data, 6, 0, 0, 5, 8),
-  Glyph(4315, font_max7219_source_4315_data, 6, 0, 0, 5, 7),
-  Glyph(4316, font_max7219_source_4316_data, 6, 0, 0, 5, 8),
-  Glyph(4317, font_max7219_source_4317_data, 8, 0, 0, 7, 8),
-  Glyph(4318, font_max7219_source_4318_data, 6, 0, 0, 5, 8),
-  Glyph(4319, font_max7219_source_4319_data, 6, 0, 0, 5, 7),
-  Glyph(4320, font_max7219_source_4320_data, 6, 0, 0, 5, 7),
-  Glyph(4321, font_max7219_source_4321_data, 6, 0, 0, 5, 8),
-  Glyph(4322, font_max7219_source_4322_data, 6, 0, 0, 5, 8),
-  Glyph(4323, font_max7219_source_4323_data, 6, 0, 0, 5, 8),
-  Glyph(4324, font_max7219_source_4324_data, 6, 0, 0, 5, 8),
-  Glyph(4325, font_max7219_source_4325_data, 6, 0, 0, 5, 8),
-  Glyph(4326, font_max7219_source_4326_data, 6, 0, 0, 5, 8),
-  Glyph(4327, font_max7219_source_4327_data, 6, 0, 0, 5, 8),
-  Glyph(4328, font_max7219_source_4328_data, 6, 0, 0, 5, 8),
-  Glyph(4329, font_max7219_source_4329_data, 6, 0, 0, 5, 8),
-  Glyph(4330, font_max7219_source_4330_data, 6, 0, 0, 5, 8),
-  Glyph(4331, font_max7219_source_4331_data, 6, 0, 0, 5, 8),
-  Glyph(4332, font_max7219_source_4332_data, 6, 0, 0, 5, 7),
-  Glyph(4333, font_max7219_source_4333_data, 6, 0, 0, 5, 7),
-  Glyph(4334, font_max7219_source_4334_data, 6, 0, 0, 5, 8),
-  Glyph(4335, font_max7219_source_4335_data, 6, 0, 1, 5, 7),
-  Glyph(4336, font_max7219_source_4336_data, 6, 0, 0, 5, 8),
+  Glyph(4304, font_max7219_source_4304_data, 5, 0, 0, 5, 8),
+  Glyph(4305, font_max7219_source_4305_data, 5, 0, 0, 5, 8),
+  Glyph(4306, font_max7219_source_4306_data, 5, 0, 0, 5, 8),
+  Glyph(4307, font_max7219_source_4307_data, 5, 0, 0, 5, 8),
+  Glyph(4308, font_max7219_source_4308_data, 5, 0, 0, 5, 8),
+  Glyph(4309, font_max7219_source_4309_data, 5, 0, 0, 5, 8),
+  Glyph(4310, font_max7219_source_4310_data, 5, 0, 0, 5, 7),
+  Glyph(4311, font_max7219_source_4311_data, 5, 0, 0, 5, 8),
+  Glyph(4312, font_max7219_source_4312_data, 5, 0, 0, 5, 8),
+  Glyph(4313, font_max7219_source_4313_data, 5, 0, 0, 5, 8),
+  Glyph(4314, font_max7219_source_4314_data, 5, 0, 0, 5, 8),
+  Glyph(4315, font_max7219_source_4315_data, 5, 0, 0, 5, 8),
+  Glyph(4316, font_max7219_source_4316_data, 5, 0, 0, 5, 8),
+  Glyph(4317, font_max7219_source_4317_data, 5, 0, 0, 5, 8),
+  Glyph(4318, font_max7219_source_4318_data, 5, 0, 0, 5, 8),
+  Glyph(4319, font_max7219_source_4319_data, 5, 0, 0, 5, 8),
+  Glyph(4320, font_max7219_source_4320_data, 5, 0, 0, 5, 8),
+  Glyph(4321, font_max7219_source_4321_data, 5, 0, 0, 5, 8),
+  Glyph(4322, font_max7219_source_4322_data, 5, 0, 0, 5, 8),
+  Glyph(4323, font_max7219_source_4323_data, 5, 0, 0, 5, 8),
+  Glyph(4324, font_max7219_source_4324_data, 5, 0, 0, 5, 8),
+  Glyph(4325, font_max7219_source_4325_data, 5, 0, 0, 5, 8),
+  Glyph(4326, font_max7219_source_4326_data, 5, 0, 0, 5, 8),
+  Glyph(4327, font_max7219_source_4327_data, 5, 0, 0, 5, 8),
+  Glyph(4328, font_max7219_source_4328_data, 5, 0, 0, 5, 8),
+  Glyph(4329, font_max7219_source_4329_data, 5, 0, 0, 5, 8),
+  Glyph(4330, font_max7219_source_4330_data, 5, 0, 0, 5, 8),
+  Glyph(4331, font_max7219_source_4331_data, 5, 0, 0, 5, 8),
+  Glyph(4332, font_max7219_source_4332_data, 5, 0, 0, 5, 8),
+  Glyph(4333, font_max7219_source_4333_data, 5, 0, 0, 5, 8),
+  Glyph(4334, font_max7219_source_4334_data, 5, 0, 0, 5, 8),
+  Glyph(4335, font_max7219_source_4335_data, 5, 0, 0, 5, 8),
+  Glyph(4336, font_max7219_source_4336_data, 5, 0, 0, 5, 8),
   Glyph(57344, font_max7219_source_57344_data, 6, 0, 0, 6, 8),
   Glyph(57345, font_max7219_source_57345_data, 6, 1, 0, 4, 8),
   Glyph(57346, font_max7219_source_57346_data, 6, 0, 0, 6, 8),
