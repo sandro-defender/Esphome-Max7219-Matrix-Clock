@@ -1,0 +1,4 @@
+#ifdef MAX7219_FONT_MAX7219_GEORGIAN
+max7219_clock::SourceFont max7219_georgian_font(font_max7219_georgian_source, &it);
+if (font_option == "max7219 Georgian") selected = &max7219_georgian_font;
+#endif

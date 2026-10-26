@@ -1,0 +1,18 @@
+{
+  "slug": "max7219-georgian",
+  "label": "max7219 Georgian",
+  "familyName": "max7219 Georgian",
+  "firmwareId": "font_max7219_georgian_source",
+  "macro": "MAX7219_FONT_MAX7219_GEORGIAN",
+  "file": "fonts/max7219-georgian/max7219Georgian.ttf",
+  "size": 8,
+  "bpp": 1,
+  "glyphs": "0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ",
+  "license": "CC BY-SA",
+  "licenseFile": "fonts/max7219-georgian/LICENSE.txt",
+  "ttfSha256": "b2e13180a0a0909cb0049127cec55a260f6b33d109f721e7bceecb586d3dd361",
+  "measuredTestString": "88:88:88",
+  "measuredTestStringWidthPx": 40,
+  "tallestDigitPx": 7,
+  "contractVersion": 1
+}

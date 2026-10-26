@@ -1,0 +1,18 @@
+font:
+  - id: font_max7219_georgian_source
+    file:
+      type: web
+      url: ${fonts_base_url}/max7219-georgian/max7219Georgian.ttf
+    size: 8
+    bpp: 1
+    glyphs:
+      - '0123456789:.-/%!?+ აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ'
+
+esphome:
+  build_flags:
+    - -DMAX7219_FONT_MAX7219_GEORGIAN
+
+select:
+  - id: !extend clock_font
+    options:
+      - 'max7219 Georgian'
