@@ -1723,15 +1723,19 @@ static void test_builtin_font_renders_every_required_glyph() {
 static void test_georgian_date_font_uses_max7219_rows() {
   GeorgianDateFont georgian;
   FakeCanvas canvas(8, 8);
-  // ვ preserves the seven rows drawn in max7219.ttf on the 8-row matrix.
+  // ვ fills all eight rows drawn in max7219.ttf in a 5 px cell; StyledFont
+  // adds 1 px of automatic letter spacing between adjacent Georgian letters.
   const char letter = static_cast<char>(0x81);
   georgian.draw_glyph(canvas, letter, 0, 0);
-  CHECK_EQ(georgian.advance(letter), 6);
+  CHECK_EQ(georgian.advance(letter), 5);
   CHECK_EQ(georgian.ink_height(), 8);
   int lit_rows = 0;
   for (int row = 0; row < 8; row++) if (canvas.row_on(row) > 0) lit_rows++;
-  CHECK_EQ(lit_rows, 7);
-  CHECK(canvas.row_on(7) > 0);  // short glyphs share the date baseline.
+  CHECK_EQ(lit_rows, 8);
+  CHECK(canvas.row_on(7) > 0);
+  StyledFont styled_georgian(georgian, DIGIT_STYLE_STANDARD, LETTER_STYLE_GEORGIAN);
+  CHECK_EQ(styled_georgian.letter_spacing(), 1);
+  CHECK_EQ(styled_georgian.advance(letter), 6);
 }
 
 static void test_per_screen_fonts_and_character_sets() {

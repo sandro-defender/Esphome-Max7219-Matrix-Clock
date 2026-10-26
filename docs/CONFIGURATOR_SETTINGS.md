@@ -1,6 +1,6 @@
 # Configurator settings audit
 
-Audit for the 0.8.15 configurator, against ESPHome **2026.10.0** and both base
+Audit for the 0.8.16 configurator, against ESPHome **2026.10.0** and both base
 packages. The supported project surface is defined by
 [`packages/configurator.json`](../packages/configurator.json) and the package
 YAML, not every option in the entire ESPHome SDK. Defaults, options, bounds,

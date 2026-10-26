@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "sourceHash": "8bc68bc1cc599abf55eb8211b17ccc2b2880d37a47eb7ae733389cb057e1343a",
+  "sourceHash": "edb4d20685c12da802dd0c01e4437a46483dee91be2bd4200f3fa1c0181886ed",
   "repository": "sandro-defender/Esphome-Max7219-Matrix-Clock",
-  "releaseVersion": "0.8.15",
+  "releaseVersion": "0.8.16",
   "esphomeVersion": "2026.10.0",
-  "releaseNotes": "### Changed\n\n- Reorganise the web configurator into one full-width column at every screen\n  size: the live matrix is pinned under the menu exactly as on phones, and the\n  settings and Info & help content scroll below it using the whole page width\n  instead of a narrow column beside a preview rail.\n- Reorder the Info & help sections to build order (release, wiring, install,\n  then the entity, action and font references) and cap paragraph width so the\n  full-width panels stay readable on large screens while tables and code run\n  edge to edge.\n- Fold the web configurator's Info & help reference tables (wiring, package\n  contract, actions, entities and fonts) behind collapsed disclosures with a\n  row count, so the page stays short and the table you need is one click away.\n- While the page is scrolled, the pinned display collapses to just the pixel\n  table (bezel labels and screws hidden, reserved space released), and the\n  Home Assistant temperature and weather entity IDs fold behind one disclosure\n  so the Screens card stays compact.\n- A panel wider than the chassis cap (for example twelve modules) now stretches\n  the chassis to the page edges instead of scaling the dots down to fit.",
+  "releaseNotes": "### Changed\n\n- Update the bundled `max7219` pixel font (`fonts/max7219.ttf`) with refined\n  5-column Georgian Mkhedruli glyphs and SIL Open Font License 1.1 metadata, and\n  regenerate the firmware contract, fallback date tables and web preview glyphs.\n\n### Fixed\n\n- Restore `fonts/README.md` and remove the leftover Pixeel export archive from\n  `fonts/`.",
   "packageFiles": [
     "packages/base.yaml",
     "packages/network.yaml",
@@ -2532,7 +2532,7 @@
       "family": "max7219 Georgian",
       "firmwareId": "font_max7219_source",
       "size": 8,
-      "license": "CC BY-SA 4.0",
+      "license": "SIL OFL 1.1",
       "source": "fonts/LICENSE.txt",
       "file": "fonts/max7219.ttf",
       "package": "packages/fonts/max7219.yaml",

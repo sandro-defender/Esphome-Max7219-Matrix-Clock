@@ -14,10 +14,10 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wno-unused-parameter -O2
 
 all: test
 
-test_renderer: test_renderer.cpp ../packages/max7219_clock_renderer.h
+test_renderer: test_renderer.cpp ../packages/max7219_clock_renderer.h ../packages/max7219_date_font.generated.h
 	$(CXX) $(CXXFLAGS) -o $@ test_renderer.cpp
 
-renderer_fixture: renderer_fixture.cpp fonts.generated.h frame.generated.h string_ref.generated.h driver.generated.h ../packages/max7219_clock_renderer.h ../packages/max7219_clock_esphome.h
+renderer_fixture: renderer_fixture.cpp fonts.generated.h frame.generated.h string_ref.generated.h driver.generated.h ../packages/max7219_clock_renderer.h ../packages/max7219_clock_esphome.h ../packages/max7219_date_font.generated.h
 	$(CXX) $(CXXFLAGS) -o $@ renderer_fixture.cpp
 
 fixture: renderer_fixture
